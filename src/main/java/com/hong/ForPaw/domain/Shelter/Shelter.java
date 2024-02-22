@@ -1,4 +1,4 @@
-package com.hong.ForPaw.domain;
+package com.hong.ForPaw.domain.Shelter;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -14,6 +14,10 @@ public class Shelter {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    // 보호소 등록 번호
+    @Column
+    private Long careRegNo;
 
     @Column
     private String name;

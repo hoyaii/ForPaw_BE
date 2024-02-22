@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">0.316s</div>
+<div class="counter">0.381s</div>
 <p>duration</p>
 </div>
 </td>
@@ -78,8 +78,8 @@
 </tr>
 </thead>
 <tr>
-<td class="success">loadRegionData()</td>
-<td class="success">0.316s</td>
+<td class="success">데이터베이스_데이터_출력_테스트()</td>
+<td class="success">0.381s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -87,8 +87,8 @@
 <div id="tab1" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>18:58:47.091 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.hong.ForPaw.service.RegionCodeServiceTest]: RegionCodeServiceTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-18:58:47.132 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.hong.ForPaw.ForPawApplication for test class com.hong.ForPaw.service.RegionCodeServiceTest
+<pre>23:06:36.526 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.hong.ForPaw.service.RegionCodeServiceTest]: RegionCodeServiceTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+23:06:36.573 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.hong.ForPaw.ForPawApplication for test class com.hong.ForPaw.service.RegionCodeServiceTest
 
   .   ____          _            __ _ _
  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
@@ -98,28 +98,262 @@
  =========|_|==============|___/=/_/_/_/
  :: Spring Boot ::                (v3.2.2)
 
-2024-02-22T18:58:47.264+09:00  INFO 21673 --- [    Test worker] c.h.F.service.RegionCodeServiceTest      : Starting RegionCodeServiceTest using Java 17.0.9 with PID 21673 (started by lhh in /Users/lhh/ForPaw)
-2024-02-22T18:58:47.265+09:00  INFO 21673 --- [    Test worker] c.h.F.service.RegionCodeServiceTest      : No active profile set, falling back to 1 default profile: &quot;default&quot;
-2024-02-22T18:58:47.536+09:00  INFO 21673 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-2024-02-22T18:58:47.557+09:00  INFO 21673 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 18 ms. Found 1 JPA repository interface.
-2024-02-22T18:58:47.723+09:00  INFO 21673 --- [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
-2024-02-22T18:58:47.799+09:00  INFO 21673 --- [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:20011a8e-9c90-4a88-b20b-660baa0335bc user=SA
-2024-02-22T18:58:47.800+09:00  INFO 21673 --- [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
-2024-02-22T18:58:47.820+09:00  INFO 21673 --- [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
-2024-02-22T18:58:47.843+09:00  INFO 21673 --- [    Test worker] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.1.Final
-2024-02-22T18:58:47.858+09:00  INFO 21673 --- [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
-2024-02-22T18:58:47.950+09:00  INFO 21673 --- [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
-2024-02-22T18:58:48.299+09:00  INFO 21673 --- [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
-2024-02-22T18:58:48.317+09:00  INFO 21673 --- [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
-2024-02-22T18:58:48.620+09:00  WARN 21673 --- [    Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
-2024-02-22T18:58:48.740+09:00  WARN 21673 --- [    Test worker] .s.s.UserDetailsServiceAutoConfiguration : 
+2024-02-22T23:06:36.717+09:00  INFO 23800 --- [    Test worker] c.h.F.service.RegionCodeServiceTest      : Starting RegionCodeServiceTest using Java 17.0.9 with PID 23800 (started by lhh in /Users/lhh/ForPaw)
+2024-02-22T23:06:36.718+09:00  INFO 23800 --- [    Test worker] c.h.F.service.RegionCodeServiceTest      : No active profile set, falling back to 1 default profile: &quot;default&quot;
+2024-02-22T23:06:36.982+09:00  INFO 23800 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2024-02-22T23:06:37.039+09:00  INFO 23800 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 53 ms. Found 1 JPA repository interface.
+2024-02-22T23:06:37.206+09:00  INFO 23800 --- [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2024-02-22T23:06:37.282+09:00  INFO 23800 --- [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:fa5f42aa-6694-4ff3-8ed1-a4479e3b7b7f user=SA
+2024-02-22T23:06:37.283+09:00  INFO 23800 --- [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2024-02-22T23:06:37.306+09:00  INFO 23800 --- [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2024-02-22T23:06:37.333+09:00  INFO 23800 --- [    Test worker] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.1.Final
+2024-02-22T23:06:37.347+09:00  INFO 23800 --- [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2024-02-22T23:06:37.458+09:00  INFO 23800 --- [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2024-02-22T23:06:37.812+09:00  INFO 23800 --- [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2024-02-22T23:06:37.831+09:00  INFO 23800 --- [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2024-02-22T23:06:38.149+09:00  WARN 23800 --- [    Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2024-02-22T23:06:38.254+09:00  WARN 23800 --- [    Test worker] .s.s.UserDetailsServiceAutoConfiguration : 
 
-Using generated security password: 5660dbd2-9677-481d-8fd3-44a8b5463ce6
+Using generated security password: 3e9898f2-28a5-4262-8318-2f4eb84a8502
 
 This generated password is for development use only. Your security configuration must be updated before running your application in production.
 
-2024-02-22T18:58:48.792+09:00  INFO 21673 --- [    Test worker] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@6dd59886, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@65a7bc80, org.springframework.security.web.context.SecurityContextHolderFilter@564e9c0b, org.springframework.security.web.header.HeaderWriterFilter@41db6e4b, org.springframework.web.filter.CorsFilter@5b132063, org.springframework.security.web.csrf.CsrfFilter@4c897417, org.springframework.security.web.authentication.logout.LogoutFilter@951053f, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter@17e31657, org.springframework.security.web.authentication.ui.DefaultLoginPageGeneratingFilter@7ecf4608, org.springframework.security.web.authentication.ui.DefaultLogoutPageGeneratingFilter@4b98c80c, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@599cf2cd, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@21d478f3, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@3be60847, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@a486851, org.springframework.security.web.access.ExceptionTranslationFilter@3a70acd5, org.springframework.security.web.access.intercept.AuthorizationFilter@27ea7c8f]
-2024-02-22T18:58:48.819+09:00  INFO 21673 --- [    Test worker] c.h.F.service.RegionCodeServiceTest      : Started RegionCodeServiceTest in 1.63 seconds (process running for 2.081)
+2024-02-22T23:06:38.316+09:00  INFO 23800 --- [    Test worker] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@65630116, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@623dc0b8, org.springframework.security.web.context.SecurityContextHolderFilter@3a5244a1, org.springframework.security.web.header.HeaderWriterFilter@7e113065, org.springframework.web.filter.CorsFilter@fee1e32, org.springframework.security.web.csrf.CsrfFilter@1c3eeda4, org.springframework.security.web.authentication.logout.LogoutFilter@55b7f0d, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter@61d7df22, org.springframework.security.web.authentication.ui.DefaultLoginPageGeneratingFilter@4848681d, org.springframework.security.web.authentication.ui.DefaultLogoutPageGeneratingFilter@2d2710a8, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@321bf4b1, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@85eabca, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@3f8c4bcf, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@50b1dfab, org.springframework.security.web.access.ExceptionTranslationFilter@3678f32e, org.springframework.security.web.access.intercept.AuthorizationFilter@c8e99]
+2024-02-22T23:06:38.368+09:00  INFO 23800 --- [    Test worker] c.h.F.service.RegionCodeServiceTest      : Started RegionCodeServiceTest in 1.73 seconds (process running for 2.207)
+DB에 저장된 RegionCode 개수: 233
+ID: 1, UprCd: 6110000, OrgCd: 6119999, OrgdownNm: 가정보호
+ID: 2, UprCd: 6110000, OrgCd: 3220000, OrgdownNm: 강남구
+ID: 3, UprCd: 6110000, OrgCd: 3240000, OrgdownNm: 강동구
+ID: 4, UprCd: 6110000, OrgCd: 3080000, OrgdownNm: 강북구
+ID: 5, UprCd: 6110000, OrgCd: 3150000, OrgdownNm: 강서구
+ID: 6, UprCd: 6110000, OrgCd: 3200000, OrgdownNm: 관악구
+ID: 7, UprCd: 6110000, OrgCd: 3040000, OrgdownNm: 광진구
+ID: 8, UprCd: 6110000, OrgCd: 3160000, OrgdownNm: 구로구
+ID: 9, UprCd: 6110000, OrgCd: 3170000, OrgdownNm: 금천구
+ID: 10, UprCd: 6110000, OrgCd: 3100000, OrgdownNm: 노원구
+ID: 11, UprCd: 6110000, OrgCd: 3090000, OrgdownNm: 도봉구
+ID: 12, UprCd: 6110000, OrgCd: 3050000, OrgdownNm: 동대문구
+ID: 13, UprCd: 6110000, OrgCd: 3190000, OrgdownNm: 동작구
+ID: 14, UprCd: 6110000, OrgCd: 3130000, OrgdownNm: 마포구
+ID: 15, UprCd: 6110000, OrgCd: 3120000, OrgdownNm: 서대문구
+ID: 16, UprCd: 6110000, OrgCd: 6119998, OrgdownNm: 서울특별시
+ID: 17, UprCd: 6110000, OrgCd: 3210000, OrgdownNm: 서초구
+ID: 18, UprCd: 6110000, OrgCd: 3030000, OrgdownNm: 성동구
+ID: 19, UprCd: 6110000, OrgCd: 3070000, OrgdownNm: 성북구
+ID: 20, UprCd: 6110000, OrgCd: 3230000, OrgdownNm: 송파구
+ID: 21, UprCd: 6110000, OrgCd: 3140000, OrgdownNm: 양천구
+ID: 22, UprCd: 6110000, OrgCd: 3180000, OrgdownNm: 영등포구
+ID: 23, UprCd: 6110000, OrgCd: 3020000, OrgdownNm: 용산구
+ID: 24, UprCd: 6110000, OrgCd: 3110000, OrgdownNm: 은평구
+ID: 25, UprCd: 6110000, OrgCd: 3000000, OrgdownNm: 종로구
+ID: 26, UprCd: 6110000, OrgCd: 3010000, OrgdownNm: 중구
+ID: 27, UprCd: 6110000, OrgCd: 3060000, OrgdownNm: 중랑구
+ID: 28, UprCd: 6260000, OrgCd: 3360000, OrgdownNm: 강서구
+ID: 29, UprCd: 6260000, OrgCd: 3350000, OrgdownNm: 금정구
+ID: 30, UprCd: 6260000, OrgCd: 3400000, OrgdownNm: 기장군
+ID: 31, UprCd: 6260000, OrgCd: 3310000, OrgdownNm: 남구
+ID: 32, UprCd: 6260000, OrgCd: 3270000, OrgdownNm: 동구
+ID: 33, UprCd: 6260000, OrgCd: 3300000, OrgdownNm: 동래구
+ID: 34, UprCd: 6260000, OrgCd: 3290000, OrgdownNm: 부산진구
+ID: 35, UprCd: 6260000, OrgCd: 3320000, OrgdownNm: 북구
+ID: 36, UprCd: 6260000, OrgCd: 3390000, OrgdownNm: 사상구
+ID: 37, UprCd: 6260000, OrgCd: 3340000, OrgdownNm: 사하구
+ID: 38, UprCd: 6260000, OrgCd: 3260000, OrgdownNm: 서구
+ID: 39, UprCd: 6260000, OrgCd: 3380000, OrgdownNm: 수영구
+ID: 40, UprCd: 6260000, OrgCd: 3370000, OrgdownNm: 연제구
+ID: 41, UprCd: 6260000, OrgCd: 3280000, OrgdownNm: 영도구
+ID: 42, UprCd: 6260000, OrgCd: 3250000, OrgdownNm: 중구
+ID: 43, UprCd: 6260000, OrgCd: 3330000, OrgdownNm: 해운대구
+ID: 44, UprCd: 6270000, OrgCd: 5141000, OrgdownNm: 군위군
+ID: 45, UprCd: 6270000, OrgCd: 3440000, OrgdownNm: 남구
+ID: 46, UprCd: 6270000, OrgCd: 3470000, OrgdownNm: 달서구
+ID: 47, UprCd: 6270000, OrgCd: 3480000, OrgdownNm: 달성군
+ID: 48, UprCd: 6270000, OrgCd: 3420000, OrgdownNm: 동구
+ID: 49, UprCd: 6270000, OrgCd: 3450000, OrgdownNm: 북구
+ID: 50, UprCd: 6270000, OrgCd: 3430000, OrgdownNm: 서구
+ID: 51, UprCd: 6270000, OrgCd: 3460000, OrgdownNm: 수성구
+ID: 52, UprCd: 6270000, OrgCd: 3410000, OrgdownNm: 중구
+ID: 53, UprCd: 6280000, OrgCd: 3570000, OrgdownNm: 강화군
+ID: 54, UprCd: 6280000, OrgCd: 3550000, OrgdownNm: 계양구
+ID: 55, UprCd: 6280000, OrgCd: 3530000, OrgdownNm: 남동구
+ID: 56, UprCd: 6280000, OrgCd: 3500000, OrgdownNm: 동구
+ID: 57, UprCd: 6280000, OrgCd: 3510500, OrgdownNm: 미추홀구
+ID: 58, UprCd: 6280000, OrgCd: 3540000, OrgdownNm: 부평구
+ID: 59, UprCd: 6280000, OrgCd: 3560000, OrgdownNm: 서구
+ID: 60, UprCd: 6280000, OrgCd: 3520000, OrgdownNm: 연수구
+ID: 61, UprCd: 6280000, OrgCd: 3580000, OrgdownNm: 옹진군
+ID: 62, UprCd: 6280000, OrgCd: 3490000, OrgdownNm: 중구
+ID: 63, UprCd: 6290000, OrgCd: 3630000, OrgdownNm: 광산구
+ID: 64, UprCd: 6290000, OrgCd: 6299998, OrgdownNm: 광주광역시
+ID: 65, UprCd: 6290000, OrgCd: 3610000, OrgdownNm: 남구
+ID: 66, UprCd: 6290000, OrgCd: 3590000, OrgdownNm: 동구
+ID: 67, UprCd: 6290000, OrgCd: 3620000, OrgdownNm: 북구
+ID: 68, UprCd: 6290000, OrgCd: 3600000, OrgdownNm: 서구
+ID: 69, UprCd: 6300000, OrgCd: 3680000, OrgdownNm: 대덕구
+ID: 70, UprCd: 6300000, OrgCd: 3640000, OrgdownNm: 동구
+ID: 71, UprCd: 6300000, OrgCd: 3660000, OrgdownNm: 서구
+ID: 72, UprCd: 6300000, OrgCd: 3670000, OrgdownNm: 유성구
+ID: 73, UprCd: 6300000, OrgCd: 3650000, OrgdownNm: 중구
+ID: 74, UprCd: 6310000, OrgCd: 3700000, OrgdownNm: 남구
+ID: 75, UprCd: 6310000, OrgCd: 3710000, OrgdownNm: 동구
+ID: 76, UprCd: 6310000, OrgCd: 3720000, OrgdownNm: 북구
+ID: 77, UprCd: 6310000, OrgCd: 3730000, OrgdownNm: 울주군
+ID: 78, UprCd: 6310000, OrgCd: 3690000, OrgdownNm: 중구
+ID: 79, UprCd: 6410000, OrgCd: 4160000, OrgdownNm: 가평군
+ID: 80, UprCd: 6410000, OrgCd: 3940000, OrgdownNm: 고양시
+ID: 81, UprCd: 6410000, OrgCd: 3970000, OrgdownNm: 과천시
+ID: 82, UprCd: 6410000, OrgCd: 3900000, OrgdownNm: 광명시
+ID: 83, UprCd: 6410000, OrgCd: 5540000, OrgdownNm: 광주시
+ID: 84, UprCd: 6410000, OrgCd: 3980000, OrgdownNm: 구리시
+ID: 85, UprCd: 6410000, OrgCd: 4020000, OrgdownNm: 군포시
+ID: 86, UprCd: 6410000, OrgCd: 5630000, OrgdownNm: 기흥구
+ID: 87, UprCd: 6410000, OrgCd: 4090000, OrgdownNm: 김포시
+ID: 88, UprCd: 6410000, OrgCd: 3990000, OrgdownNm: 남양주시
+ID: 89, UprCd: 6410000, OrgCd: 3920000, OrgdownNm: 동두천시
+ID: 90, UprCd: 6410000, OrgCd: 3860000, OrgdownNm: 부천시
+ID: 91, UprCd: 6410000, OrgCd: 3780000, OrgdownNm: 성남시
+ID: 92, UprCd: 6410000, OrgCd: 3740000, OrgdownNm: 수원시
+ID: 93, UprCd: 6410000, OrgCd: 4010000, OrgdownNm: 시흥시
+ID: 94, UprCd: 6410000, OrgCd: 3930000, OrgdownNm: 안산시
+ID: 95, UprCd: 6410000, OrgCd: 4080000, OrgdownNm: 안성시
+ID: 96, UprCd: 6410000, OrgCd: 3830000, OrgdownNm: 안양시
+ID: 97, UprCd: 6410000, OrgCd: 5590000, OrgdownNm: 양주시
+ID: 98, UprCd: 6410000, OrgCd: 4170000, OrgdownNm: 양평군
+ID: 99, UprCd: 6410000, OrgCd: 5700000, OrgdownNm: 여주시
+ID: 100, UprCd: 6410000, OrgCd: 4140000, OrgdownNm: 연천군
+ID: 101, UprCd: 6410000, OrgCd: 4000000, OrgdownNm: 오산시
+ID: 102, UprCd: 6410000, OrgCd: 4050000, OrgdownNm: 용인시
+ID: 103, UprCd: 6410000, OrgCd: 4030000, OrgdownNm: 의왕시
+ID: 104, UprCd: 6410000, OrgCd: 3820000, OrgdownNm: 의정부시
+ID: 105, UprCd: 6410000, OrgCd: 4070000, OrgdownNm: 이천시
+ID: 106, UprCd: 6410000, OrgCd: 4060000, OrgdownNm: 파주시
+ID: 107, UprCd: 6410000, OrgCd: 3910000, OrgdownNm: 평택시
+ID: 108, UprCd: 6410000, OrgCd: 5600000, OrgdownNm: 포천시
+ID: 109, UprCd: 6410000, OrgCd: 4040000, OrgdownNm: 하남시
+ID: 110, UprCd: 6410000, OrgCd: 5530000, OrgdownNm: 화성시
+ID: 111, UprCd: 6530000, OrgCd: 4201000, OrgdownNm: 강릉시
+ID: 112, UprCd: 6530000, OrgCd: 4341000, OrgdownNm: 고성군
+ID: 113, UprCd: 6530000, OrgCd: 4211000, OrgdownNm: 동해시
+ID: 114, UprCd: 6530000, OrgCd: 4241000, OrgdownNm: 삼척시
+ID: 115, UprCd: 6530000, OrgCd: 4231000, OrgdownNm: 속초시
+ID: 116, UprCd: 6530000, OrgCd: 4321000, OrgdownNm: 양구군
+ID: 117, UprCd: 6530000, OrgCd: 4351000, OrgdownNm: 양양군
+ID: 118, UprCd: 6530000, OrgCd: 4271000, OrgdownNm: 영월군
+ID: 119, UprCd: 6530000, OrgCd: 4191000, OrgdownNm: 원주시
+ID: 120, UprCd: 6530000, OrgCd: 4331000, OrgdownNm: 인제군
+ID: 121, UprCd: 6530000, OrgCd: 4291000, OrgdownNm: 정선군
+ID: 122, UprCd: 6530000, OrgCd: 4301000, OrgdownNm: 철원군
+ID: 123, UprCd: 6530000, OrgCd: 4181000, OrgdownNm: 춘천시
+ID: 124, UprCd: 6530000, OrgCd: 4221000, OrgdownNm: 태백시
+ID: 125, UprCd: 6530000, OrgCd: 4281000, OrgdownNm: 평창군
+ID: 126, UprCd: 6530000, OrgCd: 4251000, OrgdownNm: 홍천군
+ID: 127, UprCd: 6530000, OrgCd: 4311000, OrgdownNm: 화천군
+ID: 128, UprCd: 6530000, OrgCd: 4261000, OrgdownNm: 횡성군
+ID: 129, UprCd: 6430000, OrgCd: 4460000, OrgdownNm: 괴산군
+ID: 130, UprCd: 6430000, OrgCd: 4480000, OrgdownNm: 단양군
+ID: 131, UprCd: 6430000, OrgCd: 4420000, OrgdownNm: 보은군
+ID: 132, UprCd: 6430000, OrgCd: 4440000, OrgdownNm: 영동군
+ID: 133, UprCd: 6430000, OrgCd: 4430000, OrgdownNm: 옥천군
+ID: 134, UprCd: 6430000, OrgCd: 4470000, OrgdownNm: 음성군
+ID: 135, UprCd: 6430000, OrgCd: 4400000, OrgdownNm: 제천시
+ID: 136, UprCd: 6430000, OrgCd: 5570000, OrgdownNm: 증평군
+ID: 137, UprCd: 6430000, OrgCd: 4450000, OrgdownNm: 진천군
+ID: 138, UprCd: 6430000, OrgCd: 5710000, OrgdownNm: 청주시
+ID: 139, UprCd: 6430000, OrgCd: 4390000, OrgdownNm: 충주시
+ID: 140, UprCd: 6440000, OrgCd: 5580000, OrgdownNm: 계룡시
+ID: 141, UprCd: 6440000, OrgCd: 4500000, OrgdownNm: 공주시
+ID: 142, UprCd: 6440000, OrgCd: 4550000, OrgdownNm: 금산군
+ID: 143, UprCd: 6440000, OrgCd: 4540000, OrgdownNm: 논산시
+ID: 144, UprCd: 6440000, OrgCd: 5680000, OrgdownNm: 당진시
+ID: 145, UprCd: 6440000, OrgCd: 4510000, OrgdownNm: 보령시
+ID: 146, UprCd: 6440000, OrgCd: 4570000, OrgdownNm: 부여군
+ID: 147, UprCd: 6440000, OrgCd: 4530000, OrgdownNm: 서산시
+ID: 148, UprCd: 6440000, OrgCd: 4580000, OrgdownNm: 서천군
+ID: 149, UprCd: 6440000, OrgCd: 4520000, OrgdownNm: 아산시
+ID: 150, UprCd: 6440000, OrgCd: 4560000, OrgdownNm: 연기군
+ID: 151, UprCd: 6440000, OrgCd: 4610000, OrgdownNm: 예산군
+ID: 152, UprCd: 6440000, OrgCd: 4490000, OrgdownNm: 천안시
+ID: 153, UprCd: 6440000, OrgCd: 4590000, OrgdownNm: 청양군
+ID: 154, UprCd: 6440000, OrgCd: 4620000, OrgdownNm: 태안군
+ID: 155, UprCd: 6440000, OrgCd: 4600000, OrgdownNm: 홍성군
+ID: 156, UprCd: 6470000, OrgCd: 5130000, OrgdownNm: 경산시
+ID: 157, UprCd: 6470000, OrgCd: 5050000, OrgdownNm: 경주시
+ID: 158, UprCd: 6470000, OrgCd: 5200000, OrgdownNm: 고령군
+ID: 159, UprCd: 6470000, OrgCd: 5080000, OrgdownNm: 구미시
+ID: 160, UprCd: 6470000, OrgCd: 5060000, OrgdownNm: 김천시
+ID: 161, UprCd: 6470000, OrgCd: 5120000, OrgdownNm: 문경시
+ID: 162, UprCd: 6470000, OrgCd: 5240000, OrgdownNm: 봉화군
+ID: 163, UprCd: 6470000, OrgCd: 5110000, OrgdownNm: 상주시
+ID: 164, UprCd: 6470000, OrgCd: 5210000, OrgdownNm: 성주군
+ID: 165, UprCd: 6470000, OrgCd: 5070000, OrgdownNm: 안동시
+ID: 166, UprCd: 6470000, OrgCd: 5180000, OrgdownNm: 영덕군
+ID: 167, UprCd: 6470000, OrgCd: 5170000, OrgdownNm: 영양군
+ID: 168, UprCd: 6470000, OrgCd: 5090000, OrgdownNm: 영주시
+ID: 169, UprCd: 6470000, OrgCd: 5100000, OrgdownNm: 영천시
+ID: 170, UprCd: 6470000, OrgCd: 5230000, OrgdownNm: 예천군
+ID: 171, UprCd: 6470000, OrgCd: 5260000, OrgdownNm: 울릉군
+ID: 172, UprCd: 6470000, OrgCd: 5250000, OrgdownNm: 울진군
+ID: 173, UprCd: 6470000, OrgCd: 5150000, OrgdownNm: 의성군
+ID: 174, UprCd: 6470000, OrgCd: 5190000, OrgdownNm: 청도군
+ID: 175, UprCd: 6470000, OrgCd: 5160000, OrgdownNm: 청송군
+ID: 176, UprCd: 6470000, OrgCd: 5220000, OrgdownNm: 칠곡군
+ID: 177, UprCd: 6470000, OrgCd: 5020000, OrgdownNm: 포항시
+ID: 178, UprCd: 6480000, OrgCd: 5370000, OrgdownNm: 거제시
+ID: 179, UprCd: 6480000, OrgCd: 5470000, OrgdownNm: 거창군
+ID: 180, UprCd: 6480000, OrgCd: 5420000, OrgdownNm: 고성군
+ID: 181, UprCd: 6480000, OrgCd: 5350000, OrgdownNm: 김해시
+ID: 182, UprCd: 6480000, OrgCd: 5430000, OrgdownNm: 남해군
+ID: 183, UprCd: 6480000, OrgCd: 5360000, OrgdownNm: 밀양시
+ID: 184, UprCd: 6480000, OrgCd: 5340000, OrgdownNm: 사천시
+ID: 185, UprCd: 6480000, OrgCd: 5450000, OrgdownNm: 산청군
+ID: 186, UprCd: 6480000, OrgCd: 5380000, OrgdownNm: 양산시
+ID: 187, UprCd: 6480000, OrgCd: 5390000, OrgdownNm: 의령군
+ID: 188, UprCd: 6480000, OrgCd: 5310000, OrgdownNm: 진주시
+ID: 189, UprCd: 6480000, OrgCd: 5410000, OrgdownNm: 창녕군
+ID: 190, UprCd: 6480000, OrgCd: 5320000, OrgdownNm: 창원시
+ID: 191, UprCd: 6480000, OrgCd: 5330000, OrgdownNm: 통영시
+ID: 192, UprCd: 6480000, OrgCd: 5440000, OrgdownNm: 하동군
+ID: 193, UprCd: 6480000, OrgCd: 5400000, OrgdownNm: 함안군
+ID: 194, UprCd: 6480000, OrgCd: 5460000, OrgdownNm: 함양군
+ID: 195, UprCd: 6480000, OrgCd: 5480000, OrgdownNm: 합천군
+ID: 196, UprCd: 6540000, OrgCd: 4781000, OrgdownNm: 고창군
+ID: 197, UprCd: 6540000, OrgCd: 4671000, OrgdownNm: 군산시
+ID: 198, UprCd: 6540000, OrgCd: 4711000, OrgdownNm: 김제시
+ID: 199, UprCd: 6540000, OrgCd: 4701000, OrgdownNm: 남원시
+ID: 200, UprCd: 6540000, OrgCd: 4741000, OrgdownNm: 무주군
+ID: 201, UprCd: 6540000, OrgCd: 4791000, OrgdownNm: 부안군
+ID: 202, UprCd: 6540000, OrgCd: 4771000, OrgdownNm: 순창군
+ID: 203, UprCd: 6540000, OrgCd: 4721000, OrgdownNm: 완주군
+ID: 204, UprCd: 6540000, OrgCd: 4681000, OrgdownNm: 익산시
+ID: 205, UprCd: 6540000, OrgCd: 4761000, OrgdownNm: 임실군
+ID: 206, UprCd: 6540000, OrgCd: 4751000, OrgdownNm: 장수군
+ID: 207, UprCd: 6540000, OrgCd: 4641000, OrgdownNm: 전주시
+ID: 208, UprCd: 6540000, OrgCd: 4691000, OrgdownNm: 정읍시
+ID: 209, UprCd: 6540000, OrgCd: 4731000, OrgdownNm: 진안군
+ID: 210, UprCd: 6460000, OrgCd: 4920000, OrgdownNm: 강진군
+ID: 211, UprCd: 6460000, OrgCd: 4880000, OrgdownNm: 고흥군
+ID: 212, UprCd: 6460000, OrgCd: 4860000, OrgdownNm: 곡성군
+ID: 213, UprCd: 6460000, OrgCd: 4840000, OrgdownNm: 광양시
+ID: 214, UprCd: 6460000, OrgCd: 4870000, OrgdownNm: 구례군
+ID: 215, UprCd: 6460000, OrgCd: 4830000, OrgdownNm: 나주시
+ID: 216, UprCd: 6460000, OrgCd: 4850000, OrgdownNm: 담양군
+ID: 217, UprCd: 6460000, OrgCd: 4800000, OrgdownNm: 목포시
+ID: 218, UprCd: 6460000, OrgCd: 4950000, OrgdownNm: 무안군
+ID: 219, UprCd: 6460000, OrgCd: 4890000, OrgdownNm: 보성군
+ID: 220, UprCd: 6460000, OrgCd: 4820000, OrgdownNm: 순천시
+ID: 221, UprCd: 6460000, OrgCd: 5010000, OrgdownNm: 신안군
+ID: 222, UprCd: 6460000, OrgCd: 4810000, OrgdownNm: 여수시
+ID: 223, UprCd: 6460000, OrgCd: 4970000, OrgdownNm: 영광군
+ID: 224, UprCd: 6460000, OrgCd: 4940000, OrgdownNm: 영암군
+ID: 225, UprCd: 6460000, OrgCd: 4990000, OrgdownNm: 완도군
+ID: 226, UprCd: 6460000, OrgCd: 4980000, OrgdownNm: 장성군
+ID: 227, UprCd: 6460000, OrgCd: 4910000, OrgdownNm: 장흥군
+ID: 228, UprCd: 6460000, OrgCd: 5000000, OrgdownNm: 진도군
+ID: 229, UprCd: 6460000, OrgCd: 4960000, OrgdownNm: 함평군
+ID: 230, UprCd: 6460000, OrgCd: 4930000, OrgdownNm: 해남군
+ID: 231, UprCd: 6460000, OrgCd: 4900000, OrgdownNm: 화순군
+ID: 232, UprCd: 6500000, OrgCd: 6510000, OrgdownNm: 제주시
+ID: 233, UprCd: 6500000, OrgCd: 6520000, OrgdownNm: 서귀포시
 </pre>
 </span>
 </div>
@@ -131,7 +365,7 @@ This generated password is for development use only. Your security configuration
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 8.5</a> at 2024. 2. 22. 오후 6:58:49</p>
+<a href="http://www.gradle.org">Gradle 8.5</a> at 2024. 2. 22. 오후 11:06:38</p>
 </div>
 </div>
 </body>

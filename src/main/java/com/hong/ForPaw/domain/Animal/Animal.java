@@ -1,6 +1,6 @@
 package com.hong.ForPaw.domain.Animal;
 
-import com.hong.ForPaw.domain.Shelter;
+import com.hong.ForPaw.domain.Shelter.Shelter;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
