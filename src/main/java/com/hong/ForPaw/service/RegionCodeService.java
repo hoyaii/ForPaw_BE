@@ -28,8 +28,8 @@ public class RegionCodeService {
 
         regionsWrapper.regions().forEach(regionDto -> regionDto.subRegions().forEach(subRegionCodeDTO -> {
             RegionCode regionCode = new RegionCode();
-            regionCode.setUprCd(Integer.valueOf(regionDto.orgCd()));
-            regionCode.setOrgCd(Integer.valueOf(subRegionCodeDTO.orgCd()));
+            regionCode.setUprCd(regionDto.orgCd());
+            regionCode.setOrgCd(subRegionCodeDTO.orgCd());
             regionCode.setOrgdownNm(subRegionCodeDTO.orgdownNm());
             regionCodeRepository.save(regionCode);
         }));
