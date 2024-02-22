@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.domain.RegionCode.RegionCode;
 import com.hong.ForPaw.domain.RegionCode.RegionCodeDTO;
+import com.hong.ForPaw.domain.RegionCode.RegionsWrapperDTO;
 import com.hong.ForPaw.repository.RegionCodeRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +24,9 @@ public class RegionCodeService {
     public void loadRegionData() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         InputStream inputStream = TypeReference.class.getResourceAsStream("/sigungu.json");
-        List<RegionCodeDTO> regionCodeDTOs = mapper.readValue(inputStream, new TypeReference<List<RegionCodeDTO>>() {});
-        regionCodeDTOs.forEach(regionDto -> regionDto.subRegions().forEach(subRegionCodeDTO -> {
+        RegionsWrapperDTO regionsWrapper = mapper.readValue(inputStream, new TypeReference<RegionsWrapperDTO>() {});
+
+        regionsWrapper.regions().forEach(regionDto -> regionDto.subRegions().forEach(subRegionCodeDTO -> {
             RegionCode regionCode = new RegionCode();
             regionCode.setUprCd(regionDto.orgCd());
             regionCode.setOrgCd(subRegionCodeDTO.orgCd());
