@@ -13,11 +13,11 @@ public class RegionCode {
 
     // 시도 코드
     @Column
-    private String uprCd;
+    private Integer uprCd;
 
     // 시군구 코드
     @Column
-    private String orgCd;
+    private Integer orgCd;
 
     // 지역명
     @Column
