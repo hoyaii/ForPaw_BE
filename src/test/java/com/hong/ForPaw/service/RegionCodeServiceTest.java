@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
@@ -24,9 +26,18 @@ class RegionCodeServiceTest {
         //given
 
         //when
-        RegionCode regionCode = regionCodeRepository.getReferenceById(1L);
+        List<RegionCode> regionCodes = regionCodeRepository.findAll();
 
-        //then
-        System.out.println(regionCode.getOrgCd());
+        // then
+        assertFalse(regionCodes.isEmpty());
+
+        RegionCode regionCode = regionCodes.get(0);
+        assertNotNull(regionCode.getOrgCd());
+        assertNotNull(regionCode.getUprCd());
+        assertNotNull(regionCode.getOrgdownNm());
+
+        RegionCode seoul = regionCodeRepository.findByOrgdownNm("서울특별시");
+        assertNotNull(seoul);
+        assertEquals(6110000, seoul.getUprCd());
     }
 }

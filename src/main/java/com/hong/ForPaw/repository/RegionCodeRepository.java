@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface RegionCodeRepository extends JpaRepository<RegionCode, Long> {
+    RegionCode findByOrgdownNm(String name);
 }
