@@ -1,4 +1,4 @@
-package com.hong.ForPaw.domain;
+package com.hong.ForPaw.domain.RegionCode;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
