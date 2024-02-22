@@ -24,7 +24,6 @@ public class Shelter {
 
     @Builder
     public Shelter(Long id, String name, String careTel, String careAddr) {
-        this.id = id;
         this.name = name;
         this.careTel = careTel;
         this.careAddr = careAddr;
