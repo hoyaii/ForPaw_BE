@@ -1,6 +1,6 @@
 package com.hong.ForPaw.repository;
 
-import com.hong.ForPaw.domain.RegionCode.RegionCode;
+import com.hong.ForPaw.domain.regionCode.RegionCode;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

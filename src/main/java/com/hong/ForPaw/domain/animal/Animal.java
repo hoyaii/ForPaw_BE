@@ -1,6 +1,6 @@
-package com.hong.ForPaw.domain.Animal;
+package com.hong.ForPaw.domain.animal;
 
-import com.hong.ForPaw.domain.Shelter.Shelter;
+import com.hong.ForPaw.domain.shelter.Shelter;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

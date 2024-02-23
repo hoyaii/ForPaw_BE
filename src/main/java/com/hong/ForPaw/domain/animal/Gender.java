@@ -1,4 +1,4 @@
-package com.hong.ForPaw.domain.Animal;
+package com.hong.ForPaw.domain.animal;
 
 public enum Gender {
     MALE,

@@ -1,4 +1,4 @@
-package com.hong.ForPaw.domain.Shelter;
+package com.hong.ForPaw.domain.shelter;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;

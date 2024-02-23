@@ -2,9 +2,8 @@ package com.hong.ForPaw.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hong.ForPaw.domain.RegionCode.RegionCode;
-import com.hong.ForPaw.domain.RegionCode.RegionCodeDTO;
-import com.hong.ForPaw.domain.RegionCode.RegionsWrapperDTO;
+import com.hong.ForPaw.domain.regionCode.RegionCode;
+import com.hong.ForPaw.domain.regionCode.RegionsWrapperDTO;
 import com.hong.ForPaw.repository.RegionCodeRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor

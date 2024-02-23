@@ -1,30 +1,21 @@
 package com.hong.ForPaw.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hong.ForPaw.domain.RegionCode.RegionCode;
-import com.hong.ForPaw.domain.Shelter.Shelter;
-import com.hong.ForPaw.domain.Shelter.ShelterDTO;
-import com.hong.ForPaw.domain.Shelter.ShelterWrapperDTO;
+import com.hong.ForPaw.domain.regionCode.RegionCode;
+import com.hong.ForPaw.domain.shelter.Shelter;
+import com.hong.ForPaw.domain.shelter.ShelterDTO;
+import com.hong.ForPaw.domain.shelter.ShelterWrapperDTO;
 import com.hong.ForPaw.repository.RegionCodeRepository;
 import com.hong.ForPaw.repository.ShelterRepository;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -75,7 +66,7 @@ public class ShelterService {
             }
 
             // 요청 사이에 지연
-            Thread.sleep(1500);
+            //Thread.sleep(1500);
         }
     }
 

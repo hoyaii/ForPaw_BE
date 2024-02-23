@@ -1,4 +1,4 @@
-package com.hong.ForPaw.domain.RegionCode;
+package com.hong.ForPaw.domain.regionCode;
 
 import jakarta.persistence.*;
 import lombok.Getter;
