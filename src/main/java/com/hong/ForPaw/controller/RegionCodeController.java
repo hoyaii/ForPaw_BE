@@ -15,7 +15,7 @@ public class RegionCodeController {
 
     private final RegionCodeService regionCodeService;
 
-    @GetMapping("/loadRegionData")
+    @GetMapping("/loadRegion")
     public String loadRegionCode() throws IOException {
         regionCodeService.loadRegionData();
 

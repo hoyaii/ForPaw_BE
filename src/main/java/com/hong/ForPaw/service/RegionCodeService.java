@@ -18,7 +18,6 @@ public class RegionCodeService {
 
     private final RegionCodeRepository regionCodeRepository;
 
-    @PostConstruct
     public void loadRegionData() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         InputStream inputStream = TypeReference.class.getResourceAsStream("/sigungu.json");

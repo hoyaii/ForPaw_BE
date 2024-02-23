@@ -15,7 +15,7 @@ public class ShelterController {
 
     private final ShelterService shelterService;
 
-    @GetMapping("/loadShelterData")
+    @GetMapping("/loadShelter")
     public String loadShelter() throws IOException, InterruptedException {
         shelterService.loadShelterData();
 

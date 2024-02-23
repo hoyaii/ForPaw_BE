@@ -42,7 +42,7 @@ public class ShelterService {
             Integer orgCd = regionCode.getOrgCd();
             boolean success = false;
             int attempt = 0;
-            while (!success && attempt < 3) {
+            while (!success && attempt < 4) {
                 try {
                     String url = baseUrl + "?serviceKey=" + URLEncoder.encode(serviceKey, "UTF-8")
                             + "&upr_cd=" + uprCd + "&org_cd=" + orgCd + "&_type=json";
