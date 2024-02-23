@@ -16,10 +16,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class RegionCodeServiceTest {
 
     @Autowired
-    RegionCodeRepository regionCodeRepository;
+    public RegionCodeRepository regionCodeRepository;
 
     @Autowired
-    RegionCodeService regionCodeService;
+    public RegionCodeService regionCodeService;
 
     @Test
     void loadRegionData() {

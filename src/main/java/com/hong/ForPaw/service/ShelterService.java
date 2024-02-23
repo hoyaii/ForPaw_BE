@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,29 +25,35 @@ public class ShelterService {
 
     private final ShelterRepository shelterRepository;
     private final RegionCodeRepository regionCodeRepository;
+    private final WebClient.Builder webClientBuilder; // WebClient.Builder 주입
 
     @Value("${openAPI.service-key}")
     private String serviceKey;
 
-    private WebClient webClient = WebClient.create();
-    
+    @Value("${openAPI.careURL}")
+    private String baseURL;
+
+    private WebClient webClient;
+
+    @PostConstruct
+    public void init() {
+        this.webClient = webClientBuilder.baseUrl(baseURL).build(); // 기본 URL 설정
+    }
+
     public void loadShelterData() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
-        String baseURL = "http://apis.data.go.kr/1543061/abandonmentPublicSrvc/shelter";
         List<RegionCode> regionCodeList = regionCodeRepository.findAll();
 
         for(RegionCode regionCode : regionCodeList){
             Integer uprCd = regionCode.getUprCd();
             Integer orgCd = regionCode.getOrgCd();
-            String type = "json";
 
             String response = webClient.get()
                     .uri(uriBuilder -> uriBuilder
-                            .path(baseURL)
                             .queryParam("upr_cd", uprCd)
                             .queryParam("org_cd", orgCd)
-                            .queryParam("serviceKey", serviceKey)
-                            .queryParam("_type", type)
+                            .queryParam("serviceKey", URLEncoder.encode(serviceKey, StandardCharsets.UTF_8))
+                            .queryParam("_type", "json")
                             .build())
                     .retrieve()
                     .bodyToMono(String.class)

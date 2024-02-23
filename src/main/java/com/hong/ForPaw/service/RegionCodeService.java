@@ -24,7 +24,7 @@ public class RegionCodeService {
     public void loadRegionData() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         InputStream inputStream = TypeReference.class.getResourceAsStream("/sigungu.json");
-        RegionsWrapperDTO regionsWrapper = mapper.readValue(inputStream, new TypeReference<RegionsWrapperDTO>() {});
+        RegionsWrapperDTO regionsWrapper = mapper.readValue(inputStream, RegionsWrapperDTO.class);
 
         regionsWrapper.regions().forEach(regionDto -> regionDto.subRegions().forEach(subRegionCodeDTO -> {
             RegionCode regionCode = new RegionCode();
