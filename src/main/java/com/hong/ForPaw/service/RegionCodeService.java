@@ -22,13 +22,13 @@ public class RegionCodeService {
     public void loadRegionData() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         InputStream inputStream = TypeReference.class.getResourceAsStream("/sigungu.json");
-        RegionsJsonDTO regionsWrapper = mapper.readValue(inputStream, RegionsJsonDTO.class);
+        RegionsJsonDTO json = mapper.readValue(inputStream, RegionsJsonDTO.class);
 
-        regionsWrapper.regions().forEach(regionDto -> regionDto.subRegions().forEach(subRegionDto -> {
+        json.regions().forEach(region -> region.subRegions().forEach(subRegion -> {
             RegionCode regionCode = new RegionCode();
-            regionCode.setUprCd(regionDto.orgCd());
-            regionCode.setOrgCd(subRegionDto.orgCd());
-            regionCode.setOrgdownNm(subRegionDto.orgdownNm());
+            regionCode.setUprCd(region.orgCd());
+            regionCode.setOrgCd(subRegion.orgCd());
+            regionCode.setOrgdownNm(subRegion.orgdownNm());
             regionCodeRepository.save(regionCode);
         }));
     }
