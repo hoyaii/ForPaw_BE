@@ -6,11 +6,6 @@
       "subRegions": [
         {
           "uprCd": "6110000",
-          "orgCd": "6119999",
-          "orgdownNm": "가정보호"
-        },
-        {
-          "uprCd": "6110000",
           "orgCd": "3220000",
           "orgdownNm": "강남구"
         },

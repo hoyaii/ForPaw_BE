@@ -29,7 +29,8 @@ public class Shelter {
     private String careAddr;
 
     @Builder
-    public Shelter(Long id, String name, String careTel, String careAddr) {
+    public Shelter(Long careRegNo, String name, String careTel, String careAddr) {
+        this.careRegNo = careRegNo;
         this.name = name;
         this.careTel = careTel;
         this.careAddr = careAddr;

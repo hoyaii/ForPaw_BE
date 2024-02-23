@@ -22,7 +22,7 @@ class ShelterServiceTest {
     public ShelterService shelterService;
 
     @Test
-    void loadShelterData() throws IOException {
+    void loadShelterData() throws IOException, InterruptedException {
         // given
         shelterService.loadShelterData();;
         // when
