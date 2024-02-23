@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @SpringBootTest
 @Transactional
-class ShelterServiceTest {
+class itemDTOServiceTest {
 
     @Autowired
     public ShelterRepository shelterRepository;
