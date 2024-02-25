@@ -62,8 +62,13 @@ public class AnimalService {
 
                 AniamlJsonDTO json = mapper.readValue(response, AniamlJsonDTO.class);
                 List<AniamlJsonDTO.ItemDTO> itemDTOS = json.response().body().items().item();
+                boolean isShelterUpdate = false; // 보호소 업데이트 여부 (동물을 조회할 때 보호소 나머지 정보도 등장함)
 
                 for (AniamlJsonDTO.ItemDTO itemDTO : itemDTOS) {
+                    if (!isShelterUpdate) {
+                        shelter.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr());
+                        isShelterUpdate = true;
+                    }
 
                     Animal animal = Animal.builder()
                             .shelter(shelter) // 연관관계 매핑

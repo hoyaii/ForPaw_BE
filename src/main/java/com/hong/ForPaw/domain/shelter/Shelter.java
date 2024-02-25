@@ -30,4 +30,9 @@ public class Shelter {
         this.careTel = careTel;
         this.careAddr = careAddr;
     }
+
+    public void updateShelterInfo(String careTel, String careAddr){
+        this.careTel = careTel;
+        this.careAddr = careAddr;
+    }
 }
