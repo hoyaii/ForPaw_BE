@@ -35,8 +35,9 @@ public class ShelterService {
     @Transactional
     public void loadShelterData() throws InterruptedException {
         ObjectMapper mapper = new ObjectMapper();
-        List<RegionCode> regionCodeList = regionCodeRepository.findAll();
         RestTemplate restTemplate = new RestTemplate();
+
+        List<RegionCode> regionCodeList = regionCodeRepository.findAll();
 
         for (RegionCode regionCode : regionCodeList) {
             Integer uprCd = regionCode.getUprCd();
