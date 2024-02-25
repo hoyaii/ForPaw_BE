@@ -8,12 +8,13 @@ import com.hong.ForPaw.repository.RegionCodeRepository;
 import com.hong.ForPaw.repository.ShelterRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.util.List;
 
@@ -25,7 +26,7 @@ public class ShelterService {
     private final ShelterRepository shelterRepository;
     private final RegionCodeRepository regionCodeRepository;
 
-    @Value("${openAPI.service-key}")
+    @Value("${openAPI.service-key2}")
     private String serviceKey;
 
     @Value("${openAPI.careURL}")
@@ -42,30 +43,41 @@ public class ShelterService {
             Integer orgCd = regionCode.getOrgCd();
             boolean success = false;
             int attempt = 0;
-            while (!success && attempt < 4) {
+
+            while (!success && attempt < 3) {
                 try {
-                    String url = baseUrl + "?serviceKey=" + URLEncoder.encode(serviceKey, "UTF-8")
-                            + "&upr_cd=" + uprCd + "&org_cd=" + orgCd + "&_type=json";
+                    String url = baseUrl + "?serviceKey=" + serviceKey + "&upr_cd=" + uprCd + "&org_cd=" + orgCd + "&_type=json";
                     System.out.println("Requesting URL: " + url);
 
-                    ResponseEntity<String> responseEntity = restTemplate.getForEntity(url, String.class);
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.setContentType(MediaType.APPLICATION_JSON);
+                    headers.set("Accept", "*/*;q=0.9"); // HTTP_ERROR 방지
+                    HttpEntity<?> entity = new HttpEntity<>(null, headers);
+
+                    ResponseEntity<String> responseEntity = null;
+
+                    URI uri = new URI(url.toString());
+
+                    responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);
+
                     String response = responseEntity.getBody();
                     System.out.println("Response: " + response);
 
                     ShelterJsonDTO json = mapper.readValue(response, ShelterJsonDTO.class);
                     List<ShelterJsonDTO.itemDTO> itemDTOS = json.response().body().items().item();
 
-                    if (!itemDTOS.isEmpty()) {
-                        for (ShelterJsonDTO.itemDTO itemDTO : itemDTOS) {
-                            Shelter shelter = Shelter.builder().careRegNo(itemDTO.careRegNo()).name(itemDTO.careNm()).build();
-                            shelterRepository.save(shelter);
-                        }
+
+                    for (ShelterJsonDTO.itemDTO itemDTO : itemDTOS) {
+                        Shelter shelter = Shelter.builder().careRegNo(itemDTO.careRegNo()).name(itemDTO.careNm()).build();
+                        shelterRepository.save(shelter);
                     }
+
+                    Thread.sleep(1000);
                     success = true; // 성공했으므로 반복 중지
                 } catch (Exception e) {
                     System.err.println("JSON 파싱 오류가 발생했습니다. 재시도 중...: ");
                     attempt++; // 시도 횟수 증가
-                    Thread.sleep(2000); // 2초 대기
+                    Thread.sleep(1000);
                 }
             }
             if (!success) {
