@@ -31,7 +31,7 @@ public class AnimalService {
     @Value("${openAPI.service-key2}")
     private String serviceKey;
 
-    @Value("${openAPI.careURL}")
+    @Value("${openAPI.animalURL}")
     private String baseUrl;
 
     @Transactional
@@ -47,7 +47,7 @@ public class AnimalService {
             Long careRegNo = shelter.getCareRegNo();
 
             try {
-                String url = baseUrl + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json";
+                String url = baseUrl + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
@@ -58,12 +58,15 @@ public class AnimalService {
 
                 ResponseEntity<String> responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);
                 String response = responseEntity.getBody();
+                System.out.println(response);
 
                 AniamlJsonDTO json = mapper.readValue(response, AniamlJsonDTO.class);
                 List<AniamlJsonDTO.ItemDTO> itemDTOS = json.response().body().items().item();
 
                 for (AniamlJsonDTO.ItemDTO itemDTO : itemDTOS) {
                     Animal animal = Animal.builder()
+                            .shelter(shelter) // 연관관계 매핑
+                            .desertionNo(Long.valueOf(itemDTO.desertionNo()))
                             .happenDt(LocalDate.parse(itemDTO.happenDt(), formatter))
                             .happenPlace(itemDTO.happenPlace())
                             .kind(itemDTO.kindCd())
@@ -84,6 +87,7 @@ public class AnimalService {
             }
             catch (Exception e){
                 System.err.println("JSON 파싱 오류가 발생했습니다. 재시도 중...: ");
+                System.out.println(e);
             }
         }
     }
