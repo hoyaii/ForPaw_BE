@@ -55,23 +55,25 @@ public class Animal {
     private String processState;
 
     @Column
-    @Enumerated(EnumType.STRING)
-    private Gender gender;
+    private String gender;
 
     // 중성화 여부
     @Column
-    private Boolean neuter;
+    private String neuter;
 
     // 특징
     @Column
     private String specialMark;
 
-    // 특이 사항
     @Column
-    private String noticeComment;
+    private Integer likeNum = 0;
+
+    @Column
+    private Integer inquiryNum = 0;
+
 
     @Builder
-    public Animal(Shelter shelter, LocalDate happenDt, String happenPlace, String kind, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, Gender gender, Boolean neuter, String specialMark, String noticeComment) {
+    public Animal(Shelter shelter, LocalDate happenDt, String happenPlace, String kind, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark) {
         this.shelter = shelter;
         this.happenDt = happenDt;
         this.happenPlace = happenPlace;
@@ -86,6 +88,5 @@ public class Animal {
         this.gender = gender;
         this.neuter = neuter;
         this.specialMark = specialMark;
-        this.noticeComment = noticeComment;
     }
 }

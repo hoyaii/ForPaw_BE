@@ -65,7 +65,10 @@ public class ShelterService {
                     List<ShelterJsonDTO.itemDTO> itemDTOS = json.response().body().items().item();
 
                     for (ShelterJsonDTO.itemDTO itemDTO : itemDTOS) {
-                        Shelter shelter = Shelter.builder().careRegNo(itemDTO.careRegNo()).name(itemDTO.careNm()).build();
+                        Shelter shelter = Shelter.builder()
+                                .careRegNo(itemDTO.careRegNo())
+                                .name(itemDTO.careNm()).build();
+
                         shelterRepository.save(shelter);
                     }
                     success = true; // 성공했으므로 반복 중지
