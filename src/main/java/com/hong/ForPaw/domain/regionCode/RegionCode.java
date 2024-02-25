@@ -1,11 +1,11 @@
 package com.hong.ForPaw.domain.regionCode;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
-@Getter @Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class RegionCode {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,4 +22,11 @@ public class RegionCode {
     // 지역명
     @Column
     private String orgdownNm;
+
+    @Builder
+    public RegionCode(Integer uprCd, Integer orgCd, String orgdownNm) {
+        this.uprCd = uprCd;
+        this.orgCd = orgCd;
+        this.orgdownNm = orgdownNm;
+    }
 }

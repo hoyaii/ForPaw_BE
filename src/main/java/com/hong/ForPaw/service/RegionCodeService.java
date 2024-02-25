@@ -23,10 +23,12 @@ public class RegionCodeService {
         RegionsJsonDTO json = mapper.readValue(inputStream, RegionsJsonDTO.class);
 
         json.regions().forEach(region -> region.subRegions().forEach(subRegion -> {
-            RegionCode regionCode = new RegionCode();
-            regionCode.setUprCd(region.orgCd());
-            regionCode.setOrgCd(subRegion.orgCd());
-            regionCode.setOrgdownNm(subRegion.orgdownNm());
+            RegionCode regionCode = RegionCode.builder()
+                    .uprCd(region.orgCd())
+                    .orgCd(subRegion.orgCd())
+                    .orgdownNm(subRegion.orgdownNm())
+                    .build();
+
             regionCodeRepository.save(regionCode);
         }));
     }

@@ -35,7 +35,7 @@ public class AnimalService {
     private String baseUrl;
 
     @Transactional
-    public void loadAnimalDate() throws URISyntaxException, JsonProcessingException {
+    public void loadAnimalDate() {
         // shelter 돌면서 => animal 정보 쭉 떙겨온다 => shelter를 패치하고 => animal 등록
         ObjectMapper mapper = new ObjectMapper();
         RestTemplate restTemplate = new RestTemplate();
@@ -64,6 +64,7 @@ public class AnimalService {
                 List<AniamlJsonDTO.ItemDTO> itemDTOS = json.response().body().items().item();
 
                 for (AniamlJsonDTO.ItemDTO itemDTO : itemDTOS) {
+
                     Animal animal = Animal.builder()
                             .shelter(shelter) // 연관관계 매핑
                             .desertionNo(Long.valueOf(itemDTO.desertionNo()))
