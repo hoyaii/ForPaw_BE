@@ -1,8 +1,10 @@
-package com.hong.ForPaw.controller;
+package com.hong.ForPaw.controller.AnimalController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.hong.ForPaw.service.AnimalService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,5 +23,10 @@ public class AnimalController {
         animalService.loadAnimalDate();
 
         return "ho";
+    }
+
+    @GetMapping("/animals")
+    public ResponseEntity<?> findAllAnimals(Pageable pageable){
+        return ResponseEntity.ok.
     }
 }
