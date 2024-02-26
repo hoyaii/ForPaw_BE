@@ -1,7 +1,7 @@
 package com.hong.ForPaw.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hong.ForPaw.controller.AnimalController.AnimalResponse;
+import com.hong.ForPaw.controller.AnimalResponse;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.animal.AniamlJsonDTO;
 import com.hong.ForPaw.domain.animal.Animal;

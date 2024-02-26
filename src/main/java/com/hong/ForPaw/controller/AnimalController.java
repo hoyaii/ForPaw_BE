@@ -1,4 +1,4 @@
-package com.hong.ForPaw.controller.AnimalController;
+package com.hong.ForPaw.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.hong.ForPaw.core.security.CustomUserDetails;
@@ -20,7 +20,7 @@ public class AnimalController {
 
     private final AnimalService animalService;
 
-    @GetMapping("/animals")
+    @GetMapping("/animals/import")
     public String loadAnimals() throws URISyntaxException, JsonProcessingException {
         animalService.loadAnimalDate();
 

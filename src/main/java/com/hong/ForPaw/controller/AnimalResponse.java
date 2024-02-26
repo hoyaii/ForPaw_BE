@@ -1,8 +1,5 @@
-package com.hong.ForPaw.controller.AnimalController;
+package com.hong.ForPaw.controller;
 
-import com.hong.ForPaw.domain.animal.Animal;
-
-import java.util.ArrayList;
 import java.util.List;
 
 public class AnimalResponse {
