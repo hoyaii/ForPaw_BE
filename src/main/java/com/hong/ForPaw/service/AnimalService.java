@@ -110,9 +110,9 @@ public class AnimalService {
 
         List<AnimalResponse.FindAllAnimalsDTO.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> new AnimalResponse.FindAllAnimalsDTO.AnimalDTO(animal.getDesertionNo(), "name", animal.getAge()
-                        , animal.getGender(), animal.getSpecialMark(), "대구", animal.getInquiryNum(), animal.getLikeNum(), true, animal.getProfileURL() ))
+                        , animal.getGender(), animal.getSpecialMark(), animal.getShelter().getRegionCode().getUprName()+" "+animal.getShelter().getRegionCode().getOrgName()
+                        , animal.getInquiryNum(), animal.getLikeNum(), true, animal.getProfileURL() ))
                 .collect(Collectors.toList());
-
 
 
         return new AnimalResponse.FindAllAnimalsDTO(animalDTOS);
