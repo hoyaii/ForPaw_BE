@@ -32,4 +32,11 @@ public class UserController {
                 .header(HttpHeaders.SET_COOKIE, responseCookie.toString())
                 .body(new UserResponse.LoginDTO(tokenDTO.accessToken()));
     }
+
+    @PostMapping("/join")
+    public ResponseEntity<?> join(@RequestBody UserRequest.JoinDTO requestDTO){
+        userService.join(requestDTO);
+
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, null));
+    }
 }
