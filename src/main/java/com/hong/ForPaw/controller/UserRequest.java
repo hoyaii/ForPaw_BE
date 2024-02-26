@@ -4,7 +4,7 @@ public class UserRequest {
 
     public record LoginDTO(String email, String password){}
 
-    public record CheckEmailDTO(String email){}
+    public record EmailDTO(String email){}
 
-
+    public record VerifyEmailDTO(String email, String code){}
 }
