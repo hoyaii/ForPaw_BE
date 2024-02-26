@@ -7,9 +7,9 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.hong.ForPaw.domain.User.User;
 import org.springframework.stereotype.Component;
 
+import com.auth0.jwt.JWT;
 import java.util.Date;
 
-import static org.springframework.security.config.Elements.JWT;
 
 @Component
 public class JWTProvider {
@@ -34,16 +34,19 @@ public class JWTProvider {
     }
 
     public static String createToken(User user, Long exp) {
-        return JWT.create()
+        String jwt = JWT.create()
                 .withSubject(user.getEmail())
                 .withExpiresAt(new Date(System.currentTimeMillis() + exp))
                 .withClaim("id", user.getId())
                 .withClaim("role", user.getRole().ordinal())
                 .sign(Algorithm.HMAC512(SECRET));
+        return jwt;
     }
 
     public static DecodedJWT verify(String jwt) throws SignatureVerificationException, TokenExpiredException {
         jwt = jwt.replace(JWTProvider.TOKEN_PREFIX, "");
-        return JWT.require(Algorithm.HMAC512(SECRET)).build().verify(jwt);
+        DecodedJWT decodedJWT = JWT.require(Algorithm.HMAC512(SECRET))
+                .build().verify(jwt);
+        return decodedJWT;
     }
 }

@@ -1,5 +1,6 @@
 package com.hong.ForPaw.core.errors;
 
+import com.hong.ForPaw.core.utils.ApiUtils;
 import org.springframework.http.HttpStatus;
 
 public class CustomException extends RuntimeException{
