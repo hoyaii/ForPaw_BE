@@ -20,6 +20,9 @@ public class User {
     private String name;
 
     @Column
+    private String nickName;
+
+    @Column
     private String email;
 
     @Column
@@ -30,19 +33,25 @@ public class User {
     private Role role;
 
     @Column
-    private String profileContent;
-
-    @Column
     private String profileURL;
 
+    // 활동 지역 - 시/도/군
+    @Column
+    private String regin;
+
+    // 활동 지역 - 군/구
+    @Column
+    private String subRegion;
+
     @Builder
-    public User(Long id, String name, String email, String password, Role role, String profileContent, String profileURL) {
-        this.id = id;
+    public User(String name, String nickName, String email, String password, Role role, String profileURL, String regin, String subRegion) {
         this.name = name;
+        this.nickName = nickName;
         this.email = email;
         this.password = password;
         this.role = role;
-        this.profileContent = profileContent;
         this.profileURL = profileURL;
+        this.regin = regin;
+        this.subRegion = subRegion;
     }
 }

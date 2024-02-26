@@ -4,6 +4,7 @@ import com.hong.ForPaw.controller.UserRequest;
 import com.hong.ForPaw.controller.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.User.Role;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.hong.ForPaw.core.security.JWTProvider;
 
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -40,5 +42,25 @@ public class UserService {
         redisService.storeToken(refreshToken, JWTProvider.REFRESH_EXP);
 
         return new UserResponse.TokenDTO(accessToken, refreshToken);
+    }
+
+    @Transactional
+    public void join(UserRequest.JoinDTO requestDTO){
+
+        if (!requestDTO.password().equals(requestDTO.passwordConfirm()))
+            throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
+
+        User user = User.builder()
+                .name(requestDTO.name())
+                .nickName(requestDTO.nickName())
+                .email(requestDTO.email())
+                .password(passwordEncoder.encode(requestDTO.password()))
+                .role(Role.USER)
+                .profileURL(requestDTO.profileURL())
+                .regin(requestDTO.region())
+                .subRegion(requestDTO.subRegion())
+                .build();
+
+        userRepository.save(user);
     }
 }
