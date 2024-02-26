@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class Favorites { //관심 동물
+public class Favorite { //관심 동물
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,7 +26,7 @@ public class Favorites { //관심 동물
     private Animal animal;
 
     @Builder
-    public Favorites(User user, Animal animal) {
+    public Favorite(User user, Animal animal) {
         this.user = user;
         this.animal = animal;
     }
