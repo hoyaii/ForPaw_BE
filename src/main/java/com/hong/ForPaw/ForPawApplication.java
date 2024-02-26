@@ -23,9 +23,9 @@ public class ForPawApplication {
 	@Bean
 	CommandLineRunner localServerStart(PasswordEncoder passwordEncoder, UserRepository userRepository){
 		return args -> {
-			userRepository.saveAll(Arrays.asList(
-					newUser("yg04076@naver.com", "한홍", "호얘이", passwordEncoder, Role.USER, "www.s3.com", "대구", "수성구")
-			));
+			//userRepository.saveAll(Arrays.asList(
+			//		newUser("yg04076@naver.com", "한홍", "호얘이", passwordEncoder, Role.USER, "www.s3.com", "대구", "수성구")
+			//));
 		};
 	}
 
