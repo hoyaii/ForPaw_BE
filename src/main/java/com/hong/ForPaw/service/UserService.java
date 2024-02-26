@@ -21,6 +21,7 @@ public class UserService {
 
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
+    private final RedisService redisService;
 
     @Transactional
     public UserResponse.TokenDTO login(UserRequest.LoginDTO requestDTO){
@@ -32,10 +33,9 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
         }
 
-        String newRefreshToken = JWTProvider.createRefreshToken(user);
-        String newAccessToken = JWTProvider.createAccessToken(user);
-        
+        String accessToken = JWTProvider.createAccessToken(user);
+        String refreshToken = JWTProvider.createRefreshToken(user);
 
-        return new UserResponse.TokenDTO(newAccessToken, newRefreshToken);
+        return new UserResponse.TokenDTO(accessToken, refreshToken);
     }
 }
