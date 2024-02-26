@@ -1,12 +1,15 @@
 package com.hong.ForPaw.controller;
 
+import com.hong.ForPaw.core.security.JWTProvider;
+import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.Errors;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -15,8 +18,18 @@ public class UserController {
 
     private final UserService userService;
 
-    @GetMapping("/login")
-    public void login(@RequestBody UserRequest.LoginDTO requestDTO, Errors errors){
-        userService.login();
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody UserRequest.LoginDTO requestDTO) {
+        UserResponse.TokenDTO tokenDTO = userService.login(requestDTO);
+        ResponseCookie responseCookie = ResponseCookie.from("refreshToken", tokenDTO.refreshToken())
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("None")
+                .maxAge(JWTProvider.REFRESH_EXP)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, responseCookie.toString())
+                .body(new UserResponse.LoginDTO(tokenDTO.accessToken()));
     }
 }
