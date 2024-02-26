@@ -1,5 +1,7 @@
 package com.hong.ForPaw.controller;
 
+import com.hong.ForPaw.controller.DTO.UserRequest;
+import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.security.JWTProvider;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.UserService;
@@ -8,7 +10,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

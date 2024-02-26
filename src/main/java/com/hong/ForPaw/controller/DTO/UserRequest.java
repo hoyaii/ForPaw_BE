@@ -1,4 +1,4 @@
-package com.hong.ForPaw.controller;
+package com.hong.ForPaw.controller.DTO;
 
 public class UserRequest {
 

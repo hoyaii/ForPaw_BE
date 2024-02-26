@@ -1,6 +1,7 @@
 package com.hong.ForPaw.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.hong.ForPaw.controller.DTO.AnimalResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.AnimalService;

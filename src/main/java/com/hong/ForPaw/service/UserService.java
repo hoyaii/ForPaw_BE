@@ -1,7 +1,7 @@
 package com.hong.ForPaw.service;
 
-import com.hong.ForPaw.controller.UserRequest;
-import com.hong.ForPaw.controller.UserResponse;
+import com.hong.ForPaw.controller.DTO.UserRequest;
+import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.User.Role;
@@ -12,9 +12,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.hong.ForPaw.core.security.JWTProvider;
-
-import java.util.Objects;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor

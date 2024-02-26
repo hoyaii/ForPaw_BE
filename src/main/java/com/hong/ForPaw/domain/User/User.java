@@ -44,7 +44,8 @@ public class User {
     private String subRegion;
 
     @Builder
-    public User(String name, String nickName, String email, String password, Role role, String profileURL, String regin, String subRegion) {
+    public User(Long id, String name, String nickName, String email, String password, Role role, String profileURL, String regin, String subRegion) {
+        this.id = id;
         this.name = name;
         this.nickName = nickName;
         this.email = email;
