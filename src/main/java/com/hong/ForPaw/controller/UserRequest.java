@@ -11,5 +11,5 @@ public class UserRequest {
     public record JoinDTO(String email, String name, String nickName,
                           String region, String subRegion, String password,
                           String passwordConfirm, String profileURL) {}
-    
+
 }

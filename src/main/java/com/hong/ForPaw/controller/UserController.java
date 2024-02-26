@@ -1,24 +1,20 @@
 package com.hong.ForPaw.controller;
 
-import com.hong.ForPaw.service.ShelterService;
+import com.hong.ForPaw.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
-public class ShelterController {
+public class UserController {
 
-    private final ShelterService shelterService;
+    private final UserService userService;
 
-    @GetMapping("/shelters/import")
-    public String loadShelter() {
-        shelterService.loadShelterData();
+    @GetMapping("/login")
+    public void login(){
 
-        return "ho";
     }
 }
