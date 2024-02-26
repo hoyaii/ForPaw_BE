@@ -23,17 +23,17 @@ public class JWTProvider {
 
     // access token 생성
     public static String createAccessToken(User user) {
-        String jwt = createToken(user, ACCESS_EXP);
+        String jwt = create(user, ACCESS_EXP);
         return jwt;
     }
 
     // refresh token 생성
     public static String createRefreshToken(User user) {
-        String jwt = createToken(user, REFRESH_EXP);
+        String jwt = create(user, REFRESH_EXP);
         return jwt;
     }
 
-    public static String createToken(User user, Long exp) {
+    public static String create(User user, Long exp) {
         String jwt = JWT.create()
                 .withSubject(user.getEmail())
                 .withExpiresAt(new Date(System.currentTimeMillis() + exp))
