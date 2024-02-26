@@ -6,6 +6,7 @@ import com.hong.ForPaw.domain.animal.AniamlJsonDTO;
 import com.hong.ForPaw.domain.animal.Animal;
 import com.hong.ForPaw.domain.shelter.Shelter;
 import com.hong.ForPaw.repository.AnimalRepository;
+import com.hong.ForPaw.repository.FavoriteRepository;
 import com.hong.ForPaw.repository.ShelterRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +30,7 @@ public class AnimalService {
 
     private final AnimalRepository animalRepository;
     private final ShelterRepository shelterRepository;
+    private final FavoriteRepository favoriteRepository;
 
     @Value("${openAPI.service-key2}")
     private String serviceKey;
