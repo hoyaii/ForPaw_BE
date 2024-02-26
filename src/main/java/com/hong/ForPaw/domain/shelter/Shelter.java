@@ -1,11 +1,12 @@
 package com.hong.ForPaw.domain.shelter;
 
 import com.hong.ForPaw.domain.regionCode.RegionCode;
-import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import javax.persistence.*;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

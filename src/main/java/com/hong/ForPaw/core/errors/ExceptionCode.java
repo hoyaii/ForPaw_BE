@@ -15,7 +15,7 @@ public enum ExceptionCode {
     USER_UPDATE_FORBIDDEN(HttpStatus.FORBIDDEN, "사용자 정보를 수정할 권한이 없습니다."),
     USER_CURPASSWORD_WRONG(HttpStatus.BAD_REQUEST, "잘못된 비밀번호 입니다."),
     USER_FORBIDDEN(HttpStatus.FORBIDDEN, "권한이 없습니다."),
-    USER_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증되지 않았습니다")
+    USER_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증되지 않았습니다");
 
     private final HttpStatus httpStatus;
     private final String message;

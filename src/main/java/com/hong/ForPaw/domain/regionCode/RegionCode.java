@@ -1,7 +1,9 @@
 package com.hong.ForPaw.domain.regionCode;
 
-import jakarta.persistence.*;
+
 import lombok.*;
+
+import javax.persistence.*;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
