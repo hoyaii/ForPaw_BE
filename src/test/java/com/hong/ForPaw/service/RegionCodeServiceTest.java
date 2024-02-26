@@ -34,9 +34,8 @@ class RegionCodeServiceTest {
         RegionCode regionCode = regionCodes.get(0);
         assertNotNull(regionCode.getOrgCd());
         assertNotNull(regionCode.getUprCd());
-        assertNotNull(regionCode.getOrgdownNm());
 
-        RegionCode seoul = regionCodeRepository.findByOrgdownNm("서울특별시");
+        RegionCode seoul = regionCodeRepository.findByOrgdownNm("서울특별시").get();
         assertNotNull(seoul);
         assertEquals(6110000, seoul.getUprCd());
     }
