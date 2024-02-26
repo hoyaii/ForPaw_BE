@@ -45,8 +45,11 @@ class UserControllerTest {
         );
 
         // then
-        result.andExpect(jsonPath("$.success").value("true"));
-
+        result.andExpect(status().isOk()) // 상태 코드가 200인지 검증
+                .andExpect(jsonPath("$.accessToken").exists()) // accessToken 필드가 응답 JSON에 존재하는지 검증
+                .andExpect(cookie().exists("refreshToken")) // refreshToken 쿠키가 존재하는지 검증
+                .andExpect(cookie().httpOnly("refreshToken", true)) // refreshToken 쿠키가 HttpOnly인지 검증
+                .andExpect(header().exists("Set-Cookie")); // Set-Cookie 헤더가 존재하는지 검증
     }
 
     @DisplayName("사용자_회원가입_성공_test")
