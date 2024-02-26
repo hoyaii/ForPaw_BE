@@ -1,6 +1,6 @@
 package com.hong.ForPaw.service;
 
-import com.hong.ForPaw.domain.shelter.Shelter;
+import com.hong.ForPaw.domain.Shelter;
 import com.hong.ForPaw.repository.ShelterRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

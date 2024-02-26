@@ -1,4 +1,4 @@
-package com.hong.ForPaw.domain.regionCode;
+package com.hong.ForPaw.domain;
 
 
 import lombok.*;

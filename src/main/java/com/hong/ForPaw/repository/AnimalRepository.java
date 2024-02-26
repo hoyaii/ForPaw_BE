@@ -1,6 +1,6 @@
 package com.hong.ForPaw.repository;
 
-import com.hong.ForPaw.domain.animal.Animal;
+import com.hong.ForPaw.domain.Animal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

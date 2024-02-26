@@ -1,6 +1,6 @@
 package com.hong.ForPaw.service;
 
-import com.hong.ForPaw.domain.regionCode.RegionCode;
+import com.hong.ForPaw.domain.RegionCode;
 import com.hong.ForPaw.repository.RegionCodeRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

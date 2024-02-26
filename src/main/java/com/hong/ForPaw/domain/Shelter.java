@@ -1,6 +1,6 @@
-package com.hong.ForPaw.domain.shelter;
+package com.hong.ForPaw.domain;
 
-import com.hong.ForPaw.domain.regionCode.RegionCode;
+import com.hong.ForPaw.domain.RegionCode;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;

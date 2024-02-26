@@ -1,4 +1,4 @@
-package com.hong.ForPaw.domain.animal;
+package com.hong.ForPaw.controller.DTO;
 
 
 import java.util.List;

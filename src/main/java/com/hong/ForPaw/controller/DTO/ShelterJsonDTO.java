@@ -1,4 +1,4 @@
-package com.hong.ForPaw.domain.shelter;
+package com.hong.ForPaw.controller.DTO;
 
 
 import java.util.List;

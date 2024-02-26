@@ -2,8 +2,8 @@ package com.hong.ForPaw.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hong.ForPaw.domain.regionCode.RegionCode;
-import com.hong.ForPaw.domain.regionCode.RegionsJsonDTO;
+import com.hong.ForPaw.domain.RegionCode;
+import com.hong.ForPaw.controller.DTO.RegionsJsonDTO;
 import com.hong.ForPaw.repository.RegionCodeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -1,9 +1,9 @@
 package com.hong.ForPaw.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hong.ForPaw.domain.regionCode.RegionCode;
-import com.hong.ForPaw.domain.shelter.Shelter;
-import com.hong.ForPaw.domain.shelter.ShelterJsonDTO;
+import com.hong.ForPaw.domain.RegionCode;
+import com.hong.ForPaw.domain.Shelter;
+import com.hong.ForPaw.controller.DTO.ShelterJsonDTO;
 import com.hong.ForPaw.repository.RegionCodeRepository;
 import com.hong.ForPaw.repository.ShelterRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,9 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URLEncoder;
 import java.util.List;
 
 @Service

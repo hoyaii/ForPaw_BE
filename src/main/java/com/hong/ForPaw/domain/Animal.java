@@ -1,6 +1,5 @@
-package com.hong.ForPaw.domain.animal;
+package com.hong.ForPaw.domain;
 
-import com.hong.ForPaw.domain.shelter.Shelter;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
