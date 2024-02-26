@@ -24,10 +24,10 @@ public class AnimalController {
     private final AnimalService animalService;
 
     @GetMapping("/animals/import")
-    public String loadAnimals() throws URISyntaxException, JsonProcessingException {
+    public ResponseEntity<?> loadAnimals() throws URISyntaxException, JsonProcessingException {
         animalService.loadAnimalDate();
 
-        return "ho";
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @GetMapping("/animals")

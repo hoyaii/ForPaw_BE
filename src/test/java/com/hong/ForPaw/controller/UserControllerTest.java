@@ -31,6 +31,7 @@ class UserControllerTest {
     @Autowired
     private ObjectMapper om;
 
+    // 테스트 시 ddl=create로 하고 써야한다.
     @Test
     public void 로그인_성공() throws Exception {
         // given
