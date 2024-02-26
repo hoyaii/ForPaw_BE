@@ -27,6 +27,8 @@ public class AnimalController {
 
     @GetMapping("/animals")
     public ResponseEntity<?> findAllAnimals(Pageable pageable){
-        return ResponseEntity.ok.
+        // JPA는 animal List를 찾아서 준다}
+
+        return
     }
 }

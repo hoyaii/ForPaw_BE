@@ -1,5 +1,6 @@
 package com.hong.ForPaw.domain.shelter;
 
+import com.hong.ForPaw.domain.regionCode.RegionCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -14,6 +15,10 @@ public class Shelter {
     @Id
     private Long careRegNo;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "regionCode_id")
+    private RegionCode regionCode;
+
     @Column
     private String name;
 
@@ -24,8 +29,9 @@ public class Shelter {
     private String careAddr;
 
     @Builder
-    public Shelter(Long careRegNo, String name, String careTel, String careAddr) {
+    public Shelter(Long careRegNo, RegionCode regionCode, String name, String careTel, String careAddr) {
         this.careRegNo = careRegNo;
+        this.regionCode = regionCode;
         this.name = name;
         this.careTel = careTel;
         this.careAddr = careAddr;

@@ -61,6 +61,7 @@ public class ShelterService {
 
                 for (ShelterJsonDTO.itemDTO itemDTO : itemDTOS) {
                     Shelter shelter = Shelter.builder()
+                            .regionCode(regionCode)
                             .careRegNo(itemDTO.careRegNo())
                             .name(itemDTO.careNm()).build();
 

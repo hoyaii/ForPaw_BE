@@ -1,6 +1,7 @@
 package com.hong.ForPaw.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hong.ForPaw.controller.AnimalController.AnimalResponse;
 import com.hong.ForPaw.domain.animal.AniamlJsonDTO;
 import com.hong.ForPaw.domain.animal.Animal;
 import com.hong.ForPaw.domain.shelter.Shelter;
@@ -19,6 +20,7 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -99,7 +101,20 @@ public class AnimalService {
     }
 
     @Transactional
-    public Page<Animal> findAllAnimals(Pageable pageable){
-        return animalRepository.findAll(pageable);
+    public AnimalResponse.FindAllAnimalsDTO findAllAnimals(Pageable pageable){
+        // 레포지토리에서 받아온다 => DTO에 담는다 => DTO를 반환한다
+        // 리스트인 컨텐츠를 얻는다 => DTO에 하나씩 넣는다
+
+        Page<Animal> animalPage = animalRepository.findAll(pageable);
+        // 지역 찾기 shelter를 타고 regioncode를 타서
+
+        List<AnimalResponse.FindAllAnimalsDTO.AnimalDTO> animalDTOS = animalPage.getContent().stream()
+                .map(animal -> new AnimalResponse.FindAllAnimalsDTO.AnimalDTO(animal.getDesertionNo(), "name", animal.getAge()
+                        , animal.getGender(), animal.getSpecialMark(), "대구", animal.getInquiryNum(), animal.getLikeNum(), true, animal.getProfileURL() ))
+                .collect(Collectors.toList());
+
+
+
+        return new AnimalResponse.FindAllAnimalsDTO(animalDTOS);
     }
 }
