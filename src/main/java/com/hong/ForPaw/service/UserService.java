@@ -36,6 +36,9 @@ public class UserService {
         String accessToken = JWTProvider.createAccessToken(user);
         String refreshToken = JWTProvider.createRefreshToken(user);
 
+        // Refresh Token을 레디스에 저장
+        redisService.storeToken(refreshToken, JWTProvider.REFRESH_EXP);
+
         return new UserResponse.TokenDTO(accessToken, refreshToken);
     }
 }
