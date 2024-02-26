@@ -19,14 +19,19 @@ public class RegionCode {
     @Column
     private Integer orgCd;
 
-    // 지역명
+    // 시도명
     @Column
-    private String orgdownNm;
+    private String uprName;
+
+    // 시도군명
+    @Column
+    private String orgName;
 
     @Builder
-    public RegionCode(Integer uprCd, Integer orgCd, String orgdownNm) {
+    public RegionCode(Integer uprCd, Integer orgCd, String uprName, String orgName) {
         this.uprCd = uprCd;
         this.orgCd = orgCd;
-        this.orgdownNm = orgdownNm;
+        this.uprName = uprName;
+        this.orgName = orgName;
     }
 }

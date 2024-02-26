@@ -25,8 +25,9 @@ public class RegionCodeService {
         json.regions().forEach(region -> region.subRegions().forEach(subRegion -> {
             RegionCode regionCode = RegionCode.builder()
                     .uprCd(region.orgCd())
+                    .uprName(region.orgdownNm())
                     .orgCd(subRegion.orgCd())
-                    .orgdownNm(subRegion.orgdownNm())
+                    .orgName(subRegion.orgdownNm())
                     .build();
 
             regionCodeRepository.save(regionCode);
