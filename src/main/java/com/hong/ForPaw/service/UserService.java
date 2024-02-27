@@ -24,6 +24,7 @@ public class UserService {
 
     @Transactional
     public UserResponse.TokenDTO login(UserRequest.LoginDTO requestDTO){
+
         User user = userRepository.findByEmail(requestDTO.email()).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND)
         );
@@ -59,5 +60,12 @@ public class UserService {
                 .build();
 
         userRepository.save(user);
+    }
+
+    @Transactional
+    public void checkEmail(UserRequest.EmailDTO requestDTO){
+
+        boolean existEmail = userRepository.findByEmail(requestDTO.email()).isPresent();
+        if(existEmail) throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
     }
 }

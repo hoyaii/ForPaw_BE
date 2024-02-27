@@ -16,9 +16,9 @@ import java.io.InputStream;
 public class RegionCodeService {
 
     private final RegionCodeRepository regionCodeRepository;
+    private final ObjectMapper mapper;
 
     public void loadRegionCodeData() throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
         InputStream inputStream = TypeReference.class.getResourceAsStream("/sigungu.json");
         RegionsJsonDTO json = mapper.readValue(inputStream, RegionsJsonDTO.class);
 
