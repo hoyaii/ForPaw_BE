@@ -145,6 +145,9 @@ public class UserService {
         sendPasswordByMail(requestDTO.email(), password);
     }
 
+    @Transactional
+    public void changePassword(UserRequest.)
+
     private String sendCodeByMail(String toEmail){
 
         String verificationCode = generateVerificationCode();

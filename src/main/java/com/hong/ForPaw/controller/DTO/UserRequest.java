@@ -14,4 +14,6 @@ public class UserRequest {
                           String region, String subRegion, String password,
                           String passwordConfirm, String profileURL) {}
 
+    public record ChangePasswordDTO(String password, String passwordConfirm) {}
+
 }
