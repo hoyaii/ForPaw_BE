@@ -93,4 +93,24 @@ class UserControllerTest {
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
+
+    @Test
+    public void 이메일_코드전송_성공() throws Exception {
+
+        // given
+        UserRequest.EmailDTO requestDTO = new UserRequest.EmailDTO("yg04077@naver.com");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/auth/registration/code")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
 }
