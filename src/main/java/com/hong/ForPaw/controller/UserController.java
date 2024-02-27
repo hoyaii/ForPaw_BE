@@ -50,7 +50,7 @@ public class UserController {
     }
 
     @PostMapping("/auth/registration/code")
-    public ResponseEntity<?> sendCode(@RequestBody UserRequest.EmailDTO requestDTO){
+    public ResponseEntity<?> sendCode(@RequestBody UserRequest.SendCodeDTO requestDTO){
 
         userService.sendCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));

@@ -5,5 +5,5 @@ public class UserResponse {
 
     public record LoginDTO(String accessToken) {}
 
-    public record EmailTokenDTO(String emailToken) {}
+    public record EmailTokenDTO(String validationToken) {}
 }

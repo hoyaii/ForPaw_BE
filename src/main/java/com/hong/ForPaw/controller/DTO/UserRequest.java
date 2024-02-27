@@ -6,6 +6,8 @@ public class UserRequest {
 
     public record EmailDTO(String email){}
 
+    public record SendCodeDTO(String email, String validationToken) {}
+
     public record VerifyCodeDTO(String email, String code){}
 
     public record JoinDTO(String email, String name, String nickName,

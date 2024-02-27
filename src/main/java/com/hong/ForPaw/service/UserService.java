@@ -82,13 +82,19 @@ public class UserService {
 
         // 이메일 중복 체크 후 확인 버튼을 누르지 않고, 인위적으로 요청을 보내는 경우를 방지하고, 이를 검증하기 위해 토큰을 저장
         String token = UUID.randomUUID().toString();
-        redisService.storeToken("emailCheckToken:" + requestDTO.email(), token, 10 * 60 * 1000L); // 10분 유효
+        redisService.storeToken("emailCheckToken:" + token, " ", 10 * 60 * 1000L); // 10분 유효
 
         return new UserResponse.EmailTokenDTO(token);
     }
 
     @Transactional
-    public void sendCode(UserRequest.EmailDTO requestDTO){
+    public void sendCode(UserRequest.SendCodeDTO requestDTO){
+        // 중복 체크 후에 메일을 전송할 수 있도록, 토큰이 오면 이를 검증
+        String token = "emailCheckToken:" + requestDTO.validationToken();
+
+        if(!redisService.isTokenValid(token))
+            throw new CustomException(ExceptionCode.BAD_APPROACH);
+        redisService.removeToken(token); // 검증 후 토큰 삭제
 
         String verificationCode = generateVerificationCode();
         String subject = "[ForPaw] 이메일 인증 코드입니다.";
