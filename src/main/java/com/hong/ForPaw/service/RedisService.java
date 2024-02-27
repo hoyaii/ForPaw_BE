@@ -15,7 +15,6 @@ public class RedisService {
     private final StringRedisTemplate redisTemplate;
 
     // 토큰 저장, expirationTime은 토큰의 만료 시간(밀리초 단위)
-    // set(): 주어진 key(token)에 value("")를 저장하며, 만료 시간을 설정. 여기서 value는 비어 있는 문자열로 설정
     public void storeToken(String token, Long expirationTime) {
         redisTemplate.opsForValue().set(token, "", expirationTime, TimeUnit.MILLISECONDS);
     }
@@ -28,5 +27,26 @@ public class RedisService {
     // 토큰 삭제
     public void removeToken(String token) {
         redisTemplate.delete(token);
+    }
+
+    // 인증 코드 저장
+    public void storeVerificationCode(String email, String verificationCode, Long expirationTime) {
+        redisTemplate.opsForValue().set(buildVerificationCodeKey(email), verificationCode, expirationTime, TimeUnit.MINUTES);
+    }
+
+    // 인증 코드 유효성 검사
+    public boolean isVerificationCodeValid(String email, String verificationCode) {
+        String storedCode = redisTemplate.opsForValue().get(buildVerificationCodeKey(email));
+        return verificationCode.equals(storedCode);
+    }
+
+    // 인증 코드 삭제
+    public void removeVerificationCode(String email) {
+        redisTemplate.delete(buildVerificationCodeKey(email));
+    }
+
+    // 이메일을 기반으로 한 Redis 키 생성
+    private String buildVerificationCodeKey(String email) {
+        return "verificationCode:" + email;
     }
 }
