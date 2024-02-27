@@ -114,7 +114,9 @@ public class UserService {
     @Transactional
     public void verifyCode(UserRequest.VerifyCodeDTO requestDTO){
 
-
+        if(redisService.isVerificationCodeValid(requestDTO.email(), requestDTO.code()))
+            throw new CustomException(ExceptionCode.CODE_WRONG);
+        redisService.removeVerificationCode(requestDTO.email()); // 검증 후 토큰 삭제
     }
 
     private String generateVerificationCode() {

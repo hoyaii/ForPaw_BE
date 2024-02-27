@@ -29,7 +29,7 @@ public class RedisService {
         redisTemplate.delete(token);
     }
 
-    // 인증 코드 저장
+    // 인증 코드 저장 (이메일)
     public void storeVerificationCode(String email, String verificationCode, Long expirationTime) {
         redisTemplate.opsForValue().set(buildVerificationCodeKey(email), verificationCode, expirationTime, TimeUnit.MINUTES);
     }
