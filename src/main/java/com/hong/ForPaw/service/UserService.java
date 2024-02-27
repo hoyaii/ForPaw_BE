@@ -115,10 +115,8 @@ public class UserService {
         if(userRepository.findByEmail(requestDTO.email()).isEmpty())
             throw new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND);
 
-        // 레디스에 횟수 저장 => 횟수 3회 넘아가면 10분 동안 요청 불가
+        // 요청 횟수 3회 넘아가면 10분 동안 요청 불가
         Long recoveryNum = redisService.getRecoveryNum(requestDTO.email());
-
-        // 요청 횟수가 3회 이상이면 예외 발생
         if(recoveryNum >= 3L){
             throw new CustomException(ExceptionCode.EXCEED_REQUEST_NUM);
         }

@@ -62,6 +62,6 @@ public class RedisService {
     }
 
     private String buildRecoveryNumKey(String email) {
-        return "verificationNum:" + email;
+        return "recoveryNum:" + email;
     }
 }
