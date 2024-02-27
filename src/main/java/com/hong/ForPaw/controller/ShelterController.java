@@ -20,8 +20,8 @@ public class ShelterController {
 
     @GetMapping("/shelters/import")
     public ResponseEntity<?> loadShelter() {
-        shelterService.loadShelterData();
 
+        shelterService.loadShelterData();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }

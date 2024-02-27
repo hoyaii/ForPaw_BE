@@ -20,8 +20,8 @@ public class RegionCodeController {
 
     @GetMapping("/regionCodes/import")
     public ResponseEntity<?> loadRegionCode() throws IOException {
-        regionCodeService.loadRegionCodeData();
 
+        regionCodeService.loadRegionCodeData();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }

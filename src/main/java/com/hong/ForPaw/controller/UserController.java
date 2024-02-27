@@ -19,8 +19,9 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping("/login")
+    @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody UserRequest.LoginDTO requestDTO) {
+
         UserResponse.TokenDTO tokenDTO = userService.login(requestDTO);
         ResponseCookie responseCookie = ResponseCookie.from("refreshToken", tokenDTO.refreshToken())
                 .httpOnly(true)
@@ -34,10 +35,17 @@ public class UserController {
                 .body(new UserResponse.LoginDTO(tokenDTO.accessToken()));
     }
 
-    @PostMapping("/join")
+    @PostMapping("/accounts")
     public ResponseEntity<?> join(@RequestBody UserRequest.JoinDTO requestDTO){
-        userService.join(requestDTO);
 
+        userService.join(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, null));
+    }
+
+    @GetMapping("/accounts/email/check")
+    public ResponseEntity<?> checkEmail(@RequestBody UserRequest.EmailDTO requestDTO){
+        
+        userService.checkEmail(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }

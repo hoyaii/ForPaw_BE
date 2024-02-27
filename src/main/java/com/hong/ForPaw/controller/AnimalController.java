@@ -25,15 +25,15 @@ public class AnimalController {
 
     @GetMapping("/animals/import")
     public ResponseEntity<?> loadAnimals() throws URISyntaxException, JsonProcessingException {
-        animalService.loadAnimalDate();
 
+        animalService.loadAnimalDate();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @GetMapping("/animals")
     public ResponseEntity<?> findAllAnimals(Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
-        AnimalResponse.FindAllAnimalsDTO responseDTO = animalService.findAllAnimals(pageable, userDetails.getUser());
 
+        AnimalResponse.FindAllAnimalsDTO responseDTO = animalService.findAllAnimals(pageable, userDetails.getUser());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, responseDTO));
     }
 }
