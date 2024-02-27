@@ -4,6 +4,8 @@ import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.core.security.CustomUserDetails;
+import com.hong.ForPaw.core.security.CustomUserDetailsService;
 import com.hong.ForPaw.domain.User.Role;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.UserRepository;
@@ -11,6 +13,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +25,7 @@ import com.hong.ForPaw.core.security.JWTProvider;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -33,6 +40,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final RedisService redisService;
     private final JavaMailSender mailSender;
+    private final CustomUserDetailsService customUserDetailsService;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
@@ -41,11 +49,11 @@ public class UserService {
     public UserResponse.LoginTokenDTO login(UserRequest.LoginDTO requestDTO){
 
         User user = userRepository.findByEmail(requestDTO.email()).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND)
+                () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
         );
 
         if(!passwordEncoder.matches(requestDTO.password(), user.getPassword())){
-            throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
+            throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
         }
 
         String accessToken = JWTProvider.createAccessToken(user);
@@ -146,7 +154,22 @@ public class UserService {
     }
 
     @Transactional
-    public void changePassword(UserRequest.)
+    public void changePassword(UserRequest.ChangePasswordDTO requestDTO, String email){
+        User user = userRepository.findByEmail(email).get();
+
+        if(!passwordEncoder.matches(requestDTO.curPassword(), user.getPassword()))
+            throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
+
+        if (!passwordEncoder.matches(requestDTO.newPassword(), requestDTO.newPasswordConfirm()))
+            throw new CustomException(ExceptionCode.USER_PASSWORD_MATCH_WRONG);
+
+        user.updatePassword(passwordEncoder.encode(requestDTO.newPassword()));
+
+        // 사용자의 인증 상태를 최신 정보로 업데이트
+        CustomUserDetails updatedUserDetails = customUserDetailsService.loadUserByUsername(email);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(updatedUserDetails, null, updatedUserDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
 
     private String sendCodeByMail(String toEmail){
 
