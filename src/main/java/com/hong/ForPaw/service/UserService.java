@@ -76,11 +76,11 @@ public class UserService {
 
     @Transactional
     public UserResponse.EmailTokenDTO checkEmail(UserRequest.EmailDTO requestDTO){
+        // 가입한 이메일이 존재 한다면
+        if(userRepository.findByEmail(requestDTO.email()).isPresent())
+            throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
 
-        boolean existEmail = userRepository.findByEmail(requestDTO.email()).isPresent();
-        if(existEmail) throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
-
-        // 이메일 중복 체크 후 확인 버튼을 누르지 않고, 인위적으로 요청을 보내는 경우를 방지하고, 이를 검증하기 위해 토큰을 저장
+        // 이메일 중복 체크를 하지 않고, 인위적으로 메일 전송 요청을 방지하기 위해, 토큰을 저장
         String token = UUID.randomUUID().toString();
         redisService.storeToken("emailCheckToken:" + token, " ", 10 * 60 * 1000L); // 10분 유효
 
@@ -88,35 +88,51 @@ public class UserService {
     }
 
     @Transactional
-    public void sendCode(UserRequest.SendCodeDTO requestDTO){
-        // 중복 체크 후에 메일을 전송할 수 있도록, 토큰이 오면 이를 검증
+    public void sendRegisterCode(UserRequest.SendCodeDTO requestDTO){
+        // 요청으로 온 토큰과 저장한 토큰을 비교해 검증해서, 임의적인 요청 방지
         String token = "emailCheckToken:" + requestDTO.validationToken();
 
         if(!redisService.isTokenValid(token))
             throw new CustomException(ExceptionCode.BAD_APPROACH);
         redisService.removeToken(token); // 검증 후 토큰 삭제
 
+        // 코드를 메일로 전송하고, 인증 코드는 레디스에 저장
+        String verificationCode = sendCodeByMail(requestDTO.email());
+        redisService.storeVerificationCode(requestDTO.email(), verificationCode, 5 * 60 * 1000L); // 레디스에 인증 코드 저장, 5분 동안 유효
+    }
+
+    @Transactional
+    public void verifyRegisterCode(UserRequest.VerifyCodeDTO requestDTO){
+
+        if(redisService.isVerificationCodeValid(requestDTO.email(), requestDTO.code()))
+            throw new CustomException(ExceptionCode.CODE_WRONG);
+        redisService.removeVerificationCode(requestDTO.email()); // 검증 후 토큰 삭제
+    }
+
+    @Transactional
+    public void sendRecoveryCode(UserRequest.EmailDTO requestDTO){
+        // 가입된 계정이 아니라면
+        if(userRepository.findByEmail(requestDTO.email()).isEmpty())
+            throw new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND);
+
+        // 코드를 메일로 전송하고, 인증 코드는 레디스에 저장
+        String verificationCode = sendCodeByMail(requestDTO.email());
+        redisService.storeVerificationCode(requestDTO.email(), verificationCode, 5 * 60 * 1000L);
+    }
+
+    private String sendCodeByMail(String toEmail){
         String verificationCode = generateVerificationCode();
         String subject = "[ForPaw] 이메일 인증 코드입니다.";
         String text = "인증 코드는 다음과 같습니다: " + verificationCode + "\n이 코드를 입력하여 이메일을 인증해 주세요.";
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
-        message.setTo(requestDTO.email());
+        message.setTo(toEmail);
         message.setSubject(subject);
         message.setText(text);
         mailSender.send(message);
 
-        // 레디스에 인증 코드 저장, 5분 동안 유효
-        redisService.storeVerificationCode(requestDTO.email(), verificationCode, 5 * 60 * 1000L);
-    }
-
-    @Transactional
-    public void verifyCode(UserRequest.VerifyCodeDTO requestDTO){
-
-        if(redisService.isVerificationCodeValid(requestDTO.email(), requestDTO.code()))
-            throw new CustomException(ExceptionCode.CODE_WRONG);
-        redisService.removeVerificationCode(requestDTO.email()); // 검증 후 토큰 삭제
+        return verificationCode;
     }
 
     private String generateVerificationCode() {

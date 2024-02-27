@@ -50,16 +50,16 @@ public class UserController {
     }
 
     @PostMapping("/auth/registration/code")
-    public ResponseEntity<?> sendCode(@RequestBody UserRequest.SendCodeDTO requestDTO){
+    public ResponseEntity<?> sendRegisterCode(@RequestBody UserRequest.SendCodeDTO requestDTO){
 
-        userService.sendCode(requestDTO);
+        userService.sendRegisterCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/auth/registration/verify")
-    public ResponseEntity<?> verifyCode(@RequestBody UserRequest.VerifyCodeDTO requestDTO){
+    public ResponseEntity<?> verifyRegisterCode(@RequestBody UserRequest.VerifyCodeDTO requestDTO){
 
-        userService.verifyCode(requestDTO);
+        userService.verifyRegisterCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }
