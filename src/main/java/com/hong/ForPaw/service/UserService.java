@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hong.ForPaw.core.security.JWTProvider;
 
 import java.security.SecureRandom;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -34,7 +35,7 @@ public class UserService {
     private String fromEmail;
 
     @Transactional
-    public UserResponse.TokenDTO login(UserRequest.LoginDTO requestDTO){
+    public UserResponse.LoginTokenDTO login(UserRequest.LoginDTO requestDTO){
 
         User user = userRepository.findByEmail(requestDTO.email()).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND)
@@ -48,9 +49,9 @@ public class UserService {
         String refreshToken = JWTProvider.createRefreshToken(user);
 
         // Refresh Token을 레디스에 저장
-        redisService.storeToken(refreshToken, JWTProvider.REFRESH_EXP);
+        redisService.storeToken("refreshToken:" + refreshToken, " ", JWTProvider.REFRESH_EXP);
 
-        return new UserResponse.TokenDTO(accessToken, refreshToken);
+        return new UserResponse.LoginTokenDTO(accessToken, refreshToken);
     }
 
     @Transactional
@@ -74,10 +75,16 @@ public class UserService {
     }
 
     @Transactional
-    public void checkEmail(UserRequest.EmailDTO requestDTO){
+    public UserResponse.EmailTokenDTO checkEmail(UserRequest.EmailDTO requestDTO){
 
         boolean existEmail = userRepository.findByEmail(requestDTO.email()).isPresent();
         if(existEmail) throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
+
+        // 이메일 중복 체크 후 확인 버튼을 누르지 않고, 인위적으로 요청을 보내는 경우를 방지하고, 이를 검증하기 위해 토큰을 저장
+        String token = UUID.randomUUID().toString();
+        redisService.storeToken("emailCheckToken:" + requestDTO.email(), token, 10 * 60 * 1000L); // 10분 유효
+
+        return new UserResponse.EmailTokenDTO(token);
     }
 
     @Transactional
@@ -95,10 +102,9 @@ public class UserService {
         mailSender.send(message);
 
         // 레디스에 인증 코드 저장, 5분 동안 유효
-        redisService.storeVerificationCode(requestDTO.email(), verificationCode, 5L);
+        redisService.storeVerificationCode(requestDTO.email(), verificationCode, 5 * 60 * 1000L);
     }
-
-
+    
     private String generateVerificationCode() {
 
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";

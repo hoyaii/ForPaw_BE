@@ -15,8 +15,8 @@ public class RedisService {
     private final StringRedisTemplate redisTemplate;
 
     // 토큰 저장, expirationTime은 토큰의 만료 시간(밀리초 단위)
-    public void storeToken(String token, Long expirationTime) {
-        redisTemplate.opsForValue().set(token, "", expirationTime, TimeUnit.MILLISECONDS);
+    public void storeToken(String token, String value, Long expirationTime) {
+        redisTemplate.opsForValue().set(token, value, expirationTime, TimeUnit.MILLISECONDS);
     }
 
     // 토큰 유효성 검사

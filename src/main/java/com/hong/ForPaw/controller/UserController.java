@@ -22,7 +22,7 @@ public class UserController {
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody UserRequest.LoginDTO requestDTO) {
 
-        UserResponse.TokenDTO tokenDTO = userService.login(requestDTO);
+        UserResponse.LoginTokenDTO tokenDTO = userService.login(requestDTO);
         ResponseCookie responseCookie = ResponseCookie.from("refreshToken", tokenDTO.refreshToken())
                 .httpOnly(true)
                 .secure(true)
@@ -45,8 +45,8 @@ public class UserController {
     @PostMapping("/accounts/email/check")
     public ResponseEntity<?> checkEmail(@RequestBody UserRequest.EmailDTO requestDTO){
 
-        userService.checkEmail(requestDTO);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+        UserResponse.EmailTokenDTO tokenDTO = userService.checkEmail(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, tokenDTO));
     }
 
     @PostMapping("/auth/registration/code")
