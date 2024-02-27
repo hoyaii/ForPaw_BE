@@ -2,6 +2,7 @@ package com.hong.ForPaw.controller;
 
 import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
+import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.security.JWTProvider;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.UserService;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -74,6 +76,13 @@ public class UserController {
     public ResponseEntity<?> verifyAndSendPassword(@RequestBody UserRequest.VerifyCodeDTO requestDTO){
 
         userService.verifyAndSendPassword(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
+    @PatchMapping("/accounts/password")
+    public ResponseEntity<?> changePassword(@RequestBody UserRequest.ChangePasswordDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        userService.changePassword(requestDTO, userDetails.getUser().getEmail());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }
