@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hong.ForPaw.core.security.JWTProvider;
 
 import java.security.SecureRandom;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
@@ -85,30 +87,27 @@ public class UserService {
         String subject = "[ForPaw] 이메일 인증 코드입니다.";
         String text = "인증 코드는 다음과 같습니다: " + verificationCode + "\n이 코드를 입력하여 이메일을 인증해 주세요.";
 
-        // 레디으세 인증 코드 저장, 5분 동안 유효
-        redisService.storeVerificationCode(requestDTO.email(), verificationCode, 5L);
-
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(requestDTO.email());
         message.setSubject(subject);
         message.setText(text);
         mailSender.send(message);
+
+        // 레디스에 인증 코드 저장, 5분 동안 유효
+        redisService.storeVerificationCode(requestDTO.email(), verificationCode, 5L);
     }
 
 
     private String generateVerificationCode() {
-        // 대문자, 소문자, 숫자를 포함해서 8자리 랜덤 문자열 생성
+
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
         SecureRandom random = new SecureRandom();
-        StringBuilder sb = new StringBuilder();
 
-        for (int i = 0; i < 8; i++) {
-            int randomIndex = random.nextInt(chars.length());
-            sb.append(chars.charAt(randomIndex));
-        }
-
-        return sb.toString();
+        return IntStream.range(0, 8) // 8자리
+                .map(i -> random.nextInt(chars.length()))
+                .mapToObj(chars::charAt)
+                .map(Object::toString)
+                .collect(Collectors.joining());
     }
 }

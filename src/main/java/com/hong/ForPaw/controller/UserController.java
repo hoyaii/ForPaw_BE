@@ -42,10 +42,17 @@ public class UserController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, null));
     }
 
-    @GetMapping("/accounts/email/check")
+    @PostMapping("/accounts/email/check")
     public ResponseEntity<?> checkEmail(@RequestBody UserRequest.EmailDTO requestDTO){
 
         userService.checkEmail(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
+    @PostMapping("/auth/registration/code")
+    public ResponseEntity<?> sendCode(@RequestBody UserRequest.EmailDTO requestDTO){
+
+        userService.sendCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }
