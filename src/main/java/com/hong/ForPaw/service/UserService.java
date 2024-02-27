@@ -96,9 +96,9 @@ public class UserService {
             throw new CustomException(ExceptionCode.BAD_APPROACH);
         redisService.removeToken(token); // 검증 후 토큰 삭제
 
-        // 코드를 메일로 전송하고, 인증 코드는 레디스에 저장
+        // 인증 코드 전송 및 레디스에 저장
         String verificationCode = sendCodeByMail(requestDTO.email());
-        redisService.storeVerificationCode(requestDTO.email(), verificationCode, 5 * 60 * 1000L); // 레디스에 인증 코드 저장, 5분 동안 유효
+        redisService.storeVerificationCode(requestDTO.email(), verificationCode, 5 * 60 * 1000L); // 5분 동안 유효
     }
 
     @Transactional
@@ -115,7 +115,18 @@ public class UserService {
         if(userRepository.findByEmail(requestDTO.email()).isEmpty())
             throw new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND);
 
-        // 코드를 메일로 전송하고, 인증 코드는 레디스에 저장
+        // 레디스에 횟수 저장 => 횟수 3회 넘아가면 10분 동안 요청 불가
+        Long recoveryNum = redisService.getRecoveryNum(requestDTO.email());
+
+        // 요청 횟수가 3회 이상이면 예외 발생
+        if(recoveryNum >= 3L){
+            throw new CustomException(ExceptionCode.EXCEED_REQUEST_NUM);
+        }
+
+        // 요청 횟수 업데이트
+        redisService.storeRecoveryNum(requestDTO.email(), recoveryNum + 1, 10 * 60 * 1000L);
+
+        // 인증 코드 전송 및 레디스에 저장
         String verificationCode = sendCodeByMail(requestDTO.email());
         redisService.storeVerificationCode(requestDTO.email(), verificationCode, 5 * 60 * 1000L);
     }

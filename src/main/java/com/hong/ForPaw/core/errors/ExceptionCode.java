@@ -23,7 +23,8 @@ public enum ExceptionCode {
     CODE_NOT_SEND(HttpStatus.INTERNAL_SERVER_ERROR, "인증코드를 전송하지 못했습니다."),
 
     // 잘못된 접근
-    BAD_APPROACH(HttpStatus.BAD_REQUEST, "잘못된 접근입니다.");
+    BAD_APPROACH(HttpStatus.BAD_REQUEST, "잘못된 접근입니다."),
+    EXCEED_REQUEST_NUM(HttpStatus.BAD_REQUEST, "가능한 요청 횟수를 초과하였습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;
