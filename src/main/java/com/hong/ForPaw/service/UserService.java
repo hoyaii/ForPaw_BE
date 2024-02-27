@@ -131,7 +131,7 @@ public class UserService {
     }
 
     @Transactional
-    public void verifyCodeAndSendPassword(UserRequest.VerifyCodeDTO requestDTO){
+    public void verifyAndSendPassword(UserRequest.VerifyCodeDTO requestDTO){
         // 레디스를 통해 해당 코드가 유효한지 확인
         if(redisService.isVerificationCodeValid(requestDTO.email(), requestDTO.code()))
             throw new CustomException(ExceptionCode.CODE_WRONG);
@@ -187,6 +187,7 @@ public class UserService {
 
     // 알파벳, 숫자, 특수문자가 모두 포함되도록 해서 임시 비밀번호 생성
     private String generateTemporaryPassword() {
+
         String specialChars = "!@#$%^&*";
         String numbers = "0123456789";
         String upperCaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";

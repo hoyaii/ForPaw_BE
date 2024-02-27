@@ -69,4 +69,11 @@ public class UserController {
         userService.sendRecoveryCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
+
+    @PostMapping("/auth/recovery/verify")
+    public ResponseEntity<?> verifyAndSendPassword(@RequestBody UserRequest.VerifyCodeDTO requestDTO){
+
+        userService.verifyAndSendPassword(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
 }
