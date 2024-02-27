@@ -12,19 +12,19 @@ public class RedisService {
 
     private final StringRedisTemplate redisTemplate;
 
-    // 토큰 저장, expirationTime은 토큰의 만료 시간
-    public void storeToken(String token, String value, Long expirationTime) {
-        redisTemplate.opsForValue().set(token, value, expirationTime, TimeUnit.MILLISECONDS);
+    // 토큰 저장
+    public void storeToken(String type, String token, Long expirationTime) {
+        redisTemplate.opsForValue().set(buildTokenKey(type, token), " ", expirationTime, TimeUnit.MILLISECONDS);
     }
 
     // 토큰 유효성 검사
-    public boolean isTokenValid(String token) {
-        return redisTemplate.hasKey(token);
+    public boolean isTokenValid(String type, String token) {
+        return redisTemplate.hasKey(buildTokenKey(type, token));
     }
 
     // 토큰 삭제
-    public void removeToken(String token) {
-        redisTemplate.delete(token);
+    public void removeToken(String type, String token) {
+        redisTemplate.delete(buildTokenKey(type, token));
     }
 
     // 인증 코드 저장 (이메일)
@@ -56,7 +56,10 @@ public class RedisService {
         return Long.valueOf(num);
     }
 
-    // 이메일을 기반으로 한 Redis 키 생성
+    private String buildTokenKey(String type, String token){
+        return type + ":" + token;
+    }
+
     private String buildVerificationCodeKey(String email) {
         return "verificationCode:" + email;
     }

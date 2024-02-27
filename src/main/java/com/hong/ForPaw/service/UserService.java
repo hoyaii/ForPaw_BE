@@ -49,7 +49,7 @@ public class UserService {
         String refreshToken = JWTProvider.createRefreshToken(user);
 
         // Refresh Token을 레디스에 저장
-        redisService.storeToken("refreshToken:" + refreshToken, " ", JWTProvider.REFRESH_EXP);
+        redisService.storeToken("refreshToken", refreshToken, JWTProvider.REFRESH_EXP);
 
         return new UserResponse.LoginTokenDTO(accessToken, refreshToken);
     }
@@ -82,7 +82,7 @@ public class UserService {
 
         // 이메일 중복 체크를 하지 않고, 인위적으로 메일 전송 요청을 방지하기 위해, 토큰을 저장
         String token = UUID.randomUUID().toString();
-        redisService.storeToken("emailCheckToken:" + token, " ", 10 * 60 * 1000L); // 10분 유효
+        redisService.storeToken("emailCheckToken", token, 10 * 60 * 1000L); // 10분 유효
 
         return new UserResponse.EmailTokenDTO(token);
     }
@@ -90,11 +90,9 @@ public class UserService {
     @Transactional
     public void sendRegisterCode(UserRequest.SendCodeDTO requestDTO){
         // 요청으로 온 토큰과 저장한 토큰을 비교해 검증해서, 임의적인 요청 방지
-        String token = "emailCheckToken:" + requestDTO.validationToken();
-
-        if(!redisService.isTokenValid(token))
+        if(!redisService.isTokenValid("emailCheckToken", requestDTO.validationToken()))
             throw new CustomException(ExceptionCode.BAD_APPROACH);
-        redisService.removeToken(token); // 검증 후 토큰 삭제
+        redisService.removeToken("emailCheckToken", requestDTO.validationToken());
 
         // 인증 코드 전송 및 레디스에 저장
         String verificationCode = sendCodeByMail(requestDTO.email());
@@ -127,6 +125,11 @@ public class UserService {
         // 인증 코드 전송 및 레디스에 저장
         String verificationCode = sendCodeByMail(requestDTO.email());
         redisService.storeVerificationCode(requestDTO.email(), verificationCode, 5 * 60 * 1000L);
+    }
+
+    @Transactional
+    public void verifyRecoveryCode(UserRequest.VerifyCodeDTO requestDTO){
+
     }
 
     private String sendCodeByMail(String toEmail){
