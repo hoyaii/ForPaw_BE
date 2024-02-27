@@ -1,5 +1,6 @@
 package com.hong.ForPaw.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.service.UserService;
@@ -34,6 +35,7 @@ class UserControllerTest {
     // 테스트 시 ddl=create로 하고 써야한다.
     @Test
     public void 로그인_성공() throws Exception {
+
         // given
         UserRequest.LoginDTO requestDTO = new UserRequest.LoginDTO("yg04076@naver.com", "hong1234");
         String requestBody = om.writeValueAsString(requestDTO);
@@ -53,7 +55,6 @@ class UserControllerTest {
                 .andExpect(header().exists("Set-Cookie")); // Set-Cookie 헤더가 존재하는지 검증
     }
 
-    @DisplayName("사용자_회원가입_성공_test")
     @Test
     public void 회원가입_성공() throws Exception {
 
@@ -71,5 +72,25 @@ class UserControllerTest {
         // then
         result.andExpect(jsonPath("$.success").value("true"));
         result.andExpect(jsonPath("$.message").value("Created"));
+    }
+
+    @Test
+    public void 이메일_중복체크_성공() throws Exception {
+
+        // given
+        UserRequest.EmailDTO requestDTO = new UserRequest.EmailDTO("yg04077@naver.com");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/accounts/email/check")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
     }
 }

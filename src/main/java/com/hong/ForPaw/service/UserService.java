@@ -104,7 +104,13 @@ public class UserService {
         // 레디스에 인증 코드 저장, 5분 동안 유효
         redisService.storeVerificationCode(requestDTO.email(), verificationCode, 5 * 60 * 1000L);
     }
-    
+
+    @Transactional
+    public void verifyCode(UserRequest.VerifyCodeDTO requestDTO){
+
+
+    }
+
     private String generateVerificationCode() {
 
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
