@@ -55,4 +55,11 @@ public class UserController {
         userService.sendCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
+
+    @PostMapping("/auth/registration/verify")
+    public ResponseEntity<?> verifyCode(@RequestBody UserRequest.VerifyCodeDTO requestDTO){
+
+        userService.verifyCode(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
 }
