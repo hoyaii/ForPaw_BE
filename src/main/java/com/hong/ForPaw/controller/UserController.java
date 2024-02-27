@@ -59,7 +59,7 @@ public class UserController {
     @PostMapping("/auth/registration/verify")
     public ResponseEntity<?> verifyRegisterCode(@RequestBody UserRequest.VerifyCodeDTO requestDTO){
 
-        userService.verifyRegisterCode(requestDTO);
+        userService.verifyCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 

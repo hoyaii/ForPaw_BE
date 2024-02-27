@@ -55,4 +55,8 @@ public class User {
         this.regin = regin;
         this.subRegion = subRegion;
     }
+
+    public void updatePassword (String password) {
+        this.password  = password;
+    }
 }

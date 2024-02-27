@@ -17,9 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hong.ForPaw.core.security.JWTProvider;
 
 import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -100,8 +103,8 @@ public class UserService {
     }
 
     @Transactional
-    public void verifyRegisterCode(UserRequest.VerifyCodeDTO requestDTO){
-
+    public void verifyCode(UserRequest.VerifyCodeDTO requestDTO){
+        // 레디스를 통해 해당 코드가 유효한지 확인
         if(redisService.isVerificationCodeValid(requestDTO.email(), requestDTO.code()))
             throw new CustomException(ExceptionCode.CODE_WRONG);
         redisService.removeVerificationCode(requestDTO.email()); // 검증 후 토큰 삭제
@@ -128,14 +131,38 @@ public class UserService {
     }
 
     @Transactional
-    public void verifyRecoveryCode(UserRequest.VerifyCodeDTO requestDTO){
+    public void verifyCodeAndSendPassword(UserRequest.VerifyCodeDTO requestDTO){
+        // 레디스를 통해 해당 코드가 유효한지 확인
+        if(redisService.isVerificationCodeValid(requestDTO.email(), requestDTO.code()))
+            throw new CustomException(ExceptionCode.CODE_WRONG);
+        redisService.removeVerificationCode(requestDTO.email()); // 검증 후 토큰 삭제
 
+        // 임시 비밀번호 생성 후 업데이트
+        String password = generateTemporaryPassword();
+        User user = userRepository.findByEmail(requestDTO.email()).get(); // 이미 앞에서 계정 존재 여부를 확인 했으니 바로 가져옴
+        user.updatePassword(passwordEncoder.encode(password));
+
+        sendPasswordByMail(requestDTO.email(), password);
     }
 
     private String sendCodeByMail(String toEmail){
+
         String verificationCode = generateVerificationCode();
         String subject = "[ForPaw] 이메일 인증 코드입니다.";
         String text = "인증 코드는 다음과 같습니다: " + verificationCode + "\n이 코드를 입력하여 이메일을 인증해 주세요.";
+        sendMail(fromEmail, toEmail, subject, text);
+
+        return verificationCode;
+    }
+
+    private void sendPasswordByMail(String toEmail, String password){
+
+        String subject = "[ForPaw] 임시 비밀번호 입니다.";
+        String text = "임시 비밀번호: " + password + "\n로그인 후 비밀번호를 변경해 주세요.";
+        sendMail(fromEmail, toEmail, subject, text);
+    }
+
+    private void sendMail(String fromEmail, String toEmail, String subject, String text){
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
@@ -143,10 +170,9 @@ public class UserService {
         message.setSubject(subject);
         message.setText(text);
         mailSender.send(message);
-
-        return verificationCode;
     }
 
+    // 알파벳, 숫자를 조합해서 인증 코드 생성
     private String generateVerificationCode() {
 
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -157,5 +183,40 @@ public class UserService {
                 .mapToObj(chars::charAt)
                 .map(Object::toString)
                 .collect(Collectors.joining());
+    }
+
+    // 알파벳, 숫자, 특수문자가 모두 포함되도록 해서 임시 비밀번호 생성
+    private String generateTemporaryPassword() {
+        String specialChars = "!@#$%^&*";
+        String numbers = "0123456789";
+        String upperCaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        String lowerCaseLetters = "abcdefghijklmnopqrstuvwxyz";
+        SecureRandom random = new SecureRandom();
+
+        // 각 범주에서 랜덤하게 하나씩 선택
+        String mandatoryChars =
+                Stream.of(specialChars, numbers, upperCaseLetters, lowerCaseLetters)
+                        .map(s -> s.charAt(random.nextInt(s.length())))
+                        .map(Object::toString)
+                        .collect(Collectors.joining());
+
+        // 나머지 자리를 전체 문자 집합에서 선택
+        String allChars = specialChars + numbers + upperCaseLetters + lowerCaseLetters;
+        String randomChars = IntStream.range(mandatoryChars.length(), 8)
+                .map(i -> random.nextInt(allChars.length()))
+                .mapToObj(allChars::charAt)
+                .map(Object::toString)
+                .collect(Collectors.joining());
+
+        // 최종 문자열 생성을 위해 섞기
+        String verificationCode = Stream.of(mandatoryChars.split(""), randomChars.split(""))
+                .flatMap(Arrays::stream)
+                .collect(Collectors.collectingAndThen(Collectors.toList(), list -> {
+                    Collections.shuffle(list);
+                    return list.stream();
+                }))
+                .collect(Collectors.joining());
+
+        return verificationCode;
     }
 }
