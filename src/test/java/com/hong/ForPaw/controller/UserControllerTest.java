@@ -41,7 +41,7 @@ class UserControllerTest {
 
         // when
         ResultActions result = mvc.perform(
-                post("/api/login")
+                post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(requestBody)
         );
@@ -63,7 +63,7 @@ class UserControllerTest {
 
         // when
         ResultActions result = mvc.perform(
-                post("/api/join")
+                post("/api/accounts")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(requestBody)
         );
@@ -102,7 +102,7 @@ class UserControllerTest {
 
         // when
         ResultActions result = mvc.perform(
-                post("/api/auth/recovery/code")
+                post("/api/accounts/recovery")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(requestBody)
         );
@@ -122,7 +122,7 @@ class UserControllerTest {
 
         // when
         ResultActions result = mvc.perform(
-                post("/api/auth/recovery/code")
+                post("/api/accounts/recovery")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(requestBody)
         );
@@ -143,7 +143,7 @@ class UserControllerTest {
 
         // when
         ResultActions result = mvc.perform(
-                post("/api/auth/recovery/verify")
+                post("/api/accounts/recovery/verify")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(requestBody)
         );
@@ -164,7 +164,7 @@ class UserControllerTest {
 
         // when
         ResultActions result = mvc.perform(
-                post("/api/auth/recovery/verify")
+                post("/api/accounts/recovery/verify")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(requestBody)
         );

@@ -137,6 +137,16 @@ public class UserService {
     }
 
     @Transactional
+    public void verifyPassword(UserRequest.CurPasswordDTO requestDTO, Long userId){
+
+        User user = userRepository.findById(userId).get();
+
+        if(!passwordEncoder.matches(requestDTO.password(), user.getPassword())){
+            throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
+        }
+    }
+
+    @Transactional
     public void updatePassword(UserRequest.UpdatePasswordDTO requestDTO, Long userId){
 
         User user = userRepository.findById(userId).get();

@@ -49,26 +49,27 @@ public class UserController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
-    @PostMapping("/auth/registration/verify")
+    @PostMapping("/accounts/check/verify")
     public ResponseEntity<?> verifyRegisterCode(@RequestBody UserRequest.VerifyCodeDTO requestDTO){
 
         userService.verifyCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
-    @PostMapping("/auth/recovery/code")
+    @PostMapping("/accounts/recovery")
     public ResponseEntity<?> sendRecoveryCode(@RequestBody UserRequest.EmailDTO requestDTO){
 
         userService.sendRecoveryCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
-    @PostMapping("/auth/recovery/verify")
+    @PostMapping("/accounts/recovery/verify")
     public ResponseEntity<?> verifyAndSendPassword(@RequestBody UserRequest.VerifyCodeDTO requestDTO){
 
         userService.verifyAndSendPassword(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
+
 
     @PatchMapping("/accounts/password")
     public ResponseEntity<?> updatePassword(@RequestBody UserRequest.UpdatePasswordDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
