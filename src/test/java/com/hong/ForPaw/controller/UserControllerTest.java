@@ -159,12 +159,54 @@ class UserControllerTest {
         result.andExpect(jsonPath("$.success").value("false"));
     }
 
+    // 테스트 방법은 비밀번호_재설정_이메일_코드전송_성공() 테스트 실행 => 이메일에서 받은 코드 DTO에 입력 후 실행
+    @Test
+    public void 임시비밀번호_전송_성공() throws Exception {
+
+        // given
+        UserRequest.VerifyCodeDTO requestDTO = new UserRequest.VerifyCodeDTO("yg04076@naver.com", "iZ6Wk4Wu");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/auth/recovery/verify")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    public void 임시비밀번호_전송_실패() throws Exception {
+
+        // given
+        // 잘못된 코드 입력
+        UserRequest.VerifyCodeDTO requestDTO = new UserRequest.VerifyCodeDTO("yg04076@naver.com", "noAdv");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/auth/recovery/verify")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
     public void 비밀번호_재설정_성공() throws Exception {
 
         // given
-        UserRequest.ChangePasswordDTO requestDTO = new UserRequest.ChangePasswordDTO("pnu1234~", "pnu1234~", "pnu1234~");
+        UserRequest.ChangePasswordDTO requestDTO = new UserRequest.ChangePasswordDTO("pnu1234~", "pnu1234~", "446y*4MD");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when

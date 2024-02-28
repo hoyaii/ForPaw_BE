@@ -141,7 +141,7 @@ public class UserService {
     @Transactional
     public void verifyAndSendPassword(UserRequest.VerifyCodeDTO requestDTO){
         // 레디스를 통해 해당 코드가 유효한지 확인
-        if(redisService.isVerificationCodeValid(requestDTO.email(), requestDTO.code()))
+        if(!redisService.isVerificationCodeValid(requestDTO.email(), requestDTO.code()))
             throw new CustomException(ExceptionCode.CODE_WRONG);
         redisService.removeVerificationCode(requestDTO.email()); // 검증 후 토큰 삭제
 
