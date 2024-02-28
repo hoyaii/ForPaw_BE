@@ -59,4 +59,11 @@ public class User {
     public void updatePassword (String password) {
         this.password  = password;
     }
+
+    public void updateProfile(String nickName, String region, String subRegion, String profileURL){
+        this.nickName = nickName;
+        this.regin = regin;
+        this.subRegion = subRegion;
+        this.profileURL = profileURL;
+    }
 }

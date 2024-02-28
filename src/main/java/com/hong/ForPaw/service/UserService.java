@@ -163,7 +163,12 @@ public class UserService {
         user.updatePassword(passwordEncoder.encode(requestDTO.newPassword()));
     }
 
+    @Transactional
+    public void updateProfile(UserRequest.UpdateProfileDTO requestDTO, Long userId){
 
+        User user = userRepository.findById(userId).get();
+        user.updateProfile(requestDTO.nickName(),requestDTO.region(), requestDTO.subRegion(), requestDTO.profileURL());
+    }
 
     @Transactional
     public UserResponse.AccessTokenDTO updateAccessToken(UserRequest.RefreshTokenDTO requestDTO){
