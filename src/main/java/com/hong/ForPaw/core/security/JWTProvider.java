@@ -1,6 +1,7 @@
 package com.hong.ForPaw.core.security;
 
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.SignatureVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
@@ -48,5 +49,20 @@ public class JWTProvider {
         DecodedJWT decodedJWT = JWT.require(Algorithm.HMAC512(SECRET))
                 .build().verify(jwt);
         return decodedJWT;
+    }
+
+    public static Long getUserIdFromToken(String token) {
+        DecodedJWT decodedJWT = verify(token);
+        return decodedJWT.getClaim("id").asLong();
+    }
+
+    public static boolean validateToken(String token) {
+        try {
+            token = token.replace(JWTProvider.TOKEN_PREFIX, "");
+            JWT.require(Algorithm.HMAC512(SECRET)).build().verify(token);
+            return true;
+        } catch (JWTVerificationException exception) { // 잘못된 서명 등 디코딩이 안되는 잘못된 토큰
+            return false;
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.hong.ForPaw.service;
 
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
@@ -34,7 +35,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final RedisService redisService;
     private final JavaMailSender mailSender;
-    private final CustomUserDetailsService customUserDetailsService;
+
 
     @Value("${spring.mail.username}")
     private String fromEmail;
@@ -162,6 +163,22 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_PASSWORD_MATCH_WRONG);
 
         user.updatePassword(passwordEncoder.encode(requestDTO.newPassword()));
+    }
+
+    @Transactional
+    public void updateAccessToken(UserRequest.RefreshTokenDTO requestDTO){
+        // 잘못된 토큰 형식인지 체크
+        if(!JWTProvider.validateToken(requestDTO.refreshToken())) {
+            throw new CustomException(ExceptionCode.TOKEN_WRONG);
+        }
+
+        Long userId =JWTProvider.getUserIdFromToken(requestDTO.refreshToken());
+
+        // 토큰 만료 여부 체크
+        if(!redisService.isDateExist("refreshToken", String.valueOf(userId)))
+            throw new CustomException(ExceptionCode.TOKEN_EXPIRED);
+
+
     }
 
     private String sendCodeByMail(String toEmail){

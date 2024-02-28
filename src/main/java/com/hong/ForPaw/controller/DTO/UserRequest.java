@@ -15,4 +15,6 @@ public class UserRequest {
                           String passwordConfirm, String profileURL) {}
 
     public record ChangePasswordDTO(String newPassword, String newPasswordConfirm, String curPassword) {}
+
+    public record RefreshTokenDTO(String refreshToken){ }
 }
