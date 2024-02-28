@@ -24,7 +24,7 @@ public class UserController {
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody UserRequest.LoginDTO requestDTO) {
 
-        UserResponse.LoginTokenDTO tokenDTO = userService.login(requestDTO);
+        UserResponse.JwtTokenDTO tokenDTO = userService.login(requestDTO);
         ResponseCookie responseCookie = ResponseCookie.from("refreshToken", tokenDTO.refreshToken())
                 .httpOnly(true)
                 .secure(true)

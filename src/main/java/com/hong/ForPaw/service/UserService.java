@@ -1,11 +1,9 @@
 package com.hong.ForPaw.service;
 
-import com.auth0.jwt.interfaces.DecodedJWT;
 import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
-import com.hong.ForPaw.core.security.CustomUserDetailsService;
 import com.hong.ForPaw.domain.User.Role;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.UserRepository;
@@ -41,7 +39,7 @@ public class UserService {
     private String fromEmail;
 
     @Transactional
-    public UserResponse.LoginTokenDTO login(UserRequest.LoginDTO requestDTO){
+    public UserResponse.JwtTokenDTO login(UserRequest.LoginDTO requestDTO){
 
         User user = userRepository.findByEmail(requestDTO.email()).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
@@ -58,7 +56,7 @@ public class UserService {
         redisService.removeData("refreshToken", String.valueOf(user.getId()));
         redisService.storeDate("refreshToken", String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP);
 
-        return new UserResponse.LoginTokenDTO(accessToken, refreshToken);
+        return new UserResponse.JwtTokenDTO(accessToken, refreshToken);
     }
 
     @Transactional
@@ -166,7 +164,7 @@ public class UserService {
     }
 
     @Transactional
-    public void updateAccessToken(UserRequest.RefreshTokenDTO requestDTO){
+    public UserResponse.AccessTokenDTO updateAccessToken(UserRequest.RefreshTokenDTO requestDTO){
         // 잘못된 토큰 형식인지 체크
         if(!JWTProvider.validateToken(requestDTO.refreshToken())) {
             throw new CustomException(ExceptionCode.TOKEN_WRONG);
@@ -178,7 +176,12 @@ public class UserService {
         if(!redisService.isDateExist("refreshToken", String.valueOf(userId)))
             throw new CustomException(ExceptionCode.TOKEN_EXPIRED);
 
+        // 탈퇴한 회원의 refreshToken이 요청으로 왔으면, USER_NOT_FOUND 에러 발생
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
 
+        return new UserResponse.AccessTokenDTO(JWTProvider.createAccessToken(user));
     }
 
     private String sendCodeByMail(String toEmail){
