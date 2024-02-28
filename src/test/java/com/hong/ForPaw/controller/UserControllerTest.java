@@ -88,7 +88,7 @@ class UserControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
@@ -108,7 +108,7 @@ class UserControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
@@ -128,7 +128,7 @@ class UserControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
@@ -148,7 +148,7 @@ class UserControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
@@ -169,7 +169,7 @@ class UserControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
@@ -190,7 +190,7 @@ class UserControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
@@ -211,7 +211,7 @@ class UserControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
@@ -232,7 +232,7 @@ class UserControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
@@ -253,7 +253,7 @@ class UserControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
@@ -274,7 +274,7 @@ class UserControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
@@ -295,7 +295,7 @@ class UserControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
@@ -316,8 +316,25 @@ class UserControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 프로필_조회_성공() throws Exception {
+
+        // given
+        // when
+        ResultActions result = mvc.perform(
+                get("/api/accounts/profile")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
     }
 }
