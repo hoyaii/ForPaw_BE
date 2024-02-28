@@ -87,7 +87,7 @@ public class UserController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
-    @GetMapping("/auth/refresh")
+    @PatchMapping("/auth/access")
     public ResponseEntity<?> updateAccessToken(@RequestBody UserRequest.RefreshTokenDTO requestDTO){
 
         UserResponse.AccessTokenDTO responseDTO = userService.updateAccessToken(requestDTO);

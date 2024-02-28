@@ -263,4 +263,67 @@ class UserControllerTest {
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
+
+    // 테스트를 위해선 로그인을 통해 RefreshToken을 발급 받아야 한다
+    @Test
+    public void 엑세스_토큰_재발급_성공() throws Exception {
+
+        // given
+        UserRequest.RefreshTokenDTO requestDTO = new UserRequest.RefreshTokenDTO("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ5ZzA0MDc2QG5hdmVyLmNvbSIsInJvbGUiOjAsImlkIjo0LCJleHAiOjE3MDk3MDEyODl9.iSpEDE4HIbaQV77xWyPuKJe2Xi5A6LC-zqhfpzIHRhe5TzGWoB0VYagM8xf1GhzqGhoRyyPa_1KZ6D3-5sKQxA");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/auth/access")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    public void 엑세스_토큰_재발급_실패_1() throws Exception {
+
+        // given
+        // 잘못된 토큰 형식
+        UserRequest.RefreshTokenDTO requestDTO = new UserRequest.RefreshTokenDTO("eyJ0eXAiOiJKVJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ5ZzA0MDc2QG5hdmVyLmNvbSIsInJvbGUiOjAsImlkIjo0LCJleHAiOjE3MDk3MDEyODl9.iSpEDE4HIbaQV77xWyPuKJe2Xi5A6LC-zqhfpzIHRhe5TzGWoB0VYagM8xf1GhzqGhoRyyPa_1KZ6D3-5sKQxA");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/auth/access")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    public void 엑세스_토큰_재발급_실패_2() throws Exception {
+
+        // given
+        // 만료된 토큰 (그냥 레디스의 데이터를 삭제하고 테스트 하면 됨)
+        UserRequest.RefreshTokenDTO requestDTO = new UserRequest.RefreshTokenDTO("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ5ZzA0MDc2QG5hdmVyLmNvbSIsInJvbGUiOjAsImlkIjo0LCJleHAiOjE3MDkxODI4ODl9.bfbTxdeGrYTpZn6ii-nKzfEm4BA4rgxfkRXQkR8uVTKN42q0EyrxS3arjbmpkKjag6EJbNanP8dNqxU924EyEA");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/auth/access")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
 }
