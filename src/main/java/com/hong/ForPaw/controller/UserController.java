@@ -81,9 +81,16 @@ public class UserController {
     }
 
     @PatchMapping("/accounts/password")
-    public ResponseEntity<?> changePassword(@RequestBody UserRequest.UpdatePasswordDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> updatePassword(@RequestBody UserRequest.UpdatePasswordDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         userService.updatePassword(requestDTO, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
+    @PatchMapping("/accounts/profile")
+    public ResponseEntity<?> updateProfile(@RequestBody UserRequest.UpdateProfileDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        userService.updateProfile(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
