@@ -179,4 +179,46 @@ class UserControllerTest {
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 비밀번호_재설정_실패_1() throws Exception {
+
+        // given
+        UserRequest.ChangePasswordDTO requestDTO = new UserRequest.ChangePasswordDTO("pnu1234~", "pnu1234~", "pnu123~");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/accounts/password")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 비밀번호_재설정_실패_2() throws Exception {
+
+        // given
+        UserRequest.ChangePasswordDTO requestDTO = new UserRequest.ChangePasswordDTO("pnu1234~", "pnu124~", "pnu1234~");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/accounts/password")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
 }
