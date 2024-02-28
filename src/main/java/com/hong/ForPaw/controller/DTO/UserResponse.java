@@ -8,4 +8,6 @@ public class UserResponse {
     public record EmailTokenDTO(String validationToken) {}
 
     public record AccessTokenDTO(String accessToken) {}
+
+    public record ProfileDTO(String nickName, String region, String subRegion, String profileURL) {}
 }

@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -161,6 +162,13 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_PASSWORD_MATCH_WRONG);
 
         user.updatePassword(passwordEncoder.encode(requestDTO.newPassword()));
+    }
+
+    @Transactional
+    public UserResponse.ProfileDTO findProfile(Long userId){
+
+        User user = userRepository.findById(userId).get();
+        return new UserResponse.ProfileDTO(user.getNickName(), user.getRegin(), user.getSubRegion(), user.getProfileURL());
     }
 
     @Transactional
