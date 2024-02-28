@@ -24,8 +24,9 @@ public class UserController {
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody UserRequest.LoginDTO requestDTO) {
 
-        UserResponse.JwtTokenDTO tokenDTO = userService.login(requestDTO);
-        ResponseCookie responseCookie = ResponseCookie.from("refreshToken", tokenDTO.refreshToken())
+        UserResponse.JwtTokenDTO responseDTO = userService.login(requestDTO);
+
+        ResponseCookie responseCookie = ResponseCookie.from("refreshToken", responseDTO.refreshToken())
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("None")
@@ -34,7 +35,7 @@ public class UserController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, responseCookie.toString())
-                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokenDTO.accessToken())));
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(responseDTO.accessToken())));
     }
 
     @PostMapping("/accounts")
@@ -84,5 +85,12 @@ public class UserController {
 
         userService.changePassword(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
+    @GetMapping("/auth/refresh")
+    public ResponseEntity<?> updateAccessToken(@RequestBody UserRequest.RefreshTokenDTO requestDTO){
+
+        UserResponse.AccessTokenDTO responseDTO = userService.updateAccessToken(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }
