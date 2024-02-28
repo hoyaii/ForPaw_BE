@@ -177,6 +177,49 @@ class UserControllerTest {
 
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
+    public void 현재_비밀번호_일치여부_확인_성공() throws Exception {
+
+        // given
+        UserRequest.CurPasswordDTO requestDTO = new UserRequest.CurPasswordDTO("pnu1234~");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/accounts/password/verify")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 현재_비밀번호_일치여부_확인_실패() throws Exception {
+
+        // given
+        // 잘못된 비밀번호
+        UserRequest.CurPasswordDTO requestDTO = new UserRequest.CurPasswordDTO("pnu1234");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/accounts/password/verify")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
     public void 비밀번호_재설정_성공() throws Exception {
 
         // given

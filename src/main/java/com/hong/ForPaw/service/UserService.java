@@ -143,7 +143,7 @@ public class UserService {
         User user = userRepository.findById(userId).get();
 
         if(!passwordEncoder.matches(requestDTO.password(), user.getPassword())){
-            throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
+            throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
         }
     }
 
@@ -152,6 +152,7 @@ public class UserService {
 
         User user = userRepository.findById(userId).get();
 
+        // verifyPassword()로 일치 여부를 확인하지만, 해당 단계를 거치지 않고 인위적으로 요청을 보낼 수 있어서 한 번더 검증
         if(!passwordEncoder.matches(requestDTO.curPassword(), user.getPassword())){
             throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
         }
