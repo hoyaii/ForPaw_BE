@@ -80,25 +80,12 @@ public class UserService {
         userRepository.save(user);
     }
 
+    // 중복 여부 확인 => 만약 사용 가능한 메일이면, 코드 전송
     @Transactional
-    public UserResponse.EmailTokenDTO checkEmail(UserRequest.EmailDTO requestDTO){
+    public void checkAndSendCode(UserRequest.EmailDTO requestDTO){
         // 가입한 이메일이 존재 한다면
         if(userRepository.findByEmail(requestDTO.email()).isPresent())
             throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
-
-        // 이메일 중복 체크를 하지 않고, 인위적으로 메일 전송 요청을 방지하기 위해, 토큰을 저장
-        String token = UUID.randomUUID().toString();
-        redisService.storeDate("emailToken", requestDTO.email(), token, 10 * 60 * 1000L); // 10분 유효
-
-        return new UserResponse.EmailTokenDTO(token);
-    }
-
-    @Transactional
-    public void sendRegisterCode(UserRequest.SendCodeDTO requestDTO){
-
-        if(!redisService.validateData("emailToken", requestDTO.email(), requestDTO.validationToken()))
-            throw new CustomException(ExceptionCode.BAD_APPROACH);
-        redisService.removeData("emailToken", requestDTO.email());
 
         // 인증 코드 전송 및 레디스에 저장
         String verificationCode = sendCodeByMail(requestDTO.email());
@@ -168,7 +155,7 @@ public class UserService {
     public UserResponse.ProfileDTO findProfile(Long userId){
 
         User user = userRepository.findById(userId).get();
-        return new UserResponse.ProfileDTO(user.getNickName(), user.getRegin(), user.getSubRegion(), user.getProfileURL());
+        return new UserResponse.ProfileDTO(user.getName(), user.getNickName(), user.getRegin(), user.getSubRegion(), user.getProfileURL());
     }
 
     @Transactional

@@ -74,7 +74,7 @@ class UserControllerTest {
     }
 
     @Test
-    public void 이메일_중복체크_성공() throws Exception {
+    public void 이메일_중복체크_후_코드_전송_성공() throws Exception {
 
         // given
         UserRequest.EmailDTO requestDTO = new UserRequest.EmailDTO("yg04077@naver.com");
@@ -82,27 +82,7 @@ class UserControllerTest {
 
         // when
         ResultActions result = mvc.perform(
-                post("/api/accounts/email/check")
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(requestBody)
-        );
-
-        String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
-
-        result.andExpect(jsonPath("$.success").value("true"));
-    }
-
-    @Test
-    public void 회원가입_이메일_코드전송_성공() throws Exception {
-
-        // given
-        UserRequest.EmailDTO requestDTO = new UserRequest.EmailDTO("yg04076@naver.com");
-        String requestBody = om.writeValueAsString(requestDTO);
-
-        // when
-        ResultActions result = mvc.perform(
-                post("/api/auth/registration/code")
+                post("/api/accounts/check")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(requestBody)
         );

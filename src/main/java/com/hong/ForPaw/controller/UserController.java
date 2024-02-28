@@ -42,17 +42,10 @@ public class UserController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, null));
     }
 
-    @PostMapping("/accounts/email/check")
-    public ResponseEntity<?> checkEmail(@RequestBody UserRequest.EmailDTO requestDTO){
+    @PostMapping("/accounts/check")
+    public ResponseEntity<?> checkAndSendCode(@RequestBody UserRequest.EmailDTO requestDTO){
 
-        UserResponse.EmailTokenDTO tokenDTO = userService.checkEmail(requestDTO);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, tokenDTO));
-    }
-
-    @PostMapping("/auth/registration/code")
-    public ResponseEntity<?> sendRegisterCode(@RequestBody UserRequest.SendCodeDTO requestDTO){
-
-        userService.sendRegisterCode(requestDTO);
+        userService.checkAndSendCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
