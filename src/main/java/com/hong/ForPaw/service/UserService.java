@@ -4,7 +4,6 @@ import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
-import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.security.CustomUserDetailsService;
 import com.hong.ForPaw.domain.User.Role;
 import com.hong.ForPaw.domain.User.User;
@@ -13,10 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +20,6 @@ import com.hong.ForPaw.core.security.JWTProvider;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -59,8 +53,9 @@ public class UserService {
         String accessToken = JWTProvider.createAccessToken(user);
         String refreshToken = JWTProvider.createRefreshToken(user);
 
-        // Refresh Token을 레디스에 저장
-        redisService.storeToken("refreshToken", refreshToken, JWTProvider.REFRESH_EXP);
+        // Refresh Token 갱신
+        redisService.removeData("refreshToken", String.valueOf(user.getId()));
+        redisService.storeDate("refreshToken", String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP);
 
         return new UserResponse.LoginTokenDTO(accessToken, refreshToken);
     }
@@ -93,29 +88,29 @@ public class UserService {
 
         // 이메일 중복 체크를 하지 않고, 인위적으로 메일 전송 요청을 방지하기 위해, 토큰을 저장
         String token = UUID.randomUUID().toString();
-        redisService.storeToken("emailCheckToken", token, 10 * 60 * 1000L); // 10분 유효
+        redisService.storeDate("emailToken", requestDTO.email(), token, 10 * 60 * 1000L); // 10분 유효
 
         return new UserResponse.EmailTokenDTO(token);
     }
 
     @Transactional
     public void sendRegisterCode(UserRequest.SendCodeDTO requestDTO){
-        // 요청으로 온 토큰과 저장한 토큰을 비교해 검증해서, 임의적인 요청 방지
-        if(!redisService.isTokenValid("emailCheckToken", requestDTO.validationToken()))
+
+        if(!redisService.validateData("emailToken", requestDTO.email(), requestDTO.validationToken()))
             throw new CustomException(ExceptionCode.BAD_APPROACH);
-        redisService.removeToken("emailCheckToken", requestDTO.validationToken());
+        redisService.removeData("emailToken", requestDTO.email());
 
         // 인증 코드 전송 및 레디스에 저장
         String verificationCode = sendCodeByMail(requestDTO.email());
-        redisService.storeVerificationCode(requestDTO.email(), verificationCode, 5 * 60 * 1000L); // 5분 동안 유효
+        redisService.storeDate("emailCode", requestDTO.email(), verificationCode, 5 * 60 * 1000L); // 5분 동안 유효
     }
 
     @Transactional
     public void verifyCode(UserRequest.VerifyCodeDTO requestDTO){
         // 레디스를 통해 해당 코드가 유효한지 확인
-        if(redisService.isVerificationCodeValid(requestDTO.email(), requestDTO.code()))
+        if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
             throw new CustomException(ExceptionCode.CODE_WRONG);
-        redisService.removeVerificationCode(requestDTO.email()); // 검증 후 토큰 삭제
+        redisService.removeData("emailCode", requestDTO.email()); // 검증 후 토큰 삭제
     }
 
     @Transactional
@@ -125,25 +120,26 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND);
 
         // 요청 횟수 3회 넘아가면 10분 동안 요청 불가
-        Long recoveryNum = redisService.getRecoveryNum(requestDTO.email());
+        Long recoveryNum = redisService.getDataInLong("requestNum", requestDTO.email());
         if(recoveryNum >= 3L){
             throw new CustomException(ExceptionCode.EXCEED_REQUEST_NUM);
         }
 
         // 요청 횟수 업데이트
-        redisService.storeRecoveryNum(requestDTO.email(), recoveryNum + 1, 10 * 60 * 1000L);
+        redisService.storeDate("requestNum", requestDTO.email(), String.valueOf(recoveryNum + 1), 10 * 60 * 1000L);
 
         // 인증 코드 전송 및 레디스에 저장
         String verificationCode = sendCodeByMail(requestDTO.email());
-        redisService.storeVerificationCode(requestDTO.email(), verificationCode, 5 * 60 * 1000L);
+        redisService.storeDate("emailCode", requestDTO.email(), verificationCode, 5 * 60 * 1000L);
     }
 
     @Transactional
     public void verifyAndSendPassword(UserRequest.VerifyCodeDTO requestDTO){
+
         // 레디스를 통해 해당 코드가 유효한지 확인
-        if(!redisService.isVerificationCodeValid(requestDTO.email(), requestDTO.code()))
+        if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
             throw new CustomException(ExceptionCode.CODE_WRONG);
-        redisService.removeVerificationCode(requestDTO.email()); // 검증 후 토큰 삭제
+        redisService.removeData("emailCode", requestDTO.email());
 
         // 임시 비밀번호 생성 후 업데이트
         String password = generateTemporaryPassword();
