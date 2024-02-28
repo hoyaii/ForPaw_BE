@@ -81,9 +81,9 @@ public class UserController {
     }
 
     @PatchMapping("/accounts/password")
-    public ResponseEntity<?> changePassword(@RequestBody UserRequest.ChangePasswordDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> changePassword(@RequestBody UserRequest.UpdatePasswordDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        userService.changePassword(requestDTO, userDetails.getUser().getId());
+        userService.updatePassword(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 

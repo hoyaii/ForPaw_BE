@@ -149,7 +149,7 @@ public class UserService {
     }
 
     @Transactional
-    public void changePassword(UserRequest.ChangePasswordDTO requestDTO, Long userId){
+    public void updatePassword(UserRequest.UpdatePasswordDTO requestDTO, Long userId){
 
         User user = userRepository.findById(userId).get();
 
@@ -162,6 +162,8 @@ public class UserService {
 
         user.updatePassword(passwordEncoder.encode(requestDTO.newPassword()));
     }
+
+
 
     @Transactional
     public UserResponse.AccessTokenDTO updateAccessToken(UserRequest.RefreshTokenDTO requestDTO){

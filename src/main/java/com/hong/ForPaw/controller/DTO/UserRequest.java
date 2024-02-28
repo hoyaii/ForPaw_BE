@@ -14,7 +14,9 @@ public class UserRequest {
                           String region, String subRegion, String password,
                           String passwordConfirm, String profileURL) {}
 
-    public record ChangePasswordDTO(String newPassword, String newPasswordConfirm, String curPassword) {}
+    public record UpdatePasswordDTO(String newPassword, String newPasswordConfirm, String curPassword) {}
+
+    public record UpdateProfileDTO(String nickName, String region, String subRegion, String profileURL) {}
 
     public record RefreshTokenDTO(String refreshToken){ }
 }

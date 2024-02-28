@@ -1,10 +1,7 @@
 package com.hong.ForPaw.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.UserRequest;
-import com.hong.ForPaw.service.UserService;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -27,9 +24,6 @@ class UserControllerTest {
 
     @Autowired
     private MockMvc mvc;
-
-    @Autowired
-    private UserService userService;
 
     @Autowired
     private ObjectMapper om;
@@ -206,7 +200,7 @@ class UserControllerTest {
     public void 비밀번호_재설정_성공() throws Exception {
 
         // given
-        UserRequest.ChangePasswordDTO requestDTO = new UserRequest.ChangePasswordDTO("pnu1234~", "pnu1234~", "446y*4MD");
+        UserRequest.UpdatePasswordDTO requestDTO = new UserRequest.UpdatePasswordDTO("pnu1234~", "pnu1234~", "446y*4MD");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -227,7 +221,7 @@ class UserControllerTest {
     public void 비밀번호_재설정_실패_1() throws Exception {
 
         // given
-        UserRequest.ChangePasswordDTO requestDTO = new UserRequest.ChangePasswordDTO("pnu1234~", "pnu1234~", "pnu123~");
+        UserRequest.UpdatePasswordDTO requestDTO = new UserRequest.UpdatePasswordDTO("pnu1234~", "pnu1234~", "pnu123~");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -248,7 +242,7 @@ class UserControllerTest {
     public void 비밀번호_재설정_실패_2() throws Exception {
 
         // given
-        UserRequest.ChangePasswordDTO requestDTO = new UserRequest.ChangePasswordDTO("pnu1234~", "pnu124~", "pnu1234~");
+        UserRequest.UpdatePasswordDTO requestDTO = new UserRequest.UpdatePasswordDTO("pnu1234~", "pnu124~", "pnu1234~");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
