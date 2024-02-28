@@ -34,7 +34,7 @@ public class UserController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, responseCookie.toString())
-                .body(new UserResponse.LoginDTO(tokenDTO.accessToken()));
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokenDTO.accessToken())));
     }
 
     @PostMapping("/accounts")
@@ -82,7 +82,7 @@ public class UserController {
     @PatchMapping("/accounts/password")
     public ResponseEntity<?> changePassword(@RequestBody UserRequest.ChangePasswordDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        userService.changePassword(requestDTO, userDetails.getUser().getEmail());
+        userService.changePassword(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }

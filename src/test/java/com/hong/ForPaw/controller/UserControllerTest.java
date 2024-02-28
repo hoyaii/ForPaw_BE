@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -27,10 +29,13 @@ class UserControllerTest {
     private MockMvc mvc;
 
     @Autowired
-    UserService userService;
+    private UserService userService;
 
     @Autowired
     private ObjectMapper om;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     // 테스트 시 ddl=create로 하고 써야한다.
     @Test
@@ -95,7 +100,47 @@ class UserControllerTest {
     }
 
     @Test
-    public void 이메일_코드전송_성공() throws Exception {
+    public void 회원가입_이메일_코드전송_성공() throws Exception {
+
+        // given
+        UserRequest.EmailDTO requestDTO = new UserRequest.EmailDTO("yg04076@naver.com");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/auth/registration/code")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    public void 비밀번호_재설정_이메일_코드전송_성공() throws Exception {
+
+        // given
+        UserRequest.EmailDTO requestDTO = new UserRequest.EmailDTO("yg04076@naver.com");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/auth/recovery/code")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    public void 비밀번호_재설정_이메일_코드전송_실패() throws Exception {
 
         // given
         UserRequest.EmailDTO requestDTO = new UserRequest.EmailDTO("yg04077@naver.com");
@@ -103,7 +148,28 @@ class UserControllerTest {
 
         // when
         ResultActions result = mvc.perform(
-                post("/api/auth/registration/code")
+                post("/api/auth/recovery/code")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 비밀번호_재설정_성공() throws Exception {
+
+        // given
+        UserRequest.ChangePasswordDTO requestDTO = new UserRequest.ChangePasswordDTO("pnu1234~", "pnu1234~", "pnu1234~");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/accounts/password")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(requestBody)
         );

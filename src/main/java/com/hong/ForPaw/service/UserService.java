@@ -154,21 +154,18 @@ public class UserService {
     }
 
     @Transactional
-    public void changePassword(UserRequest.ChangePasswordDTO requestDTO, String email){
-        User user = userRepository.findByEmail(email).get();
+    public void changePassword(UserRequest.ChangePasswordDTO requestDTO, Long userId){
 
-        if(!passwordEncoder.matches(requestDTO.curPassword(), user.getPassword()))
-            throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
+        User user = userRepository.findById(userId).get();
 
-        if (!passwordEncoder.matches(requestDTO.newPassword(), requestDTO.newPasswordConfirm()))
+        if(!passwordEncoder.matches(requestDTO.curPassword(), user.getPassword())){
+            throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
+        }
+
+        if (!requestDTO.newPassword().equals(requestDTO.newPasswordConfirm()))
             throw new CustomException(ExceptionCode.USER_PASSWORD_MATCH_WRONG);
 
         user.updatePassword(passwordEncoder.encode(requestDTO.newPassword()));
-
-        // 사용자의 인증 상태를 최신 정보로 업데이트
-        CustomUserDetails updatedUserDetails = customUserDetailsService.loadUserByUsername(email);
-        Authentication authentication = new UsernamePasswordAuthenticationToken(updatedUserDetails, null, updatedUserDetails.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
     private String sendCodeByMail(String toEmail){
