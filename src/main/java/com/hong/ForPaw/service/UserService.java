@@ -136,6 +136,7 @@ public class UserService {
         sendPasswordByMail(requestDTO.email(), password);
     }
 
+    // 재설정 화면에서 실시간으로 일치여부를 확인하기 위해 사용
     @Transactional
     public void verifyPassword(UserRequest.CurPasswordDTO requestDTO, Long userId){
 
