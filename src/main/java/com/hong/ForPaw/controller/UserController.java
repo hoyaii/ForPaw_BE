@@ -1,5 +1,6 @@
 package com.hong.ForPaw.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
@@ -34,6 +35,13 @@ public class UserController {
                         .maxAge(JWTProvider.REFRESH_EXP)
                         .build().toString())
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(responseDTO.accessToken())));
+    }
+
+    @GetMapping("/auth/login/kakao")
+    public ResponseEntity<?> kakaoLogin(@RequestParam String code) throws JsonProcessingException {
+
+
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/accounts")

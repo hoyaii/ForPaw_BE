@@ -61,6 +61,11 @@ public class UserService {
     }
 
     @Transactional
+    public UserResponse.AccessTokenDTO kakaoLogin(String code){
+
+    }
+
+    @Transactional
     public void join(UserRequest.JoinDTO requestDTO){
 
         if (!requestDTO.password().equals(requestDTO.passwordConfirm()))
