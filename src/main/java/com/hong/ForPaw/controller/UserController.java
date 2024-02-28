@@ -23,19 +23,16 @@ public class UserController {
 
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody UserRequest.LoginDTO requestDTO) {
-
         UserResponse.JwtTokenDTO responseDTO = userService.login(requestDTO);
 
-        ResponseCookie responseCookie = ResponseCookie.from("refreshToken", responseDTO.refreshToken())
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("None")
-                .maxAge(JWTProvider.REFRESH_EXP)
-                .build();
-
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, responseCookie.toString())
-                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(responseDTO.accessToken())));
+                .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", responseDTO.refreshToken())
+                        .httpOnly(true)
+                        .secure(true)
+                        .sameSite("None")
+                        .maxAge(JWTProvider.REFRESH_EXP)
+                        .build().toString())
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(responseDTO.accessToken())));
     }
 
     @PostMapping("/accounts")
@@ -85,6 +82,13 @@ public class UserController {
 
         userService.updatePassword(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
+    @GetMapping("/accounts/profile")
+    public ResponseEntity<?> findProfile(@AuthenticationPrincipal CustomUserDetails userDetails){
+
+        UserResponse.ProfileDTO responseDTO = userService.findProfile(userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PatchMapping("/accounts/profile")
