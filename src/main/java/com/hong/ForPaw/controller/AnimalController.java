@@ -1,6 +1,7 @@
 package com.hong.ForPaw.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.hong.ForPaw.controller.DTO.AnimalRequest;
 import com.hong.ForPaw.controller.DTO.AnimalResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
@@ -47,6 +48,13 @@ public class AnimalController {
     public ResponseEntity<?> likeAnimal(@PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         animalService.likeAnimal(userDetails.getUser().getId(), animalId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
+    @PostMapping("/animals/{animalId}/apply")
+    public ResponseEntity<?> applyAdoption(@RequestBody AnimalRequest.AdoptionApplyDTO requestDTO, @PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        animalService.applyAdoption(requestDTO, userDetails.getUser().getId(), animalId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }
