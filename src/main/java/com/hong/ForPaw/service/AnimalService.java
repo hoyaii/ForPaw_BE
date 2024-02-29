@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import javax.persistence.EntityManager;
 import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -40,6 +41,7 @@ public class AnimalService {
     private final FavoriteRepository favoriteRepository;
     private final UserRepository userRepository;
     private final ApplyRepository applyRepository;
+    private final EntityManager entityManager;
 
     @Value("${openAPI.service-key2}")
     private String serviceKey;
@@ -146,9 +148,7 @@ public class AnimalService {
                 () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
         );
 
-        User user = userRepository.findById(userId).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
-        );
+        User userRef = entityManager.getReference(User.class, userId);
 
         Optional<Favorite> favoriteOptional = favoriteRepository.findByUserIdAndAnimalId(userId, animalId);
 
@@ -157,7 +157,7 @@ public class AnimalService {
             favoriteRepository.delete(favoriteOptional.get());
         } else {
             Favorite favorite = Favorite.builder()
-                    .user(user)
+                    .user(userRef)
                     .animal(animal)
                     .build();
             favoriteRepository.save(favorite);
@@ -166,17 +166,15 @@ public class AnimalService {
 
     @Transactional
     public void applyAdoption(AnimalRequest.AdoptionApplyDTO requestDTO, Long userId, Long animalId){
-
+        // 동물은 pathVariable을 통해 id를 얻는데, 잘못된 요청이 올 수 있기 때문에 DB를 조회한다.
         Animal animal = animalRepository.findById(animalId).orElseThrow(
                 () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
         );
 
-        User user = userRepository.findById(userId).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
-        );
+        User userRef = entityManager.getReference(User.class, userId);
 
         Apply apply = Apply.builder()
-                .user(user)
+                .user(userRef)
                 .animal(animal)
                 .status(Status.PROCESSING)
                 .name(requestDTO.name())
