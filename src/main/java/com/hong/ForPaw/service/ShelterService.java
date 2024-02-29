@@ -2,8 +2,7 @@ package com.hong.ForPaw.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.domain.RegionCode;
-import com.hong.ForPaw.domain.Shelter;
-import com.hong.ForPaw.controller.DTO.ShelterJsonDTO;
+import com.hong.ForPaw.controller.DTO.ShelterDTO;
 import com.hong.ForPaw.repository.RegionCodeRepository;
 import com.hong.ForPaw.repository.ShelterRepository;
 import lombok.RequiredArgsConstructor;
@@ -54,11 +53,11 @@ public class ShelterService {
                 ResponseEntity<String> responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);
                 String response = responseEntity.getBody();
 
-                ShelterJsonDTO json = mapper.readValue(response, ShelterJsonDTO.class);
-                List<ShelterJsonDTO.itemDTO> itemDTOS = json.response().body().items().item();
+                ShelterDTO json = mapper.readValue(response, ShelterDTO.class);
+                List<ShelterDTO.itemDTO> itemDTOS = json.response().body().items().item();
 
-                for (ShelterJsonDTO.itemDTO itemDTO : itemDTOS) {
-                    Shelter shelter = Shelter.builder()
+                for (ShelterDTO.itemDTO itemDTO : itemDTOS) {
+                    com.hong.ForPaw.domain.Shelter shelter = com.hong.ForPaw.domain.Shelter.builder()
                             .regionCode(regionCode)
                             .careRegNo(itemDTO.careRegNo())
                             .name(itemDTO.careNm()).build();

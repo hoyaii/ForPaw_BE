@@ -2,7 +2,7 @@ package com.hong.ForPaw.controller.DTO;
 
 import java.util.List;
 
-public record RegionsJsonDTO(List<RegionDTO> regions) {
+public record RegionsDTO(List<RegionDTO> regions) {
 
     public record RegionDTO(Integer orgCd, String orgdownNm, List<SubRegionDTO> subRegions) { }
 

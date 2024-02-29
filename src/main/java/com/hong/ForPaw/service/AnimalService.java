@@ -3,7 +3,7 @@ package com.hong.ForPaw.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.AnimalResponse;
 import com.hong.ForPaw.domain.User.User;
-import com.hong.ForPaw.controller.DTO.AniamlJsonDTO;
+import com.hong.ForPaw.controller.DTO.AnimalDTO;
 import com.hong.ForPaw.domain.Animal;
 import com.hong.ForPaw.domain.Shelter;
 import com.hong.ForPaw.repository.AnimalRepository;
@@ -69,11 +69,11 @@ public class AnimalService {
                 String response = responseEntity.getBody();
                 System.out.println(response);
 
-                AniamlJsonDTO json = mapper.readValue(response, AniamlJsonDTO.class);
-                List<AniamlJsonDTO.ItemDTO> itemDTOS = json.response().body().items().item();
+                AnimalDTO json = mapper.readValue(response, AnimalDTO.class);
+                List<AnimalDTO.ItemDTO> itemDTOS = json.response().body().items().item();
                 boolean isShelterUpdate = false; // 보호소 업데이트 여부 (동물을 조회할 때 보호소 나머지 정보도 등장함)
 
-                for (AniamlJsonDTO.ItemDTO itemDTO : itemDTOS) {
+                for (AnimalDTO.ItemDTO itemDTO : itemDTOS) {
                     if (!isShelterUpdate) {
                         shelter.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr());
                         isShelterUpdate = true;

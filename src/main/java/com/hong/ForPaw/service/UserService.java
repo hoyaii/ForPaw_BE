@@ -1,6 +1,6 @@
 package com.hong.ForPaw.service;
 
-import com.hong.ForPaw.controller.DTO.Kakao;
+import com.hong.ForPaw.controller.DTO.KakaoDTO;
 import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
@@ -74,8 +74,8 @@ public class UserService {
     @Transactional
     public UserResponse.JwtTokenDTO kakaoLogin(String code) {
 
-        Kakao.TokenDTO token = getKakaoToken(code);
-        Kakao.UserInfoDTO userInfo = getUserInfo(token.access_token());
+        KakaoDTO.TokenDTO token = getKakaoToken(code);
+        KakaoDTO.UserInfoDTO userInfo = getUserInfo(token.access_token());
 
         String email = userInfo.id().toString() + "@kakao.com";
 
@@ -311,7 +311,7 @@ public class UserService {
         return new UserResponse.JwtTokenDTO(accessToken, refreshToken);
     }
 
-    public Kakao.TokenDTO getKakaoToken(String code) {
+    public KakaoDTO.TokenDTO getKakaoToken(String code) {
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("grant_type", "authorization_code");
@@ -319,23 +319,23 @@ public class UserService {
         formData.add("redirect_uri", kakaoRedirectURI);
         formData.add("code", code);
 
-        Mono<Kakao.TokenDTO> response = webClient.post()
+        Mono<KakaoDTO.TokenDTO> response = webClient.post()
                 .uri(kakaoTokenURI)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(formData))
                 .retrieve()
-                .bodyToMono(Kakao.TokenDTO.class);
+                .bodyToMono(KakaoDTO.TokenDTO.class);
 
         return response.block();
     }
 
-    public Kakao.UserInfoDTO getUserInfo(String token) {
+    public KakaoDTO.UserInfoDTO getUserInfo(String token) {
 
-        Flux<Kakao.UserInfoDTO> response = webClient.get()
+        Flux<KakaoDTO.UserInfoDTO> response = webClient.get()
                 .uri(kakaoUserInfoURI)
                 .header("Authorization", "Bearer " + token)
                 .retrieve()
-                .bodyToFlux(Kakao.UserInfoDTO.class);
+                .bodyToFlux(KakaoDTO.UserInfoDTO.class);
         return response.blockFirst();
     }
 }

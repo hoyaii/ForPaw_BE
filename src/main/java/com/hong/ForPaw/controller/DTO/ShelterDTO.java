@@ -3,7 +3,7 @@ package com.hong.ForPaw.controller.DTO;
 
 import java.util.List;
 
-public record ShelterJsonDTO(ResponseDTO response) {
+public record ShelterDTO(ResponseDTO response) {
     public record ResponseDTO(HeaderDTO header, BodyDTO body) { }
     public record HeaderDTO(Long reqNo, String resultCode, String resultMsg, String errorMsg) { }
     public record BodyDTO(ItemsDTO items) { }

@@ -1,6 +1,6 @@
 package com.hong.ForPaw.controller.DTO;
 
-public class Kakao {
+public class KakaoDTO {
     public record TokenDTO(String token_type, String access_token, Integer expires_in, String refresh_token, Integer refresh_token_expires_in, String scope) {}
 
     public record UserInfoDTO(Long id, String connected_at, Properties properties, Account kakao_account) {}
