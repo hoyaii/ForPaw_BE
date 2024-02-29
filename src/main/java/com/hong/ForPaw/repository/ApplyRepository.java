@@ -10,5 +10,5 @@ import java.util.List;
 public interface ApplyRepository extends JpaRepository<Apply, Long> {
 
     @Query("SELECT a FROM Apply a WHERE a.user.id = :userId")
-    List<Apply> findByUserIdAndAnimalId(@Param("userId") Long userId);
+    List<Apply> findByUserId(@Param("userId") Long userId);
 }

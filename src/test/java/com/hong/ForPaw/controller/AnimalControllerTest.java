@@ -174,4 +174,23 @@ class AnimalControllerTest {
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 입양_지원서_조회_성공() throws Exception {
+
+        // given
+
+        // when
+        ResultActions result = mvc.perform(
+                get("/api/applies")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        // then
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
 }

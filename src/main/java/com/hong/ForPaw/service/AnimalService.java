@@ -26,7 +26,6 @@ import javax.persistence.EntityManager;
 import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
@@ -189,7 +188,7 @@ public class AnimalService {
     @Transactional
     public AnimalResponse.AllAppliesDTO findAllApply(Long userId){
 
-        List<Apply> applies = applyRepository.findByUserIdAndAnimalId(userId);
+        List<Apply> applies = applyRepository.findByUserId(userId);
 
         List<AnimalResponse.ApplyDTO> applyDTOS = applies.stream()
                 .map(apply -> new AnimalResponse.ApplyDTO(

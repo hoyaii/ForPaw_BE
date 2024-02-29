@@ -4,6 +4,7 @@ import com.hong.ForPaw.controller.DTO.AnimalRequest;
 import com.hong.ForPaw.controller.DTO.AnimalResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
+import com.hong.ForPaw.repository.ApplyRepository;
 import com.hong.ForPaw.service.AnimalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -58,7 +59,7 @@ public class AnimalController {
     @GetMapping("/applies")
     public ResponseEntity<?> findAllApply(@AuthenticationPrincipal CustomUserDetails userDetails){
 
-        animalService.findAllApply(userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+        AnimalResponse.AllAppliesDTO responseDTO = animalService.findAllApply(userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }
