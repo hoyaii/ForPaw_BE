@@ -3,6 +3,7 @@ package com.hong.ForPaw.domain.Apply;
 import com.hong.ForPaw.domain.Animal;
 import com.hong.ForPaw.domain.User.User;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -37,4 +38,14 @@ public class Apply {
 
     @Column
     private String residence;
+
+    @Builder
+    public Apply(User user, Animal animal, Status status, String name, String tel, String residence) {
+        this.user = user;
+        this.animal = animal;
+        this.status = status;
+        this.name = name;
+        this.tel = tel;
+        this.residence = residence;
+    }
 }

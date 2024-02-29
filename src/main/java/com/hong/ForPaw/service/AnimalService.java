@@ -5,15 +5,14 @@ import com.hong.ForPaw.controller.DTO.AnimalRequest;
 import com.hong.ForPaw.controller.DTO.AnimalResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Apply.Apply;
+import com.hong.ForPaw.domain.Apply.Status;
 import com.hong.ForPaw.domain.Favorite;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.controller.DTO.AnimalDTO;
 import com.hong.ForPaw.domain.Animal;
 import com.hong.ForPaw.domain.Shelter;
-import com.hong.ForPaw.repository.AnimalRepository;
-import com.hong.ForPaw.repository.FavoriteRepository;
-import com.hong.ForPaw.repository.ShelterRepository;
-import com.hong.ForPaw.repository.UserRepository;
+import com.hong.ForPaw.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -40,6 +39,7 @@ public class AnimalService {
     private final ShelterRepository shelterRepository;
     private final FavoriteRepository favoriteRepository;
     private final UserRepository userRepository;
+    private final ApplyRepository applyRepository;
 
     @Value("${openAPI.service-key2}")
     private String serviceKey;
@@ -165,8 +165,26 @@ public class AnimalService {
     }
 
     @Transactional
-    public void inquireAdoption(AnimalRequest.AdoptionApplyDTO requestDTO){
+    public void applyAdoption(AnimalRequest.AdoptionApplyDTO requestDTO, Long userId, Long animalId){
 
+        Animal animal = animalRepository.findById(animalId).orElseThrow(
+                () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
+        );
+
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+
+        Apply apply = Apply.builder()
+                .user(user)
+                .animal(animal)
+                .status(Status.PROCESSING)
+                .name(requestDTO.name())
+                .tel(requestDTO.tel())
+                .residence(requestDTO.residence())
+                .build();
+
+        applyRepository.save(apply);
     }
 
     // 동물 이름 지어주는 메서드
