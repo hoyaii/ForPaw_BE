@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.AnimalResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Favorite;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.controller.DTO.AnimalDTO;
 import com.hong.ForPaw.domain.Animal;
@@ -11,6 +12,7 @@ import com.hong.ForPaw.domain.Shelter;
 import com.hong.ForPaw.repository.AnimalRepository;
 import com.hong.ForPaw.repository.FavoriteRepository;
 import com.hong.ForPaw.repository.ShelterRepository;
+import com.hong.ForPaw.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -24,6 +26,7 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -35,6 +38,7 @@ public class AnimalService {
     private final AnimalRepository animalRepository;
     private final ShelterRepository shelterRepository;
     private final FavoriteRepository favoriteRepository;
+    private final UserRepository userRepository;
 
     @Value("${openAPI.service-key2}")
     private String serviceKey;
@@ -82,8 +86,8 @@ public class AnimalService {
                     }
 
                     Animal animal = Animal.builder()
+                            .id(Long.valueOf(itemDTO.desertionNo()))
                             .shelter(shelter) // 연관관계 매핑
-                            .desertionNo(Long.valueOf(itemDTO.desertionNo()))
                             .happenDt(LocalDate.parse(itemDTO.happenDt(), formatter))
                             .happenPlace(itemDTO.happenPlace())
                             .kind(itemDTO.kindCd())
@@ -110,14 +114,14 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.FindAllAnimalsDTO findAllAnimals(Pageable pageable, User user){
+    public AnimalResponse.FindAllAnimalsDTO findAllAnimals(Pageable pageable, Long userId){
 
         Page<Animal> animalPage = animalRepository.findAll(pageable);
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> new AnimalResponse.AnimalDTO(animal.getDesertionNo(), getAnimalName(), animal.getAge()
+                .map(animal -> new AnimalResponse.AnimalDTO(animal.getId(), getAnimalName(), animal.getAge()
                         , animal.getGender(), animal.getSpecialMark(), animal.getShelter().getRegionCode().getUprName()+" "+animal.getShelter().getRegionCode().getOrgName()
-                        , animal.getInquiryNum(), animal.getLikeNum(), favoriteRepository.findByUserAndAnimal(user, animal).isPresent(), animal.getProfileURL() ))
+                        , animal.getInquiryNum(), animal.getLikeNum(), favoriteRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindAllAnimalsDTO(animalDTOS);
@@ -132,6 +136,31 @@ public class AnimalService {
 
         return new AnimalResponse.AnimalDetailDTO(animalId, animal.getHappenPlace(), animal.getKind(), animal.getColor(),
                 animal.getWeight(), animal.getNoticeSdt(), animal.getNoticeEdt(), animal.getProcessState(), animal.getNeuter());
+    }
+
+    @Transactional
+    public void likeAnimal(Long userId, Long animalId){
+
+        Animal animal = animalRepository.findById(animalId).orElseThrow(
+                () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
+        );
+
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+
+        Optional<Favorite> favoriteOptional = favoriteRepository.findByUserIdAndAnimalId(userId, animalId);
+
+        // 좋아요가 이미 있다면 삭제, 없다면 추가
+        if (favoriteOptional.isPresent()) {
+            favoriteRepository.delete(favoriteOptional.get());
+        } else {
+            Favorite favorite = Favorite.builder()
+                    .user(user)
+                    .animal(animal)
+                    .build();
+            favoriteRepository.save(favorite);
+        }
     }
 
     // 동물 이름 지어주는 메서드

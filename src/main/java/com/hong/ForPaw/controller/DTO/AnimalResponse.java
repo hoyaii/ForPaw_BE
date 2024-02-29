@@ -11,7 +11,7 @@ public class AnimalResponse {
                             String gender, String specialMark, String region,
                             Integer inquiryNum, Integer likeNum, Boolean isLike,
                             String profileURL
-    ){ };
+    ){};
 
     public record AnimalDetailDTO(Long id, String happenPlace, String kind, String color,
                                   String weight, LocalDate noticeSdt, LocalDate noticeEdt,

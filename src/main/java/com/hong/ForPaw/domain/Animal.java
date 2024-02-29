@@ -18,7 +18,7 @@ public class Animal {
     private Shelter shelter;
 
     @Id
-    private Long desertionNo;
+    private Long id;
 
     @Column
     private LocalDate happenDt;
@@ -71,9 +71,9 @@ public class Animal {
 
 
     @Builder
-    public Animal(Shelter shelter, Long desertionNo, LocalDate happenDt, String happenPlace, String kind, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark) {
+    public Animal(Shelter shelter, Long id, LocalDate happenDt, String happenPlace, String kind, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark) {
+        this.id = id;
         this.shelter = shelter;
-        this.desertionNo = desertionNo;
         this.happenDt = happenDt;
         this.happenPlace = happenPlace;
         this.kind = kind;

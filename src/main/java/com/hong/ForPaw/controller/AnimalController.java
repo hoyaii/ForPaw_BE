@@ -35,7 +35,7 @@ public class AnimalController {
     @GetMapping("/animals")
     public ResponseEntity<?> findAllAnimals(Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        AnimalResponse.FindAllAnimalsDTO responseDTO = animalService.findAllAnimals(pageable, userDetails.getUser());
+        AnimalResponse.FindAllAnimalsDTO responseDTO = animalService.findAllAnimals(pageable, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, responseDTO));
     }
 
