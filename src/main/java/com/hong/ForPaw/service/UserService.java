@@ -27,6 +27,8 @@ import reactor.core.publisher.Mono;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -58,7 +60,7 @@ public class UserService {
     private String kakaoRedirectURI;
 
     @Transactional
-    public UserResponse.loginDTO login(UserRequest.LoginDTO requestDTO){
+    public Map<String, String> login(UserRequest.LoginDTO requestDTO){
 
         User user = userRepository.findByEmail(requestDTO.email()).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
@@ -74,28 +76,25 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse.loginDTO kakaoLogin(String code) {
-
+    public Map<String, String> kakaoLogin(String code) {
+        // 카카오 엑세스 토큰 획득 => 유저 정보 획득
         KakaoDTO.TokenDTO token = getKakaoToken(code);
         KakaoDTO.UserInfoDTO userInfo = getUserInfo(token.access_token());
 
+        // 카카오 계정으로 가입한 계정의 이메일은 {카카오 id}@kakao.com로 구성
         String email = userInfo.id().toString() + "@kakao.com";
 
-        if(userRepository.findByEmail(email).isPresent()){
-            User user = userRepository.findByEmail(email).get();
-            checkDuplicateLogin(user);
-
-            return createToken(user);
+        // 가입되지 않음 => email을 넘겨서 추가 정보를 입력하도록 함
+        if(userRepository.findByEmail(email).isEmpty()){
+            Map<String, String> response = new HashMap<>();
+            response.put("email", email);
+            return response;
         }
-        else{
-            User user = User.builder()
-                    .email(email)
-                    .password(passwordEncoder.encode(generatePassword()))
-                    .role(Role.USER)
-                    .build();
 
-            return createToken(user);
-        }
+        User user = userRepository.findByEmail(email).get();
+        checkDuplicateLogin(user);
+
+        return createToken(user);
     }
 
     @Transactional
@@ -321,7 +320,7 @@ public class UserService {
         }
     }
 
-    public UserResponse.loginDTO createToken(User user){
+    public Map<String, String> createToken(User user){
         String accessToken = JWTProvider.createAccessToken(user);
         String refreshToken = JWTProvider.createRefreshToken(user);
 
@@ -332,7 +331,12 @@ public class UserService {
         redisService.removeData("refreshToken", String.valueOf(user.getId()));
         redisService.storeDate("refreshToken", String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP);
 
-        return new UserResponse.loginDTO(accessToken, refreshToken);
+        // Map으로 토큰들을 담아 반환
+        Map<String, String> tokens = new HashMap<>();
+        tokens.put("accessToken", accessToken);
+        tokens.put("refreshToken", refreshToken);
+
+        return tokens;
     }
 
     public KakaoDTO.TokenDTO getKakaoToken(String code) {

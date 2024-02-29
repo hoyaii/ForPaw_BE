@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
@@ -24,31 +26,37 @@ public class UserController {
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody UserRequest.LoginDTO requestDTO) {
 
-        UserResponse.loginDTO responseDTO = userService.login(requestDTO);
+        Map<String, String> tokens = userService.login(requestDTO);
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", responseDTO.refreshToken())
+                .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
                         .httpOnly(true)
                         .secure(true)
                         .sameSite("None")
                         .maxAge(JWTProvider.REFRESH_EXP)
                         .build().toString())
-                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(responseDTO.accessToken())));
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.loginDTO(tokens.get("accessToken"))));
     }
 
     @PostMapping("/auth/login/kakao")
     public ResponseEntity<?> kakaoLogin(@RequestParam String code) {
 
-        UserResponse.loginDTO responseDTO = userService.kakaoLogin(code);
+        Map<String, String> tokenOrEmail = userService.kakaoLogin(code);
 
+        // 가입된 계정이 아님
+        if(!tokenOrEmail.get("email").isEmpty()){
+            return ResponseEntity.ok().body((ApiUtils.success(HttpStatus.OK, new UserResponse.kakaoLoginDTO("", tokenOrEmail.get("email")))));
+        }
+
+        // 가입된 계정이면, jwt 토큰 반환
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", responseDTO.refreshToken())
+                .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokenOrEmail.get("refreshToken"))
                         .httpOnly(true)
                         .secure(true)
                         .sameSite("None")
                         .maxAge(JWTProvider.REFRESH_EXP)
                         .build().toString())
-                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(responseDTO.accessToken())));
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.kakaoLoginDTO(tokenOrEmail.get("accessToken"), "")));
     }
 
     @PostMapping("/accounts")
