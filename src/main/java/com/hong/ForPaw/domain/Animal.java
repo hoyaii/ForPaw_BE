@@ -71,7 +71,7 @@ public class Animal {
 
 
     @Builder
-    public Animal(Shelter shelter, Long id, LocalDate happenDt, String happenPlace, String kind, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark) {
+    public Animal(Long id, Shelter shelter, LocalDate happenDt, String happenPlace, String kind, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark) {
         this.id = id;
         this.shelter = shelter;
         this.happenDt = happenDt;
