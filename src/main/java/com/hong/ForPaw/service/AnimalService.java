@@ -1,6 +1,7 @@
 package com.hong.ForPaw.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hong.ForPaw.controller.DTO.AnimalRequest;
 import com.hong.ForPaw.controller.DTO.AnimalResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
@@ -161,6 +162,11 @@ public class AnimalService {
                     .build();
             favoriteRepository.save(favorite);
         }
+    }
+
+    @Transactional
+    public void inquireAdoption(AnimalRequest.AdoptionApplyDTO requestDTO){
+
     }
 
     // 동물 이름 지어주는 메서드
