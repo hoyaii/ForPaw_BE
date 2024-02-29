@@ -74,7 +74,7 @@ class AnimalControllerTest {
     public void 보호동물_조회_실패() throws Exception {
 
         // given
-        // 존재하지 않는 아이디
+        // 존재하지 않는 동물
         Long id = 42734220L;
 
         // when
@@ -84,6 +84,45 @@ class AnimalControllerTest {
         );
 
         // then
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 관심동물_담기_성공() throws Exception {
+
+        // given
+        Long id = 427342202400090L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/animals/" + id + "/like")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 관심동물_담기_실패() throws Exception {
+
+        // given
+        // 존재하지 않는 동물
+        Long id = 427342200090L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/animals/" + id + "/like")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
         String responseBody = result.andReturn().getResponse().getContentAsString();
         System.out.println("테스트 : "+responseBody);
 
