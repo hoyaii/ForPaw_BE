@@ -68,6 +68,8 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
         }
 
+        checkDuplicateLogin(user);
+
         return createToken(user);
     }
 
@@ -78,10 +80,11 @@ public class UserService {
         KakaoDTO.UserInfoDTO userInfo = getUserInfo(token.access_token());
 
         String email = userInfo.id().toString() + "@kakao.com";
-
         User user = userRepository.findByEmail(email).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
+
+        checkDuplicateLogin(user);
 
         return createToken(user);
     }
@@ -300,9 +303,21 @@ public class UserService {
         return verificationCode;
     }
 
+    // 중복 로그인 체크 => 만약 이미 로그인된 상태라면 기존 세션은 삭제
+    public void checkDuplicateLogin(User user){
+
+        String accessToken = redisService.getDataInStr("accessToken", String.valueOf(user.getId()));
+        if(accessToken != null){
+            redisService.removeData("accessToken", String.valueOf(user.getId()));
+        }
+    }
+
     public UserResponse.JwtTokenDTO createToken(User user){
         String accessToken = JWTProvider.createAccessToken(user);
         String refreshToken = JWTProvider.createRefreshToken(user);
+
+        // Access Token 세션에 저장 (중복 로그인 방지)
+        redisService.storeDate("accessToken", String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP);
 
         // Refresh Token 갱신
         redisService.removeData("refreshToken", String.valueOf(user.getId()));

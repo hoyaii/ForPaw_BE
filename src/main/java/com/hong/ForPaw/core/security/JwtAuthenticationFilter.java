@@ -49,7 +49,6 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
                             myUserDetails.getAuthorities()
                     );
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.debug("디버그 : 인증 객체 만들어짐");
         } catch (SignatureVerificationException sve) {
             log.error("토큰 검증 실패");
         } catch (TokenExpiredException tee) {
