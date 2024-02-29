@@ -1,6 +1,7 @@
 package com.hong.ForPaw.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hong.ForPaw.controller.DTO.AnimalRequest;
 import com.hong.ForPaw.controller.DTO.UserRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,6 +122,51 @@ class AnimalControllerTest {
         ResultActions result = mvc.perform(
                 post("/api/animals/" + id + "/like")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 입양_지원서_작성_성공() throws Exception {
+
+        // given
+        Long id = 427342202400090L;
+        AnimalRequest.AdoptionApplyDTO requestDTO = new AnimalRequest.AdoptionApplyDTO("이한홍", "010-1234-5678", "부산광역시 금정구 부산대학로64번길 79 (장전동, xx아파트)");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/animals/" + id + "/apply")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 입양_지원서_작성_실패() throws Exception {
+
+        // given
+        // 존재하지 않는 동물
+        Long id = 427342202090L;
+        AnimalRequest.AdoptionApplyDTO requestDTO = new AnimalRequest.AdoptionApplyDTO("이한홍", "010-1234-5678", "부산광역시 금정구 부산대학로64번길 79 (장전동, xx아파트)");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/animals/" + id + "/apply")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
