@@ -26,6 +26,7 @@ import javax.persistence.EntityManager;
 import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
@@ -117,7 +118,7 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.FindAllAnimalsDTO findAllAnimals(Pageable pageable, Long userId){
+    public AnimalResponse.AllAnimalsDTO findAllAnimals(Pageable pageable, Long userId){
 
         Page<Animal> animalPage = animalRepository.findAll(pageable);
 
@@ -127,7 +128,7 @@ public class AnimalService {
                         , animal.getInquiryNum(), animal.getLikeNum(), favoriteRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
                 .collect(Collectors.toList());
 
-        return new AnimalResponse.FindAllAnimalsDTO(animalDTOS);
+        return new AnimalResponse.AllAnimalsDTO(animalDTOS);
     }
 
     @Transactional
@@ -183,6 +184,30 @@ public class AnimalService {
                 .build();
 
         applyRepository.save(apply);
+    }
+
+    @Transactional
+    public AnimalResponse.AllAppliesDTO findAllApply(Long userId, Long animalId){
+
+        Animal animal = animalRepository.findById(animalId).orElseThrow(
+                () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
+        );
+        List<Apply> applies = applyRepository.findByUserIdAndAnimalId(userId, animalId);
+
+        List<AnimalResponse.ApplyDTO> applyDTOS = applies.stream()
+                .map(apply -> new AnimalResponse.ApplyDTO(
+                        apply.getId(),
+                        animal.getName(),
+                        animal.getKind(),
+                        animal.getGender(),
+                        animal.getAge(),
+                        apply.getName(),
+                        apply.getTel(),
+                        apply.getResidence(),
+                        apply.getStatus()))
+                .collect(Collectors.toList());
+
+        return new AnimalResponse.AllAppliesDTO(applyDTOS);
     }
 
     // 동물 이름 지어주는 메서드

@@ -1,6 +1,5 @@
 package com.hong.ForPaw.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.hong.ForPaw.controller.DTO.AnimalRequest;
 import com.hong.ForPaw.controller.DTO.AnimalResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
@@ -13,8 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
-import java.net.URISyntaxException;
 
 @Controller
 @RequiredArgsConstructor
@@ -33,7 +30,7 @@ public class AnimalController {
     @GetMapping("/animals")
     public ResponseEntity<?> findAllAnimals(Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        AnimalResponse.FindAllAnimalsDTO responseDTO = animalService.findAllAnimals(pageable, userDetails.getUser().getId());
+        AnimalResponse.AllAnimalsDTO responseDTO = animalService.findAllAnimals(pageable, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, responseDTO));
     }
 

@@ -69,9 +69,12 @@ public class Animal {
     @Column
     private Integer inquiryNum = 0;
 
+    @Column
+    private String name;
+
 
     @Builder
-    public Animal(Long id, Shelter shelter, LocalDate happenDt, String happenPlace, String kind, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark) {
+    public Animal(Long id, Shelter shelter, LocalDate happenDt, String happenPlace, String kind, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark, String name) {
         this.id = id;
         this.shelter = shelter;
         this.happenDt = happenDt;
@@ -87,5 +90,6 @@ public class Animal {
         this.gender = gender;
         this.neuter = neuter;
         this.specialMark = specialMark;
+        this.name = name;
     }
 }
