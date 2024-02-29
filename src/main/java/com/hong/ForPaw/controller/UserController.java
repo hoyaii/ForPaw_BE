@@ -38,6 +38,21 @@ public class UserController {
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(responseDTO.accessToken())));
     }
 
+    @PostMapping("/auth/login/kakao")
+    public ResponseEntity<?> kakaoLogin(@RequestParam String code) {
+
+        UserResponse.JwtTokenDTO responseDTO = userService.kakaoLogin(code);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", responseDTO.refreshToken())
+                        .httpOnly(true)
+                        .secure(true)
+                        .sameSite("None")
+                        .maxAge(JWTProvider.REFRESH_EXP)
+                        .build().toString())
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(responseDTO.accessToken())));
+    }
+
     @PostMapping("/accounts")
     public ResponseEntity<?> join(@RequestBody UserRequest.JoinDTO requestDTO){
 
