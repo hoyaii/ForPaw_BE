@@ -25,6 +25,7 @@ public class UserController {
 
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody UserRequest.LoginDTO requestDTO) {
+
         UserResponse.JwtTokenDTO responseDTO = userService.login(requestDTO);
 
         return ResponseEntity.ok()
@@ -35,13 +36,6 @@ public class UserController {
                         .maxAge(JWTProvider.REFRESH_EXP)
                         .build().toString())
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(responseDTO.accessToken())));
-    }
-
-    @GetMapping("/auth/login/kakao")
-    public ResponseEntity<?> kakaoLogin(@RequestParam String code) throws JsonProcessingException {
-
-
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/accounts")

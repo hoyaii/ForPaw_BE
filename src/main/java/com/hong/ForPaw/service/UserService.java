@@ -1,5 +1,6 @@
 package com.hong.ForPaw.service;
 
+import com.hong.ForPaw.controller.DTO.Kakao;
 import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
@@ -9,18 +10,23 @@ import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.hong.ForPaw.core.security.JWTProvider;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -34,10 +40,22 @@ public class UserService {
     private final UserRepository userRepository;
     private final RedisService redisService;
     private final JavaMailSender mailSender;
-
+    private final WebClient webClient;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
+
+    @Value("${kakao.key}")
+    private String kakaoAPIKey;
+
+    @Value("${kakao.token.uri}")
+    private String kakaoTokenURI;
+
+    @Value("${kakao.userInfo.uri}")
+    private String kakaoUserInfoURI;
+
+    @Value("${kakao.redirect.uri}")
+    private String kakaoRedirectURI;
 
     @Transactional
     public UserResponse.JwtTokenDTO login(UserRequest.LoginDTO requestDTO){
@@ -50,19 +68,22 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
         }
 
-        String accessToken = JWTProvider.createAccessToken(user);
-        String refreshToken = JWTProvider.createRefreshToken(user);
-
-        // Refresh Token 갱신
-        redisService.removeData("refreshToken", String.valueOf(user.getId()));
-        redisService.storeDate("refreshToken", String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP);
-
-        return new UserResponse.JwtTokenDTO(accessToken, refreshToken);
+        return createToken(user);
     }
 
     @Transactional
-    public UserResponse.AccessTokenDTO kakaoLogin(String code){
+    public UserResponse.JwtTokenDTO kakaoLogin(String code) {
 
+        Kakao.TokenDTO token = getKakaoToken(code);
+        Kakao.UserInfoDTO userInfo = getUserInfo(token.access_token());
+
+        String email = userInfo.id().toString() + "@kakao.com";
+
+        User user = userRepository.findByEmail(email).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+
+        return createToken(user);
     }
 
     @Transactional
@@ -277,5 +298,44 @@ public class UserService {
                 .collect(Collectors.joining());
 
         return verificationCode;
+    }
+
+    public UserResponse.JwtTokenDTO createToken(User user){
+        String accessToken = JWTProvider.createAccessToken(user);
+        String refreshToken = JWTProvider.createRefreshToken(user);
+
+        // Refresh Token 갱신
+        redisService.removeData("refreshToken", String.valueOf(user.getId()));
+        redisService.storeDate("refreshToken", String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP);
+
+        return new UserResponse.JwtTokenDTO(accessToken, refreshToken);
+    }
+
+    public Kakao.TokenDTO getKakaoToken(String code) {
+
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("grant_type", "authorization_code");
+        formData.add("client_id", kakaoAPIKey);
+        formData.add("redirect_uri", kakaoRedirectURI);
+        formData.add("code", code);
+
+        Mono<Kakao.TokenDTO> response = webClient.post()
+                .uri(kakaoTokenURI)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData(formData))
+                .retrieve()
+                .bodyToMono(Kakao.TokenDTO.class);
+
+        return response.block();
+    }
+
+    public Kakao.UserInfoDTO getUserInfo(String token) {
+
+        Flux<Kakao.UserInfoDTO> response = webClient.get()
+                .uri(kakaoUserInfoURI)
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .bodyToFlux(Kakao.UserInfoDTO.class);
+        return response.blockFirst();
     }
 }
