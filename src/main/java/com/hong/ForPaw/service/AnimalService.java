@@ -187,20 +187,17 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.AllAppliesDTO findAllApply(Long userId, Long animalId){
+    public AnimalResponse.AllAppliesDTO findAllApply(Long userId){
 
-        Animal animal = animalRepository.findById(animalId).orElseThrow(
-                () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
-        );
-        List<Apply> applies = applyRepository.findByUserIdAndAnimalId(userId, animalId);
+        List<Apply> applies = applyRepository.findByUserIdAndAnimalId(userId);
 
         List<AnimalResponse.ApplyDTO> applyDTOS = applies.stream()
                 .map(apply -> new AnimalResponse.ApplyDTO(
                         apply.getId(),
-                        animal.getName(),
-                        animal.getKind(),
-                        animal.getGender(),
-                        animal.getAge(),
+                        apply.getAnimal().getName(),
+                        apply.getAnimal().getKind(),
+                        apply.getAnimal().getGender(),
+                        apply.getAnimal().getAge(),
                         apply.getName(),
                         apply.getTel(),
                         apply.getResidence(),

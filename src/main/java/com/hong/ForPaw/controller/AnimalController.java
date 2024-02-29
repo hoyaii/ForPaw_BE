@@ -54,4 +54,11 @@ public class AnimalController {
         animalService.applyAdoption(requestDTO, userDetails.getUser().getId(), animalId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
+
+    @GetMapping("/applies")
+    public ResponseEntity<?> findAllApply(@AuthenticationPrincipal CustomUserDetails userDetails){
+
+        animalService.findAllApply(userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
 }
