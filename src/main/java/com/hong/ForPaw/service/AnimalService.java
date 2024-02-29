@@ -2,6 +2,8 @@ package com.hong.ForPaw.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.AnimalResponse;
+import com.hong.ForPaw.core.errors.CustomException;
+import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.controller.DTO.AnimalDTO;
 import com.hong.ForPaw.domain.Animal;
@@ -119,6 +121,17 @@ public class AnimalService {
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindAllAnimalsDTO(animalDTOS);
+    }
+
+    @Transactional
+    public AnimalResponse.AnimalDetailDTO findAnimalById(Long animalId){
+
+        Animal animal = animalRepository.findById(animalId).orElseThrow(
+                () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
+        );
+
+        return new AnimalResponse.AnimalDetailDTO(animalId, animal.getHappenPlace(), animal.getKind(), animal.getColor(),
+                animal.getWeight(), animal.getNoticeSdt(), animal.getNoticeEdt(), animal.getProcessState(), animal.getNeuter());
     }
 
     // 동물 이름 지어주는 메서드
