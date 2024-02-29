@@ -112,12 +112,11 @@ public class AnimalService {
 
         Page<Animal> animalPage = animalRepository.findAll(pageable);
 
-        List<AnimalResponse.FindAllAnimalsDTO.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> new AnimalResponse.FindAllAnimalsDTO.AnimalDTO(animal.getDesertionNo(), getAnimalName(), animal.getAge()
+        List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
+                .map(animal -> new AnimalResponse.AnimalDTO(animal.getDesertionNo(), getAnimalName(), animal.getAge()
                         , animal.getGender(), animal.getSpecialMark(), animal.getShelter().getRegionCode().getUprName()+" "+animal.getShelter().getRegionCode().getOrgName()
                         , animal.getInquiryNum(), animal.getLikeNum(), favoriteRepository.findByUserAndAnimal(user, animal).isPresent(), animal.getProfileURL() ))
                 .collect(Collectors.toList());
-
 
         return new AnimalResponse.FindAllAnimalsDTO(animalDTOS);
     }

@@ -24,7 +24,7 @@ public class AnimalController {
     private final AnimalService animalService;
 
     @GetMapping("/animals/import")
-    public ResponseEntity<?> loadAnimals() throws URISyntaxException, JsonProcessingException {
+    public ResponseEntity<?> loadAnimals() {
 
         animalService.loadAnimalDate();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
