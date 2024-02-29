@@ -58,7 +58,7 @@ public class UserService {
     private String kakaoRedirectURI;
 
     @Transactional
-    public UserResponse.JwtTokenDTO login(UserRequest.LoginDTO requestDTO){
+    public UserResponse.loginDTO login(UserRequest.LoginDTO requestDTO){
 
         User user = userRepository.findByEmail(requestDTO.email()).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
@@ -74,19 +74,28 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse.JwtTokenDTO kakaoLogin(String code) {
+    public UserResponse.loginDTO kakaoLogin(String code) {
 
         KakaoDTO.TokenDTO token = getKakaoToken(code);
         KakaoDTO.UserInfoDTO userInfo = getUserInfo(token.access_token());
 
         String email = userInfo.id().toString() + "@kakao.com";
-        User user = userRepository.findByEmail(email).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
-        );
 
-        checkDuplicateLogin(user);
+        if(userRepository.findByEmail(email).isPresent()){
+            User user = userRepository.findByEmail(email).get();
+            checkDuplicateLogin(user);
 
-        return createToken(user);
+            return createToken(user);
+        }
+        else{
+            User user = User.builder()
+                    .email(email)
+                    .password(passwordEncoder.encode(generatePassword()))
+                    .role(Role.USER)
+                    .build();
+
+            return createToken(user);
+        }
     }
 
     @Transactional
@@ -158,7 +167,7 @@ public class UserService {
         redisService.removeData("emailCode", requestDTO.email());
 
         // 임시 비밀번호 생성 후 업데이트
-        String password = generateTemporaryPassword();
+        String password = generatePassword();
         User user = userRepository.findByEmail(requestDTO.email()).get(); // 이미 앞에서 계정 존재 여부를 확인 했으니 바로 가져옴
         user.updatePassword(passwordEncoder.encode(password));
 
@@ -268,7 +277,7 @@ public class UserService {
     }
 
     // 알파벳, 숫자, 특수문자가 모두 포함되도록 해서 임시 비밀번호 생성
-    private String generateTemporaryPassword() {
+    private String generatePassword() {
 
         String specialChars = "!@#$%^&*";
         String numbers = "0123456789";
@@ -312,7 +321,7 @@ public class UserService {
         }
     }
 
-    public UserResponse.JwtTokenDTO createToken(User user){
+    public UserResponse.loginDTO createToken(User user){
         String accessToken = JWTProvider.createAccessToken(user);
         String refreshToken = JWTProvider.createRefreshToken(user);
 
@@ -323,7 +332,7 @@ public class UserService {
         redisService.removeData("refreshToken", String.valueOf(user.getId()));
         redisService.storeDate("refreshToken", String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP);
 
-        return new UserResponse.JwtTokenDTO(accessToken, refreshToken);
+        return new UserResponse.loginDTO(accessToken, refreshToken);
     }
 
     public KakaoDTO.TokenDTO getKakaoToken(String code) {

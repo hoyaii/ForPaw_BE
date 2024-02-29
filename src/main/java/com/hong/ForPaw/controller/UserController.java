@@ -1,12 +1,10 @@
 package com.hong.ForPaw.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.security.JWTProvider;
 import com.hong.ForPaw.core.utils.ApiUtils;
-import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -26,7 +24,7 @@ public class UserController {
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody UserRequest.LoginDTO requestDTO) {
 
-        UserResponse.JwtTokenDTO responseDTO = userService.login(requestDTO);
+        UserResponse.loginDTO responseDTO = userService.login(requestDTO);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", responseDTO.refreshToken())
@@ -41,7 +39,7 @@ public class UserController {
     @PostMapping("/auth/login/kakao")
     public ResponseEntity<?> kakaoLogin(@RequestParam String code) {
 
-        UserResponse.JwtTokenDTO responseDTO = userService.kakaoLogin(code);
+        UserResponse.loginDTO responseDTO = userService.kakaoLogin(code);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", responseDTO.refreshToken())

@@ -1,7 +1,9 @@
 package com.hong.ForPaw.controller.DTO;
 
 public class UserResponse {
-    public record JwtTokenDTO(String accessToken, String refreshToken) {}
+    public record loginDTO(String accessToken, String refreshToken) {}
+
+    public record kakaoLoginDTO(String accessToken, String refreshToken, String email) {}
 
     public record AccessTokenDTO(String accessToken) {}
 
