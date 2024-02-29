@@ -66,6 +66,13 @@ public class UserController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, null));
     }
 
+    @PostMapping("/accounts/social")
+    public ResponseEntity<?> socialJoin(@RequestBody UserRequest.SocialJoinDTO requestDTO){
+
+        userService.socialJoin(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, null));
+    }
+
     @PostMapping("/accounts/check")
     public ResponseEntity<?> checkAndSendCode(@RequestBody UserRequest.EmailDTO requestDTO){
 
