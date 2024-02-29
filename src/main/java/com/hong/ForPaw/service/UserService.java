@@ -117,6 +117,22 @@ public class UserService {
         userRepository.save(user);
     }
 
+    @Transactional
+    public void socialJoin(UserRequest.SocialJoinDTO requestDTO){
+
+        User user = User.builder()
+                .name(requestDTO.name())
+                .nickName(requestDTO.nickName())
+                .email(requestDTO.email())
+                .role(Role.USER)
+                .profileURL(requestDTO.profileURL())
+                .regin(requestDTO.region())
+                .subRegion(requestDTO.subRegion())
+                .build();
+
+        userRepository.save(user);
+    }
+
     // 중복 여부 확인 => 만약 사용 가능한 메일이면, 코드 전송
     @Transactional
     public void checkAndSendCode(UserRequest.EmailDTO requestDTO){

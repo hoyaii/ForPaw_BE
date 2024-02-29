@@ -12,6 +12,9 @@ public class UserRequest {
                           String region, String subRegion, String password,
                           String passwordConfirm, String profileURL) {}
 
+    public record SocialJoinDTO(String email, String name, String nickName, String region,
+                                String subRegion, String profileURL) {}
+
     public record CurPasswordDTO(String password) {}
 
     public record UpdatePasswordDTO(String newPassword, String newPasswordConfirm, String curPassword) {}

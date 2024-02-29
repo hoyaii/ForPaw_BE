@@ -44,7 +44,7 @@ public class UserController {
         Map<String, String> tokenOrEmail = userService.kakaoLogin(code);
 
         // 가입된 계정이 아님
-        if(!tokenOrEmail.get("email").isEmpty()){
+        if(tokenOrEmail.get("email") != null){
             return ResponseEntity.ok().body((ApiUtils.success(HttpStatus.OK, new UserResponse.kakaoLoginDTO("", tokenOrEmail.get("email")))));
         }
 
