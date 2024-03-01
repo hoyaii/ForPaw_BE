@@ -63,7 +63,7 @@ public class AnimalController {
     }
 
     // 권한 처리가 필요함
-    @PostMapping("/applies/{applyId}")
+    @DeleteMapping ("/applies/{applyId}")
     public ResponseEntity<?> deleteApplyById(@PathVariable Long applyId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         animalService.deleteApplyById(applyId, userDetails.getUser().getId());

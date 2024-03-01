@@ -12,8 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @AutoConfigureMockMvc
@@ -190,5 +189,44 @@ class AnimalControllerTest {
         System.out.println("테스트 : "+responseBody);
 
         result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 입양_문의_취소하기_성공() throws Exception {
+
+        // given
+        Long id = 1L;
+
+        // when
+        ResultActions result = mvc.perform(
+                delete("/api/applies/" + id)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 입양_문의_취소하기_실패() throws Exception {
+
+        // given
+        // 존재하지 않는 아이디
+        Long id = 10L;
+
+        // when
+        ResultActions result = mvc.perform(
+                delete("/api/applies/" + id)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
     }
 }

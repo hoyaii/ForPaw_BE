@@ -208,7 +208,7 @@ public class AnimalService {
 
     @Transactional
     public void deleteApplyById(Long applyId, Long userId){
-
+        System.out.println("apply: " + applyId + " user: " + userId);
         Optional<Apply> applyOP = applyRepository.findByUserIdAndAnimalId(userId, applyId);
 
         if(applyOP.isEmpty()){
