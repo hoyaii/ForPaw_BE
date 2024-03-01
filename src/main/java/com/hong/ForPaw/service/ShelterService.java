@@ -94,7 +94,7 @@ public class ShelterService {
     @Transactional
     public ShelterResponse.FindAllSheltersDTO findAllShelters(Pageable pageable){
 
-        Page<Shelter> shelterPage = shelterRepository.findAll(pageable);
+        Page<Shelter> shelterPage = shelterRepository.findByAnimalCntGreaterThan(0L, pageable);
 
         List<ShelterResponse.ShelterDTO> shelterDTOS = shelterPage.getContent().stream()
                 .map(shelter -> new ShelterResponse.ShelterDTO(shelter.getCareRegNo(), shelter.getName(),
@@ -104,13 +104,14 @@ public class ShelterService {
         return new ShelterResponse.FindAllSheltersDTO(shelterDTOS);
     }
 
+    // 데이터 정합성 문제로 인해 사용 '폐기' => 조회 단계에서 animalCnt가 1이상인 것만 조회하도록 수정
     @Transactional
     public void deleteZeroShelter(Role role){
 
         // 관리자만 사용 가능 (테스트 상황에선 주석 처리)
-        //if(role.equals(Role.ADMIN)){
-        //    throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        //}
+        if(role.equals(Role.ADMIN)){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
 
         shelterRepository.deleteZeroShelter();
     }

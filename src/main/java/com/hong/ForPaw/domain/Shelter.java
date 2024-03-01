@@ -31,7 +31,7 @@ public class Shelter {
     private String careAddr;
 
     @Column
-    private Long animalCnt;
+    private Long animalCnt = 0L;
 
     @Builder
     public Shelter(Long careRegNo, RegionCode regionCode, String name, String careTel, String careAddr) {
