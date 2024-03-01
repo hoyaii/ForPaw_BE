@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AnimalRepository extends JpaRepository<Animal, Long> {
     Page<Animal> findAll(Pageable pageable);
+
+    Page<Animal> findByShelterId(Long shelterId, Pageable pageable);
 }

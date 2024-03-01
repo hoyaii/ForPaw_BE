@@ -104,7 +104,7 @@ public class ShelterService {
         return new ShelterResponse.FindAllSheltersDTO(shelterDTOS);
     }
 
-    // 데이터 정합성 문제로 인해 사용 '폐기' => 조회 단계에서 animalCnt가 1이상인 것만 조회하도록 수정
+    // 데이터 정합성 문제로 인해 사용 '보류' => 조회 단계에서 animalCnt가 1이상인 것만 조회하도록 수정
     @Transactional
     public void deleteZeroShelter(Role role){
 

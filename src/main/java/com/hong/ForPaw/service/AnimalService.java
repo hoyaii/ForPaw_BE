@@ -224,6 +224,20 @@ public class AnimalService {
         applyRepository.deleteById(applyId);
     }
 
+    @Transactional
+    public AnimalResponse.FindAllAnimalsDTO findAllAnimalsByShelterId(Long userId, Long shelterId, Pageable pageable){
+
+        Page<Animal> animalPage = animalRepository.findByShelterId(shelterId, pageable);
+
+        List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
+                .map(animal -> new AnimalResponse.AnimalDTO(animal.getId(), getAnimalName(), animal.getAge()
+                        , animal.getGender(), animal.getSpecialMark(), animal.getShelter().getRegionCode().getUprName()+" "+animal.getShelter().getRegionCode().getOrgName()
+                        , animal.getInquiryNum(), animal.getLikeNum(), favoriteRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
+                .collect(Collectors.toList());
+
+        return new AnimalResponse.FindAllAnimalsDTO(animalDTOS);
+    }
+
     // 동물 이름 지어주는 메서드
     public String getAnimalName() {
         int index = ThreadLocalRandom.current().nextInt(animalNames.length);
