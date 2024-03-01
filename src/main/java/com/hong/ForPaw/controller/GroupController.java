@@ -1,6 +1,7 @@
 package com.hong.ForPaw.controller;
 
 import com.hong.ForPaw.controller.DTO.GroupRequest;
+import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.GroupService;
@@ -23,6 +24,13 @@ public class GroupController {
 
         groupService.createGroup(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
+    @GetMapping("/groups/{groupId}")
+    public ResponseEntity<?> findGroupById(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        GroupResponse.FindGroupByIdDTO responseDTO = groupService.findGroupById(groupId, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PatchMapping("/groups/{groupId}")
