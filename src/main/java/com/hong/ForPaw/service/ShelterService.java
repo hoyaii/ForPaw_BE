@@ -3,11 +3,16 @@ package com.hong.ForPaw.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.AnimalResponse;
 import com.hong.ForPaw.controller.DTO.ShelterResponse;
+import com.hong.ForPaw.core.errors.CustomException;
+import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.RegionCode;
 import com.hong.ForPaw.controller.DTO.ShelterDTO;
 import com.hong.ForPaw.domain.Shelter;
+import com.hong.ForPaw.domain.User.Role;
+import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.RegionCodeRepository;
 import com.hong.ForPaw.repository.ShelterRepository;
+import com.hong.ForPaw.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -29,6 +34,7 @@ public class ShelterService {
 
     private final ShelterRepository shelterRepository;
     private final RegionCodeRepository regionCodeRepository;
+    private final UserRepository userRepository;
 
     @Value("${openAPI.service-key2}")
     private String serviceKey;
@@ -90,5 +96,20 @@ public class ShelterService {
                 .collect(Collectors.toList());
 
         return new ShelterResponse.FindAllSheltersDTO(shelterDTOS);
+    }
+
+    @Transactional
+    public void deleteZeroShelter(Long userId){
+
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+
+        // 관리자만 사용 가능
+        if(user.getRole().equals(Role.ADMIN)){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
+
+        shelterRepository.deleteZeroShelter();
     }
 }
