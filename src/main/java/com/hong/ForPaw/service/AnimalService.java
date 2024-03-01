@@ -206,6 +206,12 @@ public class AnimalService {
         return new AnimalResponse.AllAppliesDTO(applyDTOS);
     }
 
+    @Transactional
+    public void deleteApplyById(Long applyId){
+
+        applyRepository.deleteById(applyId);
+    }
+
     // 동물 이름 지어주는 메서드
     public String getAnimalName() {
         int index = ThreadLocalRandom.current().nextInt(animalNames.length);
