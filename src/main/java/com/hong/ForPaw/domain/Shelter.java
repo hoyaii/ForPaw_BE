@@ -12,13 +12,14 @@ import javax.persistence.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Shelter {
-    // 보호소 등록 번호
-    @Id
-    private Long careRegNo;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "regionCode_id")
     private RegionCode regionCode;
+
+    // 보호소 등록 번호
+    @Id
+    private Long careRegNo;
 
     @Column
     private String name;

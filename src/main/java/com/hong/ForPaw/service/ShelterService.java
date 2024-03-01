@@ -1,19 +1,26 @@
 package com.hong.ForPaw.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hong.ForPaw.controller.DTO.AnimalResponse;
+import com.hong.ForPaw.controller.DTO.ShelterResponse;
 import com.hong.ForPaw.domain.RegionCode;
 import com.hong.ForPaw.controller.DTO.ShelterDTO;
+import com.hong.ForPaw.domain.Shelter;
 import com.hong.ForPaw.repository.RegionCodeRepository;
 import com.hong.ForPaw.repository.ShelterRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -73,8 +80,15 @@ public class ShelterService {
     }
 
     @Transactional
-    public void findAllShelters(){
+    public ShelterResponse.FindAllSheltersDTO findAllShelters(Pageable pageable){
 
+        Page<Shelter> shelterPage = shelterRepository.findAll(pageable);
+
+        List<ShelterResponse.ShelterDTO> shelterDTOS = shelterPage.getContent().stream()
+                .map(shelter -> new ShelterResponse.ShelterDTO(shelter.getCareRegNo(), shelter.getName(),
+                        shelter.getCareAddr(), shelter.getCareTel()))
+                .collect(Collectors.toList());
+
+        return new ShelterResponse.FindAllSheltersDTO(shelterDTOS);
     }
-
 }
