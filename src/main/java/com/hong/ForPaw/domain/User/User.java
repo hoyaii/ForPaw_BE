@@ -66,4 +66,6 @@ public class User {
         this.subRegion = subRegion;
         this.profileURL = profileURL;
     }
+
+    public void updateRole(Role role){ this.role = role; }
 }
