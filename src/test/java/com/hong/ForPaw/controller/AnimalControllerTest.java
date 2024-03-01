@@ -229,4 +229,49 @@ class AnimalControllerTest {
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 보호소의_보호동물_목록_조회_성공() throws Exception {
+
+        // given
+        Long shelterId = 311305201300001L;
+
+        // when
+        ResultActions result = mvc.perform(
+                get("/api/shelters/" + shelterId + "/animals")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .param("page", "0")
+                        .param("size", "10")
+        );
+
+        // then
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 보호소의_보호동물_목록_조회_실패() throws Exception {
+
+        // given
+        // 존재하지 않는 아이디
+        Long shelterId = 311305201300001L;
+
+        // when
+        ResultActions result = mvc.perform(
+                get("/api/shelters/" + shelterId + "/animals")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .param("page", "0")
+                        .param("size", "10")
+        );
+
+        // then
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : "+responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
 }
