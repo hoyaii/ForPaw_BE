@@ -207,7 +207,13 @@ public class AnimalService {
     }
 
     @Transactional
-    public void deleteApplyById(Long applyId){
+    public void deleteApplyById(Long applyId, Long userId){
+
+        Optional<Apply> applyOP = applyRepository.findByUserIdAndAnimalId(userId, applyId);
+
+        if(applyOP.isEmpty()){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
 
         applyRepository.deleteById(applyId);
     }

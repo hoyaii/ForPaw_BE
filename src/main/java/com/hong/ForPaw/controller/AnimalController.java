@@ -62,4 +62,12 @@ public class AnimalController {
         AnimalResponse.AllAppliesDTO responseDTO = animalService.findAllApply(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
+
+    // 권한 처리가 필요함
+    @PostMapping("/applies/{applyId}")
+    public ResponseEntity<?> deleteApplyById(@PathVariable Long applyId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        animalService.deleteApplyById(applyId, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
 }
