@@ -59,7 +59,7 @@ public class GroupService {
         // 수정 권한 체크
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .ifPresentOrElse(groupUser -> {
-                    if (groupUser.getRole().equals(Role.ADMIN)) {
+                    if (!groupUser.getRole().equals(Role.ADMIN)) {
                         throw new CustomException(ExceptionCode.USER_FORBIDDEN);
                     }
                 }, () -> {

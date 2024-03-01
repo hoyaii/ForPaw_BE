@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
@@ -39,6 +40,28 @@ class GroupControllerTest {
         // when
         ResultActions result = mvc.perform(
                 post("/api/groups")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 그룹_수정_성공() throws Exception {
+
+        // given
+        Long id = 1L;
+        GroupRequest.UpdateGroupDTO requestDTO = new GroupRequest.UpdateGroupDTO("동물 사랑 협회2", "대구광역시", "수성구", "유기견들을 진료하는 모임입니다!", "봉사", "https://s3.xxxx.xx.com");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/groups/" + id)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(requestBody)
         );

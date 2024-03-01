@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import javax.persistence.*;
 
 @Entity
+@Table(name = "groups_table")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Group {
