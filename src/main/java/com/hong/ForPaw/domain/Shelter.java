@@ -30,6 +30,9 @@ public class Shelter {
     @Column
     private String careAddr;
 
+    @Column
+    private Long animalCnt;
+
     @Builder
     public Shelter(Long careRegNo, RegionCode regionCode, String name, String careTel, String careAddr) {
         this.careRegNo = careRegNo;
@@ -39,8 +42,9 @@ public class Shelter {
         this.careAddr = careAddr;
     }
 
-    public void updateShelterInfo(String careTel, String careAddr){
+    public void updateShelterInfo(String careTel, String careAddr, Long animalCnt){
         this.careTel = careTel;
         this.careAddr = careAddr;
+        this.animalCnt = animalCnt;
     }
 }

@@ -84,7 +84,7 @@ public class AnimalService {
 
                 for (AnimalDTO.ItemDTO itemDTO : itemDTOS) {
                     if (!isShelterUpdate) {
-                        shelter.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr());
+                        shelter.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), Long.valueOf(json.response().body().totalCount()));
                         isShelterUpdate = true;
                     }
 
