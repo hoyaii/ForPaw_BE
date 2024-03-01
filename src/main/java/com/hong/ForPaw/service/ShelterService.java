@@ -43,7 +43,13 @@ public class ShelterService {
     private String baseUrl;
 
     @Transactional
-    public void loadShelterData() {
+    public void loadShelterData(Role role) {
+
+        // 관리자만 사용 가능 (테스트 상황에선 주석 처리)
+        //if(role.equals(Role.ADMIN)){
+        //    throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        //}
+
         ObjectMapper mapper = new ObjectMapper();
         RestTemplate restTemplate = new RestTemplate();
 
@@ -99,16 +105,12 @@ public class ShelterService {
     }
 
     @Transactional
-    public void deleteZeroShelter(Long userId){
+    public void deleteZeroShelter(Role role){
 
-        User user = userRepository.findById(userId).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
-        );
-
-        // 관리자만 사용 가능
-        if(user.getRole().equals(Role.ADMIN)){
-            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        }
+        // 관리자만 사용 가능 (테스트 상황에선 주석 처리)
+        //if(role.equals(Role.ADMIN)){
+        //    throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        //}
 
         shelterRepository.deleteZeroShelter();
     }

@@ -21,9 +21,9 @@ public class ShelterController {
     private final ShelterService shelterService;
 
     @GetMapping("/shelters/import")
-    public ResponseEntity<?> loadShelter() {
+    public ResponseEntity<?> loadShelter(@AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        shelterService.loadShelterData();
+        shelterService.loadShelterData(userDetails.getUser().getRole());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
@@ -37,7 +37,7 @@ public class ShelterController {
     @DeleteMapping("/shelters")
     public ResponseEntity<?> deleteZeroShelter(@AuthenticationPrincipal CustomUserDetails userDetails){
 
-        shelterService.deleteZeroShelter(userDetails.getUser().getId());
+        shelterService.deleteZeroShelter(userDetails.getUser().getRole());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }
