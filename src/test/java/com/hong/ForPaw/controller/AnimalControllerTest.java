@@ -42,7 +42,7 @@ class AnimalControllerTest {
 
         // then
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
@@ -62,7 +62,7 @@ class AnimalControllerTest {
 
         // then
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
@@ -83,7 +83,7 @@ class AnimalControllerTest {
 
         // then
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
@@ -102,7 +102,7 @@ class AnimalControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
@@ -122,7 +122,7 @@ class AnimalControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
@@ -144,7 +144,7 @@ class AnimalControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
@@ -167,7 +167,7 @@ class AnimalControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
@@ -186,7 +186,7 @@ class AnimalControllerTest {
 
         // then
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
@@ -205,7 +205,7 @@ class AnimalControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
@@ -225,7 +225,7 @@ class AnimalControllerTest {
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
-        System.out.println("테스트 : "+responseBody);
+        System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("false"));
     }

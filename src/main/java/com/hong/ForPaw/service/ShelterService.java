@@ -1,7 +1,6 @@
 package com.hong.ForPaw.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hong.ForPaw.controller.DTO.AnimalResponse;
 import com.hong.ForPaw.controller.DTO.ShelterResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
@@ -9,7 +8,6 @@ import com.hong.ForPaw.domain.RegionCode;
 import com.hong.ForPaw.controller.DTO.ShelterDTO;
 import com.hong.ForPaw.domain.Shelter;
 import com.hong.ForPaw.domain.User.Role;
-import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.RegionCodeRepository;
 import com.hong.ForPaw.repository.ShelterRepository;
 import com.hong.ForPaw.repository.UserRepository;
@@ -23,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -95,6 +92,10 @@ public class ShelterService {
     public ShelterResponse.FindAllSheltersDTO findAllShelters(Pageable pageable){
 
         Page<Shelter> shelterPage = shelterRepository.findByAnimalCntGreaterThan(0L, pageable);
+
+        if(shelterPage.isEmpty()){
+            throw new CustomException(ExceptionCode.SHELTER_NOT_FOUND);
+        }
 
         List<ShelterResponse.ShelterDTO> shelterDTOS = shelterPage.getContent().stream()
                 .map(shelter -> new ShelterResponse.ShelterDTO(shelter.getCareRegNo(), shelter.getName(),

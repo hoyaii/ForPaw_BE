@@ -121,6 +121,11 @@ public class AnimalService {
 
         Page<Animal> animalPage = animalRepository.findAll(pageable);
 
+        // 동물이 데이터베이스상에 없음
+        if(animalPage.isEmpty()){
+            throw new CustomException(ExceptionCode.ANIMAL_NOT_EXIST);
+        }
+
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> new AnimalResponse.AnimalDTO(animal.getId(), getAnimalName(), animal.getAge()
                         , animal.getGender(), animal.getSpecialMark(), animal.getShelter().getRegionCode().getUprName()+" "+animal.getShelter().getRegionCode().getOrgName()
@@ -143,7 +148,7 @@ public class AnimalService {
 
     @Transactional
     public void likeAnimal(Long userId, Long animalId){
-
+        // 존재하지 않는 동물이면 에러
         Animal animal = animalRepository.findById(animalId).orElseThrow(
                 () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
         );
@@ -171,7 +176,7 @@ public class AnimalService {
             throw new CustomException(ExceptionCode.ANIMAL_ALREADY_APPLY);
         }
 
-        // 정상적인 과정이 아닌 임의적으로 요청을 보냈을 때, 동물이 존재하지 않으면 에러
+        // 동물이 존재하지 않으면 에러 (정상적 루틴이 아니고 임의적인 요청을 보냈을 때)
         Animal animal = animalRepository.findById(animalId).orElseThrow(
                 () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
         );
@@ -195,6 +200,11 @@ public class AnimalService {
 
         List<Apply> applies = applyRepository.findByUserId(userId);
 
+        // 지원서가 존재하지 않음
+        if(applies.isEmpty()){
+            throw new CustomException(ExceptionCode.APPLY_NOT_FOUND);
+        }
+
         List<AnimalResponse.ApplyDTO> applyDTOS = applies.stream()
                 .map(apply -> new AnimalResponse.ApplyDTO(
                         apply.getId(),
@@ -214,11 +224,11 @@ public class AnimalService {
     @Transactional
     public void deleteApplyById(Long applyId, Long userId){
 
-        Optional<Apply> applyOP = applyRepository.findByUserIdAndApplyId(userId, applyId);
+        Optional<Apply> applyOP = applyRepository.findByUserIdAndId(userId, applyId);
 
-        // 지원하지 않았거나 권한이 없으면 에러
+        // 지원하지 않았거나, 권한이 없으면 에러
         if(applyOP.isEmpty()){
-            throw new CustomException(ExceptionCode.ANIMAL_NOT_APPLY);
+            throw new CustomException(ExceptionCode.APPLY_NOT_FOUND);
         }
 
         applyRepository.deleteById(applyId);
@@ -228,6 +238,11 @@ public class AnimalService {
     public AnimalResponse.FindAllAnimalsDTO findAllAnimalsByShelterId(Long userId, Long shelterId, Pageable pageable){
 
         Page<Animal> animalPage = animalRepository.findByShelterCareRegNo(shelterId, pageable);
+
+        // 보호소에 동물이 없다면
+        if(animalPage.isEmpty()){
+            throw new CustomException(ExceptionCode.ANIMAL_NOT_EXIST);
+        }
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> new AnimalResponse.AnimalDTO(animal.getId(), getAnimalName(), animal.getAge()
