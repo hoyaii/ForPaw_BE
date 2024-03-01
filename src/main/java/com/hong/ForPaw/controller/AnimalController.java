@@ -4,7 +4,6 @@ import com.hong.ForPaw.controller.DTO.AnimalRequest;
 import com.hong.ForPaw.controller.DTO.AnimalResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
-import com.hong.ForPaw.repository.ApplyRepository;
 import com.hong.ForPaw.service.AnimalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -31,14 +30,14 @@ public class AnimalController {
     @GetMapping("/animals")
     public ResponseEntity<?> findAllAnimals(Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        AnimalResponse.AllAnimalsDTO responseDTO = animalService.findAllAnimals(pageable, userDetails.getUser().getId());
+        AnimalResponse.FindAllAnimalsDTO responseDTO = animalService.findAllAnimals(pageable, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, responseDTO));
     }
 
     @GetMapping("/animals/{animalId}")
     public ResponseEntity<?> findAnimalById(@PathVariable Long animalId){
 
-        AnimalResponse.AnimalDetailDTO responseDTO = animalService.findAnimalById(animalId);
+        AnimalResponse.FindAnimalByIdDTO responseDTO = animalService.findAnimalById(animalId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -50,7 +49,7 @@ public class AnimalController {
     }
 
     @PostMapping("/animals/{animalId}/apply")
-    public ResponseEntity<?> applyAdoption(@RequestBody AnimalRequest.AdoptionApplyDTO requestDTO, @PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> applyAdoption(@RequestBody AnimalRequest.ApplyAdoptionDTO requestDTO, @PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         animalService.applyAdoption(requestDTO, userDetails.getUser().getId(), animalId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
@@ -59,7 +58,7 @@ public class AnimalController {
     @GetMapping("/applies")
     public ResponseEntity<?> findAllApply(@AuthenticationPrincipal CustomUserDetails userDetails){
 
-        AnimalResponse.AllAppliesDTO responseDTO = animalService.findAllApply(userDetails.getUser().getId());
+        AnimalResponse.FindAllApplyDTO responseDTO = animalService.findAllApply(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

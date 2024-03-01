@@ -117,7 +117,7 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.AllAnimalsDTO findAllAnimals(Pageable pageable, Long userId){
+    public AnimalResponse.FindAllAnimalsDTO findAllAnimals(Pageable pageable, Long userId){
 
         Page<Animal> animalPage = animalRepository.findAll(pageable);
 
@@ -127,17 +127,17 @@ public class AnimalService {
                         , animal.getInquiryNum(), animal.getLikeNum(), favoriteRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
                 .collect(Collectors.toList());
 
-        return new AnimalResponse.AllAnimalsDTO(animalDTOS);
+        return new AnimalResponse.FindAllAnimalsDTO(animalDTOS);
     }
 
     @Transactional
-    public AnimalResponse.AnimalDetailDTO findAnimalById(Long animalId){
+    public AnimalResponse.FindAnimalByIdDTO findAnimalById(Long animalId){
 
         Animal animal = animalRepository.findById(animalId).orElseThrow(
                 () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
         );
 
-        return new AnimalResponse.AnimalDetailDTO(animalId, animal.getHappenPlace(), animal.getKind(), animal.getColor(),
+        return new AnimalResponse.FindAnimalByIdDTO(animalId, animal.getHappenPlace(), animal.getKind(), animal.getColor(),
                 animal.getWeight(), animal.getNoticeSdt(), animal.getNoticeEdt(), animal.getProcessState(), animal.getNeuter());
     }
 
@@ -165,7 +165,7 @@ public class AnimalService {
     }
 
     @Transactional
-    public void applyAdoption(AnimalRequest.AdoptionApplyDTO requestDTO, Long userId, Long animalId){
+    public void applyAdoption(AnimalRequest.ApplyAdoptionDTO requestDTO, Long userId, Long animalId){
         // 동물은 pathVariable을 통해 id를 얻는데, 잘못된 요청이 올 수 있기 때문에 DB를 조회한다.
         Animal animal = animalRepository.findById(animalId).orElseThrow(
                 () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
@@ -186,7 +186,7 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.AllAppliesDTO findAllApply(Long userId){
+    public AnimalResponse.FindAllApplyDTO findAllApply(Long userId){
 
         List<Apply> applies = applyRepository.findByUserId(userId);
 
@@ -203,7 +203,7 @@ public class AnimalService {
                         apply.getStatus()))
                 .collect(Collectors.toList());
 
-        return new AnimalResponse.AllAppliesDTO(applyDTOS);
+        return new AnimalResponse.FindAllApplyDTO(applyDTOS);
     }
 
     @Transactional

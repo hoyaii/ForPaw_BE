@@ -21,5 +21,5 @@ public class UserRequest {
 
     public record UpdateProfileDTO(String nickName, String region, String subRegion, String profileURL) {}
 
-    public record RefreshTokenDTO(String refreshToken){ }
+    public record updateAccessTokenDTO(String refreshToken){ }
 }

@@ -2,7 +2,6 @@ package com.hong.ForPaw.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.AnimalRequest;
-import com.hong.ForPaw.controller.DTO.UserRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -13,7 +12,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -136,7 +134,7 @@ class AnimalControllerTest {
 
         // given
         Long id = 427342202400090L;
-        AnimalRequest.AdoptionApplyDTO requestDTO = new AnimalRequest.AdoptionApplyDTO("이한홍", "010-1234-5678", "부산광역시 금정구 부산대학로64번길 79 (장전동, xx아파트)");
+        AnimalRequest.ApplyAdoptionDTO requestDTO = new AnimalRequest.ApplyAdoptionDTO("이한홍", "010-1234-5678", "부산광역시 금정구 부산대학로64번길 79 (장전동, xx아파트)");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -159,7 +157,7 @@ class AnimalControllerTest {
         // given
         // 존재하지 않는 동물
         Long id = 427342202090L;
-        AnimalRequest.AdoptionApplyDTO requestDTO = new AnimalRequest.AdoptionApplyDTO("이한홍", "010-1234-5678", "부산광역시 금정구 부산대학로64번길 79 (장전동, xx아파트)");
+        AnimalRequest.ApplyAdoptionDTO requestDTO = new AnimalRequest.ApplyAdoptionDTO("이한홍", "010-1234-5678", "부산광역시 금정구 부산대학로64번길 79 (장전동, xx아파트)");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when

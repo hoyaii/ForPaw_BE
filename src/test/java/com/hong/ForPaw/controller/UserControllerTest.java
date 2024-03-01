@@ -286,7 +286,7 @@ class UserControllerTest {
     public void 엑세스_토큰_재발급_성공() throws Exception {
 
         // given
-        UserRequest.RefreshTokenDTO requestDTO = new UserRequest.RefreshTokenDTO("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ5ZzA0MDc2QG5hdmVyLmNvbSIsInJvbGUiOjAsImlkIjo0LCJleHAiOjE3MDk3MDEyODl9.iSpEDE4HIbaQV77xWyPuKJe2Xi5A6LC-zqhfpzIHRhe5TzGWoB0VYagM8xf1GhzqGhoRyyPa_1KZ6D3-5sKQxA");
+        UserRequest.updateAccessTokenDTO requestDTO = new UserRequest.updateAccessTokenDTO("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ5ZzA0MDc2QG5hdmVyLmNvbSIsInJvbGUiOjAsImlkIjo0LCJleHAiOjE3MDk3MDEyODl9.iSpEDE4HIbaQV77xWyPuKJe2Xi5A6LC-zqhfpzIHRhe5TzGWoB0VYagM8xf1GhzqGhoRyyPa_1KZ6D3-5sKQxA");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -307,7 +307,7 @@ class UserControllerTest {
 
         // given
         // 잘못된 토큰 형식
-        UserRequest.RefreshTokenDTO requestDTO = new UserRequest.RefreshTokenDTO("eyJ0eXAiOiJKVJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ5ZzA0MDc2QG5hdmVyLmNvbSIsInJvbGUiOjAsImlkIjo0LCJleHAiOjE3MDk3MDEyODl9.iSpEDE4HIbaQV77xWyPuKJe2Xi5A6LC-zqhfpzIHRhe5TzGWoB0VYagM8xf1GhzqGhoRyyPa_1KZ6D3-5sKQxA");
+        UserRequest.updateAccessTokenDTO requestDTO = new UserRequest.updateAccessTokenDTO("eyJ0eXAiOiJKVJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ5ZzA0MDc2QG5hdmVyLmNvbSIsInJvbGUiOjAsImlkIjo0LCJleHAiOjE3MDk3MDEyODl9.iSpEDE4HIbaQV77xWyPuKJe2Xi5A6LC-zqhfpzIHRhe5TzGWoB0VYagM8xf1GhzqGhoRyyPa_1KZ6D3-5sKQxA");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -328,7 +328,7 @@ class UserControllerTest {
 
         // given
         // 만료된 토큰 (그냥 레디스의 데이터를 삭제하고 테스트 하면 됨)
-        UserRequest.RefreshTokenDTO requestDTO = new UserRequest.RefreshTokenDTO("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ5ZzA0MDc2QG5hdmVyLmNvbSIsInJvbGUiOjAsImlkIjo0LCJleHAiOjE3MDkxODI4ODl9.bfbTxdeGrYTpZn6ii-nKzfEm4BA4rgxfkRXQkR8uVTKN42q0EyrxS3arjbmpkKjag6EJbNanP8dNqxU924EyEA");
+        UserRequest.updateAccessTokenDTO requestDTO = new UserRequest.updateAccessTokenDTO("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ5ZzA0MDc2QG5hdmVyLmNvbSIsInJvbGUiOjAsImlkIjo0LCJleHAiOjE3MDkxODI4ODl9.bfbTxdeGrYTpZn6ii-nKzfEm4BA4rgxfkRXQkR8uVTKN42q0EyrxS3arjbmpkKjag6EJbNanP8dNqxU924EyEA");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when

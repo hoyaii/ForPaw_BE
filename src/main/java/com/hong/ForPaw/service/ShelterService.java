@@ -71,4 +71,10 @@ public class ShelterService {
             }
         }
     }
+
+    @Transactional
+    public void findAllShelters(){
+
+    }
+
 }

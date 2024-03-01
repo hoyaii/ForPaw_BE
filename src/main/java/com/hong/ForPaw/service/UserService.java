@@ -231,7 +231,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse.AccessTokenDTO updateAccessToken(UserRequest.RefreshTokenDTO requestDTO){
+    public UserResponse.AccessTokenDTO updateAccessToken(UserRequest.updateAccessTokenDTO requestDTO){
         // 잘못된 토큰 형식인지 체크
         if(!JWTProvider.validateToken(requestDTO.refreshToken())) {
             throw new CustomException(ExceptionCode.TOKEN_WRONG);
