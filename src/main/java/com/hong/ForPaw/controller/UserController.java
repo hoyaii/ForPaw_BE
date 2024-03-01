@@ -131,9 +131,16 @@ public class UserController {
     }
 
     @PatchMapping("/auth/access")
-    public ResponseEntity<?> updateAccessToken(@RequestBody UserRequest.updateAccessTokenDTO requestDTO){
+    public ResponseEntity<?> updateAccessToken(@RequestBody UserRequest.UpdateAccessTokenDTO requestDTO){
 
         UserResponse.AccessTokenDTO responseDTO = userService.updateAccessToken(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
+    @PatchMapping("/accounts/role")
+    public ResponseEntity<?> updateRole(@RequestBody UserRequest.UpdateRoleDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        userService.updateRole(requestDTO, userDetails.getUser().getId(), userDetails.getUser().getRole());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }

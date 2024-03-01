@@ -1,5 +1,7 @@
 package com.hong.ForPaw.controller.DTO;
 
+import com.hong.ForPaw.domain.User.Role;
+
 public class UserRequest {
 
     public record LoginDTO(String email, String password){}
@@ -21,5 +23,7 @@ public class UserRequest {
 
     public record UpdateProfileDTO(String nickName, String region, String subRegion, String profileURL) {}
 
-    public record updateAccessTokenDTO(String refreshToken){ }
+    public record UpdateAccessTokenDTO(String refreshToken) {}
+
+    public record UpdateRoleDTO(Role role) {}
 }

@@ -231,7 +231,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse.AccessTokenDTO updateAccessToken(UserRequest.updateAccessTokenDTO requestDTO){
+    public UserResponse.AccessTokenDTO updateAccessToken(UserRequest.UpdateAccessTokenDTO requestDTO){
         // 잘못된 토큰 형식인지 체크
         if(!JWTProvider.validateToken(requestDTO.refreshToken())) {
             throw new CustomException(ExceptionCode.TOKEN_WRONG);
@@ -251,8 +251,9 @@ public class UserService {
         return new UserResponse.AccessTokenDTO(JWTProvider.createAccessToken(user));
     }
 
+    // 관지라 API
     @Transactional
-    public void updateRole(Long userId, Role role){
+    public void updateRole(UserRequest.UpdateRoleDTO requestDTO, Long userId, Role role){
 
         // 관리자만 사용 가능 (테스트 상황에선 주석 처리)
         //if(role.equals(Role.ADMIN)){
@@ -260,7 +261,7 @@ public class UserService {
         //}
 
         User user = userRepository.findById(userId).get();
-        user.updateRole(role);
+        user.updateRole(requestDTO.role());
     }
 
     private String sendCodeByMail(String toEmail){
