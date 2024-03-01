@@ -1,4 +1,4 @@
-package com.hong.ForPaw.domain;
+package com.hong.ForPaw.domain.Group;
 
 import lombok.AccessLevel;
 import lombok.Builder;
