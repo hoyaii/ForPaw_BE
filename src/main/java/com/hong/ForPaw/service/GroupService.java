@@ -55,7 +55,7 @@ public class GroupService {
     }
 
     @Transactional
-    public void updateGroup(GroupRequest.UpdateGroupDTO requestDTO, Long groupId,Long userId){
+    public void updateGroup(GroupRequest.UpdateGroupDTO requestDTO, Long groupId, Long userId){
         // 수정 권한 체크
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .ifPresentOrElse(groupUser -> {
