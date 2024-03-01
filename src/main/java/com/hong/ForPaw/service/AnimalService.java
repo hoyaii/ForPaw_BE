@@ -227,7 +227,7 @@ public class AnimalService {
     @Transactional
     public AnimalResponse.FindAllAnimalsDTO findAllAnimalsByShelterId(Long userId, Long shelterId, Pageable pageable){
 
-        Page<Animal> animalPage = animalRepository.findByShelterId(shelterId, pageable);
+        Page<Animal> animalPage = animalRepository.findByShelterCareRegNo(shelterId, pageable);
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> new AnimalResponse.AnimalDTO(animal.getId(), getAnimalName(), animal.getAge()

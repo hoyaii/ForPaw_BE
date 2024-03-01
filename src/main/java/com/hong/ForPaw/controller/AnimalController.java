@@ -69,4 +69,11 @@ public class AnimalController {
         animalService.deleteApplyById(applyId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
+
+    @GetMapping("/shelters/{shelterId}/animals")
+    public ResponseEntity<?> findAllAnimalsByShelterId(@PathVariable Long shelterId, @AuthenticationPrincipal CustomUserDetails userDetails, Pageable pageable){
+
+        AnimalResponse.FindAllAnimalsDTO responseDTO = animalService.findAllAnimalsByShelterId(userDetails.getUser().getId(), shelterId, pageable);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
 }
