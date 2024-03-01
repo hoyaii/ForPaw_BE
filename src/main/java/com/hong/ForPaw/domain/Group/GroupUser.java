@@ -1,11 +1,15 @@
 package com.hong.ForPaw.domain.Group;
 
 import com.hong.ForPaw.domain.User.User;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 
 @Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class GroupUser {
 
@@ -23,4 +27,11 @@ public class GroupUser {
 
     @Column
     private Role role;
+
+    @Builder
+    public GroupUser(Group group, User user, Role role) {
+        this.group = group;
+        this.user = user;
+        this.role = role;
+    }
 }
