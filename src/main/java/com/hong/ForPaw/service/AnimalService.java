@@ -166,7 +166,12 @@ public class AnimalService {
 
     @Transactional
     public void applyAdoption(AnimalRequest.ApplyAdoptionDTO requestDTO, Long userId, Long animalId){
-        // 동물은 pathVariable을 통해 id를 얻는데, 잘못된 요청이 올 수 있기 때문에 DB를 조회한다.
+        // 이미 지원하였으면 에러
+        if(applyRepository.findByUserIdAndAnimalId(userId, animalId).isPresent()){
+            throw new CustomException(ExceptionCode.ANIMAL_ALREADY_APPLY);
+        }
+
+        // 정상적인 과정이 아닌 임의적으로 요청을 보냈을 때, 동물이 존재하지 않으면 에러
         Animal animal = animalRepository.findById(animalId).orElseThrow(
                 () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
         );
@@ -208,11 +213,12 @@ public class AnimalService {
 
     @Transactional
     public void deleteApplyById(Long applyId, Long userId){
-        System.out.println("apply: " + applyId + " user: " + userId);
-        Optional<Apply> applyOP = applyRepository.findByUserIdAndAnimalId(userId, applyId);
 
+        Optional<Apply> applyOP = applyRepository.findByUserIdAndApplyId(userId, applyId);
+
+        // 지원하지 않았거나 권한이 없으면 에러
         if(applyOP.isEmpty()){
-            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+            throw new CustomException(ExceptionCode.ANIMAL_NOT_APPLY);
         }
 
         applyRepository.deleteById(applyId);
