@@ -1,6 +1,7 @@
 package com.hong.ForPaw.service;
 
 import com.hong.ForPaw.controller.DTO.GroupRequest;
+import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Group.Group;
@@ -52,6 +53,26 @@ public class GroupService {
                 .build();
 
         groupUserRepository.save(groupUser);
+    }
+
+    @Transactional
+    public GroupResponse.FindGroupByIdDTO findGroupById(Long groupId, Long userId){
+
+        // 조회 권한 체크 (수정을 위해 가져오는 정보니 권한 체크 필요)
+        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
+                .ifPresentOrElse(groupUser -> {
+                    if (!groupUser.getRole().equals(Role.ADMIN)) {
+                        throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+                    }
+                }, () -> {
+                    throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+                });
+
+        Group group = groupRepository.findById(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
+        );
+
+        return new GroupResponse.FindGroupByIdDTO(group.getName(), group.getRegion(), group.getSubRegion(), group.getDescription(), group.getCategory(), group.getProfileURL());
     }
 
     @Transactional
