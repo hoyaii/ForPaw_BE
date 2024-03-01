@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
+import java.util.Optional;
 
 @Service
 @Transactional(readOnly = true)
@@ -51,5 +52,29 @@ public class GroupService {
                 .build();
 
         groupUserRepository.save(groupUser);
+    }
+
+    @Transactional
+    public void updateGroup(GroupRequest.UpdateGroupDTO requestDTO, Long groupId,Long userId){
+        // 수정 권한 체크
+        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
+                .ifPresentOrElse(groupUser -> {
+                    if (groupUser.getRole().equals(Role.ADMIN)) {
+                        throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+                    }
+                }, () -> {
+                    throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+                });
+
+        // 이름 중복 체크
+        if(groupRepository.findByName(requestDTO.name()).isPresent()){
+            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
+        }
+
+        Group group = groupRepository.findById(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
+        );
+
+        group.updateInfo(requestDTO.name(), requestDTO.region(), requestDTO.subRegion(), requestDTO.description(), requestDTO.category(), requestDTO.profileURL());
     }
 }

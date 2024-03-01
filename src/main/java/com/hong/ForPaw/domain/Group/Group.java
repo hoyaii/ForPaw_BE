@@ -38,13 +38,21 @@ public class Group {
     private Integer likeNum = 0;
 
     @Builder
-    public Group(String name, String region, String subRegion, String description, String category, String profileURL, Integer likeNum) {
+    public Group(String name, String region, String subRegion, String description, String category, String profileURL) {
         this.name = name;
         this.region = region;
         this.subRegion = subRegion;
         this.description = description;
         this.category = category;
         this.profileURL = profileURL;
-        this.likeNum = likeNum;
+    }
+
+    public void updateInfo(String name, String region, String subRegion, String description, String category, String profileURL){
+        this.name = name;
+        this.region = region;
+        this.subRegion = subRegion;
+        this.description = description;
+        this.category = category;
+        this.profileURL = profileURL;
     }
 }
