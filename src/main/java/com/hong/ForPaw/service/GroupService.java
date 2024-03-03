@@ -71,14 +71,7 @@ public class GroupService {
     @Transactional
     public GroupResponse.FindGroupByIdDTO findGroupById(Long groupId, Long userId){
         // 조회 권한 체크 (수정을 위해 가져오는 정보니 권한 체크 필요)
-        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
-                .ifPresentOrElse(groupUser -> {
-                    if (!groupUser.getRole().equals(Role.ADMIN)) {
-                        throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-                    }
-                }, () -> {
-                    throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-                });
+        checkAuthority(groupId, userId);
 
         Group group = groupRepository.findById(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
@@ -90,14 +83,7 @@ public class GroupService {
     @Transactional
     public void updateGroup(GroupRequest.UpdateGroupDTO requestDTO, Long groupId, Long userId){
         // 수정 권한 체크
-        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
-                .ifPresentOrElse(groupUser -> {
-                    if (!groupUser.getRole().equals(Role.ADMIN)) {
-                        throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-                    }
-                }, () -> {
-                    throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-                });
+        checkAuthority(groupId, userId);
 
         // 이름 중복 체크
         if(groupRepository.findByName(requestDTO.name()).isPresent()){
@@ -189,10 +175,7 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
 
-        // 권한 체크
-        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
-                .filter(groupUser -> groupUser.getRole().equals(Role.ADMIN)) // ADMIN인 경우에만 통과
-                .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN)); // ADMIN이 아니면 에러 보냄
+        checkAuthority(groupId, userId);
 
         Optional<GroupUser> groupApplicantOP = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId);
 
@@ -228,7 +211,7 @@ public class GroupService {
         }
     }
 
-    public List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region){
+    private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region){
         // 내가 가입한 그룹
         Set<Long> myGroupIds = getMyGroups(userId, pageableForMy).stream()
                 .map(Group::getId)
@@ -253,7 +236,7 @@ public class GroupService {
         return recommendGroupDTOS;
     }
 
-    public List<GroupResponse.LocalGroupDTO> getLocalGroupDTOS(Long userId, String region, Pageable pageable){
+    private List<GroupResponse.LocalGroupDTO> getLocalGroupDTOS(Long userId, String region, Pageable pageable){
         // 내가 가입한 그룹
         Set<Long> myGroupIds = getMyGroups(userId, pageableForMy).stream()
                 .map(Group::getId)
@@ -268,7 +251,7 @@ public class GroupService {
         return localGroupDTOS;
     }
 
-    public List<GroupResponse.NewGroupDTO> getNewGroupDTOS(Long userId, Pageable pageable){
+    private List<GroupResponse.NewGroupDTO> getNewGroupDTOS(Long userId, Pageable pageable){
         // 내가 가입한 그룹
         Set<Long> myGroupIds = getMyGroups(userId, pageableForMy).stream()
                 .map(Group::getId)
@@ -283,7 +266,7 @@ public class GroupService {
         return newGroupDTOS;
     }
 
-    public List<GroupResponse.MyGroupDTO> getMyGroupDTOS(Long userId, Pageable pageable){
+    private List<GroupResponse.MyGroupDTO> getMyGroupDTOS(Long userId, Pageable pageable){
 
         List<Group> myGroups = getMyGroups(userId, pageable);
 
@@ -295,7 +278,7 @@ public class GroupService {
         return myGroupDTOS;
     }
 
-    public List<Group> getMyGroups(Long userId, Pageable pageable){
+    private List<Group> getMyGroups(Long userId, Pageable pageable){
 
         Page<GroupUser> groupUsers = groupUserRepository.findByUserId(userId, pageable);
         List<Group> myGroups = groupUsers.getContent().stream()
@@ -307,5 +290,12 @@ public class GroupService {
 
     private Pageable createPageable(int page, int size, String sortProperty) {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
+    }
+
+    private void checkAuthority(Long groupId, Long userId){
+        // 권한 체크
+        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
+                .filter(groupUser -> groupUser.getRole().equals(Role.ADMIN)) // ADMIN인 경우에만 통과 (ADMIN이 아니면 null이 되어 orElseThrow 실행)
+                .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN)); // ADMIN이 아니거나 그룹과 관련없는 사람이면 에러 보냄
     }
 }
