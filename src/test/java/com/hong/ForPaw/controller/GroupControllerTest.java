@@ -353,4 +353,43 @@ class GroupControllerTest {
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 관심_그룹으로_등록_성공() throws Exception {
+
+        // given
+        Long groupId = 12L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/like")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 관심_그룹으로_등록_실패() throws Exception {
+
+        // given
+        // 존재하지 않는 그룹
+        Long groupId = 100L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/like")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
 }
