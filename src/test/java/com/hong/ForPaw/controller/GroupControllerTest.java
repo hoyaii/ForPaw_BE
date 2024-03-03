@@ -224,4 +224,133 @@ class GroupControllerTest {
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
+
+    @Test
+    @WithUserDetails(value = "yg040763@naver.com") // 권한 없음
+    public void 그룹_가입_승인하기_실패_3() throws Exception {
+
+        // given
+        Long groupId = 12L;
+        Long applicantId = 2L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/join/approve")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .param("id", applicantId.toString())
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 그룹_가입_승인하기_실패_4() throws Exception {
+
+        // given
+        // 신청한 적이 없는 경우
+        Long groupId = 12L;
+        Long applicantId = 3L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/join/approve")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .param("id", applicantId.toString())
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 그룹_가입_거절하기_성공() throws Exception {
+
+        // given
+        Long groupId = 12L;
+        Long applicantId = 3L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/join/reject")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .param("id", applicantId.toString())
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 그룹_가입_거절하기_실패_1() throws Exception {
+
+        // given
+        // 이미 거절한 신청
+        Long groupId = 12L;
+        Long applicantId = 3L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/join/reject")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .param("id", applicantId.toString())
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040763@naver.com") // 권한 없음
+    public void 그룹_가입_거절하기_실패_2() throws Exception {
+
+        // given
+        Long groupId = 12L;
+        Long applicantId = 3L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/join/reject")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .param("id", applicantId.toString())
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 그룹_가입_거절하기_실패_3() throws Exception {
+
+        // given
+        // 신청한 적이 없는 경우
+        Long groupId = 12L;
+        Long applicantId = 13L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/join/reject")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .param("id", applicantId.toString())
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
 }
