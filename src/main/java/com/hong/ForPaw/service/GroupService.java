@@ -121,6 +121,10 @@ public class GroupService {
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, region, pageable);
 
+        if(localGroupDTOS.isEmpty()){
+            throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
+        }
+
         return new GroupResponse.FindLocalGroupDTO(localGroupDTOS);
     }
 
@@ -130,6 +134,10 @@ public class GroupService {
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, pageable);
 
+        if(newGroupDTOS.isEmpty()){
+            throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
+        }
+
         return new GroupResponse.FindNewGroupDTO(newGroupDTOS);
     }
 
@@ -138,6 +146,10 @@ public class GroupService {
 
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.MyGroupDTO> myGroupDTOS = getMyGroupDTOS(userId, pageable);
+
+        if(myGroupDTOS.isEmpty()){
+            throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
+        }
 
         return new GroupResponse.FindMyGroupDTO(myGroupDTOS);
     }
