@@ -20,6 +20,8 @@ import java.util.Collections;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -109,13 +111,13 @@ public class GroupService {
         Pageable pageable = createPageable(0, 5, "id");
 
         // 추천 그룹 찾기
-        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = getRecommendGroupDTOS(region);
+        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = getRecommendGroupDTOS(userId, region, pageable);
 
         // 지역 그룹 찾기
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(region, pageable);
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, region, pageable);
 
         // 새 그룹 찾기
-        List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(pageable);
+        List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, pageable);
 
         // 내 그룹 찾기
         List<GroupResponse.MyGroupDTO> myGroupDTOS = getMyGroupDTOS(userId, pageable);
@@ -124,19 +126,19 @@ public class GroupService {
     }
 
     @Transactional
-    public GroupResponse.FindLocalGroupDTO findLocalGroup(String region, Integer page, Integer size){
+    public GroupResponse.FindLocalGroupDTO findLocalGroup(Long userId, String region, Integer page, Integer size){
 
         Pageable pageable = createPageable(page, size, "id");
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(region, pageable);
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, region, pageable);
 
         return new GroupResponse.FindLocalGroupDTO(localGroupDTOS);
     }
 
     @Transactional
-    public GroupResponse.FindNewGroupDTO findNewGroup(Integer page, Integer size){
+    public GroupResponse.FindNewGroupDTO findNewGroup(Long userId, Integer page, Integer size){
 
         Pageable pageable = createPageable(page, size, "id");
-        List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(pageable);
+        List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, pageable);
 
         return new GroupResponse.FindNewGroupDTO(newGroupDTOS);
     }
@@ -150,12 +152,18 @@ public class GroupService {
         return new GroupResponse.FindMyGroupDTO(myGroupDTOS);
     }
 
-    public List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(String region){
+    public List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region, Pageable pageable){
+        // 내가 가입한 그룹
+        Set<Long> myGroupIds = getMyGroups(userId, pageable).stream()
+                .map(Group::getId)
+                .collect(Collectors.toSet());
+
         // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순  3. 비슷한 연관관계 (카테고리, 설명) => 3번은 AI를 사용해야 하기 때문에 일단은 1과 2의 기준으로 추천
         Sort sort = Sort.by(Sort.Order.desc("likeNum"), Sort.Order.desc("participationNum"));
 
         Page<Group> recommendGroups = groupRepository.findByRegionWithSort(region, sort);
         List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = recommendGroups.getContent().stream()
+                .filter(group -> !myGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> new GroupResponse.RecommendGroupDTO(group.getId(), group.getName(), group.getDescription(), group.getParticipationNum(), group.getCategory() ,group.getRegion(), group.getSubRegion(), group.getProfileURL(), group.getLikeNum()))
                 .collect(Collectors.toList());
 
@@ -168,20 +176,30 @@ public class GroupService {
         return recommendGroupDTOS;
     }
 
-    public List<GroupResponse.LocalGroupDTO> getLocalGroupDTOS(String region, Pageable pageable){
+    public List<GroupResponse.LocalGroupDTO> getLocalGroupDTOS(Long userId, String region, Pageable pageable){
+        // 내가 가입한 그룹
+        Set<Long> myGroupIds = getMyGroups(userId, pageable).stream()
+                .map(Group::getId)
+                .collect(Collectors.toSet());
 
         Page<Group> localGroups = groupRepository.findByRegionWithPage(region, pageable);
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroups.getContent().stream()
+                .filter(group -> !myGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> new GroupResponse.LocalGroupDTO(group.getId(), group.getName(), group.getDescription(), group.getParticipationNum(), group.getCategory(), group.getRegion(), group.getSubRegion(), group.getProfileURL(), group.getLikeNum()))
                 .collect(Collectors.toList());
 
         return localGroupDTOS;
     }
 
-    public List<GroupResponse.NewGroupDTO> getNewGroupDTOS(Pageable pageable){
+    public List<GroupResponse.NewGroupDTO> getNewGroupDTOS(Long userId, Pageable pageable){
+        // 내가 가입한 그룹
+        Set<Long> myGroupIds = getMyGroups(userId, pageable).stream()
+                .map(Group::getId)
+                .collect(Collectors.toSet());
 
         Page<Group> newGroups = groupRepository.findAll(pageable);
         List<GroupResponse.NewGroupDTO> newGroupDTOS = newGroups.getContent().stream()
+                .filter(group -> !myGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> new GroupResponse.NewGroupDTO(group.getId(), group.getName(), group.getCategory(), group.getRegion(), group.getSubRegion(), group.getProfileURL()))
                 .collect(Collectors.toList());
 
@@ -190,10 +208,7 @@ public class GroupService {
 
     public List<GroupResponse.MyGroupDTO> getMyGroupDTOS(Long userId, Pageable pageable){
 
-        Page<GroupUser> groupUsers = groupUserRepository.findByUserId(userId, pageable);
-        List<Group> myGroups = groupUsers.getContent().stream()
-                .map(GroupUser::getGroup)
-                .collect(Collectors.toList());
+        List<Group> myGroups = getMyGroups(userId, pageable);
 
         List<GroupResponse.MyGroupDTO> myGroupDTOS = myGroups.stream()
                 .map(group -> new GroupResponse.MyGroupDTO(group.getId(), group.getName(), group.getDescription(),
@@ -201,6 +216,16 @@ public class GroupService {
                 .collect(Collectors.toList());
 
         return myGroupDTOS;
+    }
+
+    public List<Group> getMyGroups(Long userId, Pageable pageable){
+
+        Page<GroupUser> groupUsers = groupUserRepository.findByUserId(userId, pageable);
+        List<Group> myGroups = groupUsers.getContent().stream()
+                .map(GroupUser::getGroup)
+                .collect(Collectors.toList());
+
+        return myGroups;
     }
 
     private Pageable createPageable(int page, int size, String sortProperty) {

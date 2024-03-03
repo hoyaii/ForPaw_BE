@@ -49,16 +49,16 @@ public class GroupController {
     }
 
     @GetMapping("/groups/local")
-    public ResponseEntity<?> findLocalGroup(@RequestParam("region") String region, @RequestParam("page") Integer page, @RequestParam("size") Integer size){
+    public ResponseEntity<?> findLocalGroup(@RequestParam("region") String region, @RequestParam("page") Integer page, @RequestParam("size") Integer size, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        GroupResponse.FindLocalGroupDTO responseDTO = groupService.findLocalGroup(region, page, size);
+        GroupResponse.FindLocalGroupDTO responseDTO = groupService.findLocalGroup(userDetails.getUser().getId(), region, page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/groups/new")
-    public ResponseEntity<?> findNewGroup(@RequestParam("page") Integer page, @RequestParam("size") Integer size){
+    public ResponseEntity<?> findNewGroup(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        GroupResponse.FindNewGroupDTO responseDTO = groupService.findNewGroup(page, size);
+        GroupResponse.FindNewGroupDTO responseDTO = groupService.findNewGroup(userDetails.getUser().getId(), page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
