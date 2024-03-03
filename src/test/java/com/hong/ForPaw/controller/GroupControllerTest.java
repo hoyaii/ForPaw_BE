@@ -91,6 +91,7 @@ class GroupControllerTest {
         result.andExpect(jsonPath("$.success").value("true"));
     }
 
+    // 테스트 시나리오를 짜고 DB 세팅 후테스트 해야함! yg04076@naver.com은 그룹 생성자, yg040762@naver.com은 가입 신청자
     @Test
     @WithUserDetails(value = "yg040762@naver.com")
     public void 그룹_가입_신청하기_성공() throws Exception {

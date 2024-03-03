@@ -76,14 +76,14 @@ public class GroupController {
     }
 
     @PostMapping("/groups/{groupID}/join/approve")
-    public ResponseEntity<?> approveJoin(@PathVariable Long groupID, @RequestParam("applicantId") Long applicantId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> approveJoin(@PathVariable Long groupID, @RequestParam("id") Long applicantId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         groupService.approveJoin(userDetails.getUser().getId(), applicantId, groupID);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/groups/{groupID}/join/reject")
-    public ResponseEntity<?> rejectJoin(@PathVariable Long groupID, @RequestParam("applicantId") Long applicantId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> rejectJoin(@PathVariable Long groupID, @RequestParam("id") Long applicantId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         groupService.rejectJoin(userDetails.getUser().getId(), applicantId, groupID);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));

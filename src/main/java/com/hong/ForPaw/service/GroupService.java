@@ -182,6 +182,9 @@ public class GroupService {
         // 가입 신청한 적이 없으면 에러를 보냄
         if(groupApplicantOP.isEmpty()){
             throw new CustomException(ExceptionCode.GROUP_NOT_JOIN);
+        } // 이미 가입한 사람이면 에러를 보냄
+        else if(groupApplicantOP.get().getRole().equals(Role.USER) || groupApplicantOP.get().getRole().equals(Role.ADMIN)){
+            throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
         }
         else{
             groupApplicantOP.get().updateRole(Role.USER);
@@ -202,6 +205,9 @@ public class GroupService {
         // 가입 신청한 적이 없으면 에러를 보냄
         if(groupApplicantOP.isEmpty()){
             throw new CustomException(ExceptionCode.GROUP_NOT_JOIN);
+        } // 이미 가입한 사람이면 에러를 보냄
+        else if(groupApplicantOP.get().getRole().equals(Role.USER) || groupApplicantOP.get().getRole().equals(Role.ADMIN)){
+            throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
         }
         else{
             groupApplicantOP.get().updateRole(Role.REJECTED);
