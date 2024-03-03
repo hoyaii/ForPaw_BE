@@ -7,6 +7,7 @@ import lombok.Getter;
 @Getter
 public enum Role {
     TEMP("임시"),
+    REJECTED("거절됨"),
     USER("유저"),
     ADMIN("관리자");
 

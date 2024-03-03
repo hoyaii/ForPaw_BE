@@ -38,4 +38,8 @@ public class GroupUser {
         this.role = role;
         this.greeting = greeting;
     }
+
+    public void updateRole(Role role){
+        this.role = role;
+    }
 }

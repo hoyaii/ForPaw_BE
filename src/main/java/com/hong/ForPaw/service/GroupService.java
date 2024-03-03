@@ -183,6 +183,24 @@ public class GroupService {
     }
 
     @Transactional
+    public void approveJoin(Long userId, Long groupId){
+        // 존재하지 않는 그룹이면 에러
+        groupRepository.findById(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
+        );
+
+        Optional<GroupUser> groupUserOP = groupUserRepository.findByGroupIdAndUserId(groupId, userId);
+
+        // 가입 신청한 적이 없으면 에러를 보냄
+        if(groupUserOP.isEmpty()){
+            throw new CustomException(ExceptionCode.GROUP_NOT_JOIN);
+        }
+        else{
+            groupUserOP.get().updateRole(Role.USER);
+        }
+    }
+
+    @Transactional
     public void likeGroup(Long userId, Long groupId){
         // 존재하지 않는 그룹이면 에러
         Group group = groupRepository.findById(groupId).orElseThrow(
