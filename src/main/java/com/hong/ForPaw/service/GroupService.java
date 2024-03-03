@@ -183,20 +183,25 @@ public class GroupService {
     }
 
     @Transactional
-    public void approveJoin(Long userId, Long groupId){
+    public void approveJoin(Long userId, Long applicantId, Long groupId){
         // 존재하지 않는 그룹이면 에러
         groupRepository.findById(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
 
-        Optional<GroupUser> groupUserOP = groupUserRepository.findByGroupIdAndUserId(groupId, userId);
+        // 권한 체크
+        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
+                .filter(groupUser -> groupUser.getRole().equals(Role.ADMIN)) // ADMIN인 경우에만 통과
+                .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN)); // ADMIN이 아니면 에러 보냄
+
+        Optional<GroupUser> groupApplicantOP = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId);
 
         // 가입 신청한 적이 없으면 에러를 보냄
-        if(groupUserOP.isEmpty()){
+        if(groupApplicantOP.isEmpty()){
             throw new CustomException(ExceptionCode.GROUP_NOT_JOIN);
         }
         else{
-            groupUserOP.get().updateRole(Role.USER);
+            groupApplicantOP.get().updateRole(Role.USER);
         }
     }
 
