@@ -7,10 +7,10 @@ import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Apply.Apply;
 import com.hong.ForPaw.domain.Apply.Status;
-import com.hong.ForPaw.domain.Favorite;
+import com.hong.ForPaw.domain.Animal.FavoriteAnimal;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.controller.DTO.AnimalDTO;
-import com.hong.ForPaw.domain.Animal;
+import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Shelter;
 import com.hong.ForPaw.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ public class AnimalService {
 
     private final AnimalRepository animalRepository;
     private final ShelterRepository shelterRepository;
-    private final FavoriteRepository favoriteRepository;
+    private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final UserRepository userRepository;
     private final ApplyRepository applyRepository;
     private final EntityManager entityManager;
@@ -129,7 +129,7 @@ public class AnimalService {
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> new AnimalResponse.AnimalDTO(animal.getId(), getAnimalName(), animal.getAge()
                         , animal.getGender(), animal.getSpecialMark(), animal.getShelter().getRegionCode().getUprName()+" "+animal.getShelter().getRegionCode().getOrgName()
-                        , animal.getInquiryNum(), animal.getLikeNum(), favoriteRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
+                        , animal.getInquiryNum(), animal.getLikeNum(), favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindAllAnimalsDTO(animalDTOS);
@@ -155,17 +155,17 @@ public class AnimalService {
 
         User userRef = entityManager.getReference(User.class, userId);
 
-        Optional<Favorite> favoriteOptional = favoriteRepository.findByUserIdAndAnimalId(userId, animalId);
+        Optional<FavoriteAnimal> favoriteOptional = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animalId);
 
         // 좋아요가 이미 있다면 삭제, 없다면 추가
         if (favoriteOptional.isPresent()) {
-            favoriteRepository.delete(favoriteOptional.get());
+            favoriteAnimalRepository.delete(favoriteOptional.get());
         } else {
-            Favorite favorite = Favorite.builder()
+            FavoriteAnimal favoriteAnimal = FavoriteAnimal.builder()
                     .user(userRef)
                     .animal(animal)
                     .build();
-            favoriteRepository.save(favorite);
+            favoriteAnimalRepository.save(favoriteAnimal);
         }
     }
 
@@ -247,7 +247,7 @@ public class AnimalService {
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> new AnimalResponse.AnimalDTO(animal.getId(), getAnimalName(), animal.getAge()
                         , animal.getGender(), animal.getSpecialMark(), animal.getShelter().getRegionCode().getUprName()+" "+animal.getShelter().getRegionCode().getOrgName()
-                        , animal.getInquiryNum(), animal.getLikeNum(), favoriteRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
+                        , animal.getInquiryNum(), animal.getLikeNum(), favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindAllAnimalsDTO(animalDTOS);

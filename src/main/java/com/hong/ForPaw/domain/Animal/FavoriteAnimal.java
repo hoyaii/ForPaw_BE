@@ -1,5 +1,6 @@
-package com.hong.ForPaw.domain;
+package com.hong.ForPaw.domain.Animal;
 
+import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.User.User;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -11,7 +12,7 @@ import javax.persistence.*;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class Favorite { //관심 동물
+public class FavoriteAnimal {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,7 +27,7 @@ public class Favorite { //관심 동물
     private Animal animal;
 
     @Builder
-    public Favorite(User user, Animal animal) {
+    public FavoriteAnimal(User user, Animal animal) {
         this.user = user;
         this.animal = animal;
     }

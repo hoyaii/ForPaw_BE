@@ -1,6 +1,6 @@
 package com.hong.ForPaw.domain.Apply;
 
-import com.hong.ForPaw.domain.Animal;
+import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.User.User;
 import lombok.AccessLevel;
 import lombok.Builder;
