@@ -149,4 +149,14 @@ public class GroupService {
 
         return new GroupResponse.FindAllGroupDTO(recommendGroupDTOS, newGroupDTOS, localGroupDTOS, myGroupDTOS);
     }
+
+    @Transactional
+    public GroupResponse.FindLocalGroupDTO findLocalGroup(String region, Pageable pageable){
+        Page<Group> localGroups = groupRepository.findByRegionWithPage(region, pageable);
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroups.getContent().stream()
+                .map(group -> new GroupResponse.LocalGroupDTO(group.getId(), group.getName(), group.getDescription(), group.getParticipationNum(), group.getCategory(), group.getRegion(), group.getSubRegion(), group.getProfileURL(), group.getLikeNum()))
+                .collect(Collectors.toList());
+
+        return new GroupResponse.FindLocalGroupDTO(localGroupDTOS);
+    }
 }

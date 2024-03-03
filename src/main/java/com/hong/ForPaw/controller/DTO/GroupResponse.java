@@ -9,6 +9,8 @@ public class GroupResponse {
 
     public record FindAllGroupDTO(List<RecommendGroupDTO> recommendGroupDTOS, List<NewGroupDTO> newGroupDTOS, List<LocalGroupDTO> localGroupDTOS, List<MyGroupDTO> myGroupDTOS) {}
 
+    public record FindLocalGroupDTO(List<LocalGroupDTO> localGroupDTOS) {}
+
     public record RecommendGroupDTO(Long id, String name, String description, Integer participationNum, String category,
                                     String region, String subRegion, String profileURL, Integer likeNum) {}
 
