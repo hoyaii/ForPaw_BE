@@ -173,7 +173,7 @@ public class GroupService {
         }
         else{
             GroupUser groupUser = GroupUser.builder()
-                    .role(Role.USER)
+                    .role(Role.TEMP)
                     .user(userRef)
                     .group(group)
                     .greeting(requestDTO.greeting())
