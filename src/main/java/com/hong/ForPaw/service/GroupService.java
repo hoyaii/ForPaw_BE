@@ -173,4 +173,22 @@ public class GroupService {
 
         return new GroupResponse.FindNewGroupDTO(newGroupDTOS);
     }
+
+    @Transactional
+    public GroupResponse.FindMyGroupDTO findMyGroup(Long userId, Integer page, Integer size){
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+
+        Page<GroupUser> groupUsers = groupUserRepository.findByUserId(userId, pageable);
+        List<Group> myGroups = groupUsers.getContent().stream()
+                .map(GroupUser::getGroup)
+                .collect(Collectors.toList());
+
+        List<GroupResponse.MyGroupDTO> myGroupDTOS = myGroups.stream()
+                .map(group -> new GroupResponse.MyGroupDTO(group.getId(), group.getName(), group.getDescription(),
+                        group.getParticipationNum(), group.getCategory(), group.getRegion(), group.getSubRegion(), group.getProfileURL(), group.getLikeNum()))
+                .collect(Collectors.toList());
+
+        return new GroupResponse.FindMyGroupDTO(myGroupDTOS);
+    }
 }

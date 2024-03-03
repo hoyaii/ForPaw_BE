@@ -13,6 +13,8 @@ public class GroupResponse {
 
     public record FindNewGroupDTO(List<NewGroupDTO> newGroupDTOS) {}
 
+    public record FindMyGroupDTO(List<MyGroupDTO> myGroupDTOS) {}
+
     public record RecommendGroupDTO(Long id, String name, String description, Integer participationNum, String category,
                                     String region, String subRegion, String profileURL, Integer likeNum) {}
 
