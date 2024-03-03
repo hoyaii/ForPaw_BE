@@ -37,6 +37,8 @@ public class GroupService {
     private final FavoriteGroupRepository favoriteGroupRepository;
     private final EntityManager entityManager;
 
+    private Pageable pageableForMy = PageRequest.of(0, 1000);
+
     @Transactional
     public void createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId){
         // 이름 중복 체크
@@ -115,7 +117,7 @@ public class GroupService {
         Pageable pageable = createPageable(0, 5, "id");
 
         // 추천 그룹 찾기
-        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = getRecommendGroupDTOS(userId, region, pageable);
+        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = getRecommendGroupDTOS(userId, region);
 
         // 지역 그룹 찾기
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, region, pageable);
@@ -179,16 +181,17 @@ public class GroupService {
         }
     }
 
-    public List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region, Pageable pageable){
+    public List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region){
         // 내가 가입한 그룹
-        Set<Long> myGroupIds = getMyGroups(userId, pageable).stream()
+        Set<Long> myGroupIds = getMyGroups(userId, pageableForMy).stream()
                 .map(Group::getId)
                 .collect(Collectors.toSet());
 
         // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순  3. 비슷한 연관관계 (카테고리, 설명) => 3번은 AI를 사용해야 하기 때문에 일단은 1과 2의 기준으로 추천
         Sort sort = Sort.by(Sort.Order.desc("likeNum"), Sort.Order.desc("participationNum"));
+        Pageable pageableForRecommend = PageRequest.of(0, 1000, sort);
 
-        Page<Group> recommendGroups = groupRepository.findByRegionWithSort(region, sort);
+        Page<Group> recommendGroups = groupRepository.findByRegion(region, pageableForRecommend);
         List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = recommendGroups.getContent().stream()
                 .filter(group -> !myGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> new GroupResponse.RecommendGroupDTO(group.getId(), group.getName(), group.getDescription(), group.getParticipationNum(), group.getCategory() ,group.getRegion(), group.getSubRegion(), group.getProfileURL(), group.getLikeNum()))
@@ -205,11 +208,11 @@ public class GroupService {
 
     public List<GroupResponse.LocalGroupDTO> getLocalGroupDTOS(Long userId, String region, Pageable pageable){
         // 내가 가입한 그룹
-        Set<Long> myGroupIds = getMyGroups(userId, pageable).stream()
+        Set<Long> myGroupIds = getMyGroups(userId, pageableForMy).stream()
                 .map(Group::getId)
                 .collect(Collectors.toSet());
 
-        Page<Group> localGroups = groupRepository.findByRegionWithPage(region, pageable);
+        Page<Group> localGroups = groupRepository.findByRegion(region, pageable);
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroups.getContent().stream()
                 .filter(group -> !myGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> new GroupResponse.LocalGroupDTO(group.getId(), group.getName(), group.getDescription(), group.getParticipationNum(), group.getCategory(), group.getRegion(), group.getSubRegion(), group.getProfileURL(), group.getLikeNum()))
@@ -220,7 +223,7 @@ public class GroupService {
 
     public List<GroupResponse.NewGroupDTO> getNewGroupDTOS(Long userId, Pageable pageable){
         // 내가 가입한 그룹
-        Set<Long> myGroupIds = getMyGroups(userId, pageable).stream()
+        Set<Long> myGroupIds = getMyGroups(userId, pageableForMy).stream()
                 .map(Group::getId)
                 .collect(Collectors.toSet());
 
