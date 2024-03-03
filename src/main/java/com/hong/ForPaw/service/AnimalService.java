@@ -117,7 +117,7 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.FindAllAnimalsDTO findAllAnimals(Pageable pageable, Long userId){
+    public AnimalResponse.FindAllAnimalsDTO findAnimalList(Pageable pageable, Long userId){
 
         Page<Animal> animalPage = animalRepository.findAll(pageable);
 
