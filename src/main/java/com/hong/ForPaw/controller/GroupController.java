@@ -39,4 +39,11 @@ public class GroupController {
         groupService.updateGroup(requestDTO, groupId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
+
+    @GetMapping("/groups")
+    public ResponseEntity<?> findGroupList(@RequestParam("region") String region, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        GroupResponse.FindAllGroupDTO responseDTO = groupService.findGroupList(userDetails.getUser().getId(), region);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
 }

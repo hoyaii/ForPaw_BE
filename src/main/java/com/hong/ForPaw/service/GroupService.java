@@ -105,7 +105,7 @@ public class GroupService {
     }
 
     @Transactional
-    public GroupResponse.FindAllGroupDTO findGroupList(Long userId, String region, String subregion){
+    public GroupResponse.FindAllGroupDTO findGroupList(Long userId, String region){
         // 이 API의 페이지네이션은 0페이지인 5개만 보내줄 것이다.
         Pageable pageable = PageRequest.of(0, 5);
         Pageable pageableByNew = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "id"));
