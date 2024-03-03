@@ -456,4 +456,24 @@ class GroupControllerTest {
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 내_그룹_목록_추가조회_성공() throws Exception {
+
+        // given
+        // when
+        ResultActions result = mvc.perform(
+                get("/api/groups/my")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .param("size", "5")
+                        .param("page", "0")
+        );
+
+        // then
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
 }
