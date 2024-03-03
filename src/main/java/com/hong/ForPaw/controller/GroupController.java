@@ -68,4 +68,11 @@ public class GroupController {
         GroupResponse.FindMyGroupDTO responseDTO = groupService.findMyGroup(userDetails.getUser().getId(), page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
+
+    @PostMapping("/groups/{groupId}/like")
+    public ResponseEntity<?> likeGroup(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        groupService.likeGroup(userDetails.getUser().getId(), groupId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
 }
