@@ -392,4 +392,25 @@ class GroupControllerTest {
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 그룹_목록_조회_성공() throws Exception {
+
+        // given
+        String region = "대구광역시";
+
+        // when
+        ResultActions result = mvc.perform(
+                get("/api/groups/")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .param("region", region)
+        );
+
+        // then
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
 }
