@@ -69,6 +69,13 @@ public class GroupController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
+    @PostMapping("/groups/{groupId}/join")
+    public ResponseEntity<?> joinGroup(@RequestBody GroupRequest.JoinGroupDTO requestDTO ,@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        groupService.joinGroup(requestDTO, userDetails.getUser().getId(), groupId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
     @PostMapping("/groups/{groupId}/like")
     public ResponseEntity<?> likeGroup(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
