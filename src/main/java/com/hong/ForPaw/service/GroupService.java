@@ -4,10 +4,12 @@ import com.hong.ForPaw.controller.DTO.GroupRequest;
 import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Group.FavoriteGroup;
 import com.hong.ForPaw.domain.Group.Group;
 import com.hong.ForPaw.domain.Group.GroupUser;
 import com.hong.ForPaw.domain.Group.Role;
 import com.hong.ForPaw.domain.User.User;
+import com.hong.ForPaw.repository.FavoriteGroupRepository;
 import com.hong.ForPaw.repository.GroupRepository;
 import com.hong.ForPaw.repository.GroupUserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,6 +34,7 @@ public class GroupService {
 
     private final GroupRepository groupRepository;
     private final GroupUserRepository groupUserRepository;
+    private final FavoriteGroupRepository favoriteGroupRepository;
     private final EntityManager entityManager;
 
     @Transactional
@@ -150,6 +154,29 @@ public class GroupService {
         List<GroupResponse.MyGroupDTO> myGroupDTOS = getMyGroupDTOS(userId, pageable);
 
         return new GroupResponse.FindMyGroupDTO(myGroupDTOS);
+    }
+
+    @Transactional
+    public void likeGroup(Long userId, Long groupId){
+        // 존재하지 않는 그룹이면 에러
+        Group group = groupRepository.findById(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
+        );
+
+        User userRef = entityManager.getReference(User.class, userId);
+
+        Optional<FavoriteGroup> favoriteGroupOP = favoriteGroupRepository.findByUserIdAndGroupId(userId, groupId);
+
+        // 좋아요가 이미 있다면 삭제, 없다면 추가
+        if (favoriteGroupOP.isPresent()) {
+            favoriteGroupRepository.delete(favoriteGroupOP.get());
+        } else {
+            FavoriteGroup favoriteGroup = FavoriteGroup.builder()
+                    .user(userRef)
+                    .group(group)
+                    .build();
+            favoriteGroupRepository.save(favoriteGroup);
+        }
     }
 
     public List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region, Pageable pageable){

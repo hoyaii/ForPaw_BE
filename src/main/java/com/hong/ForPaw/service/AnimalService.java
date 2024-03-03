@@ -155,11 +155,11 @@ public class AnimalService {
 
         User userRef = entityManager.getReference(User.class, userId);
 
-        Optional<FavoriteAnimal> favoriteOptional = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animalId);
+        Optional<FavoriteAnimal> favoriteAnimalOP = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animalId);
 
         // 좋아요가 이미 있다면 삭제, 없다면 추가
-        if (favoriteOptional.isPresent()) {
-            favoriteAnimalRepository.delete(favoriteOptional.get());
+        if (favoriteAnimalOP.isPresent()) {
+            favoriteAnimalRepository.delete(favoriteAnimalOP.get());
         } else {
             FavoriteAnimal favoriteAnimal = FavoriteAnimal.builder()
                     .user(userRef)
