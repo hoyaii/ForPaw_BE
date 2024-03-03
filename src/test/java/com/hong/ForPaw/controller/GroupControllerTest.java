@@ -90,4 +90,72 @@ class GroupControllerTest {
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 그룹_가입_신청하기_성공() throws Exception {
+
+        // given
+        Long groupId = 12L;
+        GroupRequest.JoinGroupDTO requestDTO = new GroupRequest.JoinGroupDTO("안녕하세요! 가입 인사 드립니다 ^^");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/join")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 그룹_가입_신청하기_실패_1() throws Exception {
+
+        // given
+        // 이미 신청한 그룹
+        Long groupId = 12L;
+        GroupRequest.JoinGroupDTO requestDTO = new GroupRequest.JoinGroupDTO("안녕하세요! 가입 인사 드립니다 ^^");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/join")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 그룹_가입_신청하기_실패_2() throws Exception {
+
+        // given
+        // 존재하지 않는 그룹
+        Long groupId = 100L;
+        GroupRequest.JoinGroupDTO requestDTO = new GroupRequest.JoinGroupDTO("안녕하세요! 가입 인사 드립니다 ^^");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/join")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
 }
