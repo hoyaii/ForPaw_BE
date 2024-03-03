@@ -61,4 +61,11 @@ public class GroupController {
         GroupResponse.FindNewGroupDTO responseDTO = groupService.findNewGroup(page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
+
+    @GetMapping("/groups/my")
+    public ResponseEntity<?> findMyGroup(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        GroupResponse.FindMyGroupDTO responseDTO = groupService.findMyGroup(userDetails.getUser().getId(), page, size);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
 }
