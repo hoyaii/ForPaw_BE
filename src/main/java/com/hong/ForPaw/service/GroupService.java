@@ -62,7 +62,6 @@ public class GroupService {
 
     @Transactional
     public GroupResponse.FindGroupByIdDTO findGroupById(Long groupId, Long userId){
-
         // 조회 권한 체크 (수정을 위해 가져오는 정보니 권한 체크 필요)
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .ifPresentOrElse(groupUser -> {
@@ -107,8 +106,7 @@ public class GroupService {
     @Transactional
     public GroupResponse.FindAllGroupDTO findGroupList(Long userId, String region){
         // 이 API의 페이지네이션은 0페이지인 5개만 보내줄 것이다.
-        Pageable pageable = PageRequest.of(0, 5);
-        Pageable pageableByNew = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "id"));
+        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "id"));
 
         // 추천 그룹 찾기
         // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순  3. 비슷한 연관관계 (카테고리, 설명) => 3번은 AI를 사용해야 하기 때문에 일단은 1과 2의 기준으로 추천
@@ -131,7 +129,7 @@ public class GroupService {
                 .collect(Collectors.toList());
 
         // 새 그룹 찾기 => 지역의 새 그룹이 아닌 전체 새 그룹을 보여줌
-        Page<Group> newGroups = groupRepository.findAll(pageableByNew);
+        Page<Group> newGroups = groupRepository.findAll(pageable);
         List<GroupResponse.NewGroupDTO> newGroupDTOS = newGroups.getContent().stream()
                 .map(group -> new GroupResponse.NewGroupDTO(group.getId(), group.getName(), group.getCategory(), group.getRegion(), group.getSubRegion(), group.getProfileURL()))
                 .collect(Collectors.toList());
@@ -151,12 +149,28 @@ public class GroupService {
     }
 
     @Transactional
-    public GroupResponse.FindLocalGroupDTO findLocalGroup(String region, Pageable pageable){
+    public GroupResponse.FindLocalGroupDTO findLocalGroup(String region, Integer page, Integer size){
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+
         Page<Group> localGroups = groupRepository.findByRegionWithPage(region, pageable);
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroups.getContent().stream()
                 .map(group -> new GroupResponse.LocalGroupDTO(group.getId(), group.getName(), group.getDescription(), group.getParticipationNum(), group.getCategory(), group.getRegion(), group.getSubRegion(), group.getProfileURL(), group.getLikeNum()))
                 .collect(Collectors.toList());
 
         return new GroupResponse.FindLocalGroupDTO(localGroupDTOS);
+    }
+
+    @Transactional
+    public GroupResponse.FindNewGroupDTO findNewGroup(Integer page, Integer size){
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+
+        Page<Group> newGroups = groupRepository.findAll(pageable);
+        List<GroupResponse.NewGroupDTO> newGroupDTOS = newGroups.getContent().stream()
+                .map(group -> new GroupResponse.NewGroupDTO(group.getId(), group.getName(), group.getCategory(), group.getRegion(), group.getSubRegion(), group.getProfileURL()))
+                .collect(Collectors.toList());
+
+        return new GroupResponse.FindNewGroupDTO(newGroupDTOS);
     }
 }

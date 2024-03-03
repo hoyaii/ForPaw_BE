@@ -49,9 +49,9 @@ public class GroupController {
     }
 
     @GetMapping("/groups/local")
-    public ResponseEntity<?> findLocalGroup(@RequestParam("region") String region, Pageable pageable){
+    public ResponseEntity<?> findLocalGroup(@RequestParam("region") String region, @RequestParam("page") Integer page, @RequestParam("size") Integer size){
 
-        GroupResponse.FindLocalGroupDTO responseDTO = groupService.findLocalGroup(region, pageable);
+        GroupResponse.FindLocalGroupDTO responseDTO = groupService.findLocalGroup(region, page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }
