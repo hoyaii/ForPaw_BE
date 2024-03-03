@@ -18,13 +18,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
-import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -146,26 +144,26 @@ public class GroupService {
 
     @Transactional
     public void joinGroup(GroupRequest.JoinGroupDTO requestDTO, Long userId, Long groupId){
-        // 존재하지 않는 그룹이면 에러
+        // 존재하지 않는 그룹이면 에러 처리
         Group group = groupRepository.findById(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
         User userRef = entityManager.getReference(User.class, userId);
 
-        Optional<GroupUser> groupUserOP = groupUserRepository.findByGroupIdAndUserId(groupId, userId);
+        // 이미 가입했거나 신청한 회원이면 에러 처리 (USER 혹 ADMIN)
+        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
+                .filter(groupUser -> groupUser.getRole().equals(Role.USER) || groupUser.getRole().equals(Role.ADMIN) || groupUser.getRole().equals(Role.TEMP))
+                .ifPresent(groupUser -> {
+                    throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
+                });
 
-        if(groupUserOP.isPresent()){
-            throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
-        }
-        else{
-            GroupUser groupUser = GroupUser.builder()
-                    .role(Role.TEMP)
-                    .user(userRef)
-                    .group(group)
-                    .greeting(requestDTO.greeting())
-                    .build();
-            groupUserRepository.save(groupUser);
-        }
+        GroupUser groupUser = GroupUser.builder()
+                .role(Role.TEMP)
+                .user(userRef)
+                .group(group)
+                .greeting(requestDTO.greeting())
+                .build();
+        groupUserRepository.save(groupUser);
     }
 
     @Transactional
@@ -175,20 +173,14 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
 
+        // 권한 체크
         checkAuthority(groupId, userId);
 
+        // 신청한 적이 없거나 이미 가입했는지 체크
         Optional<GroupUser> groupApplicantOP = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId);
+        checkAlreadyApplyOrMember(groupApplicantOP);
 
-        // 가입 신청한 적이 없으면 에러를 보냄
-        if(groupApplicantOP.isEmpty()){
-            throw new CustomException(ExceptionCode.GROUP_NOT_JOIN);
-        } // 이미 승인된 사람이면 에러를 보냄
-        else if(groupApplicantOP.get().getRole().equals(Role.USER) || groupApplicantOP.get().getRole().equals(Role.ADMIN)){
-            throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
-        }
-        else{
-            groupApplicantOP.get().updateRole(Role.USER);
-        }
+        groupApplicantOP.get().updateRole(Role.USER);
     }
 
     @Transactional
@@ -198,20 +190,14 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
 
+        // 권한 체크
         checkAuthority(groupId, userId);
 
+        // 신청한 적이 없거나 이미 가입했는지 체크
         Optional<GroupUser> groupApplicantOP = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId);
+        checkAlreadyApplyOrMember(groupApplicantOP);
 
-        // 가입 신청한 적이 없으면 에러를 보냄
-        if(groupApplicantOP.isEmpty()){
-            throw new CustomException(ExceptionCode.GROUP_NOT_JOIN);
-        } // 이미 승인된 사람이면 에러를 보냄
-        else if(groupApplicantOP.get().getRole().equals(Role.USER) || groupApplicantOP.get().getRole().equals(Role.ADMIN)){
-            throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
-        }
-        else{
-            groupApplicantOP.get().updateRole(Role.REJECTED);
-        }
+        groupApplicantOP.get().updateRole(Role.REJECTED);
     }
 
     @Transactional
@@ -323,5 +309,15 @@ public class GroupService {
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(groupUser -> groupUser.getRole().equals(Role.ADMIN)) // ADMIN인 경우에만 통과 (ADMIN이 아니면 null이 되어 orElseThrow 실행)
                 .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN)); // ADMIN이 아니거나 그룹과 관련없는 사람이면 에러 보냄
+    }
+
+    private void checkAlreadyApplyOrMember(Optional<GroupUser> groupApplicantOP){
+
+        if(groupApplicantOP.isEmpty()){ // 가입 신청한 적이 없음
+            throw new CustomException(ExceptionCode.GROUP_NOT_JOIN);
+        } // 이미 승인되어 회원이거나 거절됌
+        else if(groupApplicantOP.get().getRole().equals(Role.USER) || groupApplicantOP.get().getRole().equals(Role.ADMIN) || groupApplicantOP.get().getRole().equals(Role.REJECTED)){
+            throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
+        }
     }
 }
