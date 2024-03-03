@@ -159,12 +159,35 @@ public class GroupService {
     }
 
     @Transactional
+    public void joinGroup(GroupRequest.JoinGroupDTO requestDTO, Long userId, Long groupId){
+        // 존재하지 않는 그룹이면 에러
+        Group group = groupRepository.findById(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
+        );
+        User userRef = entityManager.getReference(User.class, userId);
+
+        Optional<GroupUser> groupUserOP = groupUserRepository.findByGroupIdAndUserId(groupId, userId);
+
+        if(groupUserOP.isPresent()){
+            throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
+        }
+        else{
+            GroupUser groupUser = GroupUser.builder()
+                    .role(Role.USER)
+                    .user(userRef)
+                    .group(group)
+                    .greeting(requestDTO.greeting())
+                    .build();
+            groupUserRepository.save(groupUser);
+        }
+    }
+
+    @Transactional
     public void likeGroup(Long userId, Long groupId){
         // 존재하지 않는 그룹이면 에러
         Group group = groupRepository.findById(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
-
         User userRef = entityManager.getReference(User.class, userId);
 
         Optional<FavoriteGroup> favoriteGroupOP = favoriteGroupRepository.findByUserIdAndGroupId(userId, groupId);
@@ -172,7 +195,8 @@ public class GroupService {
         // 좋아요가 이미 있다면 삭제, 없다면 추가
         if (favoriteGroupOP.isPresent()) {
             favoriteGroupRepository.delete(favoriteGroupOP.get());
-        } else {
+        }
+        else {
             FavoriteGroup favoriteGroup = FavoriteGroup.builder()
                     .user(userRef)
                     .group(group)

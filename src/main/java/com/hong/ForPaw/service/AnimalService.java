@@ -160,7 +160,8 @@ public class AnimalService {
         // 좋아요가 이미 있다면 삭제, 없다면 추가
         if (favoriteAnimalOP.isPresent()) {
             favoriteAnimalRepository.delete(favoriteAnimalOP.get());
-        } else {
+        }
+        else {
             FavoriteAnimal favoriteAnimal = FavoriteAnimal.builder()
                     .user(userRef)
                     .animal(animal)

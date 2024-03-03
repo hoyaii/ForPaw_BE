@@ -28,10 +28,14 @@ public class GroupUser {
     @Column
     private Role role;
 
+    @Column
+    private String greeting;
+
     @Builder
-    public GroupUser(Group group, User user, Role role) {
+    public GroupUser(Group group, User user, Role role, String greeting) {
         this.group = group;
         this.user = user;
         this.role = role;
+        this.greeting = greeting;
     }
 }
