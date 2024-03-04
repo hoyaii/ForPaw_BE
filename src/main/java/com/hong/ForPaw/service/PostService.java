@@ -90,6 +90,9 @@ public class PostService {
                 .map(comment -> new PostResponse.CommentDTO(comment.getId(), comment.getUser().getNickName(), comment.getContent(), comment.getCreatedDate(), comment.getUser().getRegin()))
                 .collect(Collectors.toList());
 
+        // 게시글 읽음 처리 (화면에서 게시글 확인 여부가 필요)
+
+
         return new PostResponse.FindPostByIdDTO(commentDTOS);
     }
 
