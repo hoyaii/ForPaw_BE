@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
 
@@ -22,9 +24,20 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Modifying
     @Query("UPDATE Post p SET p.likeNum = p.likeNum + 1 WHERE p.id = :postId")
-    void incrementLikeCountById(@Param("postId") Long postId);
+    void incrementLikeNumById(@Param("postId") Long postId);
 
     @Modifying
     @Query("UPDATE Post p SET p.likeNum = p.likeNum - 1 WHERE p.id = :postId AND p.likeNum > 0")
-    void decrementLikeCountById(@Param("postId") Long postId);
+    void decrementLikeNumById(@Param("postId") Long postId);
+
+    @Modifying
+    @Query("UPDATE Post p SET p.commentNum = p.commentNum + 1 WHERE p.id = :postId")
+    void incrementCommentNumById(@Param("postId") Long postId);
+
+    @Modifying
+    @Query("UPDATE Post p SET p.commentNum = p.commentNum - 1 WHERE p.id = :postId AND p.commentNum > 0")
+    void decrementCommentNumById(@Param("postId") Long postId);
+
+    @Query("SELECT p.user.id FROM Post p WHERE p.id = :postId")
+    Optional<Long> findUserIdByPostId(@Param("postId") Long postId);
 }

@@ -154,10 +154,10 @@ public class PostService {
 
         // 이미 좋아요를 눌렀다면, 게시글의 좋아요 수를 업데이트 하고, postLike 엔티티 삭제
         if(postLikeOP.isPresent()){
-            postRepository.decrementLikeCountById(postId);
+            postRepository.decrementLikeNumById(postId);
             postLikeRepository.delete(postLikeOP.get());
         } else {
-            postRepository.incrementLikeCountById(postId);
+            postRepository.incrementLikeNumById(postId);
             PostLike postLike = PostLike.builder().user(userRef).post(postRef).build();
 
             postLikeRepository.save(postLike);
@@ -167,25 +167,32 @@ public class PostService {
     @Transactional
     public PostResponse.CreateCommentDTO createComment(PostRequest.CreateCommentDTO requestDTO, Long userId, Long postId){
 
+        // 존재하지 않는 글이면 에러
+        if (!postRepository.existsById(postId)) {
+            throw new CustomException(ExceptionCode.POST_NOT_FOUND);
+        }
+
         User userRef = entityManager.getReference(User.class, userId);
-        Post post = postRepository.findById(postId).orElseThrow(
-                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
-        );
+        Post postRef = entityManager.getReference(Post.class, postId);
 
         Comment comment = Comment.builder()
                 .user(userRef)
-                .post(post)
+                .post(postRef)
                 .content(requestDTO.content())
                 .build();
 
         commentRepository.save(comment);
 
-        // 게시글의 댓글 수에 반영
-        post.updateCommentNum(post.getCommentNum() + 1);
+        // 게시글의 댓글 수 증가
+        postRepository.incrementCommentNumById(postId);
+
+        // 게시글 작성자의 userId를 구해서, 프록시 객체 생성
+        Long postUserId = postRepository.findUserIdByPostId(postId).get(); // 이미 앞에서 존재하는 글임을 체크함
+        User postUserRef = entityManager.getReference(User.class, postUserId);
 
         // 알람 생성
         Alarm alarm = Alarm.builder()
-                .user(post.getUser())
+                .user(postUserRef)
                 .content("새로운 댓글: " + requestDTO.content())
                 .build();
 
