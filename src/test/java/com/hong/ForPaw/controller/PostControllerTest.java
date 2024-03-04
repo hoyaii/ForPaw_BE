@@ -18,8 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @AutoConfigureMockMvc
@@ -60,7 +59,7 @@ class PostControllerTest {
 
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
-    public void 그룹_정보_조회_성공_최신순() throws Exception {
+    public void 게시글_목록_조회_성공_최신순() throws Exception {
 
         // given
         // when => 최신순
@@ -82,7 +81,7 @@ class PostControllerTest {
 
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
-    public void 그룹_정보_조회_성공_좋아요순() throws Exception {
+    public void 게시글_목록_조회_성공_좋아요순() throws Exception {
 
         // given
         // when
@@ -102,4 +101,93 @@ class PostControllerTest {
         result.andExpect(jsonPath("$.success").value("true"));
     }
 
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 게시글_업데이트_성공() throws Exception {
+
+        // given
+        Long postId = 1L;
+
+        List<Long> retainedImageIds = new ArrayList<>();
+        retainedImageIds.add(1L);
+
+        List<PostRequest.PostImageDTO> imageDTOS = new ArrayList<>();
+        imageDTOS.add(new PostRequest.PostImageDTO("https://apple.com/image1.jpg"));
+        imageDTOS.add(new PostRequest.PostImageDTO("https://apple.com/image2.jpg"));
+
+        PostRequest.UpdatePostDTO requestDTO = new PostRequest.UpdatePostDTO("치와아 입양 후기 올립니다5!", "입양 2일차 입니다!", retainedImageIds, imageDTOS);
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/posts/" + postId )
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 게시글_업데이트_실패_존재하지_않는_포스트() throws Exception {
+
+        // given
+        Long postId = 10L;
+
+        List<Long> retainedImageIds = new ArrayList<>();
+        retainedImageIds.add(1L);
+
+        List<PostRequest.PostImageDTO> imageDTOS = new ArrayList<>();
+        imageDTOS.add(new PostRequest.PostImageDTO("https://apple.com/image1.jpg"));
+        imageDTOS.add(new PostRequest.PostImageDTO("https://apple.com/image2.jpg"));
+
+        PostRequest.UpdatePostDTO requestDTO = new PostRequest.UpdatePostDTO("치와아 입양 후기 올립니다5!", "입양 2일차 입니다!", retainedImageIds, imageDTOS);
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/posts/" + postId )
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 게시글_업데이트_실패_권한_없음() throws Exception {
+
+        // given
+        Long postId = 1L;
+
+        List<Long> retainedImageIds = new ArrayList<>();
+        retainedImageIds.add(1L);
+
+        List<PostRequest.PostImageDTO> imageDTOS = new ArrayList<>();
+        imageDTOS.add(new PostRequest.PostImageDTO("https://apple.com/image1.jpg"));
+        imageDTOS.add(new PostRequest.PostImageDTO("https://apple.com/image2.jpg"));
+
+        PostRequest.UpdatePostDTO requestDTO = new PostRequest.UpdatePostDTO("치와아 입양 후기 올립니다5!", "입양 2일차 입니다!", retainedImageIds, imageDTOS);
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/posts/" + postId )
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
 }
