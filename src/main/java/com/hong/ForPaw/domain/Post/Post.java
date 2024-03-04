@@ -59,12 +59,4 @@ public class Post extends TimeStamp {
         this.title = title;
         this.content = content;
     }
-
-    public void updateLikeNum(Integer likeNum){
-        this.likeNum = likeNum;
-    }
-
-    public void updateCommentNum(Integer commentNum){
-        this.commentNum = commentNum;
-    }
 }

@@ -77,7 +77,6 @@ public class PostService {
 
     @Transactional
     public PostResponse.FindPostByIdDTO findPostById(Long postId, Long userId){
-
         // 존재하지 않는 글이면 에러
         if (!postRepository.existsById(postId)) {
             throw new CustomException(ExceptionCode.POST_NOT_FOUND);
@@ -105,28 +104,31 @@ public class PostService {
     @Transactional
     public void updatePostById(PostRequest.UpdatePostDTO requestDTO, Long userId, Long postId){
         // 존재하지 않는 게시글이면 에러 발생
-        Post post = postRepository.findById(postId).orElseThrow(
-                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
-        );
+        if(!postRepository.existsById(postId)) {
+            throw new CustomException(ExceptionCode.POST_NOT_FOUND);
+        }
 
-        // 수정 권한 없음
-        if(!post.getUser().getId().equals(userId)){
+        // 수정 권한 체크
+        Long postUserId = postRepository.findUserIdByPostId(postId).get(); // 앞에서 존재하는 게시글임을 체크
+        if(!postUserId.equals(userId)){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
 
-        post.updatePost(requestDTO.title(), requestDTO.content());
+        postRepository.updatePostTitleAndContent(postId, requestDTO.title(), requestDTO.content());
 
         // 유지할 이미지를 제외한 모든 이미지 삭제
         if (requestDTO.retainedImageIds() != null && !requestDTO.retainedImageIds().isEmpty()) {
-            postImageRepository.deleteByPostAndIdNotIn(post, requestDTO.retainedImageIds());
+            postImageRepository.deleteByPostIdAndIdNotIn(postId, requestDTO.retainedImageIds());
         } else {
-            postImageRepository.deleteByPost(post);
+            postImageRepository.deleteByPostId(postId);
         }
 
         // 새 이미지 추가
+        Post postRef = entityManager.getReference(Post.class, postId);
+
         List<PostImage> newImages = requestDTO.newImages().stream()
                 .map(postImageDTO -> PostImage.builder()
-                        .post(post)
+                        .post(postRef)
                         .imageURL(postImageDTO.imageURL())
                         .build())
                 .collect(Collectors.toList());
@@ -136,7 +138,6 @@ public class PostService {
 
     @Transactional
     public void likePost(Long postId, Long userId){
-
         // 존재하지 않는 글이면 에러
         if (!postRepository.existsById(postId)) {
             throw new CustomException(ExceptionCode.POST_NOT_FOUND);
@@ -149,24 +150,24 @@ public class PostService {
 
         Optional<PostLike> postLikeOP = postLikeRepository.findByUserIdAndPostId(userId, postId);
 
-        User userRef = entityManager.getReference(User.class, userId);
-        Post postRef = entityManager.getReference(Post.class, postId);
-
-        // 이미 좋아요를 눌렀다면, 게시글의 좋아요 수를 업데이트 하고, postLike 엔티티 삭제
+        // 이미 좋아요를 눌렀다면, 취소하는 액션이니 게시글의 좋아요 수를 감소시키고 하고, postLike 엔티티 삭제
         if(postLikeOP.isPresent()){
             postRepository.decrementLikeNumById(postId);
             postLikeRepository.delete(postLikeOP.get());
-        } else {
-            postRepository.incrementLikeNumById(postId);
+        }
+        else { // 좋아요를 누르지 않았다면, 좋아요 수를 증가키고, 엔티티 저장
+            User userRef = entityManager.getReference(User.class, userId);
+            Post postRef = entityManager.getReference(Post.class, postId);
+
             PostLike postLike = PostLike.builder().user(userRef).post(postRef).build();
 
+            postRepository.incrementLikeNumById(postId);
             postLikeRepository.save(postLike);
         }
     }
 
     @Transactional
     public PostResponse.CreateCommentDTO createComment(PostRequest.CreateCommentDTO requestDTO, Long userId, Long postId){
-
         // 존재하지 않는 글이면 에러
         if (!postRepository.existsById(postId)) {
             throw new CustomException(ExceptionCode.POST_NOT_FOUND);

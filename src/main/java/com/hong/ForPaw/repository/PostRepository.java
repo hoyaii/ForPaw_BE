@@ -40,4 +40,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT p.user.id FROM Post p WHERE p.id = :postId")
     Optional<Long> findUserIdByPostId(@Param("postId") Long postId);
+
+    @Modifying
+    @Query("UPDATE Post p SET p.title = :title, p.content = :content WHERE p.id = :postId")
+    void updatePostTitleAndContent(@Param("postId") Long postId, @Param("title") String title, @Param("content") String content);
 }

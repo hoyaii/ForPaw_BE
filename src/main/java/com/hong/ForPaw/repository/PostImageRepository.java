@@ -6,14 +6,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface PostImageRepository extends JpaRepository<PostImage, Long> {
 
     List<PostImage> findByPost(Post post);
 
-    void deleteByPost(Post post);
+    void deleteByPostId(Long postId);
 
-    void deleteByPostAndIdNotIn(Post post, List<Long> retainedImageIds);
+    void deleteByPostIdAndIdNotIn(Long postId, List<Long> retainedImageIds);
 }
