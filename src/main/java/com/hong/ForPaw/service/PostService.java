@@ -4,11 +4,9 @@ import com.hong.ForPaw.controller.DTO.PostRequest;
 import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.PostRepository;
-import com.hong.ForPaw.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.persistence.EntityManager;
 
@@ -21,7 +19,7 @@ public class PostService {
     private final EntityManager entityManager;
 
     @Transactional
-    public void createPost(@RequestBody PostRequest.CreatePostDTO requestDTO, Long userId){
+    public void createPost(PostRequest.CreatePostDTO requestDTO, Long userId){
 
         User user = entityManager.getReference(User.class, userId);
 
