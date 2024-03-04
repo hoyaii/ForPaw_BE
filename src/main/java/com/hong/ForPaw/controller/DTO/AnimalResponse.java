@@ -7,7 +7,7 @@ import java.util.List;
 
 public class AnimalResponse {
 
-    public record FindAllAnimalsDTO(List<AnimalDTO> animalDTOS){ }
+    public record FindAnimalListDTO(List<AnimalDTO> animalDTOS){ }
 
     public record AnimalDTO(Long id, String name, String age,
                             String gender, String specialMark, String region,
@@ -19,7 +19,7 @@ public class AnimalResponse {
                                     String weight, LocalDate noticeSdt, LocalDate noticeEdt,
                                     String processState, String neuter){}
 
-    public record FindAllApplyDTO(List<ApplyDTO> adoptionApplyDTOS) { }
+    public record FindApplyListDTO(List<ApplyDTO> adoptionApplyDTOS) { }
 
     public record ApplyDTO(Long id, String animalName, String kind, String gender, String age, String userName,
                            String tel, String residence, Status status){ }

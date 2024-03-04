@@ -117,7 +117,7 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.FindAllAnimalsDTO findAnimalList(Pageable pageable, Long userId){
+    public AnimalResponse.FindAnimalListDTO findAnimalList(Pageable pageable, Long userId){
 
         Page<Animal> animalPage = animalRepository.findAll(pageable);
 
@@ -132,7 +132,7 @@ public class AnimalService {
                         , animal.getInquiryNum(), animal.getLikeNum(), favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
                 .collect(Collectors.toList());
 
-        return new AnimalResponse.FindAllAnimalsDTO(animalDTOS);
+        return new AnimalResponse.FindAnimalListDTO(animalDTOS);
     }
 
     @Transactional
@@ -197,7 +197,7 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.FindAllApplyDTO findAllApply(Long userId){
+    public AnimalResponse.FindApplyListDTO findAllApply(Long userId){
 
         List<Apply> applies = applyRepository.findByUserId(userId);
 
@@ -219,7 +219,7 @@ public class AnimalService {
                         apply.getStatus()))
                 .collect(Collectors.toList());
 
-        return new AnimalResponse.FindAllApplyDTO(applyDTOS);
+        return new AnimalResponse.FindApplyListDTO(applyDTOS);
     }
 
     @Transactional
@@ -236,7 +236,7 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.FindAllAnimalsDTO findAllAnimalsByShelterId(Long userId, Long shelterId, Pageable pageable){
+    public AnimalResponse.FindAnimalListDTO findAllAnimalsByShelterId(Long userId, Long shelterId, Pageable pageable){
 
         Page<Animal> animalPage = animalRepository.findByShelterCareRegNo(shelterId, pageable);
 
@@ -251,7 +251,7 @@ public class AnimalService {
                         , animal.getInquiryNum(), animal.getLikeNum(), favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
                 .collect(Collectors.toList());
 
-        return new AnimalResponse.FindAllAnimalsDTO(animalDTOS);
+        return new AnimalResponse.FindAnimalListDTO(animalDTOS);
     }
 
     // 동물 이름 지어주는 메서드
