@@ -4,11 +4,13 @@ import com.hong.ForPaw.controller.DTO.PostRequest;
 import com.hong.ForPaw.controller.DTO.PostResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Alarm;
 import com.hong.ForPaw.domain.Post.Comment;
 import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Post.PostImage;
 import com.hong.ForPaw.domain.Post.Type;
 import com.hong.ForPaw.domain.User.User;
+import com.hong.ForPaw.repository.AlarmRepository;
 import com.hong.ForPaw.repository.CommentRepository;
 import com.hong.ForPaw.repository.PostImageRepository;
 import com.hong.ForPaw.repository.PostRepository;
@@ -30,6 +32,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final PostImageRepository postImageRepository;
     private final CommentRepository commentRepository;
+    private final AlarmRepository alarmRepository;
     private final EntityManager entityManager;
 
     @Transactional
@@ -142,6 +145,11 @@ public class PostService {
         post.updateCommentNum(post.getCommentNum() + 1);
 
         // 알람 생성
+        Alarm alarm = Alarm.builder()
+                .user(post.getUser())
+                .content("새로운 댓글: " + requestDTO.content())
+                .build();
 
+        alarmRepository.save(alarm);
     }
 }
