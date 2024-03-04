@@ -140,5 +140,8 @@ public class PostService {
 
         // 게시글의 댓글 수에 반영
         post.updateCommentNum(post.getCommentNum() + 1);
+
+        // 알람 생성
+
     }
 }
