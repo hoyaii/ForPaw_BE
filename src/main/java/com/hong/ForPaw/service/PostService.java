@@ -47,7 +47,10 @@ public class PostService {
                 .build();
 
         List<PostImage> postImages = requestDTO.images().stream()
-                .map(postImageDTO -> PostImage.builder().post(post).imageURL(postImageDTO.imageURL()).build())
+                .map(postImageDTO -> PostImage.builder()
+                        .post(post)
+                        .imageURL(postImageDTO.imageURL())
+                        .build())
                 .collect(Collectors.toList());
 
         postRepository.save(post);
@@ -85,5 +88,37 @@ public class PostService {
                 .collect(Collectors.toList());
 
         return new PostResponse.FindPostByIdDTO(commentDTOS);
+    }
+
+    @Transactional
+    public void updatePostById(PostRequest.UpdatePostDTO requestDTO, Long userId, Long postId){
+        // 존재하지 않는 게시글이면 에러 발생
+        Post post = postRepository.findById(postId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
+        );
+
+        // 수정 권한 없음
+        if(!post.getUser().getId().equals(userId)){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
+
+        post.updatePost(requestDTO.title(), requestDTO.content());
+
+        // 유지할 이미지를 제외한 모든 이미지 삭제
+        if (requestDTO.retainedImageIds() != null && !requestDTO.retainedImageIds().isEmpty()) {
+            postImageRepository.deleteByPostAndIdNotIn(post, requestDTO.retainedImageIds());
+        } else {
+            postImageRepository.deleteByPost(post);
+        }
+
+        // 새 이미지 추가
+        List<PostImage> newImages = requestDTO.newImages().stream()
+                .map(postImageDTO -> PostImage.builder()
+                        .post(post)
+                        .imageURL(postImageDTO.imageURL())
+                        .build())
+                .collect(Collectors.toList());
+
+        postImageRepository.saveAll(newImages);
     }
 }

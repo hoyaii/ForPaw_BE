@@ -10,4 +10,6 @@ public class PostRequest {
     public record CreatePostDTO(String title, Type type, String content, List<PostImageDTO> images) {}
 
     public record PostImageDTO(String imageURL) {}
+
+    public record UpdatePostDTO(String title, Type type, String content, List<Long> retainedImageIds, List<PostImageDTO> newImages) {}
 }

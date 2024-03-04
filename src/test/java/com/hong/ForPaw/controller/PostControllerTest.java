@@ -101,5 +101,5 @@ class PostControllerTest {
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
-    
+
 }
