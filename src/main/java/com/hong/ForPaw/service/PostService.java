@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,5 +46,23 @@ public class PostService {
 
         postRepository.save(post);
         postImageRepository.saveAll(postImages);
+    }
+
+    @Transactional
+    public PostResponse.FindPostListDTO findPostList(Type type, Pageable pageable){
+
+        Page<Post> postPage = postRepository.findByType(type, pageable);
+
+        List<PostResponse.PostDTO> postDTOS = postPage.stream()
+                .map(post -> {
+                    List<PostResponse.PostImageDTO> postImageDTOS = postImageRepository.findByPost(post).stream()
+                            .map(postImage -> new PostResponse.PostImageDTO(postImage.getImageURL()))
+                            .collect(Collectors.toList());
+
+                    return new PostResponse.PostDTO(post.getId(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), post.getLikeNum(), postImageDTOS);
+                })
+                .collect(Collectors.toList());
+
+        return new PostResponse.FindPostListDTO(postDTOS);
     }
 }
