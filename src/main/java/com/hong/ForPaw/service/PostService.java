@@ -130,7 +130,7 @@ public class PostService {
     }
 
     @Transactional
-    public void createComment(PostRequest.CreateCommentDTO requestDTO, Long userId, Long postId){
+    public PostResponse.CreateCommentDTO createComment(PostRequest.CreateCommentDTO requestDTO, Long userId, Long postId){
 
         User user = entityManager.getReference(User.class, userId);
         Post post = postRepository.findById(postId).orElseThrow(
@@ -155,5 +155,7 @@ public class PostService {
                 .build();
 
         alarmRepository.save(alarm);
+
+        return new PostResponse.CreateCommentDTO(comment.getId());
     }
 }
