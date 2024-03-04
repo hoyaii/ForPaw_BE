@@ -1,6 +1,7 @@
 package com.hong.ForPaw.domain.Animal;
 
 import com.hong.ForPaw.domain.Shelter;
+import com.hong.ForPaw.domain.TimeStamp;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,7 +13,7 @@ import java.time.LocalDate;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class Animal {
+public class Animal extends TimeStamp {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "gender_id")

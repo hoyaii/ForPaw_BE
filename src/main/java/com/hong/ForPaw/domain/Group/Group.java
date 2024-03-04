@@ -1,5 +1,6 @@
 package com.hong.ForPaw.domain.Group;
 
+import com.hong.ForPaw.domain.TimeStamp;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,7 +12,7 @@ import javax.persistence.*;
 @Table(name = "groups_table")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class Group {
+public class Group extends TimeStamp {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

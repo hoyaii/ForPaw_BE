@@ -28,7 +28,7 @@ public class AnimalController {
     }
 
     @GetMapping("/animals")
-    public ResponseEntity<?> findAllAnimals(Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findAnimalList(Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(pageable, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, responseDTO));
@@ -56,9 +56,9 @@ public class AnimalController {
     }
 
     @GetMapping("/applies")
-    public ResponseEntity<?> findAllApply(@AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findApplyList(@AuthenticationPrincipal CustomUserDetails userDetails){
 
-        AnimalResponse.FindApplyListDTO responseDTO = animalService.findAllApply(userDetails.getUser().getId());
+        AnimalResponse.FindApplyListDTO responseDTO = animalService.findApplyList(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -71,9 +71,9 @@ public class AnimalController {
     }
 
     @GetMapping("/shelters/{shelterId}/animals")
-    public ResponseEntity<?> findAllAnimalsByShelterId(@PathVariable Long shelterId, @AuthenticationPrincipal CustomUserDetails userDetails, Pageable pageable){
+    public ResponseEntity<?> findAnimalListByShelterId(@PathVariable Long shelterId, @AuthenticationPrincipal CustomUserDetails userDetails, Pageable pageable){
 
-        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAllAnimalsByShelterId(userDetails.getUser().getId(), shelterId, pageable);
+        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalListByShelterId(userDetails.getUser().getId(), shelterId, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }

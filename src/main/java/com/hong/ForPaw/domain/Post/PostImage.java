@@ -1,5 +1,6 @@
 package com.hong.ForPaw.domain.Post;
 
+import com.hong.ForPaw.domain.TimeStamp;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -10,7 +11,7 @@ import javax.persistence.*;
 @Entity
 @NoArgsConstructor(access =  AccessLevel.PROTECTED)
 @Getter
-public class PostImage {
+public class PostImage extends TimeStamp {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,6 +1,7 @@
 package com.hong.ForPaw.domain.Apply;
 
 import com.hong.ForPaw.domain.Animal.Animal;
+import com.hong.ForPaw.domain.TimeStamp;
 import com.hong.ForPaw.domain.User.User;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -12,7 +13,7 @@ import javax.persistence.*;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class Apply {
+public class Apply extends TimeStamp {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

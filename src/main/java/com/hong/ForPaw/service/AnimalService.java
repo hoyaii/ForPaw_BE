@@ -197,7 +197,7 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.FindApplyListDTO findAllApply(Long userId){
+    public AnimalResponse.FindApplyListDTO findApplyList(Long userId){
 
         List<Apply> applies = applyRepository.findByUserId(userId);
 
@@ -236,7 +236,7 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.FindAnimalListDTO findAllAnimalsByShelterId(Long userId, Long shelterId, Pageable pageable){
+    public AnimalResponse.FindAnimalListDTO findAnimalListByShelterId(Long userId, Long shelterId, Pageable pageable){
 
         Page<Animal> animalPage = animalRepository.findByShelterCareRegNo(shelterId, pageable);
 

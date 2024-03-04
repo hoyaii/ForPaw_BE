@@ -7,7 +7,7 @@ public class PostResponse {
 
     public record FindPostListDTO(List<PostDTO> posts){}
 
-    public record PostDTO(Long id, String title, String content, LocalDateTime date, Integer commentNum, Integer likeNum, List<ImageDTO> images){}
+    public record PostDTO(Long id, String title, String content, LocalDateTime date, Integer commentNum, Integer likeNum, List<PostImageDTO> images){}
 
-    public record ImageDTO(String imageURL) {}
+    public record PostImageDTO(String imageURL) {}
 }

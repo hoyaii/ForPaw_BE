@@ -1,6 +1,7 @@
 package com.hong.ForPaw.domain.Group;
 
 import com.hong.ForPaw.domain.Animal.Animal;
+import com.hong.ForPaw.domain.TimeStamp;
 import com.hong.ForPaw.domain.User.User;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -12,7 +13,7 @@ import javax.persistence.*;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class FavoriteGroup {
+public class FavoriteGroup extends TimeStamp {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
