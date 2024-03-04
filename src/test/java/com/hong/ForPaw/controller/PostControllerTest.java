@@ -190,4 +190,50 @@ class PostControllerTest {
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 댓글_작성_성공() throws Exception {
+
+        // given
+        Long postId = 1L;
+
+        PostRequest.CreateCommentDTO requestDTO = new PostRequest.CreateCommentDTO("hello");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/posts/"+postId+"/comments")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 댓글_작성_실패_존재하지_않는_게시글() throws Exception {
+
+        // given
+        Long postId = 100L;
+
+        PostRequest.CreateCommentDTO requestDTO = new PostRequest.CreateCommentDTO("hello");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/posts/"+postId+"/comments")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
 }
