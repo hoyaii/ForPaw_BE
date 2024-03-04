@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,6 +26,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final PostImageRepository postImageRepository;
+    private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
     private final AlarmRepository alarmRepository;
     private final PostReadStatusRepository postReadStatusRepository;
@@ -33,10 +35,10 @@ public class PostService {
     @Transactional
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId){
 
-        User user = entityManager.getReference(User.class, userId);
+        User userRef = entityManager.getReference(User.class, userId);
 
         Post post = Post.builder()
-                .user(user)
+                .user(userRef)
                 .type(requestDTO.type())
                 .title(requestDTO.title())
                 .content(requestDTO.content())
@@ -76,7 +78,7 @@ public class PostService {
     @Transactional
     public PostResponse.FindPostByIdDTO findPostById(Long postId, Long userId){
 
-        User user = entityManager.getReference(User.class, userId);
+        User userRef = entityManager.getReference(User.class, userId);
         Post post = postRepository.findById(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
@@ -89,7 +91,7 @@ public class PostService {
         // 게시글 읽음 처리 (화면에서 게시글 확인 여부가 필요한 곳이 있음)
         PostReadStatus postReadStatus = PostReadStatus.builder()
                 .post(post)
-                .user(user)
+                .user(userRef)
                 .build();
 
         postReadStatusRepository.save(postReadStatus);
@@ -130,15 +132,45 @@ public class PostService {
     }
 
     @Transactional
+    public void likePost(Long postId, Long userId){
+
+        // 존재하지 않는 글이면 에러
+        if (!postRepository.existsById(postId)) {
+            throw new CustomException(ExceptionCode.POST_NOT_FOUND);
+        }
+
+        // 자기 자신의 글에는 좋아요를 할 수 없다.
+        if (postRepository.isOwnPost(postId, userId)) {
+            throw new CustomException(ExceptionCode.POST_CANT_LIKE);
+        }
+
+        Optional<PostLike> postLikeOP = postLikeRepository.findByUserIdAndPostId(userId, postId);
+
+        User userRef = entityManager.getReference(User.class, userId);
+        Post postRef = entityManager.getReference(Post.class, postId);
+
+        // 이미 좋아요를 눌렀다면, 게시글의 좋아요 수를 업데이트 하고, postLike 엔티티 삭제
+        if(postLikeOP.isPresent()){
+            postRepository.decrementLikeCountById(postId);
+            postLikeRepository.delete(postLikeOP.get());
+        } else {
+            postRepository.incrementLikeCountById(postId);
+            PostLike postLike = PostLike.builder().user(userRef).post(postRef).build();
+
+            postLikeRepository.save(postLike);
+        }
+    }
+
+    @Transactional
     public PostResponse.CreateCommentDTO createComment(PostRequest.CreateCommentDTO requestDTO, Long userId, Long postId){
 
-        User user = entityManager.getReference(User.class, userId);
+        User userRef = entityManager.getReference(User.class, userId);
         Post post = postRepository.findById(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
         Comment comment = Comment.builder()
-                .user(user)
+                .user(userRef)
                 .post(post)
                 .content(requestDTO.content())
                 .build();
