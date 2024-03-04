@@ -65,7 +65,7 @@ public class PostService {
         List<PostResponse.PostDTO> postDTOS = postPage.stream()
                 .map(post -> {
                     List<PostResponse.PostImageDTO> postImageDTOS = postImageRepository.findByPost(post).stream()
-                            .map(postImage -> new PostResponse.PostImageDTO(postImage.getImageURL()))
+                            .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
                             .collect(Collectors.toList());
 
                     return new PostResponse.PostDTO(post.getId(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), post.getLikeNum(), postImageDTOS);
@@ -121,4 +121,6 @@ public class PostService {
 
         postImageRepository.saveAll(newImages);
     }
+
+
 }
