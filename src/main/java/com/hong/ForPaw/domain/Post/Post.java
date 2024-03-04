@@ -59,4 +59,8 @@ public class Post extends TimeStamp {
         this.title = title;
         this.content = content;
     }
+
+    public void updateCommentNum(Integer commentNum){
+        this.commentNum = commentNum;
+    }
 }

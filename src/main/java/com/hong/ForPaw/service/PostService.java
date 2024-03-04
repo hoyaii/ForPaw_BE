@@ -19,9 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,7 +33,7 @@ public class PostService {
     private final EntityManager entityManager;
 
     @Transactional
-    public void createPost(PostRequest.CreatePostDTO requestDTO, Long userId){
+    public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId){
 
         User user = entityManager.getReference(User.class, userId);
 
@@ -55,6 +53,8 @@ public class PostService {
 
         postRepository.save(post);
         postImageRepository.saveAll(postImages);
+
+        return new PostResponse.CreatePostDTO(post.getId());
     }
 
     @Transactional
@@ -122,5 +122,23 @@ public class PostService {
         postImageRepository.saveAll(newImages);
     }
 
+    @Transactional
+    public void createComment(PostRequest.CreateCommentDTO requestDTO, Long userId, Long postId){
 
+        User user = entityManager.getReference(User.class, userId);
+        Post post = postRepository.findById(postId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
+        );
+
+        Comment comment = Comment.builder()
+                .user(user)
+                .post(post)
+                .content(requestDTO.content())
+                .build();
+
+        commentRepository.save(comment);
+
+        // 게시글의 댓글 수에 반영
+        post.updateCommentNum(post.getCommentNum() + 1);
+    }
 }
