@@ -78,19 +78,22 @@ public class PostService {
     @Transactional
     public PostResponse.FindPostByIdDTO findPostById(Long postId, Long userId){
 
-        User userRef = entityManager.getReference(User.class, userId);
-        Post post = postRepository.findById(postId).orElseThrow(
-                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
-        );
+        // 존재하지 않는 글이면 에러
+        if (!postRepository.existsById(postId)) {
+            throw new CustomException(ExceptionCode.POST_NOT_FOUND);
+        }
 
-        List<Comment> comments = commentRepository.findByPost(post);
+        List<Comment> comments = commentRepository.findByPostIdWithUser(postId);
         List<PostResponse.CommentDTO> commentDTOS = comments.stream()
                 .map(comment -> new PostResponse.CommentDTO(comment.getId(), comment.getUser().getNickName(), comment.getContent(), comment.getCreatedDate(), comment.getUser().getRegin()))
                 .collect(Collectors.toList());
 
+        Post postRef = entityManager.getReference(Post.class, postId);
+        User userRef = entityManager.getReference(User.class, userId);
+
         // 게시글 읽음 처리 (화면에서 게시글 확인 여부가 필요한 곳이 있음)
         PostReadStatus postReadStatus = PostReadStatus.builder()
-                .post(post)
+                .post(postRef)
                 .user(userRef)
                 .build();
 
