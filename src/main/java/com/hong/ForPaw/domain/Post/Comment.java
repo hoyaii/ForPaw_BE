@@ -1,5 +1,6 @@
 package com.hong.ForPaw.domain.Post;
 
+import com.hong.ForPaw.domain.TimeStamp;
 import com.hong.ForPaw.domain.User.User;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -11,7 +12,7 @@ import javax.persistence.*;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class Comment {
+public class Comment extends TimeStamp {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

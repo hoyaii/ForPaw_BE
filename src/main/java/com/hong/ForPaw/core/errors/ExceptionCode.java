@@ -40,6 +40,8 @@ public enum ExceptionCode {
     GROUP_ALREADY_JOIN(HttpStatus.BAD_REQUEST, "이미 가입하였거나, 신청이 완료되었습니다."),
     GROUP_NOT_JOIN(HttpStatus.BAD_REQUEST, "가입 신청을 하지 않았습니다"),
 
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "존자하지 않는 글입니다."),
+
     // 잘못된 접근
     BAD_APPROACH(HttpStatus.BAD_REQUEST, "잘못된 접근입니다."),
     EXCEED_REQUEST_NUM(HttpStatus.BAD_REQUEST, "가능한 요청 횟수를 초과하였습니다."),

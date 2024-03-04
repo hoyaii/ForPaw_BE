@@ -2,10 +2,14 @@ package com.hong.ForPaw.service;
 
 import com.hong.ForPaw.controller.DTO.PostRequest;
 import com.hong.ForPaw.controller.DTO.PostResponse;
+import com.hong.ForPaw.core.errors.CustomException;
+import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Post.Comment;
 import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Post.PostImage;
 import com.hong.ForPaw.domain.Post.Type;
 import com.hong.ForPaw.domain.User.User;
+import com.hong.ForPaw.repository.CommentRepository;
 import com.hong.ForPaw.repository.PostImageRepository;
 import com.hong.ForPaw.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +31,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final PostImageRepository postImageRepository;
+    private final CommentRepository commentRepository;
     private final EntityManager entityManager;
 
     @Transactional
@@ -69,5 +75,15 @@ public class PostService {
     @Transactional
     public PostResponse.FindPostByIdDTO findPostById(Long postId){
 
+        Post post = postRepository.findById(postId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
+        );
+
+        List<Comment> comments = commentRepository.findByPost(post);
+        List<PostResponse.CommentDTO> commentDTOS = comments.stream()
+                .map(comment -> new PostResponse.CommentDTO(comment.getId(), comment.getUser().getNickName(), comment.getContent(), comment.getCreatedDate(), comment.getUser().getRegin()))
+                .collect(Collectors.toList());
+
+        return new PostResponse.FindPostByIdDTO(commentDTOS);
     }
 }
