@@ -34,4 +34,11 @@ public class PostController {
         PostResponse.FindPostListDTO responseDTO = postService.findPostList(type, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
+
+    @GetMapping("/posts/{postId}")
+    public ResponseEntity<?> findPostById(@PathVariable Long postId){
+
+        PostResponse.FindPostByIdDTO responseDTO = postService.findPostById(postId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
 }
