@@ -65,4 +65,9 @@ public class PostService {
 
         return new PostResponse.FindPostListDTO(postDTOS);
     }
+
+    @Transactional
+    public PostResponse.FindPostByIdDTO findPostById(Long postId){
+
+    }
 }

@@ -10,4 +10,8 @@ public class PostResponse {
     public record PostDTO(Long id, String title, String content, LocalDateTime date, Integer commentNum, Integer likeNum, List<PostImageDTO> images){}
 
     public record PostImageDTO(String imageURL) {}
+
+    public record FindPostByIdDTO(List<CommentDTO> comments){}
+
+    public record CommentDTO(Long id, String name, String content, LocalDateTime date, String location) {}
 }
