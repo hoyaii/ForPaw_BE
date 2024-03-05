@@ -242,7 +242,7 @@ public class GroupService {
     }
 
     @Transactional
-    public void createMeeting(GroupRequest.CreateMeetingDTO requestDTO, Long groupId, Long userId){
+    public GroupResponse.CreateMeetingDTO createMeeting(GroupRequest.CreateMeetingDTO requestDTO, Long groupId, Long userId){
         // 권한 체크 (메니저급만 생성 가능)
         checkAuthority(groupId, userId);
 
@@ -259,6 +259,8 @@ public class GroupService {
                 .build();
 
         meetingRepository.save(meeting);
+
+        return new GroupResponse.CreateMeetingDTO(meeting.getId());
     }
 
     private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region){

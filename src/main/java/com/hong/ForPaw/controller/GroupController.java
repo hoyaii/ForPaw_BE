@@ -95,4 +95,11 @@ public class GroupController {
         groupService.likeGroup(userDetails.getUser().getId(), groupId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
+
+    @PostMapping("/groups/{groupId}/meetings")
+    public ResponseEntity<?> createMeeting(@RequestBody GroupRequest.CreateMeetingDTO requestDTO, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        GroupResponse.CreateMeetingDTO responseDTO = groupService.createMeeting(requestDTO, groupId, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
 }

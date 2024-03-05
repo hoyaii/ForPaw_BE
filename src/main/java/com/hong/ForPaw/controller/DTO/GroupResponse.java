@@ -39,4 +39,6 @@ public class GroupResponse {
     public record MeetingDTO(Long id, String name, LocalDateTime date, String location, Long cost, Long participantCnt, Long maxCnt) {}
 
     public record MemberDTO(Long id, String name, Role role, String profileURL) {}
+
+    public record CreateMeetingDTO(Long id) {}
 }
