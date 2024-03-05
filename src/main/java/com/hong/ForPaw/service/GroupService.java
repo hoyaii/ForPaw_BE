@@ -247,8 +247,10 @@ public class GroupService {
         checkAuthority(groupId, userId);
 
         Group groupRef = entityManager.getReference(Group.class, groupId);
+        User userRef = entityManager.getReference(User.class, userId); // 주최자
         Meeting meeting = Meeting.builder()
                 .group(groupRef)
+                .user(userRef)
                 .name(requestDTO.name())
                 .date(requestDTO.date())
                 .location(requestDTO.location())

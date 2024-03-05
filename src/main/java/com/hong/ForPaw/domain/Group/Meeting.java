@@ -1,6 +1,7 @@
 package com.hong.ForPaw.domain.Group;
 
 import com.hong.ForPaw.domain.TimeStamp;
+import com.hong.ForPaw.domain.User.User;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,6 +22,10 @@ public class Meeting extends TimeStamp {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")
     private Group group;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user; // 주최자
 
     @Column
     private String name;
@@ -47,8 +52,9 @@ public class Meeting extends TimeStamp {
     private String profileURL;
 
     @Builder
-    public Meeting(Group group, String name, LocalDateTime date, String location, Long cost, Integer maxNum, String description, String profileURL) {
+    public Meeting(Group group, User user,String name, LocalDateTime date, String location, Long cost, Integer maxNum, String description, String profileURL) {
         this.group = group;
+        this.user = user;
         this.name = name;
         this.date = date;
         this.location = location;
