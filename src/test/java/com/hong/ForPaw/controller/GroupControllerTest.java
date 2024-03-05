@@ -13,6 +13,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import java.time.LocalDateTime;
+import java.time.Month;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -447,5 +450,68 @@ class GroupControllerTest {
         System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 정기모임_생성_성공() throws Exception {
+        // given
+        Long groupId = 12L;
+        GroupRequest.CreateMeetingDTO requestDTO = new GroupRequest.CreateMeetingDTO("7차 동물 사랑 봉사", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/meetings")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 정기모임_생성_실패_권한_없음() throws Exception {
+        // given
+        Long groupId = 12L;
+        GroupRequest.CreateMeetingDTO requestDTO = new GroupRequest.CreateMeetingDTO("7차 동물 사랑 봉사", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/meetings")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 정기모임_생성_실패_존재하지_않는_그룹() throws Exception {
+        // given
+        Long groupId = 100L;
+        GroupRequest.CreateMeetingDTO requestDTO = new GroupRequest.CreateMeetingDTO("7차 동물 사랑 봉사", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/meetings")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
     }
 }

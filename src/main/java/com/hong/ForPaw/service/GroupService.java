@@ -160,7 +160,7 @@ public class GroupService {
     public void joinGroup(GroupRequest.JoinGroupDTO requestDTO, Long userId, Long groupId){
         // 존재하지 않는 그룹이면 에러 처리
         if(!groupRepository.existsById(groupId)){
-            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
+            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
         }
 
         Group groupRef = entityManager.getReference(Group.class, groupId);
@@ -186,7 +186,7 @@ public class GroupService {
     public void approveJoin(Long userId, Long applicantId, Long groupId){
         // 존재하지 않는 그룹이면 에러
         if(!groupRepository.existsById(groupId)){
-            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
+            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
         }
 
         // 권한 체크
@@ -203,7 +203,7 @@ public class GroupService {
     public void rejectJoin(Long userId, Long applicantId, Long groupId){
         // 존재하지 않는 그룹이면 에러
         if(!groupRepository.existsById(groupId)){
-            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
+            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
         }
 
         // 권한 체크
@@ -220,7 +220,7 @@ public class GroupService {
     public void likeGroup(Long userId, Long groupId){
         // 존재하지 않는 그룹이면 에러
         if(!groupRepository.existsById(groupId)){
-            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
+            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
         }
 
         Group groupRef = entityManager.getReference(Group.class, groupId);
@@ -243,6 +243,11 @@ public class GroupService {
 
     @Transactional
     public GroupResponse.CreateMeetingDTO createMeeting(GroupRequest.CreateMeetingDTO requestDTO, Long groupId, Long userId){
+        // 존재하지 않는 그룹이면 에러
+        if(!groupRepository.existsById(groupId)){
+            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
+        }
+
         // 권한 체크 (메니저급만 생성 가능)
         checkAuthority(groupId, userId);
 
