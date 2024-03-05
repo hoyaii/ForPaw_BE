@@ -4,14 +4,12 @@ import com.hong.ForPaw.controller.DTO.GroupRequest;
 import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
-import com.hong.ForPaw.domain.Group.FavoriteGroup;
-import com.hong.ForPaw.domain.Group.Group;
-import com.hong.ForPaw.domain.Group.GroupUser;
-import com.hong.ForPaw.domain.Group.Role;
+import com.hong.ForPaw.domain.Group.*;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.FavoriteGroupRepository;
 import com.hong.ForPaw.repository.GroupRepository;
 import com.hong.ForPaw.repository.GroupUserRepository;
+import com.hong.ForPaw.repository.MeetingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -33,6 +31,7 @@ public class GroupService {
     private final GroupRepository groupRepository;
     private final GroupUserRepository groupUserRepository;
     private final FavoriteGroupRepository favoriteGroupRepository;
+    private final MeetingRepository meetingRepository;
     private final EntityManager entityManager;
 
     private Pageable pageableForMy = PageRequest.of(0, 1000);
@@ -243,8 +242,23 @@ public class GroupService {
     }
 
     @Transactional
-    public void createMeeting(Long groupId, Long userId){
-        
+    public void createMeeting(GroupRequest.CreateMeetingDTO requestDTO, Long groupId, Long userId){
+        // 권한 체크 (메니저급만 생성 가능)
+        checkAuthority(groupId, userId);
+
+        Group groupRef = entityManager.getReference(Group.class, groupId);
+        Meeting meeting = Meeting.builder()
+                .group(groupRef)
+                .name(requestDTO.name())
+                .date(requestDTO.date())
+                .location(requestDTO.location())
+                .cost(requestDTO.cost())
+                .maxNum(requestDTO.maxNum())
+                .description(requestDTO.description())
+                .profileURL(requestDTO.profileURL())
+                .build();
+
+        meetingRepository.save(meeting);
     }
 
     private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region){

@@ -35,7 +35,7 @@ public class Meeting extends TimeStamp {
     private Long cost;
 
     @Column
-    private Integer participantNum;
+    private Integer participantNum = 0;
 
     @Column
     private Integer maxNum;
@@ -47,13 +47,12 @@ public class Meeting extends TimeStamp {
     private String profileURL;
 
     @Builder
-    public Meeting(Group group, String name, LocalDateTime date, String location, Long cost, Integer participantNum, Integer maxNum, String description, String profileURL) {
+    public Meeting(Group group, String name, LocalDateTime date, String location, Long cost, Integer maxNum, String description, String profileURL) {
         this.group = group;
         this.name = name;
         this.date = date;
         this.location = location;
         this.cost = cost;
-        this.participantNum = participantNum;
         this.maxNum = maxNum;
         this.description = description;
         this.profileURL = profileURL;

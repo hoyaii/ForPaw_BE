@@ -11,4 +11,7 @@ public class GroupRequest {
                                  String category, String profileURL){}
 
     public record JoinGroupDTO(String greeting) {}
+
+    public record CreateMeetingDTO(Long groupId, String name, LocalDateTime date, String location, Long cost,
+                                   Integer maxNum, String description, String profileURL) {}
 }
