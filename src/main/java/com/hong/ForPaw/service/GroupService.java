@@ -115,6 +115,7 @@ public class GroupService {
         return new GroupResponse.FindAllGroupDTO(recommendGroupDTOS, newGroupDTOS, localGroupDTOS, myGroupDTOS);
     }
 
+    // 지역 그룹 추가 조회
     @Transactional
     public GroupResponse.FindLocalGroupDTO findLocalGroup(Long userId, String region, Integer page, Integer size){
 
@@ -128,6 +129,7 @@ public class GroupService {
         return new GroupResponse.FindLocalGroupDTO(localGroupDTOS);
     }
 
+    // 새 그룹 추가 조회
     @Transactional
     public GroupResponse.FindNewGroupDTO findNewGroup(Long userId, Integer page, Integer size){
 
@@ -141,6 +143,7 @@ public class GroupService {
         return new GroupResponse.FindNewGroupDTO(newGroupDTOS);
     }
 
+    // 내 그룹 추가 조회
     @Transactional
     public GroupResponse.FindMyGroupDTO findMyGroup(Long userId, Integer page, Integer size){
 
@@ -237,6 +240,11 @@ public class GroupService {
                     .build();
             favoriteGroupRepository.save(favoriteGroup);
         }
+    }
+
+    @Transactional
+    public void createMeeting(Long groupId, Long userId){
+        
     }
 
     private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region){
