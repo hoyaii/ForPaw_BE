@@ -293,4 +293,73 @@ class PostControllerTest {
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 댓글_수정_성공() throws Exception {
+
+        // given
+        Long commentId = 1L;
+
+        PostRequest.UpdateCommentDTO requestDTO = new PostRequest.UpdateCommentDTO("수정된 댓글입니다");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/comments/" + commentId)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 댓글_수정_실패_권한_없음() throws Exception {
+
+        // given
+        Long commentId = 1L;
+
+        PostRequest.UpdateCommentDTO requestDTO = new PostRequest.UpdateCommentDTO("수정된 댓글입니다");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/comments/" + commentId)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 댓글_수정_실패_존재하지_않는_댓글() throws Exception {
+
+        // given
+        Long commentId = 10L;
+
+        PostRequest.UpdateCommentDTO requestDTO = new PostRequest.UpdateCommentDTO("수정된 댓글입니다");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/comments/" + commentId)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
 }

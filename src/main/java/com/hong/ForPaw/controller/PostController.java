@@ -63,8 +63,8 @@ public class PostController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @PatchMapping("/posts/{postId}/comments/{commentId}")
-    public ResponseEntity<?> updateComment(@RequestBody PostRequest.UpdateCommentDTO requestDTO, @PathVariable Long postId, @PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    @PatchMapping("/comments/{commentId}")
+    public ResponseEntity<?> updateComment(@RequestBody PostRequest.UpdateCommentDTO requestDTO, @PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         postService.updateComment(requestDTO, commentId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
