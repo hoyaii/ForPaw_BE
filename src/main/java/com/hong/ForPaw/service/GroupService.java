@@ -217,9 +217,11 @@ public class GroupService {
     @Transactional
     public void likeGroup(Long userId, Long groupId){
         // 존재하지 않는 그룹이면 에러
-        Group group = groupRepository.findById(groupId).orElseThrow(
-                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
-        );
+        if(!groupRepository.existsById(groupId)){
+            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
+        }
+
+        Group groupRef = entityManager.getReference(Group.class, groupId);
         User userRef = entityManager.getReference(User.class, userId);
 
         Optional<FavoriteGroup> favoriteGroupOP = favoriteGroupRepository.findByUserIdAndGroupId(userId, groupId);
@@ -231,7 +233,7 @@ public class GroupService {
         else {
             FavoriteGroup favoriteGroup = FavoriteGroup.builder()
                     .user(userRef)
-                    .group(group)
+                    .group(groupRef)
                     .build();
             favoriteGroupRepository.save(favoriteGroup);
         }
