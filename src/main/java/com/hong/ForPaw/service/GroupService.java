@@ -183,9 +183,9 @@ public class GroupService {
     @Transactional
     public void approveJoin(Long userId, Long applicantId, Long groupId){
         // 존재하지 않는 그룹이면 에러
-        groupRepository.findById(groupId).orElseThrow(
-                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
-        );
+        if(!groupRepository.existsById(groupId)){
+            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
+        }
 
         // 권한 체크
         checkAuthority(groupId, userId);
@@ -319,7 +319,7 @@ public class GroupService {
     }
 
     private void checkAuthority(Long groupId, Long userId){
-        // 권한 체크
+        // 권한 체크, 엔티티 사이즈가 크지 않으니 그냥 불러오자
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(groupUser -> groupUser.getRole().equals(Role.ADMIN)) // ADMIN인 경우에만 통과 (ADMIN이 아니면 null이 되어 orElseThrow 실행)
                 .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN)); // ADMIN이 아니거나 그룹과 관련없는 사람이면 에러 보냄
