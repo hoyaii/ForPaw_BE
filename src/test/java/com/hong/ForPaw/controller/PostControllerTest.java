@@ -362,4 +362,61 @@ class PostControllerTest {
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 댓글에_좋아요_성공() throws Exception {
+
+        // given
+        Long commentId = 1L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/comments/"+commentId+"/like")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 댓글에_좋아요_실패_자신의_댓글에_좋아요() throws Exception {
+
+        // given
+        Long commentId = 1L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/comments/"+commentId+"/like")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 댓글에_좋아요_실패_존재하지_않는_댓글() throws Exception {
+
+        // given
+        Long commentId = 10L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/comments/"+commentId+"/like")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
 }
