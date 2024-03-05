@@ -43,7 +43,7 @@ public class PostController {
     }
 
     @PatchMapping("/posts/{postId}")
-    public ResponseEntity<?> updatePostById(@RequestBody PostRequest.UpdatePostDTO requestDTO, @PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> updatePost(@RequestBody PostRequest.UpdatePostDTO requestDTO, @PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         postService.updatePost(requestDTO, userDetails.getUser().getId(), postId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
@@ -61,5 +61,12 @@ public class PostController {
 
         PostResponse.CreateCommentDTO responseDTO = postService.createComment(requestDTO, userDetails.getUser().getId(), postId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
+    @PatchMapping("/posts/{postId}/comments/{commentId}")
+    public ResponseEntity<?> updateComment(@RequestBody PostRequest.UpdateCommentDTO requestDTO, @PathVariable Long postId, @PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        postService.updateComment(requestDTO, commentId, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }
