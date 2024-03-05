@@ -40,7 +40,7 @@ public class GroupService {
     @Transactional
     public void createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId){
         // 이름 중복 체크
-        if(groupRepository.findByName(requestDTO.name()).isPresent()){
+        if(groupRepository.existsByName(requestDTO.name())){
             throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
         }
 

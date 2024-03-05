@@ -16,4 +16,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Optional<Group> findByName(String name);
 
     Page<Group> findByRegion(String region, Pageable pageable);
+
+    boolean existsByName(String name);
 }
