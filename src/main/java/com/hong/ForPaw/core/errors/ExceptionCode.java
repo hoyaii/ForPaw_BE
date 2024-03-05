@@ -42,6 +42,7 @@ public enum ExceptionCode {
     GROUP_NOT_MEMBER(HttpStatus.BAD_REQUEST, "그룹의 맴버가 아닙니다."),
     MEETING_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 정기모임 입니다."),
     MEETING_ALREADY_JOIN(HttpStatus.BAD_REQUEST, "모임에 이미 참가하였습니다."),
+    MEETING_NOT_MEMBER(HttpStatus.BAD_REQUEST, "모임에 참가중이지 않습니다."),
 
     // 게시글 관련 에러
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 글입니다."),

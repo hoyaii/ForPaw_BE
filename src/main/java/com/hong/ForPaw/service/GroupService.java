@@ -317,6 +317,29 @@ public class GroupService {
         meetingRepository.incrementParticipantNumById(meetingId);
     }
 
+    @Transactional
+    public void withdrawMeeting(Long groupId, Long meetingId, Long userId){
+        // 존재하지 않는 모임이면 에러 처리
+        if(!meetingRepository.existsById(meetingId)){
+            throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
+        }
+
+        // 그룹의 맴버가 아니면 에러 처리
+        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
+                .filter(groupUser -> groupUser.getRole().equals(Role.USER) || groupUser.getRole().equals(Role.ADMIN))
+                .orElseThrow( () -> new CustomException(ExceptionCode.GROUP_NOT_MEMBER));
+
+        // 참가중이 맴버가 아니라면 에러 처리
+        if(!meetingUserRepository.existsByMeetingIdAndUserId(meetingId, userId)){
+            throw new CustomException(ExceptionCode.MEETING_NOT_MEMBER);
+        }
+
+        meetingUserRepository.deleteByMeetingIdAndUserId(meetingId, userId);
+
+        // 참가자 수 감소
+        meetingRepository.decrementParticipantNumById(meetingId);
+    }
+
     private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region){
         // 내가 가입한 그룹
         Set<Long> myGroupIds = getMyGroups(userId, pageableForMy).stream()

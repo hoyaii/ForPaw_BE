@@ -15,4 +15,8 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     @Modifying
     @Query("UPDATE Meeting m SET m.participantNum = m.participantNum + 1 WHERE m.id = :meetingId")
     void incrementParticipantNumById(@Param("meetingId") Long meetingId);
+
+    @Modifying
+    @Query("UPDATE Meeting m SET m.participantNum = m.participantNum - 1 WHERE m.id = :meetingId AND m.participantNum > 0")
+    void decrementParticipantNumById(@Param("meetingId") Long meetingId);
 }
