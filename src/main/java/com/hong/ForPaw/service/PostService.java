@@ -102,7 +102,7 @@ public class PostService {
     }
 
     @Transactional
-    public void updatePostById(PostRequest.UpdatePostDTO requestDTO, Long userId, Long postId){
+    public void updatePost(PostRequest.UpdatePostDTO requestDTO, Long userId, Long postId){
         // 존재하지 않는 게시글이면 에러 발생
         if(!postRepository.existsById(postId)) {
             throw new CustomException(ExceptionCode.POST_NOT_FOUND);
@@ -200,5 +200,21 @@ public class PostService {
         alarmRepository.save(alarm);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
+    }
+
+    @Transactional
+    public void updateComment(PostRequest.UpdateCommentDTO requestDTO, Long commentId, Long userId){
+        // 존재하지 않는 댓글이면 에러
+        if(!commentRepository.existsById(commentId)){
+            throw new CustomException(ExceptionCode.COMMENT_NOT_FOUND);
+        }
+
+        // 수정 권한 체크
+        Long commentUserId = commentRepository.findUserIdByCommentId(commentId).get();
+        if(!commentUserId.equals(userId)){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
+
+        commentRepository.updateCommentContent(commentId, requestDTO.content());
     }
 }

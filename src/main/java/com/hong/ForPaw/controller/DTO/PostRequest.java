@@ -14,4 +14,6 @@ public class PostRequest {
     public record UpdatePostDTO(String title, String content, List<Long> retainedImageIds, List<PostImageDTO> newImages) {}
 
     public record CreateCommentDTO(String content) {}
+
+    public record UpdateCommentDTO(String content) {}
 }

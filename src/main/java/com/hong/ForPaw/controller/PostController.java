@@ -45,7 +45,7 @@ public class PostController {
     @PatchMapping("/posts/{postId}")
     public ResponseEntity<?> updatePostById(@RequestBody PostRequest.UpdatePostDTO requestDTO, @PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        postService.updatePostById(requestDTO, userDetails.getUser().getId(), postId);
+        postService.updatePost(requestDTO, userDetails.getUser().getId(), postId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 

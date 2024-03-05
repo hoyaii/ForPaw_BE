@@ -20,4 +20,6 @@ public class PostResponse {
     public record CommentDTO(Long id, String name, String content, LocalDateTime date, String location) {}
 
     public record CreateCommentDTO(Long id) {}
+
+    public record UpdateCommentDTO(Long id) {}
 }

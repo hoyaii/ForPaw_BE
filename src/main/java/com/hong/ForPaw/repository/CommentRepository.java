@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long> {
@@ -17,4 +18,11 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findByPostIdWithUser(@Param("postId") Long postId);
 
     boolean existsById(Long id);
+
+    @Query("SELECT c.user.id FROM Comment c WHERE c.id = :commentId")
+    Optional<Long> findUserIdByCommentId(@Param("commentId") Long commentId);
+
+    @Modifying
+    @Query("UPDATE Comment c SET c.content = :content WHERE c.id = :commentId")
+    void updateCommentContent(@Param("commentId") Long commentId, @Param("content") String content);
 }
