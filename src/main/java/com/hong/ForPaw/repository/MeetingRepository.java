@@ -2,10 +2,17 @@ package com.hong.ForPaw.repository;
 
 import com.hong.ForPaw.domain.Group.Meeting;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
     boolean existsById(Long id);
+
+    @Modifying
+    @Query("UPDATE Meeting m SET m.participantNum = m.participantNum + 1 WHERE m.id = :meetingId")
+    void incrementParticipantNumById(@Param("meetingId") Long meetingId);
 }

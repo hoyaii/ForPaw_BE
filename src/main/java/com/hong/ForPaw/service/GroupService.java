@@ -312,6 +312,9 @@ public class GroupService {
                 .user(userRef)
                 .build();
         meetingUserRepository.save(meetingUser);
+
+        // 참가자 수 증가
+        meetingRepository.incrementParticipantNumById(meetingId);
     }
 
     private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region){
