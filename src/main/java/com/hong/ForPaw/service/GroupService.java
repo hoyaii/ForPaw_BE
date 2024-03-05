@@ -270,6 +270,18 @@ public class GroupService {
         return new GroupResponse.CreateMeetingDTO(meeting.getId());
     }
 
+    @Transactional
+    public void updateMeeting(GroupRequest.UpdateMeetingDTO requestDTO, Long groupId, Long meetingId, Long userId){
+        // 권한 체크(메니저급만 수정 가능)
+        checkAuthority(groupId, userId);
+
+        Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(
+                () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
+        );
+
+        meeting.updateMeeting(requestDTO.name(), requestDTO.date(), requestDTO.location(), requestDTO.cost(), requestDTO.maxNum(), requestDTO.description(), requestDTO.profileURL());
+    }
+
     private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region){
         // 내가 가입한 그룹
         Set<Long> myGroupIds = getMyGroups(userId, pageableForMy).stream()

@@ -36,9 +36,10 @@ public enum ExceptionCode {
 
     // 그룹 관련 에러
     GROUP_NAME_EXIST(HttpStatus.BAD_REQUEST, "이미 존재하는 이름입니다."),
-    GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "그룹이 존재하지 않습니다."),
+    GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 그룹 입니다."),
     GROUP_ALREADY_JOIN(HttpStatus.BAD_REQUEST, "이미 가입하였거나, 신청이 완료되었습니다."),
     GROUP_NOT_JOIN(HttpStatus.BAD_REQUEST, "가입 신청을 하지 않았습니다"),
+    MEETING_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 정기모임 입니다."),
 
     // 게시글 관련 에러
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 글입니다."),

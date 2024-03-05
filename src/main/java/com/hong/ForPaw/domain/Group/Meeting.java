@@ -63,4 +63,14 @@ public class Meeting extends TimeStamp {
         this.description = description;
         this.profileURL = profileURL;
     }
+
+    public void updateMeeting(String name, LocalDateTime date, String location, Long cost, Integer maxNum, String description, String profileURL){
+        this.name = name;
+        this.date = date;
+        this.location = location;
+        this.cost = cost;
+        this.maxNum = maxNum;
+        this.description = description;
+        this.profileURL = profileURL;
+    }
 }

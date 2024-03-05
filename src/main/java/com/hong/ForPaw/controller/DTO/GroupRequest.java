@@ -14,4 +14,7 @@ public class GroupRequest {
 
     public record CreateMeetingDTO(String name, LocalDateTime date, String location, Long cost,
                                    Integer maxNum, String description, String profileURL) {}
+
+    public record UpdateMeetingDTO(String name, LocalDateTime date, String location, Long cost,
+                                   Integer maxNum, String description, String profileURL) {}
 }
