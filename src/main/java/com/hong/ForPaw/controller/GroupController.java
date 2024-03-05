@@ -109,4 +109,11 @@ public class GroupController {
         groupService.updateMeeting(requestDTO, groupId, meetingId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
+
+    @PostMapping("/groups/{groupId}/meetings/{meetingId}/join")
+    public ResponseEntity<?> joinMeeting(@PathVariable Long groupId, @PathVariable Long meetingId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        groupService.joinMeeting(groupId, meetingId, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
 }
