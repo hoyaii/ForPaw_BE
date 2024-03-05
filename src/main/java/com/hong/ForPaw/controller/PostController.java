@@ -49,6 +49,13 @@ public class PostController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
+    @PostMapping("/posts/{postId}/like")
+    public ResponseEntity<?> likePost(@PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        postService.likePost(postId, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
     @PostMapping("/posts/{postId}/comments")
     public ResponseEntity<?> createComment(@RequestBody PostRequest.CreateCommentDTO requestDTO, @PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
