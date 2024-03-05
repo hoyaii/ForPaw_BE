@@ -40,7 +40,7 @@ public class GroupService {
     @Transactional
     public void createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId){
         // 이름 중복 체크
-        if(groupRepository.existsByName(requestDTO.name())){
+        if(!groupRepository.existsByName(requestDTO.name())){
             throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
         }
 
@@ -84,7 +84,7 @@ public class GroupService {
         checkAuthority(groupId, userId);
 
         // 이름 중복 체크
-        if(groupRepository.findByName(requestDTO.name()).isPresent()){
+        if(groupRepository.existsByName(requestDTO.name())){
             throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
         }
 
@@ -157,9 +157,11 @@ public class GroupService {
     @Transactional
     public void joinGroup(GroupRequest.JoinGroupDTO requestDTO, Long userId, Long groupId){
         // 존재하지 않는 그룹이면 에러 처리
-        Group group = groupRepository.findById(groupId).orElseThrow(
-                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
-        );
+        if(!groupRepository.existsById(groupId)){
+            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
+        }
+
+        Group groupRef = entityManager.getReference(Group.class, groupId);
         User userRef = entityManager.getReference(User.class, userId);
 
         // 이미 가입했거나 신청한 회원이면 에러 처리 (USER 혹 ADMIN)
@@ -172,7 +174,7 @@ public class GroupService {
         GroupUser groupUser = GroupUser.builder()
                 .role(Role.TEMP)
                 .user(userRef)
-                .group(group)
+                .group(groupRef)
                 .greeting(requestDTO.greeting())
                 .build();
         groupUserRepository.save(groupUser);

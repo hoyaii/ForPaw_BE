@@ -173,7 +173,7 @@ public class AnimalService {
     @Transactional
     public void applyAdoption(AnimalRequest.ApplyAdoptionDTO requestDTO, Long userId, Long animalId){
         // 동물이 존재하지 않으면 에러
-        if(animalRepository.existsById(animalId)){
+        if(!animalRepository.existsById(animalId)){
             throw new CustomException(ExceptionCode.ANIMAL_NOT_FOUND);
         }
         // 이미 지원하였으면 에러
@@ -225,7 +225,7 @@ public class AnimalService {
     @Transactional
     public void deleteApplyById(Long applyId, Long userId){
         // 지원하지 않았거나, 권한이 없으면 에러
-        if(applyRepository.existsByApplyIdAndAnimalId(applyId, userId)){
+        if(!applyRepository.existsByApplyIdAndAnimalId(applyId, userId)){
             throw new CustomException(ExceptionCode.APPLY_NOT_FOUND);
         }
 
