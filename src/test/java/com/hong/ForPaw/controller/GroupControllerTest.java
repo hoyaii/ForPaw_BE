@@ -656,4 +656,80 @@ class GroupControllerTest {
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 정기모임_탈퇴_성공() throws Exception {
+        // given
+        Long groupId = 12L;
+        Long meetingId = 1L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/meetings/"+meetingId+"/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 정기모임_탈퇴_실패_참여하지_않음() throws Exception {
+        // given
+        Long groupId = 12L;
+        Long meetingId = 1L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/meetings/"+meetingId+"/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040765@naver.com")
+    public void 정기모임_탈퇴_실패_그룹의_맴버가_아님() throws Exception {
+        // given
+        Long groupId = 12L;
+        Long meetingId = 1L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/meetings/"+meetingId+"/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040765@naver.com")
+    public void 정기모임_탈퇴_실패_존재하지_않는_미팅() throws Exception {
+        // given
+        Long groupId = 12L;
+        Long meetingId = 100L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/meetings/"+meetingId+"/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
 }

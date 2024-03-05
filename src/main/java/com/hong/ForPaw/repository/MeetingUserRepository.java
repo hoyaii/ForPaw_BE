@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface MeetingUserRepository extends JpaRepository<MeetingUser, Long> {
 
-    @Query("SELECT COUNT(m) > 0 FROM MeetingUser m WHERE m.id = :meetingId AND m.user.id = :userId")
+    @Query("SELECT COUNT(m) > 0 FROM MeetingUser m WHERE m.meeting.id = :meetingId AND m.user.id = :userId")
     boolean existsByMeetingIdAndUserId(@Param("meetingId") Long meetingId, @Param("userId") Long userId);
 
     void deleteByMeetingIdAndUserId(Long meetingId, Long userId);
