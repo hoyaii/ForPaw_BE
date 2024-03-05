@@ -192,6 +192,63 @@ class PostControllerTest {
     }
 
     @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 게시글_좋아요_성공() throws Exception {
+
+        // given
+        Long postId = 1L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/posts/"+postId+"/like")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 게시글_좋아요_실패_자신의_글에_좋아요() throws Exception {
+
+        // given
+        Long postId = 1L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/posts/"+postId+"/like")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 게시글_좋아요_실패_존재하지_않는_글() throws Exception {
+
+        // given
+        Long postId = 100L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/posts/"+postId+"/like")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
     @WithUserDetails(value = "yg04076@naver.com")
     public void 댓글_작성_성공() throws Exception {
 
