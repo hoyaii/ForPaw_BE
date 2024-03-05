@@ -200,9 +200,9 @@ public class GroupService {
     @Transactional
     public void rejectJoin(Long userId, Long applicantId, Long groupId){
         // 존재하지 않는 그룹이면 에러
-        groupRepository.findById(groupId).orElseThrow(
-                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
-        );
+        if(!groupRepository.existsById(groupId)){
+            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
+        }
 
         // 권한 체크
         checkAuthority(groupId, userId);
