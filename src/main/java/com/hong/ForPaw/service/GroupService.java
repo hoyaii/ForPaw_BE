@@ -6,10 +6,7 @@ import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Group.*;
 import com.hong.ForPaw.domain.User.User;
-import com.hong.ForPaw.repository.FavoriteGroupRepository;
-import com.hong.ForPaw.repository.GroupRepository;
-import com.hong.ForPaw.repository.GroupUserRepository;
-import com.hong.ForPaw.repository.MeetingRepository;
+import com.hong.ForPaw.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -32,6 +29,7 @@ public class GroupService {
     private final GroupUserRepository groupUserRepository;
     private final FavoriteGroupRepository favoriteGroupRepository;
     private final MeetingRepository meetingRepository;
+    private final MeetingUserRepository meetingUserRepository;
     private final EntityManager entityManager;
 
     private Pageable pageableForMy = PageRequest.of(0, 1000);
@@ -163,15 +161,15 @@ public class GroupService {
             throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
         }
 
-        Group groupRef = entityManager.getReference(Group.class, groupId);
-        User userRef = entityManager.getReference(User.class, userId);
-
         // 이미 가입했거나 신청한 회원이면 에러 처리 (USER 혹 ADMIN)
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(groupUser -> groupUser.getRole().equals(Role.USER) || groupUser.getRole().equals(Role.ADMIN) || groupUser.getRole().equals(Role.TEMP))
                 .ifPresent(groupUser -> {
                     throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
                 });
+
+        Group groupRef = entityManager.getReference(Group.class, groupId);
+        User userRef = entityManager.getReference(User.class, userId);
 
         GroupUser groupUser = GroupUser.builder()
                 .role(Role.TEMP)
@@ -282,6 +280,33 @@ public class GroupService {
         meeting.updateMeeting(requestDTO.name(), requestDTO.date(), requestDTO.location(), requestDTO.cost(), requestDTO.maxNum(), requestDTO.description(), requestDTO.profileURL());
     }
 
+    @Transactional
+    public void joinMeeting(Long groupId, Long meetingId, Long userId){
+        // 존재하지 않는 모임이면 에러 처리
+        if(!meetingRepository.existsById(meetingId)){
+            throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
+        }
+
+        // 그룹의 맴버가 아니면 에러 처리
+        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
+                .filter(groupUser -> groupUser.getRole().equals(Role.USER) || groupUser.getRole().equals(Role.ADMIN))
+                .orElseThrow( () -> new CustomException(ExceptionCode.GROUP_NOT_MEMBER));
+
+        // 이미 참가중인 모임이면 에러 처리
+        if(meetingUserRepository.existsByMeetingIdAndUserId(meetingId, userId)){
+            throw new CustomException(ExceptionCode.MEETING_ALREADY_JOIN);
+        }
+
+        Meeting meetingRef = entityManager.getReference(Meeting.class, meetingId);
+        User userRef = entityManager.getReference(User.class, userId);
+
+        MeetingUser meetingUser = MeetingUser.builder()
+                .meeting(meetingRef)
+                .user(userRef)
+                .build();
+        meetingUserRepository.save(meetingUser);
+    }
+
     private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region){
         // 내가 가입한 그룹
         Set<Long> myGroupIds = getMyGroups(userId, pageableForMy).stream()
@@ -373,7 +398,7 @@ public class GroupService {
     private void checkAlreadyApplyOrMember(Optional<GroupUser> groupApplicantOP){
 
         if(groupApplicantOP.isEmpty()){ // 가입 신청한 적이 없음
-            throw new CustomException(ExceptionCode.GROUP_NOT_JOIN);
+            throw new CustomException(ExceptionCode.GROUP_NOT_APPLY);
         } // 이미 승인되어 회원이거나 거절됌
         else if(groupApplicantOP.get().getRole().equals(Role.USER) || groupApplicantOP.get().getRole().equals(Role.ADMIN) || groupApplicantOP.get().getRole().equals(Role.REJECTED)){
             throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
