@@ -251,6 +251,7 @@ public class GroupService {
 
         Group groupRef = entityManager.getReference(Group.class, groupId);
         User userRef = entityManager.getReference(User.class, userId); // 주최자
+
         Meeting meeting = Meeting.builder()
                 .group(groupRef)
                 .user(userRef)
@@ -262,8 +263,14 @@ public class GroupService {
                 .description(requestDTO.description())
                 .profileURL(requestDTO.profileURL())
                 .build();
-
         meetingRepository.save(meeting);
+
+        // 주최자를 맴버로 저장
+        MeetingUser meetingUser = MeetingUser.builder()
+                .meeting(meeting)
+                .user(userRef)
+                .build();
+        meetingUserRepository.save(meetingUser);
 
         return new GroupResponse.CreateMeetingDTO(meeting.getId());
     }
