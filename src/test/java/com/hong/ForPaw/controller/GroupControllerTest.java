@@ -514,4 +514,70 @@ class GroupControllerTest {
 
         result.andExpect(jsonPath("$.success").value("false"));
     }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 정기모임_수정_성공() throws Exception {
+        // given
+        Long groupId = 12L;
+        Long meetingId = 1L;
+        GroupRequest.UpdateMeetingDTO requestDTO = new GroupRequest.UpdateMeetingDTO("7차 동물 사랑 봉사(수정)", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/groups/"+groupId+"/meetings/"+meetingId)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 정기모임_수정_실패_권한_없음() throws Exception {
+        // given
+        Long groupId = 12L;
+        Long meetingId = 1L;
+        GroupRequest.UpdateMeetingDTO requestDTO = new GroupRequest.UpdateMeetingDTO("7차 동물 사랑 봉사(수정)", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/groups/"+groupId+"/meetings/"+meetingId)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 정기모임_수정_실패_존재하지_않는_정기모임() throws Exception {
+        // given
+        Long groupId = 12L;
+        Long meetingId = 10L;
+        GroupRequest.UpdateMeetingDTO requestDTO = new GroupRequest.UpdateMeetingDTO("7차 동물 사랑 봉사(수정)", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/groups/"+groupId+"/meetings/"+meetingId)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
 }
