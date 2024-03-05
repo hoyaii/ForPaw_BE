@@ -44,14 +44,14 @@ public class PostService {
                 .content(requestDTO.content())
                 .build();
 
+        postRepository.save(post);
+
         List<PostImage> postImages = requestDTO.images().stream()
-                .map(postImageDTO -> PostImage.builder()
-                        .post(post)
+                .map(postImageDTO -> PostImage.builder().post(post)
                         .imageURL(postImageDTO.imageURL())
                         .build())
                 .collect(Collectors.toList());
 
-        postRepository.save(post);
         postImageRepository.saveAll(postImages);
 
         return new PostResponse.CreatePostDTO(post.getId());
@@ -62,7 +62,7 @@ public class PostService {
 
         Page<Post> postPage = postRepository.findByType(type, pageable);
 
-        List<PostResponse.PostDTO> postDTOS = postPage.stream()
+        List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
                     List<PostResponse.PostImageDTO> postImageDTOS = postImageRepository.findByPost(post).stream()
                             .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))

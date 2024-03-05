@@ -172,21 +172,21 @@ public class AnimalService {
 
     @Transactional
     public void applyAdoption(AnimalRequest.ApplyAdoptionDTO requestDTO, Long userId, Long animalId){
+        // 동물이 존재하지 않으면 에러
+        if(animalRepository.existsById(animalId)){
+            throw new CustomException(ExceptionCode.ANIMAL_NOT_FOUND);
+        }
         // 이미 지원하였으면 에러
-        if(applyRepository.findByUserIdAndAnimalId(userId, animalId).isPresent()){
+        if(applyRepository.existsByUserIdAndAnimalId(userId, animalId)){
             throw new CustomException(ExceptionCode.ANIMAL_ALREADY_APPLY);
         }
 
-        // 동물이 존재하지 않으면 에러 (정상적 루틴이 아니고 임의적인 요청을 보냈을 때)
-        Animal animal = animalRepository.findById(animalId).orElseThrow(
-                () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
-        );
-
+        Animal animalRef = entityManager.getReference(Animal.class, animalId);
         User userRef = entityManager.getReference(User.class, userId);
 
         Apply apply = Apply.builder()
                 .user(userRef)
-                .animal(animal)
+                .animal(animalRef)
                 .status(Status.PROCESSING)
                 .name(requestDTO.name())
                 .tel(requestDTO.tel())
