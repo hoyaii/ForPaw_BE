@@ -102,4 +102,11 @@ public class GroupController {
         GroupResponse.CreateMeetingDTO responseDTO = groupService.createMeeting(requestDTO, groupId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
+
+    @PatchMapping("/groups/{groupId}/meetings/{meetingId}")
+    public ResponseEntity<?> updateMeeting(@RequestBody GroupRequest.UpdateMeetingDTO requestDTO, @PathVariable Long groupId, @PathVariable Long meetingId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        groupService.updateMeeting(requestDTO, groupId, meetingId, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
 }
