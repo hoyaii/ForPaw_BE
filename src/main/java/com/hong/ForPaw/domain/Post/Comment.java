@@ -29,6 +29,9 @@ public class Comment extends TimeStamp {
     @Column
     private String content;
 
+    @Column
+    private Integer likeNum = 0;
+
     @Builder
     public Comment(User user, Post post, String content) {
         this.user = user;

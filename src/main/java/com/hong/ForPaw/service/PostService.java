@@ -27,9 +27,10 @@ public class PostService {
     private final PostRepository postRepository;
     private final PostImageRepository postImageRepository;
     private final PostLikeRepository postLikeRepository;
-    private final CommentRepository commentRepository;
-    private final AlarmRepository alarmRepository;
     private final PostReadStatusRepository postReadStatusRepository;
+    private final CommentRepository commentRepository;
+    private final CommentLikeRepository commentLikeRepository;
+    private final AlarmRepository alarmRepository;
     private final EntityManager entityManager;
 
     @Transactional
@@ -220,6 +221,31 @@ public class PostService {
 
     @Transactional
     public void likeComment(Long commentId, Long userId){
+        // 존재하지 않는 댓글이면 에러
+        if(!commentRepository.existsById(commentId)){
+            throw new CustomException(ExceptionCode.COMMENT_NOT_FOUND);
+        }
 
+        // 자기 자신의 댓글에는 좋아요를 할 수 없다.
+        if(commentRepository.isOwnComment(commentId, userId)){
+            throw new CustomException(ExceptionCode.COMMENT_CANT_LIKE);
+        }
+
+        Optional<CommentLike> commentLikeOP = commentLikeRepository.findByUserIdAndCommentId(userId, commentId);
+
+        // 이미 좋아요를 눌렀다면, 취소하는 액션이니 게시글의 좋아요 수를 감소시키고 하고, postLike 엔티티 삭제
+        if(commentLikeOP.isPresent()){
+            commentRepository.decrementLikeNumById(commentId);
+            commentLikeRepository.delete(commentLikeOP.get());
+        }
+        else{ // 좋아요를 누르지 않았다면, 좋아요 수를 증가키고, 엔티티 저장
+            User userRef = entityManager.getReference(User.class, userId);
+            Comment commentRef = entityManager.getReference(Comment.class, commentId);
+
+            CommentLike commentLike = CommentLike.builder().user(userRef).comment(commentRef).build();
+
+            commentRepository.incrementLikeNumById(commentId);
+            commentLikeRepository.save(commentLike);
+        }
     }
 }
