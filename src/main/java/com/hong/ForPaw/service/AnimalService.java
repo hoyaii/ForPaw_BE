@@ -149,10 +149,11 @@ public class AnimalService {
     @Transactional
     public void likeAnimal(Long userId, Long animalId){
         // 존재하지 않는 동물이면 에러
-        Animal animal = animalRepository.findById(animalId).orElseThrow(
-                () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
-        );
+        if(!animalRepository.existsById(animalId)){
+            throw new CustomException(ExceptionCode.ANIMAL_NOT_FOUND);
+        }
 
+        Animal animalRef = entityManager.getReference(Animal.class, animalId);
         User userRef = entityManager.getReference(User.class, userId);
 
         Optional<FavoriteAnimal> favoriteAnimalOP = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animalId);
@@ -164,7 +165,7 @@ public class AnimalService {
         else {
             FavoriteAnimal favoriteAnimal = FavoriteAnimal.builder()
                     .user(userRef)
-                    .animal(animal)
+                    .animal(animalRef)
                     .build();
             favoriteAnimalRepository.save(favoriteAnimal);
         }
