@@ -116,4 +116,11 @@ public class GroupController {
         groupService.joinMeeting(groupId, meetingId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
+
+    @PostMapping("/groups/{groupId}/meetings/{meetingId}/withdraw")
+    public ResponseEntity<?> withdrawMeeting(@PathVariable Long groupId, @PathVariable Long meetingId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        groupService.withdrawMeeting(groupId, meetingId, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
 }
