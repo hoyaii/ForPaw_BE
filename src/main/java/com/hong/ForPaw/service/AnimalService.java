@@ -224,11 +224,8 @@ public class AnimalService {
 
     @Transactional
     public void deleteApplyById(Long applyId, Long userId){
-
-        Optional<Apply> applyOP = applyRepository.findByUserIdAndId(userId, applyId);
-
         // 지원하지 않았거나, 권한이 없으면 에러
-        if(applyOP.isEmpty()){
+        if(applyRepository.existsByApplyIdAndAnimalId(applyId, userId)){
             throw new CustomException(ExceptionCode.APPLY_NOT_FOUND);
         }
 
