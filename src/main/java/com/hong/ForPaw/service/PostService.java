@@ -217,4 +217,9 @@ public class PostService {
 
         commentRepository.updateCommentContent(commentId, requestDTO.content());
     }
+
+    @Transactional
+    public void likeComment(Long commentId, Long userId){
+
+    }
 }
