@@ -31,7 +31,6 @@ class GroupControllerTest {
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
     public void 그룹_생성_성공() throws Exception {
-
         // given
         GroupRequest.CreateGroupDTO requestDTO = new GroupRequest.CreateGroupDTO("동물 사랑 협회", "대구광역시", "수성구", "유기견들을 진료하는 모임입니다!", "봉사", "https://s3.xxxx.xx.com");
         String requestBody = om.writeValueAsString(requestDTO);
@@ -52,7 +51,6 @@ class GroupControllerTest {
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
     public void 그룹_정보_조회_성공() throws Exception {
-
         // given
         Long id = 1L;
 
@@ -72,7 +70,6 @@ class GroupControllerTest {
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
     public void 그룹_정보_수정_성공() throws Exception {
-
         // given
         Long id = 1L;
         GroupRequest.UpdateGroupDTO requestDTO = new GroupRequest.UpdateGroupDTO("동물 사랑 협회2", "대구광역시", "수성구", "유기견들을 진료하는 모임입니다!", "봉사", "https://s3.xxxx.xx.com");
@@ -95,7 +92,6 @@ class GroupControllerTest {
     @Test
     @WithUserDetails(value = "yg040762@naver.com")
     public void 그룹_가입_신청하기_성공() throws Exception {
-
         // given
         Long groupId = 12L;
         GroupRequest.JoinGroupDTO requestDTO = new GroupRequest.JoinGroupDTO("안녕하세요! 가입 인사 드립니다 ^^");
@@ -116,10 +112,8 @@ class GroupControllerTest {
 
     @Test
     @WithUserDetails(value = "yg040762@naver.com")
-    public void 그룹_가입_신청하기_실패_1() throws Exception {
-
+    public void 그룹_가입_신청하기_실패_이미_신청() throws Exception {
         // given
-        // 이미 신청한 그룹
         Long groupId = 12L;
         GroupRequest.JoinGroupDTO requestDTO = new GroupRequest.JoinGroupDTO("안녕하세요! 가입 인사 드립니다 ^^");
         String requestBody = om.writeValueAsString(requestDTO);
@@ -139,10 +133,8 @@ class GroupControllerTest {
 
     @Test
     @WithUserDetails(value = "yg040762@naver.com")
-    public void 그룹_가입_신청하기_실패_2() throws Exception {
-
+    public void 그룹_가입_신청하기_실패_존재하지_않는_그룹() throws Exception {
         // given
-        // 존재하지 않는 그룹
         Long groupId = 100L;
         GroupRequest.JoinGroupDTO requestDTO = new GroupRequest.JoinGroupDTO("안녕하세요! 가입 인사 드립니다 ^^");
         String requestBody = om.writeValueAsString(requestDTO);
@@ -163,7 +155,6 @@ class GroupControllerTest {
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
     public void 그룹_가입_승인하기_성공() throws Exception {
-
         // given
         Long groupId = 12L;
         Long applicantId = 2L;
@@ -183,10 +174,8 @@ class GroupControllerTest {
 
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
-    public void 그룹_가입_승인하기_실패_1() throws Exception {
-
+    public void 그룹_가입_승인하기_실패_이미_승인한_신청() throws Exception {
         // given
-        // 이미 승인한 신청
         Long groupId = 12L;
         Long applicantId = 2L;
 
@@ -205,10 +194,8 @@ class GroupControllerTest {
 
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
-    public void 그룹_가입_승인하기_실패_2() throws Exception {
-
+    public void 그룹_가입_승인하기_실패_존재하지_않는_그룹() throws Exception {
         // given
-        // 존재하지 않는 그룹
         Long groupId = 100L;
         Long applicantId = 2L;
 
@@ -226,9 +213,8 @@ class GroupControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "yg040763@naver.com") // 권한 없음
-    public void 그룹_가입_승인하기_실패_3() throws Exception {
-
+    @WithUserDetails(value = "yg040763@naver.com")
+    public void 그룹_가입_승인하기_실패_권한_없음() throws Exception {
         // given
         Long groupId = 12L;
         Long applicantId = 2L;
@@ -248,10 +234,8 @@ class GroupControllerTest {
 
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
-    public void 그룹_가입_승인하기_실패_4() throws Exception {
-
+    public void 그룹_가입_승인하기_실패_신청한_적_없음() throws Exception {
         // given
-        // 신청한 적이 없는 경우
         Long groupId = 12L;
         Long applicantId = 3L;
 
@@ -271,7 +255,6 @@ class GroupControllerTest {
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
     public void 그룹_가입_거절하기_성공() throws Exception {
-
         // given
         Long groupId = 12L;
         Long applicantId = 3L;
@@ -291,10 +274,8 @@ class GroupControllerTest {
 
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
-    public void 그룹_가입_거절하기_실패_1() throws Exception {
-
+    public void 그룹_가입_거절하기_실패_이미_거절한_신청() throws Exception {
         // given
-        // 이미 거절한 신청
         Long groupId = 12L;
         Long applicantId = 3L;
 
@@ -312,9 +293,8 @@ class GroupControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "yg040763@naver.com") // 권한 없음
-    public void 그룹_가입_거절하기_실패_2() throws Exception {
-
+    @WithUserDetails(value = "yg040763@naver.com")
+    public void 그룹_가입_거절하기_실패_권한_없음() throws Exception {
         // given
         Long groupId = 12L;
         Long applicantId = 3L;
@@ -334,10 +314,8 @@ class GroupControllerTest {
 
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
-    public void 그룹_가입_거절하기_실패_3() throws Exception {
-
+    public void 그룹_가입_거절하기_실패_신청한_적이_없음() throws Exception {
         // given
-        // 신청한 적이 없는 경우
         Long groupId = 12L;
         Long applicantId = 13L;
 
@@ -357,7 +335,6 @@ class GroupControllerTest {
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
     public void 관심_그룹으로_등록_성공() throws Exception {
-
         // given
         Long groupId = 12L;
 
@@ -375,10 +352,8 @@ class GroupControllerTest {
 
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
-    public void 관심_그룹으로_등록_실패() throws Exception {
-
+    public void 관심_그룹으로_등록_실패_존재하지_않는_그룹() throws Exception {
         // given
-        // 존재하지 않는 그룹
         Long groupId = 100L;
 
         // when
@@ -396,7 +371,6 @@ class GroupControllerTest {
     @Test
     @WithUserDetails(value = "yg040762@naver.com")
     public void 그룹_목록_조회_성공() throws Exception {
-
         // given
         String region = "대구광역시";
 
@@ -417,7 +391,6 @@ class GroupControllerTest {
     @Test
     @WithUserDetails(value = "yg040762@naver.com")
     public void 지역별_그룹_목록_추가조회_성공() throws Exception {
-
         // given
         String region = "대구광역시";
 
@@ -460,7 +433,6 @@ class GroupControllerTest {
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
     public void 내_그룹_목록_추가조회_성공() throws Exception {
-
         // given
         // when
         ResultActions result = mvc.perform(
