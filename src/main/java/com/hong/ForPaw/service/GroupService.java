@@ -277,6 +277,8 @@ public class GroupService {
         favoriteGroupRepository.deleteAllByGroupId(groupId);
         groupUserRepository.deleteAllByGroupId(groupId);
         postRepository.deleteAllByGroupId(groupId);
+        meetingRepository.deleteAllByGroupId(groupId);
+        meetingUserRepository.deleteAllByGroupId(groupId);
         groupRepository.deleteById(groupId);
     }
 
