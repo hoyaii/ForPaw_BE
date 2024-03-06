@@ -349,9 +349,7 @@ public class GroupService {
     @Transactional
     public void updateMeeting(GroupRequest.UpdateMeetingDTO requestDTO, Long groupId, Long meetingId, Long userId){
         // 존재하지 않는 모임이면 에러 처리
-        if(!meetingRepository.existsById(meetingId)){
-            throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
-        }
+        checkExistMeeting(meetingId);
 
         // 권한 체크(메니저급만 수정 가능)
         checkAdminAuthority(groupId, userId);
@@ -366,9 +364,7 @@ public class GroupService {
     @Transactional
     public void joinMeeting(Long groupId, Long meetingId, Long userId){
         // 존재하지 않는 모임이면 에러 처리
-        if(!meetingRepository.existsById(meetingId)){
-            throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
-        }
+        checkExistMeeting(meetingId);
 
         // 그룹의 맴버가 아니면 에러 처리
         checkIsMember(groupId, userId);
@@ -394,9 +390,7 @@ public class GroupService {
     @Transactional
     public void withdrawMeeting(Long groupId, Long meetingId, Long userId){
         // 존재하지 않는 모임이면 에러 처리
-        if(!meetingRepository.existsById(meetingId)){
-            throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
-        }
+        checkExistMeeting(meetingId);
 
         // 그룹의 맴버가 아니면 에러 처리
         checkIsMember(groupId, userId);
@@ -415,9 +409,7 @@ public class GroupService {
     @Transactional
     public void deleteMeeting(Long groupId, Long meetingId, Long userId){
         // 존재하지 않는 모임이면 에러 처리
-        if(!meetingRepository.existsById(meetingId)){
-            throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
-        }
+        checkExistMeeting(meetingId);
 
         // 권한 체크 (메니저급만 삭제 가능)
         checkAdminAuthority(groupId, userId);
@@ -535,6 +527,13 @@ public class GroupService {
         } // 이미 승인되어 회원이거나 거절됌
         else if(groupApplicantOP.get().getRole().equals(Role.USER) || groupApplicantOP.get().getRole().equals(Role.ADMIN) || groupApplicantOP.get().getRole().equals(Role.REJECTED)){
             throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
+        }
+    }
+    
+    private void checkExistMeeting(Long meetingId){
+
+        if(!meetingRepository.existsById(meetingId)){
+            throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
         }
     }
 }
