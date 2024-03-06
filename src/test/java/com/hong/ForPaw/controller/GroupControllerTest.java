@@ -336,6 +336,60 @@ class GroupControllerTest {
     }
 
     @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 그룹_탈퇴하기_성공() throws Exception {
+        // given
+        Long groupId = 12L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 그룹_탈퇴하기_실패_존재하지_않는_그룹() throws Exception {
+        // given
+        Long groupId = 100L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040763@naver.com")
+    public void 그룹_탈퇴하기_실패_가입한_회원이_아님() throws Exception {
+        // given
+        Long groupId = 12L;
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
     @WithUserDetails(value = "yg04076@naver.com")
     public void 관심_그룹으로_등록_성공() throws Exception {
         // given
