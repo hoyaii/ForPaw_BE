@@ -144,4 +144,11 @@ public class GroupController {
         groupService.withdrawMeeting(groupId, meetingId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
+
+    @DeleteMapping("/groups/{groupId}/meetings/{meetingId}")
+    public ResponseEntity<?> deleteMeeting(@PathVariable Long groupId, @PathVariable Long meetingId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        groupService.deleteMeeting(groupId, meetingId, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
 }
