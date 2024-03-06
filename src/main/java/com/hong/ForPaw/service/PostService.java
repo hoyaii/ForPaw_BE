@@ -79,9 +79,7 @@ public class PostService {
     @Transactional
     public PostResponse.FindPostByIdDTO findPostById(Long postId, Long userId){
         // 존재하지 않는 글이면 에러
-        if (!postRepository.existsById(postId)) {
-            throw new CustomException(ExceptionCode.POST_NOT_FOUND);
-        }
+        checkExistPost(postId);
 
         List<Comment> comments = commentRepository.findByPostIdWithUser(postId);
         List<PostResponse.CommentDTO> commentDTOS = comments.stream()
@@ -105,9 +103,7 @@ public class PostService {
     @Transactional
     public void updatePost(PostRequest.UpdatePostDTO requestDTO, Long userId, Long postId){
         // 존재하지 않는 게시글이면 에러 발생
-        if(!postRepository.existsById(postId)) {
-            throw new CustomException(ExceptionCode.POST_NOT_FOUND);
-        }
+        checkExistPost(postId);
 
         // 수정 권한 체크
         Long postUserId = postRepository.findUserIdByPostId(postId).get(); // 앞에서 존재하는 게시글임을 체크
@@ -140,9 +136,7 @@ public class PostService {
     @Transactional
     public void likePost(Long postId, Long userId){
         // 존재하지 않는 글이면 에러
-        if (!postRepository.existsById(postId)) {
-            throw new CustomException(ExceptionCode.POST_NOT_FOUND);
-        }
+        checkExistPost(postId);
 
         // 자기 자신의 글에는 좋아요를 할 수 없다.
         if (postRepository.isOwnPost(postId, userId)) {
@@ -170,9 +164,7 @@ public class PostService {
     @Transactional
     public PostResponse.CreateCommentDTO createComment(PostRequest.CreateCommentDTO requestDTO, Long userId, Long postId){
         // 존재하지 않는 글이면 에러
-        if (!postRepository.existsById(postId)) {
-            throw new CustomException(ExceptionCode.POST_NOT_FOUND);
-        }
+        checkExistPost(postId);
 
         User userRef = entityManager.getReference(User.class, userId);
         Post postRef = entityManager.getReference(Post.class, postId);
@@ -246,6 +238,13 @@ public class PostService {
 
             commentRepository.incrementLikeNumById(commentId);
             commentLikeRepository.save(commentLike);
+        }
+    }
+
+    private void checkExistPost(Long postId){
+
+        if (!postRepository.existsById(postId)) {
+            throw new CustomException(ExceptionCode.POST_NOT_FOUND);
         }
     }
 }
