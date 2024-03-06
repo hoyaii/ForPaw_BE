@@ -80,7 +80,7 @@ public class PostService {
 
     @Transactional
     public PostResponse.FindPostByIdDTO findPostById(Long postId, Long userId){
-        // 존재하지 않는 글이면 에러
+        // 존재하지 않는 글인지 체크
         checkPostExist(postId);
 
         List<Comment> comments = commentRepository.findByPostIdWithUser(postId);
@@ -104,10 +104,10 @@ public class PostService {
 
     @Transactional
     public void updatePost(PostRequest.UpdatePostDTO requestDTO, Long userId, Long postId){
-        // 존재하지 않는 게시글이면 에러 발생
+        // 존재하지 않는 글인지 체크
         checkPostExist(postId);
 
-        // 권한 체크
+        // 수정 권한 체크
         checkPostAuthority(postId, userId);
 
         postRepository.updatePostTitleAndContent(postId, requestDTO.title(), requestDTO.content());
@@ -134,7 +134,7 @@ public class PostService {
 
     @Transactional
     public void deletePost(Long postId, Long userId){
-        // 존재하지 않는 게시글이면 에러 발생
+        // 존재하지 않는 글인지 체크
         checkPostExist(postId);
 
         // 수정 권한 체크
@@ -150,7 +150,7 @@ public class PostService {
 
     @Transactional
     public void likePost(Long postId, Long userId){
-        // 존재하지 않는 글이면 에러
+        // 존재하지 않는 글인지 체크
         checkPostExist(postId);
 
         // 자기 자신의 글에는 좋아요를 할 수 없다.
@@ -212,7 +212,7 @@ public class PostService {
 
     @Transactional
     public void updateComment(PostRequest.UpdateCommentDTO requestDTO, Long commentId, Long userId){
-        // 존재하지 않는 댓글이면 에러
+        // 존재하지 않는 댓글인지 체크
         checkCommentExist(commentId);
 
         // 수정 권한 체크
@@ -226,7 +226,7 @@ public class PostService {
 
     @Transactional
     public void likeComment(Long commentId, Long userId){
-        // 존재하지 않는 댓글이면 에러
+        // 존재하지 않는 댓글인지 체크
         checkCommentExist(commentId);
 
         // 자기 자신의 댓글에는 좋아요를 할 수 없다.
@@ -253,12 +253,12 @@ public class PostService {
     }
 
     private void checkPostAuthority(Long postId, Long userId){
-        // 관리자면 통과
+        // 관리자면 수정 가능
         if(userRepository.findRoleById(userId).orElse(Role.USER).equals(Role.ADMIN)){
             return;
         }
 
-        // 작성자 본인이면 통과
+        // 작성자 본인이면 수정 가능
         Long postUserId = postRepository.findUserIdByPostId(postId)
                 .orElseThrow( () -> new CustomException(ExceptionCode.POST_NOT_FOUND));
 
