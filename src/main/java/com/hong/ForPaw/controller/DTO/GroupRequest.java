@@ -18,7 +18,7 @@ public class GroupRequest {
 
     public record JoinGroupDTO(String greeting) {}
 
-    public record UpdateRoleDTO(Long id, Role role) {}
+    public record UpdateUserRoleDTO(Long id, Role role) {}
 
     public record CreateMeetingDTO(String name, LocalDateTime date, String location, Long cost,
                                    Integer maxNum, String description, String profileURL) {}

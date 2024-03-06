@@ -283,7 +283,7 @@ public class GroupService {
     }
 
     @Transactional
-    public void updateRole(GroupRequest.UpdateRoleDTO requestDTO, Long groupId, Long creatorId){
+    public void updateUserRole(GroupRequest.UpdateUserRoleDTO requestDTO, Long groupId, Long creatorId){
         // 존재하지 않는 그룹이면 에러
         if(!groupRepository.existsById(groupId)){
             throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
