@@ -216,12 +216,21 @@ public class PostService {
         checkCommentExist(commentId);
 
         // 수정 권한 체크
-        Long commentUserId = commentRepository.findUserIdByCommentId(commentId).get();
-        if(!commentUserId.equals(userId)){
-            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        }
+        checkCommentAuthority(commentId, userId);
 
         commentRepository.updateCommentContent(commentId, requestDTO.content());
+    }
+
+    @Transactional
+    public void deleteComment(Long commentId, Long userId){
+        // 존재하지 않는 댓글인지 체크
+        checkCommentExist(commentId);
+
+        // 수정 권한 체크
+        checkCommentAuthority(commentId, userId);
+
+        commentLikeRepository.deleteAllByCommentId(commentId);
+        commentRepository.deleteById(commentId);
     }
 
     @Transactional
@@ -260,9 +269,23 @@ public class PostService {
 
         // 작성자 본인이면 수정 가능
         Long postUserId = postRepository.findUserIdByPostId(postId)
-                .orElseThrow( () -> new CustomException(ExceptionCode.POST_NOT_FOUND));
+                .orElseThrow( () -> new CustomException(ExceptionCode.USER_FORBIDDEN));
 
         if(!postUserId.equals(userId)){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
+    }
+
+    private void checkCommentAuthority(Long commentId, Long userId) {
+        // 관리자면 수정 가능
+        if(userRepository.findRoleById(userId).orElse(Role.USER).equals(Role.ADMIN)){
+            return;
+        }
+
+        Long commentUserId = commentRepository.findUserIdByCommentId(commentId)
+                .orElseThrow( () -> new CustomException(ExceptionCode.USER_FORBIDDEN));
+
+        if(!commentUserId.equals(userId)){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
     }
