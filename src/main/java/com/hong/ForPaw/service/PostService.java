@@ -6,6 +6,7 @@ import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm;
 import com.hong.ForPaw.domain.Post.*;
+import com.hong.ForPaw.domain.User.Role;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class PostService {
     private final CommentRepository commentRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final AlarmRepository alarmRepository;
+    private final UserRepository userRepository;
     private final EntityManager entityManager;
 
     @Transactional
@@ -105,11 +107,8 @@ public class PostService {
         // 존재하지 않는 게시글이면 에러 발생
         checkPostExist(postId);
 
-        // 수정 권한 체크
-        Long postUserId = postRepository.findUserIdByPostId(postId).get(); // 앞에서 존재하는 게시글임을 체크
-        if(!postUserId.equals(userId)){
-            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        }
+        // 권한 체크
+        checkPostAuthority(postId, userId);
 
         postRepository.updatePostTitleAndContent(postId, requestDTO.title(), requestDTO.content());
 
@@ -139,10 +138,7 @@ public class PostService {
         checkPostExist(postId);
 
         // 수정 권한 체크
-        Long postUserId = postRepository.findUserIdByPostId(postId).get();
-        if(!postUserId.equals(userId)){
-            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        }
+        checkPostAuthority(postId, userId);
 
         postImageRepository.deleteAllByPostId(postId);
         postLikeRepository.deleteAllByPostId(postId);
@@ -253,6 +249,21 @@ public class PostService {
 
             commentRepository.incrementLikeNumById(commentId);
             commentLikeRepository.save(commentLike);
+        }
+    }
+
+    private void checkPostAuthority(Long postId, Long userId){
+        // 관리자면 통과
+        if(userRepository.findRoleById(userId).orElse(Role.USER).equals(Role.ADMIN)){
+            return;
+        }
+
+        // 작성자 본인이면 통과
+        Long postUserId = postRepository.findUserIdByPostId(postId)
+                .orElseThrow( () -> new CustomException(ExceptionCode.POST_NOT_FOUND));
+
+        if(!postUserId.equals(userId)){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
     }
 
