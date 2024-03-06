@@ -79,7 +79,7 @@ public class PostService {
     @Transactional
     public PostResponse.FindPostByIdDTO findPostById(Long postId, Long userId){
         // 존재하지 않는 글이면 에러
-        checkExistPost(postId);
+        checkPostExist(postId);
 
         List<Comment> comments = commentRepository.findByPostIdWithUser(postId);
         List<PostResponse.CommentDTO> commentDTOS = comments.stream()
@@ -103,7 +103,7 @@ public class PostService {
     @Transactional
     public void updatePost(PostRequest.UpdatePostDTO requestDTO, Long userId, Long postId){
         // 존재하지 않는 게시글이면 에러 발생
-        checkExistPost(postId);
+        checkPostExist(postId);
 
         // 수정 권한 체크
         Long postUserId = postRepository.findUserIdByPostId(postId).get(); // 앞에서 존재하는 게시글임을 체크
@@ -136,7 +136,7 @@ public class PostService {
     @Transactional
     public void likePost(Long postId, Long userId){
         // 존재하지 않는 글이면 에러
-        checkExistPost(postId);
+        checkPostExist(postId);
 
         // 자기 자신의 글에는 좋아요를 할 수 없다.
         if (postRepository.isOwnPost(postId, userId)) {
@@ -164,7 +164,7 @@ public class PostService {
     @Transactional
     public PostResponse.CreateCommentDTO createComment(PostRequest.CreateCommentDTO requestDTO, Long userId, Long postId){
         // 존재하지 않는 글이면 에러
-        checkExistPost(postId);
+        checkPostExist(postId);
 
         User userRef = entityManager.getReference(User.class, userId);
         Post postRef = entityManager.getReference(Post.class, postId);
@@ -198,9 +198,7 @@ public class PostService {
     @Transactional
     public void updateComment(PostRequest.UpdateCommentDTO requestDTO, Long commentId, Long userId){
         // 존재하지 않는 댓글이면 에러
-        if(!commentRepository.existsById(commentId)){
-            throw new CustomException(ExceptionCode.COMMENT_NOT_FOUND);
-        }
+        checkCommentExist(commentId);
 
         // 수정 권한 체크
         Long commentUserId = commentRepository.findUserIdByCommentId(commentId).get();
@@ -214,9 +212,7 @@ public class PostService {
     @Transactional
     public void likeComment(Long commentId, Long userId){
         // 존재하지 않는 댓글이면 에러
-        if(!commentRepository.existsById(commentId)){
-            throw new CustomException(ExceptionCode.COMMENT_NOT_FOUND);
-        }
+        checkCommentExist(commentId);
 
         // 자기 자신의 댓글에는 좋아요를 할 수 없다.
         if(commentRepository.isOwnComment(commentId, userId)){
@@ -241,10 +237,17 @@ public class PostService {
         }
     }
 
-    private void checkExistPost(Long postId){
+    private void checkPostExist(Long postId){
 
         if (!postRepository.existsById(postId)) {
             throw new CustomException(ExceptionCode.POST_NOT_FOUND);
+        }
+    }
+
+    private void checkCommentExist(Long commentId){
+
+        if(!commentRepository.existsById(commentId)){
+            throw new CustomException(ExceptionCode.COMMENT_NOT_FOUND);
         }
     }
 }
