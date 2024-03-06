@@ -10,6 +10,10 @@ public class GroupRequest {
     public record UpdateGroupDTO(String name, String region, String subRegion, String description,
                                  String category, String profileURL){}
 
+    public record ApproveJoinDTO(Long id) {}
+
+    public record RejectJoinDTO(Long id) {}
+
     public record JoinGroupDTO(String greeting) {}
 
     public record CreateMeetingDTO(String name, LocalDateTime date, String location, Long cost,
