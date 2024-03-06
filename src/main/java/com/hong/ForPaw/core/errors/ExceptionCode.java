@@ -40,6 +40,7 @@ public enum ExceptionCode {
     GROUP_ALREADY_JOIN(HttpStatus.BAD_REQUEST, "그룹에 이미 가입하였거나, 신청이 완료되었습니다."),
     GROUP_NOT_APPLY(HttpStatus.BAD_REQUEST, "가입 신청을 하지 않았습니다"),
     GROUP_NOT_MEMBER(HttpStatus.BAD_REQUEST, "그룹의 맴버가 아닙니다."),
+    ROLE_CANT_UPDATE(HttpStatus.BAD_REQUEST, "그룹장으로의 변경은 불가능합니다."),
     MEETING_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 정기모임 입니다."),
     MEETING_ALREADY_JOIN(HttpStatus.BAD_REQUEST, "모임에 이미 참가하였습니다."),
     MEETING_NOT_MEMBER(HttpStatus.BAD_REQUEST, "모임에 참가중이지 않습니다."),

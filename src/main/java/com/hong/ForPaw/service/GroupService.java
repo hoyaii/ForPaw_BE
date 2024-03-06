@@ -292,6 +292,11 @@ public class GroupService {
         // 권한체크 (그룹장만 삭제 가능)
         checkCreatorAuthority(groupId, creatorId);
 
+        // 그룹장으로의 변경은 불가능
+        if(requestDTO.role().equals(Role.CREATOR)){
+            throw new CustomException(ExceptionCode.ROLE_CANT_UPDATE);
+        }
+
         groupUserRepository.updateRole(requestDTO.role(), groupId, requestDTO.id());
     }
 
