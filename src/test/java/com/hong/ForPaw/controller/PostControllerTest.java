@@ -297,7 +297,7 @@ class PostControllerTest {
     @WithUserDetails(value = "yg04076@naver.com")
     public void 댓글_작성_성공() throws Exception {
         // given
-        Long postId = 1L;
+        Long postId = 4L;
 
         PostRequest.CreateCommentDTO requestDTO = new PostRequest.CreateCommentDTO("hello");
         String requestBody = om.writeValueAsString(requestDTO);
@@ -395,6 +395,62 @@ class PostControllerTest {
                 patch("/api/comments/" + commentId)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 댓글_삭제_성공() throws Exception {
+        // given
+        Long postId = 4L;
+        Long commentId = 1L;
+
+        // when
+        ResultActions result = mvc.perform(
+                delete("/api/posts/"+postId+"/comments/"+commentId)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 댓글_삭제_실패_존재하지_않는_댓글() throws Exception {
+        // given
+        Long postId = 4L;
+        Long commentId = 10L;
+
+        // when
+        ResultActions result = mvc.perform(
+                delete("/api/posts/"+postId+"/comments/"+commentId)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 댓글_삭제_실패_권한_없음() throws Exception {
+        // given
+        Long postId = 4L;
+        Long commentId = 1L;
+
+        // when
+        ResultActions result = mvc.perform(
+                delete("/api/posts/"+postId+"/comments/"+commentId)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
