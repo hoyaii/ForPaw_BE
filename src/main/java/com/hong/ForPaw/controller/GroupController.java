@@ -75,6 +75,13 @@ public class GroupController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
+    @PostMapping("/groups/{groupId}/withdraw")
+    public ResponseEntity<?> withdrawGroup(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        groupService.withdrawGroup(userDetails.getUser().getId(), groupId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
     @PostMapping("/groups/{groupID}/join/approve")
     public ResponseEntity<?> approveJoin(@PathVariable Long groupID, @RequestParam("id") Long applicantId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
