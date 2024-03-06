@@ -270,7 +270,7 @@ public class GroupService {
             throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
         }
 
-        // 권한체크 (그룹장만 삭제 가능)g
+        // 권한체크 (그룹장만 삭제 가능)
         checkCreatorAuthority(groupId, userId);
 
         // 관련 데이터 삭제
