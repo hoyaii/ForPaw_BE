@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface FavoriteGroupRepository extends JpaRepository<FavoriteGroup, Long> {
 
     Optional<FavoriteGroup> findByUserIdAndGroupId(Long userId, Long groupId);
+
+    void deleteAllByGroupId(Long groupId);
 }

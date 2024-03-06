@@ -17,4 +17,6 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
     Page<GroupUser> findByUserId(Long userId, Pageable pageable);
 
     void deleteByGroupIdAndUserId(Long groupId, Long userId);
+
+    void deleteAllByGroupId(Long groupId);
 }
