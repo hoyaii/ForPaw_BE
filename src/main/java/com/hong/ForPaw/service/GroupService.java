@@ -161,7 +161,7 @@ public class GroupService {
             throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
         }
 
-        // 이미 가입했거나 신청한 회원이면 에러 처리 (USER 혹 ADMIN)
+        // 이미 가입했거나 신청한 회원이면 에러 처리
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(groupUser -> groupUser.getRole().equals(Role.USER) || groupUser.getRole().equals(Role.ADMIN) || groupUser.getRole().equals(Role.TEMP))
                 .ifPresent(groupUser -> {
@@ -181,6 +181,26 @@ public class GroupService {
 
         // 그룹 참가자 수 증가
         groupRepository.incrementParticipantNumById(groupId);
+    }
+
+    @Transactional
+    public void withdrawGroup(Long userId, Long groupId){
+        // 존재하지 않는 그룹이면 에러 처리
+        if(!groupRepository.existsById(groupId)){
+            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
+        }
+
+        // 가입한 회원이 아니면 에러
+        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
+                .filter(groupUser -> groupUser.getRole().equals(Role.USER) || groupUser.getRole().equals(Role.ADMIN))
+                .orElseThrow(
+                        () -> new CustomException(ExceptionCode.GROUP_NOT_MEMBER)
+                );
+
+        groupUserRepository.deleteByGroupIdAndUserId(groupId, userId);
+
+        // 그룹 참가자 수 감소
+        groupRepository.decrementParticipantNumById(groupId);
     }
 
     @Transactional
