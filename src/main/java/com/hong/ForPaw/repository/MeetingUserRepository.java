@@ -15,6 +15,8 @@ public interface MeetingUserRepository extends JpaRepository<MeetingUser, Long> 
 
     void deleteByMeetingIdAndUserId(Long meetingId, Long userId);
 
+    void deleteAllByMeetingId(Long meetingId);
+
     @Modifying
     @Query("DELETE FROM MeetingUser mu WHERE mu.meeting.id IN (SELECT m.id FROM Meeting m WHERE m.group.id = :groupId)")
     void deleteAllByGroupId(@Param("groupId") Long groupId);

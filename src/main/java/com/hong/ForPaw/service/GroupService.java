@@ -348,6 +348,11 @@ public class GroupService {
 
     @Transactional
     public void updateMeeting(GroupRequest.UpdateMeetingDTO requestDTO, Long groupId, Long meetingId, Long userId){
+        // 존재하지 않는 모임이면 에러 처리
+        if(!meetingRepository.existsById(meetingId)){
+            throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
+        }
+
         // 권한 체크(메니저급만 수정 가능)
         checkAdminAuthority(groupId, userId);
 
@@ -405,6 +410,20 @@ public class GroupService {
 
         // 참가자 수 감소
         meetingRepository.decrementParticipantNumById(meetingId);
+    }
+
+    @Transactional
+    public void deleteMeeting(Long groupId, Long meetingId, Long userId){
+        // 존재하지 않는 모임이면 에러 처리
+        if(!meetingRepository.existsById(meetingId)){
+            throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
+        }
+
+        // 권한 체크 (메니저급만 삭제 가능)
+        checkAdminAuthority(groupId, userId);
+
+        meetingRepository.deleteById(meetingId);
+        meetingUserRepository.deleteAllByMeetingId(meetingId);
     }
 
     private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region){
