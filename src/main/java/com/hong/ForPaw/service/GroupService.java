@@ -178,6 +178,9 @@ public class GroupService {
                 .greeting(requestDTO.greeting())
                 .build();
         groupUserRepository.save(groupUser);
+
+        // 그룹 참가자 수 증가
+        groupRepository.incrementParticipantNumById(groupId);
     }
 
     @Transactional
