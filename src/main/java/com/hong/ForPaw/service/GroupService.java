@@ -289,8 +289,18 @@ public class GroupService {
             throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
         }
 
+        // 가입되지 않은 회원이면 에러
+        if(!groupUserRepository.existsByGroupIdAndUserId(groupId, requestDTO.id())){
+            throw new CustomException(ExceptionCode.GROUP_NOT_MEMBER);
+        }
+
         // 권한체크 (그룹장만 삭제 가능)
         checkCreatorAuthority(groupId, creatorId);
+
+        // 그룹장은 자신의 역할을 변경할 수 없음
+        if(requestDTO.id().equals(creatorId)){
+            throw new CustomException(ExceptionCode.CANT_UPDATE_FOR_CREATOR);
+        }
 
         // 그룹장으로의 변경은 불가능
         if(requestDTO.role().equals(Role.CREATOR)){

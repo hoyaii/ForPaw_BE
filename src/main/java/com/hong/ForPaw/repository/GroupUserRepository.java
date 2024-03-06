@@ -27,4 +27,7 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
     @Modifying
     @Query("UPDATE GroupUser gu SET gu.role = :role WHERE gu.group.id = :groupId AND gu.user.id = :userId")
     void updateRole(@Param("role") Role role, @Param("groupId") Long groupId, @Param("userId") Long userId);
+
+    @Query("SELECT COUNT(gu) > 0 FROM GroupUser gu WHERE gu.group.id = :groupId AND gu.user.id = :userId")
+    boolean existsByGroupIdAndUserId(@Param("groupId") Long groupId, @Param("userId") Long userId);
 }

@@ -3,6 +3,7 @@ package com.hong.ForPaw.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.AnimalRequest;
 import com.hong.ForPaw.controller.DTO.GroupRequest;
+import com.hong.ForPaw.domain.Group.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -156,11 +157,11 @@ class GroupControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "yg04076@naver.com")
+    @WithUserDetails(value = "yg040762@naver.com")
     public void 그룹_가입_승인하기_성공() throws Exception {
         // given
         Long groupId = 12L;
-        Long applicantId = 2L;
+        Long applicantId = 1L;
 
         // when
         ResultActions result = mvc.perform(
@@ -435,6 +436,111 @@ class GroupControllerTest {
         ResultActions result = mvc.perform(
                 delete("/api/groups/"+groupId)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 유저_역할_변경_성공() throws Exception {
+        // given
+        Long groupId = 22L;
+        GroupRequest.UpdateUserRoleDTO requestDTO = new GroupRequest.UpdateUserRoleDTO(1L, Role.ADMIN);
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/groups/"+groupId+"/role")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 유저_역할_변경_실패_가입하지_않은_회원() throws Exception {
+        // given
+        Long groupId = 22L;
+        GroupRequest.UpdateUserRoleDTO requestDTO = new GroupRequest.UpdateUserRoleDTO(4L, Role.ADMIN);
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/groups/"+groupId+"/role")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 유저_역할_변경_실패_권한_없음() throws Exception {
+        // given
+        Long groupId = 22L;
+        GroupRequest.UpdateUserRoleDTO requestDTO = new GroupRequest.UpdateUserRoleDTO(1L, Role.ADMIN);
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/groups/"+groupId+"/role")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 유저_역할_변경_실패_그룹장으로_변경시도() throws Exception {
+        // given
+        Long groupId = 22L;
+        GroupRequest.UpdateUserRoleDTO requestDTO = new GroupRequest.UpdateUserRoleDTO(1L, Role.CREATOR);
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/groups/"+groupId+"/role")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 유저_역할_변경_실패_그룹장_자신의_역할_변경불가() throws Exception {
+        // given
+        Long groupId = 22L;
+        GroupRequest.UpdateUserRoleDTO requestDTO = new GroupRequest.UpdateUserRoleDTO(2L, Role.ADMIN);
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                patch("/api/groups/"+groupId+"/role")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
