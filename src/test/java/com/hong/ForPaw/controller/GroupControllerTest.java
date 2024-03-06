@@ -32,10 +32,10 @@ class GroupControllerTest {
     private ObjectMapper om;
 
     @Test
-    @WithUserDetails(value = "yg04076@naver.com")
+    @WithUserDetails(value = "yg040762@naver.com")
     public void 그룹_생성_성공() throws Exception {
         // given
-        GroupRequest.CreateGroupDTO requestDTO = new GroupRequest.CreateGroupDTO("동물 사랑 협회", "대구광역시", "수성구", "유기견들을 진료하는 모임입니다!", "봉사", "https://s3.xxxx.xx.com");
+        GroupRequest.CreateGroupDTO requestDTO = new GroupRequest.CreateGroupDTO("동물 사랑!", "대구광역시", "수성구", "유기견들을 진료하는 모임입니다!", "봉사", "https://s3.xxxx.xx.com");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -380,6 +380,60 @@ class GroupControllerTest {
         // when
         ResultActions result = mvc.perform(
                 post("/api/groups/"+groupId+"/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 그룹_삭제하기_성공() throws Exception {
+        // given
+        Long groupId = 21L;
+
+        // when
+        ResultActions result = mvc.perform(
+                delete("/api/groups/"+groupId)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 그룹_삭제하기_실패_존재하지_않는_그룹() throws Exception {
+        // given
+        Long groupId = 100L;
+
+        // when
+        ResultActions result = mvc.perform(
+                delete("/api/groups/"+groupId)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 그룹_삭제하기_실패_권한_없음() throws Exception {
+        // given
+        Long groupId = 21L;
+
+        // when
+        ResultActions result = mvc.perform(
+                delete("/api/groups/"+groupId)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
         );
 
