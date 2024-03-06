@@ -222,7 +222,7 @@ public class PostService {
     }
 
     @Transactional
-    public void deleteComment(Long commentId, Long userId){
+    public void deleteComment(Long postId, Long commentId, Long userId){
         // 존재하지 않는 댓글인지 체크
         checkCommentExist(commentId);
 
@@ -231,6 +231,9 @@ public class PostService {
 
         commentLikeRepository.deleteAllByCommentId(commentId);
         commentRepository.deleteById(commentId);
+
+        // 게시글의 댓글 수 감소
+        postRepository.decrementCommentNumById(postId);
     }
 
     @Transactional
