@@ -158,9 +158,7 @@ public class GroupService {
     @Transactional
     public void joinGroup(GroupRequest.JoinGroupDTO requestDTO, Long userId, Long groupId){
         // 존재하지 않는 그룹이면 에러 처리
-        if(!groupRepository.existsById(groupId)){
-            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
-        }
+        checkExistGroup(groupId);
 
         // 이미 가입했거나 신청한 회원이면 에러 처리
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
@@ -187,9 +185,7 @@ public class GroupService {
     @Transactional
     public void withdrawGroup(Long userId, Long groupId){
         // 존재하지 않는 그룹이면 에러 처리
-        if(!groupRepository.existsById(groupId)){
-            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
-        }
+        checkExistGroup(groupId);
 
         // 가입한 회원이 아니면 에러
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
@@ -207,9 +203,7 @@ public class GroupService {
     @Transactional
     public void approveJoin(Long userId, Long applicantId, Long groupId){
         // 존재하지 않는 그룹이면 에러
-        if(!groupRepository.existsById(groupId)){
-            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
-        }
+        checkExistGroup(groupId);
 
         // 권한 체크
         checkAdminAuthority(groupId, userId);
@@ -224,9 +218,7 @@ public class GroupService {
     @Transactional
     public void rejectJoin(Long userId, Long applicantId, Long groupId){
         // 존재하지 않는 그룹이면 에러
-        if(!groupRepository.existsById(groupId)){
-            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
-        }
+        checkExistGroup(groupId);
 
         // 권한 체크
         checkAdminAuthority(groupId, userId);
@@ -241,9 +233,7 @@ public class GroupService {
     @Transactional
     public void likeGroup(Long userId, Long groupId){
         // 존재하지 않는 그룹이면 에러
-        if(!groupRepository.existsById(groupId)){
-            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
-        }
+        checkExistGroup(groupId);
 
         Group groupRef = entityManager.getReference(Group.class, groupId);
         User userRef = entityManager.getReference(User.class, userId);
@@ -266,9 +256,7 @@ public class GroupService {
     @Transactional
     public void deleteGroup(Long groupId, Long userId){
         // 존재하지 않는 그룹이면 에러
-        if(!groupRepository.existsById(groupId)){
-            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
-        }
+        checkExistGroup(groupId);
 
         // 권한체크 (그룹장만 삭제 가능)
         checkCreatorAuthority(groupId, userId);
@@ -285,9 +273,7 @@ public class GroupService {
     @Transactional
     public void updateUserRole(GroupRequest.UpdateUserRoleDTO requestDTO, Long groupId, Long creatorId){
         // 존재하지 않는 그룹이면 에러
-        if(!groupRepository.existsById(groupId)){
-            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
-        }
+        checkExistGroup(groupId);
 
         // 가입되지 않은 회원이면 에러
         if(!groupUserRepository.existsByGroupIdAndUserId(groupId, requestDTO.id())){
@@ -313,9 +299,7 @@ public class GroupService {
     @Transactional
     public GroupResponse.CreateMeetingDTO createMeeting(GroupRequest.CreateMeetingDTO requestDTO, Long groupId, Long userId){
         // 존재하지 않는 그룹이면 에러
-        if(!groupRepository.existsById(groupId)){
-            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
-        }
+        checkExistGroup(groupId);
 
         // 권한 체크 (메니저급만 생성 가능)
         checkAdminAuthority(groupId, userId);
@@ -521,15 +505,22 @@ public class GroupService {
     }
 
     private void checkAlreadyApplyOrMember(Optional<GroupUser> groupApplicantOP){
-
-        if(groupApplicantOP.isEmpty()){ // 가입 신청한 적이 없음
+        // 가입 신청한 적이 없음
+        if(groupApplicantOP.isEmpty()){
             throw new CustomException(ExceptionCode.GROUP_NOT_APPLY);
         } // 이미 승인되어 회원이거나 거절됌
         else if(groupApplicantOP.get().getRole().equals(Role.USER) || groupApplicantOP.get().getRole().equals(Role.ADMIN) || groupApplicantOP.get().getRole().equals(Role.REJECTED)){
             throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
         }
     }
-    
+
+    private void checkExistGroup(Long groupId){
+
+        if(!groupRepository.existsById(groupId)){
+            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
+        }
+    }
+
     private void checkExistMeeting(Long meetingId){
 
         if(!meetingRepository.existsById(meetingId)){
