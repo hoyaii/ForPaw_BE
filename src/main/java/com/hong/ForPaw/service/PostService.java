@@ -134,6 +134,25 @@ public class PostService {
     }
 
     @Transactional
+    public void deletePost(Long postId, Long userId){
+        // 존재하지 않는 게시글이면 에러 발생
+        checkPostExist(postId);
+
+        // 수정 권한 체크
+        Long postUserId = postRepository.findUserIdByPostId(postId).get();
+        if(!postUserId.equals(userId)){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
+
+        postImageRepository.deleteAllByPostId(postId);
+        postLikeRepository.deleteAllByPostId(postId);
+        postReadStatusRepository.deleteAllByPostId(postId);
+        commentRepository.deleteAllByPostId(postId);
+        commentLikeRepository.deleteAllByPostId(postId);
+        postRepository.deleteById(postId);
+    }
+
+    @Transactional
     public void likePost(Long postId, Long userId){
         // 존재하지 않는 글이면 에러
         checkPostExist(postId);

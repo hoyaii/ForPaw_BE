@@ -158,7 +158,7 @@ public class GroupService {
     @Transactional
     public void joinGroup(GroupRequest.JoinGroupDTO requestDTO, Long userId, Long groupId){
         // 존재하지 않는 그룹이면 에러 처리
-        checkExistGroup(groupId);
+        checkGroupExist(groupId);
 
         // 이미 가입했거나 신청한 회원이면 에러 처리
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
@@ -185,7 +185,7 @@ public class GroupService {
     @Transactional
     public void withdrawGroup(Long userId, Long groupId){
         // 존재하지 않는 그룹이면 에러 처리
-        checkExistGroup(groupId);
+        checkGroupExist(groupId);
 
         // 가입한 회원이 아니면 에러
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
@@ -203,7 +203,7 @@ public class GroupService {
     @Transactional
     public void approveJoin(Long userId, Long applicantId, Long groupId){
         // 존재하지 않는 그룹이면 에러
-        checkExistGroup(groupId);
+        checkGroupExist(groupId);
 
         // 권한 체크
         checkAdminAuthority(groupId, userId);
@@ -218,7 +218,7 @@ public class GroupService {
     @Transactional
     public void rejectJoin(Long userId, Long applicantId, Long groupId){
         // 존재하지 않는 그룹이면 에러
-        checkExistGroup(groupId);
+        checkGroupExist(groupId);
 
         // 권한 체크
         checkAdminAuthority(groupId, userId);
@@ -233,7 +233,7 @@ public class GroupService {
     @Transactional
     public void likeGroup(Long userId, Long groupId){
         // 존재하지 않는 그룹이면 에러
-        checkExistGroup(groupId);
+        checkGroupExist(groupId);
 
         Group groupRef = entityManager.getReference(Group.class, groupId);
         User userRef = entityManager.getReference(User.class, userId);
@@ -256,7 +256,7 @@ public class GroupService {
     @Transactional
     public void deleteGroup(Long groupId, Long userId){
         // 존재하지 않는 그룹이면 에러
-        checkExistGroup(groupId);
+        checkGroupExist(groupId);
 
         // 권한체크 (그룹장만 삭제 가능)
         checkCreatorAuthority(groupId, userId);
@@ -273,7 +273,7 @@ public class GroupService {
     @Transactional
     public void updateUserRole(GroupRequest.UpdateUserRoleDTO requestDTO, Long groupId, Long creatorId){
         // 존재하지 않는 그룹이면 에러
-        checkExistGroup(groupId);
+        checkGroupExist(groupId);
 
         // 가입되지 않은 회원이면 에러
         if(!groupUserRepository.existsByGroupIdAndUserId(groupId, requestDTO.id())){
@@ -299,7 +299,7 @@ public class GroupService {
     @Transactional
     public GroupResponse.CreateMeetingDTO createMeeting(GroupRequest.CreateMeetingDTO requestDTO, Long groupId, Long userId){
         // 존재하지 않는 그룹이면 에러
-        checkExistGroup(groupId);
+        checkGroupExist(groupId);
 
         // 권한 체크 (메니저급만 생성 가능)
         checkAdminAuthority(groupId, userId);
@@ -333,7 +333,7 @@ public class GroupService {
     @Transactional
     public void updateMeeting(GroupRequest.UpdateMeetingDTO requestDTO, Long groupId, Long meetingId, Long userId){
         // 존재하지 않는 모임이면 에러 처리
-        checkExistMeeting(meetingId);
+        checkMeetingExist(meetingId);
 
         // 권한 체크(메니저급만 수정 가능)
         checkAdminAuthority(groupId, userId);
@@ -348,7 +348,7 @@ public class GroupService {
     @Transactional
     public void joinMeeting(Long groupId, Long meetingId, Long userId){
         // 존재하지 않는 모임이면 에러 처리
-        checkExistMeeting(meetingId);
+        checkMeetingExist(meetingId);
 
         // 그룹의 맴버가 아니면 에러 처리
         checkIsMember(groupId, userId);
@@ -374,7 +374,7 @@ public class GroupService {
     @Transactional
     public void withdrawMeeting(Long groupId, Long meetingId, Long userId){
         // 존재하지 않는 모임이면 에러 처리
-        checkExistMeeting(meetingId);
+        checkMeetingExist(meetingId);
 
         // 그룹의 맴버가 아니면 에러 처리
         checkIsMember(groupId, userId);
@@ -393,7 +393,7 @@ public class GroupService {
     @Transactional
     public void deleteMeeting(Long groupId, Long meetingId, Long userId){
         // 존재하지 않는 모임이면 에러 처리
-        checkExistMeeting(meetingId);
+        checkMeetingExist(meetingId);
 
         // 권한 체크 (메니저급만 삭제 가능)
         checkAdminAuthority(groupId, userId);
@@ -514,14 +514,14 @@ public class GroupService {
         }
     }
 
-    private void checkExistGroup(Long groupId){
+    private void checkGroupExist(Long groupId){
 
         if(!groupRepository.existsById(groupId)){
             throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
         }
     }
 
-    private void checkExistMeeting(Long meetingId){
+    private void checkMeetingExist(Long meetingId){
 
         if(!meetingRepository.existsById(meetingId)){
             throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
