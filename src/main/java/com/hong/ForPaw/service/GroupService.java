@@ -283,6 +283,19 @@ public class GroupService {
     }
 
     @Transactional
+    public void updateRole(GroupRequest.UpdateRoleDTO requestDTO, Long groupId, Long creatorId){
+        // 존재하지 않는 그룹이면 에러
+        if(!groupRepository.existsById(groupId)){
+            throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
+        }
+
+        // 권한체크 (그룹장만 삭제 가능)
+        checkCreatorAuthority(groupId, creatorId);
+
+        groupUserRepository.updateRole(requestDTO.role(), groupId, requestDTO.id());
+    }
+
+    @Transactional
     public GroupResponse.CreateMeetingDTO createMeeting(GroupRequest.CreateMeetingDTO requestDTO, Long groupId, Long userId){
         // 존재하지 않는 그룹이면 에러
         if(!groupRepository.existsById(groupId)){

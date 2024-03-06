@@ -1,5 +1,7 @@
 package com.hong.ForPaw.controller.DTO;
 
+import com.hong.ForPaw.domain.Group.Role;
+
 import java.time.LocalDateTime;
 
 public class GroupRequest {
@@ -15,6 +17,8 @@ public class GroupRequest {
     public record RejectJoinDTO(Long id) {}
 
     public record JoinGroupDTO(String greeting) {}
+
+    public record UpdateRoleDTO(Long id, Role role) {}
 
     public record CreateMeetingDTO(String name, LocalDateTime date, String location, Long cost,
                                    Integer maxNum, String description, String profileURL) {}
