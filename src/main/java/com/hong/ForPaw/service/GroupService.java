@@ -162,10 +162,14 @@ public class GroupService {
 
     @Transactional
     public GroupResponse.FindGroupDetailByIdDTO findGroupDetailById(Long userId, Long groupId){
-        // 정기 모임과 공지사항은 0페이지의 5개만 보여준다.
-        Pageable pageable = createPageable(0, 5, "id");
+        // 그룹 존재 여부 체크
+        checkGroupExist(groupId);
+
         // 그룹 설명
         String description = groupRepository.findDescriptionById(groupId);
+
+        // 정기 모임과 공지사항은 0페이지의 5개만 보여준다.
+        Pageable pageable = createPageable(0, 5, "id");
 
         // 정기 모임
         Page<Meeting> meetings = meetingRepository.findAllByGroupId(groupId, pageable);
