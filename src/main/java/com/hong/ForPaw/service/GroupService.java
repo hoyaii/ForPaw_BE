@@ -167,7 +167,12 @@ public class GroupService {
         // 정기 모임
         List<Meeting> meetings = meetingRepository.findAllByGroupId(groupId);
         List<GroupResponse.MeetingDTO> meetingDTOS = meetings.stream()
-                .map(meeting -> new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum()))
+                .map(meeting -> {
+                    List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository.findAllUsersByMeetingId(meeting.getId()).stream()
+                            .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL()))
+                            .toList();
+                    return new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getProfileURL(), participantDTOS);
+                })
                 .toList();
 
         // 공지사항

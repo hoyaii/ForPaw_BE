@@ -34,11 +34,9 @@ public class GroupResponse {
 
     public record NoticeDTO(Long id, String name, LocalDateTime date, String content, Boolean isRead) {}
 
-    public record PostImageDTO(String imageURL) {}
+    public record MeetingDTO(Long id, String name, LocalDateTime date, String location, Long cost, Integer participantCnt, Integer maxCnt, String profileURL, List<ParticipantDTO> participants) {}
 
-    public record CommentDTO(Long id, String name, String content, LocalDateTime date, String location) {}
-
-    public record MeetingDTO(Long id, String name, LocalDateTime date, String location, Long cost, Integer participantCnt, Integer maxCnt) {}
+    public record ParticipantDTO(String profileURL) {}
 
     public record MemberDTO(Long id, String name, Role role, String profileURL) {}
 
