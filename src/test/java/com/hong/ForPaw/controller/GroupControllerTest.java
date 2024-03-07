@@ -3,6 +3,7 @@ package com.hong.ForPaw.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.AnimalRequest;
 import com.hong.ForPaw.controller.DTO.GroupRequest;
+import com.hong.ForPaw.controller.DTO.PostRequest;
 import com.hong.ForPaw.domain.Group.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,9 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -328,6 +332,87 @@ class GroupControllerTest {
                 post("/api/groups/"+groupId+"/join/reject")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .param("id", applicantId.toString())
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 공지_작성_성공() throws Exception {
+        // given
+        Long groupId = 1L;
+
+        List<PostRequest.PostImageDTO> images = Arrays.asList(
+                new PostRequest.PostImageDTO("https://s3.xxxx.xx.com"),
+                new PostRequest.PostImageDTO("https://s3.xxxx.xx.com")
+        );
+
+        GroupRequest.CreateNoticeDTO requestDTO = new GroupRequest.CreateNoticeDTO("공지입니다!", "내일 일정은 취소 되었습니다", images);
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/notices")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 공지_작성_실패_존재하지_않는_그룹() throws Exception {
+        // given
+        Long groupId = 10L;
+
+        List<PostRequest.PostImageDTO> images = Arrays.asList(
+                new PostRequest.PostImageDTO("https://s3.xxxx.xx.com"),
+                new PostRequest.PostImageDTO("https://s3.xxxx.xx.com")
+        );
+
+        GroupRequest.CreateNoticeDTO requestDTO = new GroupRequest.CreateNoticeDTO("공지입니다!", "내일 일정은 취소 되었습니다", images);
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/notices")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
+        );
+
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg04076@naver.com")
+    public void 공지_작성_실패_권한_없음() throws Exception {
+        // given
+        Long groupId = 1L;
+
+        List<PostRequest.PostImageDTO> images = Arrays.asList(
+                new PostRequest.PostImageDTO("https://s3.xxxx.xx.com"),
+                new PostRequest.PostImageDTO("https://s3.xxxx.xx.com")
+        );
+
+        GroupRequest.CreateNoticeDTO requestDTO = new GroupRequest.CreateNoticeDTO("공지입니다!", "내일 일정은 취소 되었습니다", images);
+        String requestBody = om.writeValueAsString(requestDTO);
+
+        // when
+        ResultActions result = mvc.perform(
+                post("/api/groups/"+groupId+"/notices")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(requestBody)
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
