@@ -754,6 +754,48 @@ class GroupControllerTest {
 
     @Test
     @WithUserDetails(value = "yg040762@naver.com")
+    public void 정기모임_추가_조회_성공() throws Exception {
+        // given
+        Long groupId = 1L;
+
+        // when
+        ResultActions result = mvc.perform(
+                get("/api/groups/"+groupId+"/meetings")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .param("size", "5")
+                        .param("page", "0")
+        );
+
+        // then
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("true"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
+    public void 정기모임_추가_조회_실패_존재하지_않는_그룹() throws Exception {
+        // given
+        Long groupId = 10L;
+
+        // when
+        ResultActions result = mvc.perform(
+                get("/api/groups/"+groupId+"/meetings")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .param("size", "5")
+                        .param("page", "0")
+        );
+
+        // then
+        String responseBody = result.andReturn().getResponse().getContentAsString();
+        System.out.println("테스트 : " + responseBody);
+
+        result.andExpect(jsonPath("$.success").value("false"));
+    }
+
+    @Test
+    @WithUserDetails(value = "yg040762@naver.com")
     public void 그룹_목록_조회_성공() throws Exception {
         // given
         String region = "대구광역시";
