@@ -94,6 +94,19 @@ public class PostService {
     }
 
     @Transactional
+    public PostResponse.FindAdoptionPostDTO findProtectionPost(Integer page, Integer size, String sort){
+
+        Pageable pageable = createPageable(page, size, sort);
+        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOSByType(Type.protection, pageable);
+
+        if(adoptPostDTOS.isEmpty()){
+            throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
+        }
+
+        return new PostResponse.FindAdoptionPostDTO(adoptPostDTOS);
+    }
+
+    @Transactional
     public PostResponse.FindPostByIdDTO findPostById(Long postId, Long userId){
         // 존재하지 않는 글인지 체크
         checkPostExist(postId);
