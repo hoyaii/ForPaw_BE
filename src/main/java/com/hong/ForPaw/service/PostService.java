@@ -81,9 +81,9 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse.FindAdoptionPostDTO findAdoptionPost(Integer page, Integer size){
+    public PostResponse.FindAdoptionPostDTO findAdoptionPost(Integer page, Integer size, String sort){
 
-        Pageable pageable = createPageable(page, size, "id");
+        Pageable pageable = createPageable(page, size, sort);
         List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOSByType(Type.adoption, pageable);
 
         if(adoptPostDTOS.isEmpty()){
