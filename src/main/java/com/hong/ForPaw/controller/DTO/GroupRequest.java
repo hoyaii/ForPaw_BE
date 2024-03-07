@@ -1,8 +1,10 @@
 package com.hong.ForPaw.controller.DTO;
 
 import com.hong.ForPaw.domain.Group.Role;
+import com.hong.ForPaw.domain.Post.Type;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class GroupRequest {
 
@@ -25,4 +27,6 @@ public class GroupRequest {
 
     public record UpdateMeetingDTO(String name, LocalDateTime date, String location, Long cost,
                                    Integer maxNum, String description, String profileURL) {}
+
+    public record CreateNoticeDTO(String title, String content, List<PostRequest.PostImageDTO> images) {}
 }

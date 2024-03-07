@@ -32,7 +32,7 @@ public class GroupResponse {
 
     public record FindGroupDetailByIdDTO(String description, List<NoticeDTO> notices, List<MeetingDTO> meetings, List<MemberDTO> members) {}
 
-    public record NoticeDTO(Long id, String name, LocalDateTime date, String content, Boolean isRead) {}
+    public record NoticeDTO(Long id, String name, LocalDateTime date, String title, Boolean isRead) {}
 
     public record MeetingDTO(Long id, String name, LocalDateTime date, String location, Long cost, Integer participantCnt, Integer maxCnt, String profileURL, List<ParticipantDTO> participants) {}
 
@@ -41,4 +41,6 @@ public class GroupResponse {
     public record MemberDTO(Long id, String name, Role role, String profileURL) {}
 
     public record CreateMeetingDTO(Long id) {}
+
+    public record CreateNoticeDTO(Long id) {}
 }

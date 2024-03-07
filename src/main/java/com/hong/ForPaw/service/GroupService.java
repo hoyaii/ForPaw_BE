@@ -8,6 +8,7 @@ import com.hong.ForPaw.domain.Group.*;
 import com.hong.ForPaw.domain.Post.Comment;
 import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Post.PostImage;
+import com.hong.ForPaw.domain.Post.Type;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -180,7 +181,7 @@ public class GroupService {
         List<GroupResponse.NoticeDTO> noticeDTOS = notices.stream()
                 .map(notice -> {
                     boolean isRead = postReadStatusRepository.existsByUserIdAndPostId(userId, notice.getId());
-                    return new GroupResponse.NoticeDTO(notice.getId(), notice.getUser().getName(), notice.getCreatedDate(), notice.getContent(), isRead);
+                    return new GroupResponse.NoticeDTO(notice.getId(), notice.getUser().getName(), notice.getCreatedDate(), notice.getTitle(), isRead);
                 })
                 .collect(Collectors.toList());
 
@@ -271,6 +272,28 @@ public class GroupService {
         checkAlreadyApplyOrMember(groupApplicantOP);
 
         groupApplicantOP.get().updateRole(Role.REJECTED);
+    }
+
+    @Transactional
+    public GroupResponse.CreateNoticeDTO createNotice(GroupRequest.CreateNoticeDTO requestDTO, Long userId, Long groupId){
+        // 존재하지 않는 그룹이면 에러
+        checkGroupExist(groupId);
+
+        // 권한 체크
+        checkAdminAuthority(groupId, userId);
+
+        Group groupRef = entityManager.getReference(Group.class, groupId);
+        User userRef = entityManager.getReference(User.class, userId);
+
+        Post notice = Post.builder()
+                .user(userRef)
+                .group(groupRef)
+                .type(Type.notice)
+                .title(requestDTO.title())
+                .content(requestDTO.content())
+                .build();
+
+        return new GroupResponse.CreateNoticeDTO(notice.getId());
     }
 
     @Transactional
