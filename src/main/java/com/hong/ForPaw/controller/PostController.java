@@ -45,14 +45,14 @@ public class PostController {
     @GetMapping("/posts/protection")
     public ResponseEntity<?> findProtectionPost(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @RequestParam("sort") String sort){
 
-        PostResponse.FindAdoptionPostDTO responseDTO = postService.findProtectionPost(page, size, sort);
+        PostResponse.FindProtectionPostDTO responseDTO = postService.findProtectionPost(page, size, sort);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/question")
     public ResponseEntity<?> findQuestionPost(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @RequestParam("sort") String sort){
 
-        PostResponse.FindAdoptionPostDTO responseDTO = postService.findQuestionPost(page, size, sort);
+        PostResponse.FindQuestionPostDTO responseDTO = postService.findQuestionPost(page, size, sort);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

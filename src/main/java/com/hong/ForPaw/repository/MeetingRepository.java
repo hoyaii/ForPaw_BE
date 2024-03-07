@@ -1,6 +1,8 @@
 package com.hong.ForPaw.repository;
 
 import com.hong.ForPaw.domain.Group.Meeting;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -24,5 +26,5 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
     void deleteAllByGroupId(Long groupId);
 
-    List<Meeting> findAllByGroupId(Long groupId);
+    Page<Meeting> findAllByGroupId(Long groupId, Pageable pageable);
 }

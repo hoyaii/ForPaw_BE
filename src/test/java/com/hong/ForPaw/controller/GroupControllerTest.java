@@ -98,10 +98,10 @@ class GroupControllerTest {
 
     // 테스트 시나리오를 짜고 DB 세팅 후테스트 해야함! yg04076@naver.com은 그룹 생성자, yg040762@naver.com은 가입 신청자
     @Test
-    @WithUserDetails(value = "yg040762@naver.com")
+    @WithUserDetails(value = "yg04076@naver.com")
     public void 그룹_가입_신청하기_성공() throws Exception {
         // given
-        Long groupId = 12L;
+        Long groupId = 1L;
         GroupRequest.JoinGroupDTO requestDTO = new GroupRequest.JoinGroupDTO("안녕하세요! 가입 인사 드립니다 ^^");
         String requestBody = om.writeValueAsString(requestDTO);
 
@@ -164,14 +164,16 @@ class GroupControllerTest {
     @WithUserDetails(value = "yg040762@naver.com")
     public void 그룹_가입_승인하기_성공() throws Exception {
         // given
-        Long groupId = 12L;
-        Long applicantId = 1L;
+        Long groupId = 1L;
+
+        GroupRequest.ApproveJoinDTO requestDTO = new GroupRequest.ApproveJoinDTO(11L);
+        String requestBody = om.writeValueAsString(requestDTO);
 
         // when
         ResultActions result = mvc.perform(
                 post("/api/groups/"+groupId+"/join/approve")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .param("id", applicantId.toString())
+                        .content(requestBody)
         );
 
         String responseBody = result.andReturn().getResponse().getContentAsString();
@@ -351,7 +353,7 @@ class GroupControllerTest {
                 new PostRequest.PostImageDTO("https://s3.xxxx.xx.com")
         );
 
-        GroupRequest.CreateNoticeDTO requestDTO = new GroupRequest.CreateNoticeDTO("공지입니다!", "내일 일정은 취소 되었습니다", images);
+        GroupRequest.CreateNoticeDTO requestDTO = new GroupRequest.CreateNoticeDTO("공지입니다4!", "내일 일정은 취소 되었습니다", images);
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -755,7 +757,7 @@ class GroupControllerTest {
     @WithUserDetails(value = "yg04076@naver.com")
     public void 정기모임_생성_성공() throws Exception {
         // given
-        Long groupId = 12L;
+        Long groupId = 1L;
         GroupRequest.CreateMeetingDTO requestDTO = new GroupRequest.CreateMeetingDTO("7차 동물 사랑 봉사", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
         String requestBody = om.writeValueAsString(requestDTO);
 

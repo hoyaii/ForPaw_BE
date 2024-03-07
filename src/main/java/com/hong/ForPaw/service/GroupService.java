@@ -162,12 +162,14 @@ public class GroupService {
 
     @Transactional
     public GroupResponse.FindGroupDetailByIdDTO findGroupDetailById(Long userId, Long groupId){
+        // 정기 모임과 공지사항은 0페이지의 5개만 보여준다.
+        Pageable pageable = createPageable(0, 5, "id");
         // 그룹 설명
         String description = groupRepository.findDescriptionById(groupId);
 
         // 정기 모임
-        List<Meeting> meetings = meetingRepository.findAllByGroupId(groupId);
-        List<GroupResponse.MeetingDTO> meetingDTOS = meetings.stream()
+        Page<Meeting> meetings = meetingRepository.findAllByGroupId(groupId, pageable);
+        List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
                 .map(meeting -> {
                     List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository.findAllUsersByMeetingId(meeting.getId()).stream()
                             .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL()))
@@ -177,8 +179,8 @@ public class GroupService {
                 .toList();
 
         // 공지사항
-        List<Post> notices = postRepository.findAllByGroupId(groupId);
-        List<GroupResponse.NoticeDTO> noticeDTOS = notices.stream()
+        Page<Post> notices = postRepository.findAllByGroupId(groupId, pageable);
+        List<GroupResponse.NoticeDTO> noticeDTOS = notices.getContent().stream()
                 .map(notice -> {
                     boolean isRead = postReadStatusRepository.existsByUserIdAndPostId(userId, notice.getId());
                     return new GroupResponse.NoticeDTO(notice.getId(), notice.getUser().getName(), notice.getCreatedDate(), notice.getTitle(), isRead);
@@ -292,6 +294,8 @@ public class GroupService {
                 .title(requestDTO.title())
                 .content(requestDTO.content())
                 .build();
+
+        postRepository.save(notice);
 
         return new GroupResponse.CreateNoticeDTO(notice.getId());
     }

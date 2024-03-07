@@ -48,5 +48,5 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     void deleteAllByGroupId(Long groupId);
 
-    List<Post> findAllByGroupId(Long groupId);
+    Page<Post> findAllByGroupId(Long groupId, Pageable pageable);
 }

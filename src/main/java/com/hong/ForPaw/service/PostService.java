@@ -94,7 +94,7 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse.FindAdoptionPostDTO findProtectionPost(Integer page, Integer size, String sort){
+    public PostResponse.FindProtectionPostDTO findProtectionPost(Integer page, Integer size, String sort){
 
         Pageable pageable = createPageable(page, size, sort);
         List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOSByType(Type.protection, pageable);
@@ -103,11 +103,11 @@ public class PostService {
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
         }
 
-        return new PostResponse.FindAdoptionPostDTO(adoptPostDTOS);
+        return new PostResponse.FindProtectionPostDTO(adoptPostDTOS);
     }
 
     @Transactional
-    public PostResponse.FindAdoptionPostDTO findQuestionPost(Integer page, Integer size, String sort){
+    public PostResponse.FindQuestionPostDTO findQuestionPost(Integer page, Integer size, String sort){
 
         Pageable pageable = createPageable(page, size, sort);
         List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOSByType(Type.question, pageable);
@@ -116,7 +116,7 @@ public class PostService {
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
         }
 
-        return new PostResponse.FindAdoptionPostDTO(adoptPostDTOS);
+        return new PostResponse.FindQuestionPostDTO(adoptPostDTOS);
     }
 
     @Transactional
