@@ -2,6 +2,7 @@ package com.hong.ForPaw.repository;
 
 import com.hong.ForPaw.domain.Group.GroupUser;
 import com.hong.ForPaw.domain.Group.Role;
+import com.hong.ForPaw.domain.User.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -30,4 +32,10 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
 
     @Query("SELECT COUNT(gu) > 0 FROM GroupUser gu WHERE gu.group.id = :groupId AND gu.user.id = :userId")
     boolean existsByGroupIdAndUserId(@Param("groupId") Long groupId, @Param("userId") Long userId);
+
+    @Query("SELECT gu.user FROM GroupUser gu WHERE gu.group.id = :groupId AND gu.role IN :roles")
+    List<User> findAllUsersByGroupId(@Param("groupId") Long groupId, @Param("roles") List<Role> roles);
+
+    @Query("SELECT gu.role FROM GroupUser gu WHERE gu.user.id = :userId AND gu.group.id = :groupId")
+    Role findRoleByUserIdAndGroupId(Long userId, Long groupId);
 }

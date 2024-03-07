@@ -5,6 +5,9 @@ import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Group.*;
+import com.hong.ForPaw.domain.Post.Comment;
+import com.hong.ForPaw.domain.Post.Post;
+import com.hong.ForPaw.domain.Post.PostImage;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,7 @@ public class GroupService {
     private final MeetingRepository meetingRepository;
     private final MeetingUserRepository meetingUserRepository;
     private final PostRepository postRepository;
+    private final PostReadStatusRepository postReadStatusRepository;
     private final EntityManager entityManager;
 
     private Pageable pageableForMy = PageRequest.of(0, 1000);
@@ -153,6 +157,40 @@ public class GroupService {
         }
 
         return new GroupResponse.FindMyGroupDTO(myGroupDTOS);
+    }
+
+    @Transactional
+    public GroupResponse.FindGroupDetailByIdDTO findGroupDetailById(Long userId, Long groupId){
+        // 설명 불러옴
+        String description = groupRepository.findDescriptionById(groupId);
+
+        // 미팅 다 불러옴
+        List<Meeting> meetings = meetingRepository.findAllByGroupId(groupId);
+        List<GroupResponse.MeetingDTO> meetingDTOS = meetings.stream()
+                .map(meeting -> new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum()))
+                .toList();
+
+        // 공지사항 다 불러옴
+        List<Post> notices = postRepository.findAllByGroupId(groupId);
+        List<GroupResponse.NoticeDTO> noticeDTOS = notices.stream()
+                .map(notice -> {
+                    boolean isRead = postReadStatusRepository.existsByUserIdAndPostId(userId, notice.getId());
+                    return new GroupResponse.NoticeDTO(notice.getId(), notice.getUser().getName(), notice.getCreatedDate(), notice.getContent(), isRead);
+                })
+                .collect(Collectors.toList());
+
+        // 가입자
+        List<Role> roles = Arrays.asList(Role.USER, Role.ADMIN, Role.CREATOR);
+        List<User> users = groupUserRepository.findAllUsersByGroupId(groupId, roles);
+
+        List<GroupResponse.MemberDTO> memberDTOS = users.stream()
+                .map(user -> {
+                    Role role = groupUserRepository.findRoleByUserIdAndGroupId(user.getId(), groupId);
+                    return new GroupResponse.MemberDTO(user.getId(), user.getNickName(), role, user.getProfileURL());
+                })
+                .collect(Collectors.toList());
+
+        return new GroupResponse.FindGroupDetailByIdDTO(description, noticeDTOS, meetingDTOS, memberDTOS);
     }
 
     @Transactional

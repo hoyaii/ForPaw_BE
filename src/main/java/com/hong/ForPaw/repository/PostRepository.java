@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -46,4 +47,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     void updatePostTitleAndContent(@Param("postId") Long postId, @Param("title") String title, @Param("content") String content);
 
     void deleteAllByGroupId(Long groupId);
+
+    List<Post> findAllByGroupId(Long groupId);
 }
