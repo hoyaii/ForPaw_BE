@@ -10,13 +10,13 @@ public class GroupResponse {
     public record FindGroupByIdDTO(String name, String region, String subRegion, String description,
                                    String category, String profileURL) {}
 
-    public record FindAllGroupDTO(List<RecommendGroupDTO> recommendGroupDTOS, List<NewGroupDTO> newGroupDTOS, List<LocalGroupDTO> localGroupDTOS, List<MyGroupDTO> myGroupDTOS) {}
+    public record FindAllGroupDTO(List<RecommendGroupDTO> recommendGroups, List<NewGroupDTO> newGroups, List<LocalGroupDTO> localGroups, List<MyGroupDTO> myGroups) {}
 
-    public record FindLocalGroupDTO(List<LocalGroupDTO> localGroupDTOS) {}
+    public record FindLocalGroupDTO(List<LocalGroupDTO> localGroups) {}
 
-    public record FindNewGroupDTO(List<NewGroupDTO> newGroupDTOS) {}
+    public record FindNewGroupDTO(List<NewGroupDTO> newGroups) {}
 
-    public record FindMyGroupDTO(List<MyGroupDTO> myGroupDTOS) {}
+    public record FindMyGroupDTO(List<MyGroupDTO> myGroups) {}
 
     public record RecommendGroupDTO(Long id, String name, String description, Integer participationNum, String category,
                                     String region, String subRegion, String profileURL, Integer likeNum) {}
