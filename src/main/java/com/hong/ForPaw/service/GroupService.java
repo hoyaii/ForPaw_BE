@@ -200,11 +200,11 @@ public class GroupService {
     }
 
     @Transactional
-    public GroupResponse.FindNoticeDTO findNotices(Long userId, Long groupId, Integer page, Integer size, String sort){
+    public GroupResponse.FindNoticeDTO findNotices(Long userId, Long groupId, Integer page, Integer size){
         // 그룹 존재 여부 체크
         checkGroupExist(groupId);
 
-        Pageable pageable = createPageable(page, size, sort);
+        Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.NoticeDTO> noticeDTOS = getNoticeDTOS(userId, groupId, pageable);
 
         return new GroupResponse.FindNoticeDTO(noticeDTOS);

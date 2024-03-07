@@ -75,6 +75,13 @@ public class GroupController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
+    @GetMapping("/groups/{groupId}/notices")
+    public ResponseEntity<?> findNotices(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam("page") Integer page, @RequestParam("size") Integer size){
+
+        GroupResponse.FindNoticeDTO responseDTO = groupService.findNotices(userDetails.getUser().getId(), groupId, page, size);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
     @PostMapping("/groups/{groupId}/join")
     public ResponseEntity<?> joinGroup(@RequestBody GroupRequest.JoinGroupDTO requestDTO ,@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
