@@ -5,9 +5,7 @@ import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Group.*;
-import com.hong.ForPaw.domain.Post.Comment;
 import com.hong.ForPaw.domain.Post.Post;
-import com.hong.ForPaw.domain.Post.PostImage;
 import com.hong.ForPaw.domain.Post.Type;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.*;
@@ -172,15 +170,7 @@ public class GroupService {
         Pageable pageable = createPageable(0, 5, "id");
 
         // 정기 모임
-        Page<Meeting> meetings = meetingRepository.findAllByGroupId(groupId, pageable);
-        List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
-                .map(meeting -> {
-                    List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository.findAllUsersByMeetingId(meeting.getId()).stream()
-                            .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL()))
-                            .toList();
-                    return new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getProfileURL(), participantDTOS);
-                })
-                .toList();
+        List<GroupResponse.MeetingDTO> meetingDTOS = getMeetingDTOS(groupId, pageable);
 
         // 공지사항
         List<GroupResponse.NoticeDTO> noticeDTOS = getNoticeDTOS(userId, groupId, pageable);
@@ -200,14 +190,25 @@ public class GroupService {
     }
 
     @Transactional
-    public GroupResponse.FindNoticeDTO findNotices(Long userId, Long groupId, Integer page, Integer size){
+    public GroupResponse.FindNoticesDTO findNotices(Long userId, Long groupId, Integer page, Integer size){
         // 그룹 존재 여부 체크
         checkGroupExist(groupId);
 
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.NoticeDTO> noticeDTOS = getNoticeDTOS(userId, groupId, pageable);
 
-        return new GroupResponse.FindNoticeDTO(noticeDTOS);
+        return new GroupResponse.FindNoticesDTO(noticeDTOS);
+    }
+
+    @Transactional
+    public GroupResponse.FindMeetingsDTO findMeetings(Long groupId, Integer page, Integer size){
+        // 그룹 존재 여부 체크
+        checkGroupExist(groupId);
+
+        Pageable pageable = createPageable(page, size, "id");
+        List<GroupResponse.MeetingDTO> meetingsDTOS = getMeetingDTOS(groupId, pageable);
+
+        return new GroupResponse.FindMeetingsDTO(meetingsDTOS);
     }
 
     private List<GroupResponse.NoticeDTO> getNoticeDTOS(Long userId, Long groupId, Pageable pageable){
@@ -221,6 +222,21 @@ public class GroupService {
                 .collect(Collectors.toList());
 
         return noticeDTOS;
+    }
+
+    private List<GroupResponse.MeetingDTO> getMeetingDTOS(Long groupId, Pageable pageable){
+
+        Page<Meeting> meetings = meetingRepository.findAllByGroupId(groupId, pageable);
+        List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
+                .map(meeting -> {
+                    List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository.findAllUsersByMeetingId(meeting.getId()).stream()
+                            .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL()))
+                            .toList();
+                    return new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
+                })
+                .toList();
+
+        return meetingDTOS;
     }
 
     @Transactional

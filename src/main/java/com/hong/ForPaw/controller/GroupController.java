@@ -78,7 +78,7 @@ public class GroupController {
     @GetMapping("/groups/{groupId}/notices")
     public ResponseEntity<?> findNotices(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam("page") Integer page, @RequestParam("size") Integer size){
 
-        GroupResponse.FindNoticeDTO responseDTO = groupService.findNotices(userDetails.getUser().getId(), groupId, page, size);
+        GroupResponse.FindNoticesDTO responseDTO = groupService.findNotices(userDetails.getUser().getId(), groupId, page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

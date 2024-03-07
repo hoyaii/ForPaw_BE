@@ -32,11 +32,13 @@ public class GroupResponse {
 
     public record FindGroupDetailByIdDTO(String description, List<NoticeDTO> notices, List<MeetingDTO> meetings, List<MemberDTO> members) {}
 
-    public record FindNoticeDTO(List<NoticeDTO> notices) {}
+    public record FindNoticesDTO(List<NoticeDTO> notices) {}
+
+    public record FindMeetingsDTO(List<MeetingDTO> meetings) {}
 
     public record NoticeDTO(Long id, String name, LocalDateTime date, String title, Boolean isRead) {}
 
-    public record MeetingDTO(Long id, String name, LocalDateTime date, String location, Long cost, Integer participantCnt, Integer maxCnt, String profileURL, List<ParticipantDTO> participants) {}
+    public record MeetingDTO(Long id, String name, LocalDateTime date, String location, Long cost, Integer participantCnt, Integer maxCnt, String profileURL, String description, List<ParticipantDTO> participants) {}
 
     public record ParticipantDTO(String profileURL) {}
 
