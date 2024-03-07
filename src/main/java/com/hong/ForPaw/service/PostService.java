@@ -1,5 +1,6 @@
 package com.hong.ForPaw.service;
 
+import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.controller.DTO.PostRequest;
 import com.hong.ForPaw.controller.DTO.PostResponse;
 import com.hong.ForPaw.core.errors.CustomException;
@@ -11,7 +12,9 @@ import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,21 +64,20 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse.FindPostListDTO findPostList(Type type, Pageable pageable){
+    public PostResponse.FindAllPostDTO findPostList(){
+        // 페이지네이션은 0페이지에 5개만 보내줌
+        Pageable pageable = createPageable(0, 5, "id");
 
-        Page<Post> postPage = postRepository.findByType(type, pageable);
+        // 입양 스토리 글 찾기
+        List<PostResponse.PostDTO> adoptionPosts = getPostDTOSByType(Type.adoption, pageable);
 
-        List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
-                .map(post -> {
-                    List<PostResponse.PostImageDTO> postImageDTOS = postImageRepository.findByPost(post).stream()
-                            .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
-                            .collect(Collectors.toList());
+        // 임시 보호 글 찾기
+        List<PostResponse.PostDTO> protectionPosts = getPostDTOSByType(Type.protection, pageable);
 
-                    return new PostResponse.PostDTO(post.getId(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), post.getLikeNum(), postImageDTOS);
-                })
-                .collect(Collectors.toList());
+        // 질문해요 글 찾기
+        List<PostResponse.PostDTO> questionPosts = getPostDTOSByType(Type.question, pageable);
 
-        return new PostResponse.FindPostListDTO(postDTOS);
+        return new PostResponse.FindAllPostDTO(adoptionPosts, protectionPosts, questionPosts);
     }
 
     @Transactional
@@ -262,6 +264,27 @@ public class PostService {
             commentRepository.incrementLikeNumById(commentId);
             commentLikeRepository.save(commentLike);
         }
+    }
+
+    public List<PostResponse.PostDTO> getPostDTOSByType(Type type, Pageable pageable){
+
+        Page<Post> postPage = postRepository.findByType(type, pageable);
+
+        List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
+                .map(post -> {
+                    List<PostResponse.PostImageDTO> postImageDTOS = postImageRepository.findByPost(post).stream()
+                            .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
+                            .collect(Collectors.toList());
+
+                    return new PostResponse.PostDTO(post.getId(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), post.getLikeNum(), postImageDTOS);
+                })
+                .collect(Collectors.toList());
+
+        return postDTOS;
+    }
+
+    private Pageable createPageable(int page, int size, String sortProperty) {
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 
     private void checkPostAuthority(Long postId, Long userId){

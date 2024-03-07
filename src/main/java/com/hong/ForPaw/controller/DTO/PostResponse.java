@@ -1,7 +1,5 @@
 package com.hong.ForPaw.controller.DTO;
 
-import com.hong.ForPaw.domain.Post.Type;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -9,7 +7,13 @@ public class PostResponse {
 
     public record CreatePostDTO(Long id) {}
 
-    public record FindPostListDTO(List<PostDTO> posts){}
+    public record FindAllPostDTO(List<PostDTO> adoptions, List<PostDTO> protections, List<PostDTO> questions) {}
+
+    public record FindAdoptionPostDTO(List<PostDTO> adoptions) {}
+
+    public record FindProtectionPostDTO(List<PostDTO> protections) {}
+
+    public record FindQuestionPostDTO(List<PostDTO> questions) {}
 
     public record PostDTO(Long id, String title, String content, LocalDateTime date, Integer commentNum, Integer likeNum, List<PostImageDTO> images){}
 

@@ -47,6 +47,7 @@ public enum ExceptionCode {
     MEETING_NOT_MEMBER(HttpStatus.BAD_REQUEST, "모임에 참가중이지 않습니다."),
 
     // 게시글 관련 에러
+    POST_TYPE_INCORRECT(HttpStatus.BAD_REQUEST, "게시글의 요청 타입이 올바르지 않습니다."),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 글입니다."),
     POST_CANT_LIKE(HttpStatus.BAD_REQUEST, "자신의 글에는 좋아요를 할 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 댓글입니다."),

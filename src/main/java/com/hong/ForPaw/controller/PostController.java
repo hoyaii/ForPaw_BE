@@ -29,9 +29,9 @@ public class PostController {
     }
 
     @GetMapping("/posts")
-    public ResponseEntity<?> findPostList(@RequestParam Type type, Pageable pageable){
+    public ResponseEntity<?> findPostList(){
 
-        PostResponse.FindPostListDTO responseDTO = postService.findPostList(type, pageable);
+        PostResponse.FindAllPostDTO responseDTO = postService.findPostList();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
