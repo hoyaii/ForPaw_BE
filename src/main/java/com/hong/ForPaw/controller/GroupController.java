@@ -103,6 +103,13 @@ public class GroupController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
+    @PostMapping("/groups/{groupId}/notices")
+    public ResponseEntity<?> createNotice(@RequestBody GroupRequest.CreateNoticeDTO requestDTO, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        GroupResponse.CreateNoticeDTO responseDTO = groupService.createNotice(requestDTO, userDetails.getUser().getId(), groupId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
     @PostMapping("/groups/{groupId}/like")
     public ResponseEntity<?> likeGroup(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
