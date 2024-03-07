@@ -176,15 +176,7 @@ public class GroupService {
         List<GroupResponse.NoticeDTO> noticeDTOS = getNoticeDTOS(userId, groupId, pageable);
 
         // 가입자
-        List<Role> roles = Arrays.asList(Role.USER, Role.ADMIN, Role.CREATOR);
-        List<User> users = groupUserRepository.findAllUsersByGroupId(groupId, roles);
-
-        List<GroupResponse.MemberDTO> memberDTOS = users.stream()
-                .map(user -> {
-                    Role role = groupUserRepository.findRoleByUserIdAndGroupId(user.getId(), groupId);
-                    return new GroupResponse.MemberDTO(user.getId(), user.getNickName(), role, user.getProfileURL());
-                })
-                .collect(Collectors.toList());
+        List<GroupResponse.MemberDTO> memberDTOS = getMemberDTOS(groupId);
 
         return new GroupResponse.FindGroupDetailByIdDTO(description, noticeDTOS, meetingDTOS, memberDTOS);
     }
@@ -209,34 +201,6 @@ public class GroupService {
         List<GroupResponse.MeetingDTO> meetingsDTOS = getMeetingDTOS(groupId, pageable);
 
         return new GroupResponse.FindMeetingsDTO(meetingsDTOS);
-    }
-
-    private List<GroupResponse.NoticeDTO> getNoticeDTOS(Long userId, Long groupId, Pageable pageable){
-
-        Page<Post> notices = postRepository.findAllByGroupId(groupId, pageable);
-        List<GroupResponse.NoticeDTO> noticeDTOS = notices.getContent().stream()
-                .map(notice -> {
-                    boolean isRead = postReadStatusRepository.existsByUserIdAndPostId(userId, notice.getId());
-                    return new GroupResponse.NoticeDTO(notice.getId(), notice.getUser().getName(), notice.getCreatedDate(), notice.getTitle(), isRead);
-                })
-                .collect(Collectors.toList());
-
-        return noticeDTOS;
-    }
-
-    private List<GroupResponse.MeetingDTO> getMeetingDTOS(Long groupId, Pageable pageable){
-
-        Page<Meeting> meetings = meetingRepository.findAllByGroupId(groupId, pageable);
-        List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
-                .map(meeting -> {
-                    List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository.findAllUsersByMeetingId(meeting.getId()).stream()
-                            .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL()))
-                            .toList();
-                    return new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
-                })
-                .toList();
-
-        return meetingDTOS;
     }
 
     @Transactional
@@ -634,5 +598,48 @@ public class GroupService {
         if(!meetingRepository.existsById(meetingId)){
             throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
         }
+    }
+
+    private List<GroupResponse.NoticeDTO> getNoticeDTOS(Long userId, Long groupId, Pageable pageable){
+
+        Page<Post> notices = postRepository.findAllByGroupId(groupId, pageable);
+        List<GroupResponse.NoticeDTO> noticeDTOS = notices.getContent().stream()
+                .map(notice -> {
+                    boolean isRead = postReadStatusRepository.existsByUserIdAndPostId(userId, notice.getId());
+                    return new GroupResponse.NoticeDTO(notice.getId(), notice.getUser().getName(), notice.getCreatedDate(), notice.getTitle(), isRead);
+                })
+                .collect(Collectors.toList());
+
+        return noticeDTOS;
+    }
+
+    private List<GroupResponse.MeetingDTO> getMeetingDTOS(Long groupId, Pageable pageable){
+
+        Page<Meeting> meetings = meetingRepository.findAllByGroupId(groupId, pageable);
+        List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
+                .map(meeting -> {
+                    List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository.findAllUsersByMeetingId(meeting.getId()).stream()
+                            .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL()))
+                            .toList();
+                    return new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
+                })
+                .toList();
+
+        return meetingDTOS;
+    }
+
+    private List<GroupResponse.MemberDTO> getMemberDTOS(Long groupId){
+
+        List<Role> roles = Arrays.asList(Role.USER, Role.ADMIN, Role.CREATOR);
+        List<User> users = groupUserRepository.findAllUsersByGroupId(groupId, roles);
+
+        List<GroupResponse.MemberDTO> memberDTOS = users.stream()
+                .map(user -> {
+                    Role role = groupUserRepository.findRoleByUserIdAndGroupId(user.getId(), groupId);
+                    return new GroupResponse.MemberDTO(user.getId(), user.getNickName(), role, user.getProfileURL());
+                })
+                .collect(Collectors.toList());
+
+        return memberDTOS;
     }
 }
