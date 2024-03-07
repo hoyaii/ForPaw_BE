@@ -161,16 +161,16 @@ public class GroupService {
 
     @Transactional
     public GroupResponse.FindGroupDetailByIdDTO findGroupDetailById(Long userId, Long groupId){
-        // 설명 불러옴
+        // 그룹 설명
         String description = groupRepository.findDescriptionById(groupId);
 
-        // 미팅 다 불러옴
+        // 정기 모임
         List<Meeting> meetings = meetingRepository.findAllByGroupId(groupId);
         List<GroupResponse.MeetingDTO> meetingDTOS = meetings.stream()
                 .map(meeting -> new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum()))
                 .toList();
 
-        // 공지사항 다 불러옴
+        // 공지사항
         List<Post> notices = postRepository.findAllByGroupId(groupId);
         List<GroupResponse.NoticeDTO> noticeDTOS = notices.stream()
                 .map(notice -> {
