@@ -49,6 +49,13 @@ public class PostController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
+    @GetMapping("/posts/question")
+    public ResponseEntity<?> findQuestionPost(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @RequestParam("sort") String sort){
+
+        PostResponse.FindAdoptionPostDTO responseDTO = postService.findQuestionPost(page, size, sort);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
     @GetMapping("/posts/{postId}")
     public ResponseEntity<?> findPostById(@PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
