@@ -183,13 +183,7 @@ public class GroupService {
                 .toList();
 
         // 공지사항
-        Page<Post> notices = postRepository.findAllByGroupId(groupId, pageable);
-        List<GroupResponse.NoticeDTO> noticeDTOS = notices.getContent().stream()
-                .map(notice -> {
-                    boolean isRead = postReadStatusRepository.existsByUserIdAndPostId(userId, notice.getId());
-                    return new GroupResponse.NoticeDTO(notice.getId(), notice.getUser().getName(), notice.getCreatedDate(), notice.getTitle(), isRead);
-                })
-                .collect(Collectors.toList());
+        List<GroupResponse.NoticeDTO> noticeDTOS = getNoticeDTOS(userId, groupId, pageable);
 
         // 가입자
         List<Role> roles = Arrays.asList(Role.USER, Role.ADMIN, Role.CREATOR);
@@ -203,6 +197,30 @@ public class GroupService {
                 .collect(Collectors.toList());
 
         return new GroupResponse.FindGroupDetailByIdDTO(description, noticeDTOS, meetingDTOS, memberDTOS);
+    }
+
+    @Transactional
+    public GroupResponse.FindNoticeDTO findNotices(Long userId, Long groupId, Integer page, Integer size, String sort){
+        // 그룹 존재 여부 체크
+        checkGroupExist(groupId);
+
+        Pageable pageable = createPageable(page, size, sort);
+        List<GroupResponse.NoticeDTO> noticeDTOS = getNoticeDTOS(userId, groupId, pageable);
+
+        return new GroupResponse.FindNoticeDTO(noticeDTOS);
+    }
+
+    private List<GroupResponse.NoticeDTO> getNoticeDTOS(Long userId, Long groupId, Pageable pageable){
+
+        Page<Post> notices = postRepository.findAllByGroupId(groupId, pageable);
+        List<GroupResponse.NoticeDTO> noticeDTOS = notices.getContent().stream()
+                .map(notice -> {
+                    boolean isRead = postReadStatusRepository.existsByUserIdAndPostId(userId, notice.getId());
+                    return new GroupResponse.NoticeDTO(notice.getId(), notice.getUser().getName(), notice.getCreatedDate(), notice.getTitle(), isRead);
+                })
+                .collect(Collectors.toList());
+
+        return noticeDTOS;
     }
 
     @Transactional
