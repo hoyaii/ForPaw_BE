@@ -83,9 +83,9 @@ public class GroupController {
     }
 
     @GetMapping("/groups/{groupId}/meetings")
-    public ResponseEntity<?> findMeetings(@PathVariable Long groupId, @RequestParam("page") Integer page, @RequestParam("size") Integer size){
+    public ResponseEntity<?> findMeetings(@PathVariable Long groupId, @RequestParam("page") Integer page, @RequestParam("size") Integer size, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        GroupResponse.FindMeetingsDTO responseDTO = groupService.findMeetings(groupId, page, size);
+        GroupResponse.FindMeetingsDTO responseDTO = groupService.findMeetings(userDetails.getUser().getId(), groupId, page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

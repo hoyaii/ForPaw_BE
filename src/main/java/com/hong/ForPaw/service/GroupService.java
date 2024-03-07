@@ -186,6 +186,9 @@ public class GroupService {
         // 그룹 존재 여부 체크
         checkGroupExist(groupId);
 
+        // 맴버인지 체크
+        checkIsMember(groupId, userId);
+
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.NoticeDTO> noticeDTOS = getNoticeDTOS(userId, groupId, pageable);
 
@@ -193,9 +196,12 @@ public class GroupService {
     }
 
     @Transactional
-    public GroupResponse.FindMeetingsDTO findMeetings(Long groupId, Integer page, Integer size){
+    public GroupResponse.FindMeetingsDTO findMeetings(Long userId, Long groupId, Integer page, Integer size){
         // 그룹 존재 여부 체크
         checkGroupExist(groupId);
+
+        // 맴버인지 체크
+        checkIsMember(groupId, userId);
 
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.MeetingDTO> meetingsDTOS = getMeetingDTOS(groupId, pageable);
