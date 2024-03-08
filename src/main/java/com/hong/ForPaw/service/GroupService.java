@@ -417,6 +417,16 @@ public class GroupService {
                 .build();
         meetingUserRepository.save(meetingUser);
 
+        // 알람 생성
+        List<User> users = groupUserRepository.findAllUsersByGroupIdWithoutMe(groupId, userId);
+
+        for(User user : users){
+            String content = "새로운 정기 모임: " + requestDTO.name();
+            String redirectURL = "groups/" + groupId + "/meetings/"+meeting.getId();
+
+            alarmService.send(user, AlarmType.notice, content, redirectURL);
+        }
+        
         return new GroupResponse.CreateMeetingDTO(meeting.getId());
     }
 
