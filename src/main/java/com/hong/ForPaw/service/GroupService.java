@@ -4,6 +4,7 @@ import com.hong.ForPaw.controller.DTO.GroupRequest;
 import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Group.*;
 import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Post.Type;
@@ -34,6 +35,7 @@ public class GroupService {
     private final MeetingUserRepository meetingUserRepository;
     private final PostRepository postRepository;
     private final PostReadStatusRepository postReadStatusRepository;
+    private final AlarmService alarmService;
     private final EntityManager entityManager;
 
     private Pageable pageableForMy = PageRequest.of(0, 1000);
@@ -304,6 +306,16 @@ public class GroupService {
                 .build();
 
         postRepository.save(notice);
+
+        // 알람 생성
+        List<User> users = groupUserRepository.findAllUsersByGroupIdWithoutMe(groupId, userId);
+
+        for(User user : users){
+            String content = "공지: " + requestDTO.title();
+            String redirectURL = "posts/" + notice.getId() + "/entire";
+
+            alarmService.send(user, AlarmType.notice, content, redirectURL);
+        }
 
         return new GroupResponse.CreateNoticeDTO(notice.getId());
     }
@@ -637,7 +649,7 @@ public class GroupService {
     private List<GroupResponse.MemberDTO> getMemberDTOS(Long groupId){
 
         List<Role> roles = Arrays.asList(Role.USER, Role.ADMIN, Role.CREATOR);
-        List<User> users = groupUserRepository.findAllUsersByGroupId(groupId, roles);
+        List<User> users = groupUserRepository.findAllUsersByGroupIdInRole(groupId, roles);
 
         List<GroupResponse.MemberDTO> memberDTOS = users.stream()
                 .map(user -> {

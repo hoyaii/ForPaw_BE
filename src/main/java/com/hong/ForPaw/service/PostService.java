@@ -242,7 +242,7 @@ public class PostService {
         User postUserRef = entityManager.getReference(User.class, postUserId);
 
         // 알람 생성
-        String redirectURL = "animals/"+postId+"/entire";
+        String redirectURL = "post/"+postId+"/entire";
         alarmService.send(postUserRef, AlarmType.comment, "새로운 댓글: " + requestDTO.content(), redirectURL);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
