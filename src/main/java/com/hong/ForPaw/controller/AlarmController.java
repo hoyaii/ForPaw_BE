@@ -1,5 +1,6 @@
 package com.hong.ForPaw.controller;
 
+import com.hong.ForPaw.controller.DTO.AlarmResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.AlarmService;
@@ -20,10 +21,17 @@ public class AlarmController {
 
     private final AlarmService alarmService;
 
-    @GetMapping(value = "/alarm/connect", produces = "text/event-stream")
+    @GetMapping(value = "/alarms/connect", produces = "text/event-stream")
     public ResponseEntity<?> connectToAlarm(@RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "") String lastEventId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         SseEmitter sseEmitter= alarmService.connectToAlarm(userDetails.getUser().getId().toString(), lastEventId);
         return ResponseEntity.ok(ApiUtils.success(HttpStatus.OK, sseEmitter));
+    }
+
+    @GetMapping("/alarms")
+    public ResponseEntity<?> findAlarms(@AuthenticationPrincipal CustomUserDetails userDetails){
+
+        AlarmResponse.FindAlarmsDTO responseDTO = alarmService.findAlarms(userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }
