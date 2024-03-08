@@ -29,7 +29,7 @@ public class Post extends TimeStamp {
 
     @Column
     @Enumerated(EnumType.STRING)
-    private Type type;
+    private PostType postType;
 
     @Column
     private String title;
@@ -47,10 +47,10 @@ public class Post extends TimeStamp {
     private Integer viewNum = 0;
 
     @Builder
-    public Post(User user, Group group, Type type, String title, String content) {
+    public Post(User user, Group group, PostType postType, String title, String content) {
         this.user = user;
         this.group = group;
-        this.type = type;
+        this.postType = postType;
         this.title = title;
         this.content = content;
     }

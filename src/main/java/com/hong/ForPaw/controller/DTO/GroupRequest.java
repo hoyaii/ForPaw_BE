@@ -1,7 +1,6 @@
 package com.hong.ForPaw.controller.DTO;
 
 import com.hong.ForPaw.domain.Group.Role;
-import com.hong.ForPaw.domain.Post.Type;
 
 import java.time.LocalDateTime;
 import java.util.List;

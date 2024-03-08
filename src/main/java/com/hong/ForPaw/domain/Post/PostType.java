@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public enum Type {
+public enum PostType {
     notice("공지사항"),
     adoption("입양 스토리"),
     protection("임시 보호 스토리"),

@@ -7,7 +7,7 @@ import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Group.*;
 import com.hong.ForPaw.domain.Post.Post;
-import com.hong.ForPaw.domain.Post.Type;
+import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -300,7 +300,7 @@ public class GroupService {
         Post notice = Post.builder()
                 .user(userRef)
                 .group(groupRef)
-                .type(Type.notice)
+                .postType(PostType.notice)
                 .title(requestDTO.title())
                 .content(requestDTO.content())
                 .build();

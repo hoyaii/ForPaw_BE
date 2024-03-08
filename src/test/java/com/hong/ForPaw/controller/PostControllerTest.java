@@ -1,9 +1,8 @@
 package com.hong.ForPaw.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hong.ForPaw.controller.DTO.GroupRequest;
 import com.hong.ForPaw.controller.DTO.PostRequest;
-import com.hong.ForPaw.domain.Post.Type;
+import com.hong.ForPaw.domain.Post.PostType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -17,7 +16,6 @@ import org.springframework.test.web.servlet.ResultActions;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
@@ -40,7 +38,7 @@ class PostControllerTest {
         imageDTOS.add(new PostRequest.PostImageDTO("https://example.com/image1.jpg"));
         imageDTOS.add(new PostRequest.PostImageDTO("https://example.com/image2.jpg"));
 
-        PostRequest.CreatePostDTO requestDTO = new PostRequest.CreatePostDTO("불독 입양 후기 올립니다5!", Type.adoption, "입양 2일차 입니다!", imageDTOS);
+        PostRequest.CreatePostDTO requestDTO = new PostRequest.CreatePostDTO("불독 입양 후기 올립니다5!", PostType.adoption, "입양 2일차 입니다!", imageDTOS);
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when

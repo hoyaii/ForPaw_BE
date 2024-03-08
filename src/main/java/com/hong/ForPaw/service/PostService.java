@@ -4,7 +4,6 @@ import com.hong.ForPaw.controller.DTO.PostRequest;
 import com.hong.ForPaw.controller.DTO.PostResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
-import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Post.*;
 import com.hong.ForPaw.domain.User.Role;
@@ -46,7 +45,7 @@ public class PostService {
 
         Post post = Post.builder()
                 .user(userRef)
-                .type(requestDTO.type())
+                .postType(requestDTO.postType())
                 .title(requestDTO.title())
                 .content(requestDTO.content())
                 .build();
@@ -70,13 +69,13 @@ public class PostService {
         Pageable pageable = createPageable(0, 5, "id");
 
         // 입양 스토리 글 찾기
-        List<PostResponse.PostDTO> adoptionPosts = getPostDTOSByType(Type.adoption, pageable);
+        List<PostResponse.PostDTO> adoptionPosts = getPostDTOSByType(PostType.adoption, pageable);
 
         // 임시 보호 글 찾기
-        List<PostResponse.PostDTO> protectionPosts = getPostDTOSByType(Type.protection, pageable);
+        List<PostResponse.PostDTO> protectionPosts = getPostDTOSByType(PostType.protection, pageable);
 
         // 질문해요 글 찾기
-        List<PostResponse.PostDTO> questionPosts = getPostDTOSByType(Type.question, pageable);
+        List<PostResponse.PostDTO> questionPosts = getPostDTOSByType(PostType.question, pageable);
 
         return new PostResponse.FindAllPostDTO(adoptionPosts, protectionPosts, questionPosts);
     }
@@ -85,7 +84,7 @@ public class PostService {
     public PostResponse.FindAdoptionPostDTO findAdoptionPost(Integer page, Integer size, String sort){
 
         Pageable pageable = createPageable(page, size, sort);
-        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOSByType(Type.adoption, pageable);
+        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOSByType(PostType.adoption, pageable);
 
         if(adoptPostDTOS.isEmpty()){
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
@@ -98,7 +97,7 @@ public class PostService {
     public PostResponse.FindProtectionPostDTO findProtectionPost(Integer page, Integer size, String sort){
 
         Pageable pageable = createPageable(page, size, sort);
-        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOSByType(Type.protection, pageable);
+        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOSByType(PostType.protection, pageable);
 
         if(adoptPostDTOS.isEmpty()){
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
@@ -111,7 +110,7 @@ public class PostService {
     public PostResponse.FindQuestionPostDTO findQuestionPost(Integer page, Integer size, String sort){
 
         Pageable pageable = createPageable(page, size, sort);
-        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOSByType(Type.question, pageable);
+        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOSByType(PostType.question, pageable);
 
         if(adoptPostDTOS.isEmpty()){
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
@@ -302,9 +301,9 @@ public class PostService {
         }
     }
 
-    public List<PostResponse.PostDTO> getPostDTOSByType(Type type, Pageable pageable){
+    public List<PostResponse.PostDTO> getPostDTOSByType(PostType postType, Pageable pageable){
 
-        Page<Post> postPage = postRepository.findByType(type, pageable);
+        Page<Post> postPage = postRepository.findByType(postType, pageable);
 
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
