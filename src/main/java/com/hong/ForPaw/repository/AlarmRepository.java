@@ -12,6 +12,8 @@ import java.util.Optional;
 @Repository
 public interface AlarmRepository extends JpaRepository<Alarm, Long> {
 
-    @Query("SELECT a FROM Alarm a WHERE a.receiver.id = :userId AND a.isRead = false")
-    List<Alarm> findByUserId(@Param("userId") Long userId);
+    List<Alarm> findByUserId(Long userId);
+
+    //@Query("SELECT a FROM Alarm a WHERE a.receiver.id = :userId AND a.isRead = false")
+    //List<Alarm> findByUserId(@Param("userId") Long userId);
 }

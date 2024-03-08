@@ -64,7 +64,7 @@ public class AlarmService {
 
     @Transactional
     public void readAlarm(Long alarmId, Long userId){
-
+        // 존재하지 않으면 에러
         Alarm alarm = alarmRepository.findById(alarmId).orElseThrow(
                 () -> new CustomException(ExceptionCode.ALARM_NOT_FOUND)
         );
