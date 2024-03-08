@@ -7,7 +7,7 @@ public record AnimalDTO(ResponseDTO response) {
     public record ResponseDTO(HeaderDTO header, BodyDTO body) { }
     public record HeaderDTO(Long reqNo, String resultCode, String resultMsg) { }
     public record BodyDTO(ItemsDTO items, Integer numOfRows, Integer pageNo, Integer totalCount) { }
-    public record ItemsDTO(List<ItemDTO> items) { }
+    public record ItemsDTO(List<ItemDTO> item) { }
     public record ItemDTO(String desertionNo, String filename, String happenDt, String happenPlace,
                           String kindCd, String colorCd, String age, String weight, String noticeNo,
                           String noticeSdt, String noticeEdt, String popfile, String processState,

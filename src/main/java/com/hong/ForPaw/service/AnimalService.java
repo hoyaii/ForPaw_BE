@@ -81,7 +81,7 @@ public class AnimalService {
                 System.out.println(response);
 
                 AnimalDTO json = mapper.readValue(response, AnimalDTO.class);
-                List<AnimalDTO.ItemDTO> itemDTOS = json.response().body().items().items();
+                List<AnimalDTO.ItemDTO> itemDTOS = json.response().body().items().item();
                 boolean isShelterUpdate = false; // 보호소 업데이트 여부 (동물을 조회할 때 보호소 나머지 정보도 등장함)
 
                 for (AnimalDTO.ItemDTO itemDTO : itemDTOS) {

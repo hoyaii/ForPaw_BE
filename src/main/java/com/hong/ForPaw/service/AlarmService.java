@@ -4,7 +4,7 @@ import com.hong.ForPaw.controller.DTO.AlarmResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm.Alarm;
-import com.hong.ForPaw.domain.Alarm.Type;
+import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.AlarmRepository;
 import com.hong.ForPaw.repository.EmitterRepository;
@@ -53,7 +53,7 @@ public class AlarmService {
     @Transactional
     public AlarmResponse.FindAlarmsDTO findAlarms(Long userId){
 
-        List<Alarm> alarms = alarmRepository.findByUserId(userId);
+        List<Alarm> alarms = alarmRepository.findByReceiverId(userId);
 
         List<AlarmResponse.AlarmDTO> alarmDTOS = alarms.stream()
                 .map(alarm -> new AlarmResponse.AlarmDTO(alarm.getId(), alarm.getContent(), alarm.getCreatedDate(), alarm.getIsRead() ))
@@ -78,7 +78,7 @@ public class AlarmService {
     }
 
     @Transactional
-    public void send(User receiver, Type alarmType, String content, String redirectURL) {
+    public void send(User receiver, AlarmType alarmType, String content, String redirectURL) {
         // 알림 생성 및 저장
         Alarm alarm = alarmRepository.save(createAlarm(receiver, alarmType, content, redirectURL));
 
@@ -130,12 +130,12 @@ public class AlarmService {
         return userId + "_" + System.currentTimeMillis();
     }
 
-    private Alarm createAlarm(User receiver, Type alarmType, String content, String redirectURL){
+    private Alarm createAlarm(User receiver, AlarmType alarmType, String content, String redirectURL){
         return Alarm.builder()
                 .receiver(receiver)
                 .content(content)
                 .redirectURL(redirectURL)
-                .type(alarmType)
+                .alarmType(alarmType)
                 .build();
     }
 }

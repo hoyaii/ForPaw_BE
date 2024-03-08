@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public enum Type {
+public enum AlarmType {
     comment("새 댓글"),
     notice("공지사항"),
     chatting("새 채팅"),

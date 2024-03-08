@@ -36,14 +36,14 @@ public class Alarm extends TimeStamp {
 
     @Column
     @Enumerated(EnumType.STRING)
-    private Type type;
+    private AlarmType alarmType;
 
     @Builder
-    public Alarm(User receiver, String content, String redirectURL, Type type) {
+    public Alarm(User receiver, String content, String redirectURL, AlarmType alarmType) {
         this.receiver = receiver;
         this.content = content;
         this.redirectURL = redirectURL;
-        this.type = type;
+        this.alarmType = alarmType;
     }
 
     public void updateIsRead(Boolean isRead){

@@ -5,6 +5,7 @@ import com.hong.ForPaw.controller.DTO.PostResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm.Alarm;
+import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Post.*;
 import com.hong.ForPaw.domain.User.Role;
 import com.hong.ForPaw.domain.User.User;
@@ -35,6 +36,7 @@ public class PostService {
     private final CommentLikeRepository commentLikeRepository;
     private final AlarmRepository alarmRepository;
     private final UserRepository userRepository;
+    private final AlarmService alarmService;
     private final EntityManager entityManager;
 
     @Transactional
@@ -240,12 +242,8 @@ public class PostService {
         User postUserRef = entityManager.getReference(User.class, postUserId);
 
         // 알람 생성
-        Alarm alarm = Alarm.builder()
-                .receiver(postUserRef)
-                .content("새로운 댓글: " + requestDTO.content())
-                .build();
-
-        alarmRepository.save(alarm);
+        String redirectURL = "animals/"+postId+"/entire";
+        alarmService.send(postUserRef, AlarmType.comment, "새로운 댓글: " + requestDTO.content(), redirectURL);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
     }
