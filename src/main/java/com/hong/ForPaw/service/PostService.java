@@ -1,11 +1,10 @@
 package com.hong.ForPaw.service;
 
-import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.controller.DTO.PostRequest;
 import com.hong.ForPaw.controller.DTO.PostResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
-import com.hong.ForPaw.domain.Alarm;
+import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Post.*;
 import com.hong.ForPaw.domain.User.Role;
 import com.hong.ForPaw.domain.User.User;
@@ -242,7 +241,7 @@ public class PostService {
 
         // 알람 생성
         Alarm alarm = Alarm.builder()
-                .user(postUserRef)
+                .receiver(postUserRef)
                 .content("새로운 댓글: " + requestDTO.content())
                 .build();
 

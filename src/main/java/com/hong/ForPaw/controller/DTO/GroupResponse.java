@@ -36,7 +36,7 @@ public class GroupResponse {
 
     public record FindMeetingsDTO(List<MeetingDTO> meetings) {}
 
-    public record NoticeDTO(Long id, String name, LocalDateTime date, String title, Boolean isRead) {}
+    public record NoticeDTO(Long id, String name, LocalDateTime date, String title, String content, Boolean isRead) {}
 
     public record MeetingDTO(Long id, String name, LocalDateTime date, String location, Long cost, Integer participantCnt, Integer maxCnt, String profileURL, String description, List<ParticipantDTO> participants) {}
 

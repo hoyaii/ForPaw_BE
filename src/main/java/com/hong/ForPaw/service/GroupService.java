@@ -612,7 +612,7 @@ public class GroupService {
         List<GroupResponse.NoticeDTO> noticeDTOS = notices.getContent().stream()
                 .map(notice -> {
                     boolean isRead = postReadStatusRepository.existsByUserIdAndPostId(userId, notice.getId());
-                    return new GroupResponse.NoticeDTO(notice.getId(), notice.getUser().getName(), notice.getCreatedDate(), notice.getTitle(), isRead);
+                    return new GroupResponse.NoticeDTO(notice.getId(), notice.getUser().getName(), notice.getCreatedDate(), notice.getTitle(), notice.getContent(), isRead);
                 })
                 .collect(Collectors.toList());
 
