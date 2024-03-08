@@ -1,6 +1,8 @@
 package com.hong.ForPaw.service;
 
 import com.hong.ForPaw.controller.DTO.AlarmResponse;
+import com.hong.ForPaw.core.errors.CustomException;
+import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.Type;
 import com.hong.ForPaw.domain.User.User;
@@ -58,6 +60,21 @@ public class AlarmService {
                 .collect(Collectors.toList());
 
         return new AlarmResponse.FindAlarmsDTO(alarmDTOS);
+    }
+
+    @Transactional
+    public void readAlarm(Long alarmId, Long userId){
+
+        Alarm alarm = alarmRepository.findById(alarmId).orElseThrow(
+                () -> new CustomException(ExceptionCode.ALARM_NOT_FOUND)
+        );
+
+        // 권한 없음
+        if(!alarm.getReceiver().getId().equals(userId)){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
+
+        alarm.updateIsRead(true);
     }
 
     @Transactional

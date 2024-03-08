@@ -45,4 +45,8 @@ public class Alarm extends TimeStamp {
         this.redirectURL = redirectURL;
         this.type = type;
     }
+
+    public void updateIsRead(Boolean isRead){
+        this.isRead = isRead;
+    }
 }
