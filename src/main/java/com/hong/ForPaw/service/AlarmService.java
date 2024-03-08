@@ -12,7 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -47,6 +49,18 @@ public class AlarmService {
     }
 
     @Transactional
+    public AlarmResponse.FindAlarmsDTO findAlarms(Long userId){
+
+        List<Alarm> alarms = alarmRepository.findByUserId(userId);
+
+        List<AlarmResponse.AlarmDTO> alarmDTOS = alarms.stream()
+                .map(alarm -> new AlarmResponse.AlarmDTO(alarm.getId(), alarm.getContent(), alarm.getCreatedDate(), alarm.getIsRead() ))
+                .collect(Collectors.toList());
+
+        return new AlarmResponse.FindAlarmsDTO(alarmDTOS);
+    }
+
+    @Transactional
     public void send(User receiver, Type alarmType, String content, String redirectURL) {
         // 알림 생성 및 저장
         Alarm alarm = alarmRepository.save(createAlarm(receiver, alarmType, content, redirectURL));
@@ -63,7 +77,7 @@ public class AlarmService {
                 (key, emitter) -> {
                     // 클라이언트가 서버에 연결된 후 발생한 알림은 캐시에 저장되어, 클라이언트가 다시 연결할 때 놓친 알림을 제공할 수 있음
                     emitterRepository.saveEventCache(key, alarm);
-                    sendNotification(emitter, eventId, key, new AlarmResponse.AlarmDTO(alarm.getId(), alarm.getReceiver().getNickName(), alarm.getContent(), alarm.getCreatedDate()));
+                    sendNotification(emitter, eventId, key, new AlarmResponse.AlarmDTO(alarm.getId(), alarm.getContent(), alarm.getCreatedDate(), false));
                 }
         );
     }

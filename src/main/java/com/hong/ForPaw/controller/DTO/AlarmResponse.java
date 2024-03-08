@@ -8,5 +8,5 @@ public class AlarmResponse {
 
     public record FindAlarmsDTO(List<AlarmDTO> alarms) {}
 
-    public record AlarmDTO(Long id, String name, String content, LocalDateTime createdAt) {}
+    public record AlarmDTO(Long id, String content, LocalDateTime createdAt, boolean isRead) {}
 }
