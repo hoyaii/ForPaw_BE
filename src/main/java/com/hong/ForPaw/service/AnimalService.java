@@ -16,7 +16,9 @@ import com.hong.ForPaw.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -117,8 +119,9 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.FindAnimalListDTO findAnimalList(Pageable pageable, Long userId){
+    public AnimalResponse.FindAnimalListDTO findAnimalList(Integer page, Integer size, String sort, Long userId){
 
+        Pageable pageable =createPageable(page, size, sort);
         Page<Animal> animalPage = animalRepository.findAll(pageable);
 
         // 동물이 데이터베이스상에 없음
@@ -234,8 +237,9 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.FindAnimalListDTO findAnimalListByShelterId(Long userId, Long shelterId, Pageable pageable){
+    public AnimalResponse.FindAnimalListDTO findAnimalListByShelterId(Integer page, Integer size, String sort, Long userId, Long shelterId){
 
+        Pageable pageable = createPageable(page, size, sort);
         Page<Animal> animalPage = animalRepository.findByShelterCareRegNo(shelterId, pageable);
 
         // 보호소에 동물이 없다면
@@ -250,6 +254,10 @@ public class AnimalService {
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindAnimalListDTO(animalDTOS);
+    }
+
+    private Pageable createPageable(int page, int size, String sortProperty) {
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 
     // 동물 이름 지어주는 메서드

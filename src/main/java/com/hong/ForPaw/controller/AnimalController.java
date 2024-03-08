@@ -28,9 +28,9 @@ public class AnimalController {
     }
 
     @GetMapping("/animals")
-    public ResponseEntity<?> findAnimalList(Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findAnimalList(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @RequestParam("sort") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(pageable, userDetails.getUser().getId());
+        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(page, size, sort, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, responseDTO));
     }
 
@@ -71,9 +71,9 @@ public class AnimalController {
     }
 
     @GetMapping("/shelters/{shelterId}/animals")
-    public ResponseEntity<?> findAnimalListByShelterId(@PathVariable Long shelterId, @AuthenticationPrincipal CustomUserDetails userDetails, Pageable pageable){
+    public ResponseEntity<?> findAnimalListByShelterId(@PathVariable Long shelterId, @RequestParam("page") Integer page, @RequestParam("size") Integer size, @RequestParam("sort") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalListByShelterId(userDetails.getUser().getId(), shelterId, pageable);
+        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalListByShelterId(page, size, sort, userDetails.getUser().getId(), shelterId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }
