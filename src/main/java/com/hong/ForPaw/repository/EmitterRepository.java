@@ -10,9 +10,9 @@ public interface EmitterRepository {
 
     void saveEventCache(String emitterId, Object event);
 
-    Map<String, SseEmitter> findAllEmitterStartWithByMemberId(String memberId);
+    Map<String, SseEmitter> findAllEmitterStartWithMemberId(String memberId);
 
-    Map<String, Object> findAllEventCacheStartWithByMemberId(String memberId);
+    Map<String, Object> findAllEventCacheStartWithMemberId(String memberId);
 
     void deleteById(String id);
 
