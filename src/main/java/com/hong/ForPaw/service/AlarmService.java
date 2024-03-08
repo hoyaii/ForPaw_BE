@@ -21,9 +21,9 @@ public class AlarmService {
     private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 60;
 
     @Transactional
-    public SseEmitter connectToAlarm(String username, String lastEventId) {
+    public SseEmitter connectToAlarm(String userId, String lastEventId) {
         // SseEmitter 객체 생성
-        String emitterId = generateIdByTime(username);
+        String emitterId = generateIdByTime(userId);
         SseEmitter emitter = emitterRepository.save(emitterId, new SseEmitter(DEFAULT_TIMEOUT));
 
         // 연결 종료 시 이벤트 리소스 정리
@@ -31,12 +31,12 @@ public class AlarmService {
         emitter.onTimeout(() -> emitterRepository.deleteById(emitterId));
 
         // 503 에러를 방지하기 위한 더미 이벤트 전송
-        String eventId = generateIdByTime(username);
-        sendNotification(emitter, eventId, emitterId, "EventStream Created. [userEmail=" + username + "]");
+        String eventId = generateIdByTime(userId);
+        sendNotification(emitter, eventId, emitterId, "EventStream Created. [userEmail=" + userId + "]");
 
         // 클라이언트가 미수신한 이벤트 처리
         if (hasUnreceivedAlarm(lastEventId)) {
-            sendMissingAlarm(lastEventId, username, emitterId, emitter);
+            sendMissingAlarm(lastEventId, userId, emitterId, emitter);
         }
 
         return emitter;
