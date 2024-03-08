@@ -92,6 +92,7 @@ public class AnimalService {
 
                     Animal animal = Animal.builder()
                             .id(Long.valueOf(itemDTO.desertionNo()))
+                            .name(createAnimalName())
                             .shelter(shelter) // 연관관계 매핑
                             .happenDt(LocalDate.parse(itemDTO.happenDt(), formatter))
                             .happenPlace(itemDTO.happenPlace())
@@ -130,7 +131,7 @@ public class AnimalService {
         }
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> new AnimalResponse.AnimalDTO(animal.getId(), getAnimalName(), animal.getAge()
+                .map(animal -> new AnimalResponse.AnimalDTO(animal.getId(), animal.getName(), animal.getAge()
                         , animal.getGender(), animal.getSpecialMark(), animal.getShelter().getRegionCode().getUprName()+" "+animal.getShelter().getRegionCode().getOrgName()
                         , animal.getInquiryNum(), animal.getLikeNum(), favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
                 .collect(Collectors.toList());
@@ -248,7 +249,7 @@ public class AnimalService {
         }
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> new AnimalResponse.AnimalDTO(animal.getId(), getAnimalName(), animal.getAge()
+                .map(animal -> new AnimalResponse.AnimalDTO(animal.getId(), animal.getName(), animal.getAge()
                         , animal.getGender(), animal.getSpecialMark(), animal.getShelter().getRegionCode().getUprName()+" "+animal.getShelter().getRegionCode().getOrgName()
                         , animal.getInquiryNum(), animal.getLikeNum(), favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
                 .collect(Collectors.toList());
@@ -261,7 +262,7 @@ public class AnimalService {
     }
 
     // 동물 이름 지어주는 메서드
-    public String getAnimalName() {
+    public String createAnimalName() {
         int index = ThreadLocalRandom.current().nextInt(animalNames.length);
         return animalNames[index];
     }

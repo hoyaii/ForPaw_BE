@@ -303,7 +303,7 @@ public class PostService {
 
     public List<PostResponse.PostDTO> getPostDTOSByType(PostType postType, Pageable pageable){
 
-        Page<Post> postPage = postRepository.findByType(postType, pageable);
+        Page<Post> postPage = postRepository.findByPostType(postType, pageable);
 
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {

@@ -424,7 +424,7 @@ public class GroupService {
             String content = "새로운 정기 모임: " + requestDTO.name();
             String redirectURL = "groups/" + groupId + "/meetings/"+meeting.getId();
 
-            alarmService.send(user, AlarmType.notice, content, redirectURL);
+            alarmService.send(user, AlarmType.newMeeting, content, redirectURL);
         }
         
         return new GroupResponse.CreateMeetingDTO(meeting.getId());
