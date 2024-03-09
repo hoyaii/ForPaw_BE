@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -26,6 +28,9 @@ public class Post extends TimeStamp {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")
     private Group group;
+
+    @OneToMany(mappedBy = "post", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<PostImage> images = new ArrayList<>();
 
     @Column
     @Enumerated(EnumType.STRING)
@@ -58,5 +63,11 @@ public class Post extends TimeStamp {
     public void updatePost(String title, String content){
         this.title = title;
         this.content = content;
+    }
+
+    // 연관관계 메서드
+    public void addImage(PostImage postImage){
+        images.add(postImage);
+        postImage.setPost(this);
     }
 }

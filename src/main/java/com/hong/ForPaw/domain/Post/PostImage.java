@@ -29,4 +29,8 @@ public class PostImage extends TimeStamp {
         this.post = post;
         this.imageURL = imageURL;
     }
+
+    public void setPost(Post post){
+        this.post = post;
+    }
 }
