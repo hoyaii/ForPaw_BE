@@ -21,7 +21,14 @@ public class SearchController {
     @GetMapping("/search/all")
     public ResponseEntity<?> searchAll(@RequestParam String keyword){
 
-        SearchResponse.SearchAllDTO responseDTO =searchService.searchAll(keyword);
+        SearchResponse.SearchAllDTO responseDTO = searchService.searchAll(keyword);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
+    @GetMapping("/search/shelters")
+    public ResponseEntity<?> searchShelters(@RequestParam String keyword, @RequestParam Integer page, @RequestParam Integer size){
+
+        SearchResponse.SearchSheltersDTO responseDTO = searchService.searchShelters(keyword, page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }

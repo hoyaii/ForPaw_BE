@@ -71,7 +71,7 @@ public class SearchService {
 
         return new SearchResponse.SearchSheltersDTO(shelterDTOS);
     }
-    
+
     private List<SearchResponse.ShelterDTO> getSheltersByKeyword(String keyword, Pageable pageable){
 
         Page<Shelter> shelterPage = shelterRepository.findByNameContaining(keyword, pageable);
