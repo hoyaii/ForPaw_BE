@@ -30,7 +30,7 @@ public class Post extends TimeStamp {
     private Group group;
 
     @OneToMany(mappedBy = "post", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<PostImage> images = new ArrayList<>();
+    private List<PostImage> postImages = new ArrayList<>();
 
     @Column
     @Enumerated(EnumType.STRING)
@@ -52,7 +52,7 @@ public class Post extends TimeStamp {
     private Integer viewNum = 0;
 
     @Builder
-    public Post(User user, Group group, PostType postType, String title, String content) {
+    public Post(User user, Group group, PostType postType, String title, String content, PostImage... postImages) {
         this.user = user;
         this.group = group;
         this.postType = postType;
@@ -67,7 +67,7 @@ public class Post extends TimeStamp {
 
     // 연관관계 메서드
     public void addImage(PostImage postImage){
-        images.add(postImage);
+        postImages.add(postImage);
         postImage.setPost(this);
     }
 }

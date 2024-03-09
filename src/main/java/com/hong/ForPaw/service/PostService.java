@@ -42,6 +42,12 @@ public class PostService {
 
         User userRef = entityManager.getReference(User.class, userId);
 
+        List<PostImage> postImages = requestDTO.images().stream()
+                .map(postImageDTO -> PostImage.builder()
+                        .imageURL(postImageDTO.imageURL())
+                        .build())
+                .collect(Collectors.toList());
+
         Post post = Post.builder()
                 .user(userRef)
                 .postType(requestDTO.postType())
@@ -49,15 +55,11 @@ public class PostService {
                 .content(requestDTO.content())
                 .build();
 
-        postRepository.save(post);
-
-        List<PostImage> postImages = requestDTO.images().stream()
-                .map(postImageDTO -> PostImage.builder().post(post)
-                        .imageURL(postImageDTO.imageURL())
-                        .build())
-                .collect(Collectors.toList());
+        // PostImage 객체들에 Post 참조 설정
+        postImages.forEach(post::addImage);
 
         postImageRepository.saveAll(postImages);
+        postRepository.save(post);
 
         return new PostResponse.CreatePostDTO(post.getId());
     }
