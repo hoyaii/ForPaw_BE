@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 
 @Repository
 public interface ShelterRepository extends JpaRepository<Shelter, Long> {
@@ -16,5 +18,7 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
     @Query("DELETE FROM Shelter s WHERE s.animalCnt = 0")
     void deleteZeroShelter();
 
-    Page<Shelter> findByAnimalCntGreaterThan(Long animalCnt, Pageable pageable);
+    Page<Shelter> findWithAnimalCntMoreThanOne(Long animalCnt, Pageable pageable);
+
+    Page<Shelter> findByNameContaining(String name, Pageable pageable);
 }

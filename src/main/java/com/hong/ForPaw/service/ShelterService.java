@@ -78,7 +78,7 @@ public class ShelterService {
                 for (ShelterDTO.itemDTO itemDTO : itemDTOS) {
                     com.hong.ForPaw.domain.Shelter shelter = com.hong.ForPaw.domain.Shelter.builder()
                             .regionCode(regionCode)
-                            .careRegNo(itemDTO.careRegNo())
+                            .id(itemDTO.careRegNo())
                             .name(itemDTO.careNm()).build();
 
                     shelterRepository.save(shelter);
@@ -94,12 +94,10 @@ public class ShelterService {
     @Transactional
     public ShelterResponse.FindShelterListDTO findShelterList(Pageable pageable){
 
-        Page<Shelter> shelterPage = shelterRepository.findByAnimalCntGreaterThan(0L, pageable);
+        Page<Shelter> shelterPage = shelterRepository.findWithAnimalCntMoreThanOne(0L, pageable);
 
-        // 보호소에 동물이 없으면 필터링함
         List<ShelterResponse.ShelterDTO> shelterDTOS = shelterPage.getContent().stream()
-                .filter(shelter -> shelter.getAnimalCnt() > 0)
-                .map(shelter -> new ShelterResponse.ShelterDTO(shelter.getCareRegNo(), shelter.getName()))
+                .map(shelter -> new ShelterResponse.ShelterDTO(shelter.getId(), shelter.getName()))
                 .collect(Collectors.toList());
 
         return new ShelterResponse.FindShelterListDTO(shelterDTOS);

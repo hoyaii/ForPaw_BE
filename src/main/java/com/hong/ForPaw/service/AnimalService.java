@@ -34,8 +34,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AnimalService {
 
     private final AnimalRepository animalRepository;
@@ -64,7 +64,7 @@ public class AnimalService {
         List<Shelter> shelters = shelterRepository.findAll();
 
         for(Shelter shelter : shelters){
-            Long careRegNo = shelter.getCareRegNo();
+            Long careRegNo = shelter.getId();
 
             try {
                 String url = baseUrl + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";

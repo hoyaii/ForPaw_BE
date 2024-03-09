@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -48,4 +49,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     void deleteAllByGroupId(Long groupId);
 
     Page<Post> findAllByGroupId(Long groupId, Pageable pageable);
+
+    Page<Post> findByTitleContainingOrContentContaining(String titleKeyword, String contentKeyword, Pageable pageable);
 }

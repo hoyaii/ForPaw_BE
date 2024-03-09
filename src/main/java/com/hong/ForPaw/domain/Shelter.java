@@ -1,6 +1,5 @@
 package com.hong.ForPaw.domain;
 
-import com.hong.ForPaw.domain.RegionCode;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,7 +18,7 @@ public class Shelter {
 
     // 보호소 등록 번호
     @Id
-    private Long careRegNo;
+    private Long id;
 
     @Column
     private String name;
@@ -34,8 +33,8 @@ public class Shelter {
     private Long animalCnt = 0L;
 
     @Builder
-    public Shelter(Long careRegNo, RegionCode regionCode, String name, String careTel, String careAddr) {
-        this.careRegNo = careRegNo;
+    public Shelter(Long id, RegionCode regionCode, String name, String careTel, String careAddr) {
+        this.id = id;
         this.regionCode = regionCode;
         this.name = name;
         this.careTel = careTel;

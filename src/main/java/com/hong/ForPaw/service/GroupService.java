@@ -24,8 +24,8 @@ import org.springframework.data.domain.Sort;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class GroupService {
 
     private final GroupRepository groupRepository;

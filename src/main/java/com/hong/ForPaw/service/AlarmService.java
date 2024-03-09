@@ -19,8 +19,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AlarmService {
 
     private final AlarmRepository alarmRepository;
