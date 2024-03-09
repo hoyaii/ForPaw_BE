@@ -89,6 +89,13 @@ public class PostController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
+    @PostMapping("/posts/{postId}/comments/{commentId}/reply")
+    public ResponseEntity<?> createReply(@RequestParam PostRequest.CreateCommentDTO requestDTO, @PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        PostResponse.CreateCommentDTO responseDTO = postService.createReply(requestDTO, userDetails.getUser().getId(), commentId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
     @PatchMapping("/posts/{postId}/comments/{commentId}")
     public ResponseEntity<?> updateComment(@RequestBody PostRequest.UpdateCommentDTO requestDTO, @PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
