@@ -29,7 +29,8 @@ public class SearchService {
     private final PostImageRepository postImageRepository;
     private final GroupRepository groupRepository;
 
-    public SearchResponse.SearchAllDTO searchAll(String keyword, Long userId){
+    @Transactional
+    public SearchResponse.SearchAllDTO searchAll(String keyword){
 
         Pageable pageable = createPageable(0, 5, "id");
 
