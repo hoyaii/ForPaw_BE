@@ -110,7 +110,7 @@ public class UserService {
                 .password(passwordEncoder.encode(requestDTO.password()))
                 .role(Role.USER)
                 .profileURL(requestDTO.profileURL())
-                .regin(requestDTO.region())
+                .region(requestDTO.region())
                 .subRegion(requestDTO.subRegion())
                 .build();
 
@@ -126,7 +126,7 @@ public class UserService {
                 .email(requestDTO.email())
                 .role(Role.USER)
                 .profileURL(requestDTO.profileURL())
-                .regin(requestDTO.region())
+                .region(requestDTO.region())
                 .subRegion(requestDTO.subRegion())
                 .build();
 
@@ -220,7 +220,7 @@ public class UserService {
     public UserResponse.ProfileDTO findProfile(Long userId){
 
         User user = userRepository.findById(userId).get();
-        return new UserResponse.ProfileDTO(user.getName(), user.getNickName(), user.getRegin(), user.getSubRegion(), user.getProfileURL());
+        return new UserResponse.ProfileDTO(user.getName(), user.getNickName(), user.getRegion(), user.getSubRegion(), user.getProfileURL());
     }
 
     @Transactional

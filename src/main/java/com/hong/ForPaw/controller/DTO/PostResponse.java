@@ -21,7 +21,9 @@ public class PostResponse {
 
     public record FindPostByIdDTO(List<CommentDTO> comments){}
 
-    public record CommentDTO(Long id, String name, String content, LocalDateTime date, String location) {}
+    public record CommentDTO(Long id, String name, String content, LocalDateTime date, String location, List<ReplyDTO> replies) {}
+
+    public record ReplyDTO(Long id, String name, String content, LocalDateTime date, String location) {}
 
     public record CreateCommentDTO(Long id) {}
 

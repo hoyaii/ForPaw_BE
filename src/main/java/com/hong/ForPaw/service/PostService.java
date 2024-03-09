@@ -18,8 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -124,10 +123,26 @@ public class PostService {
         // 존재하지 않는 글인지 체크
         checkPostExist(postId);
 
-        List<Comment> comments = commentRepository.findByPostIdWithUser(postId);
-        List<PostResponse.CommentDTO> commentDTOS = comments.stream()
-                .map(comment -> new PostResponse.CommentDTO(comment.getId(), comment.getUser().getNickName(), comment.getContent(), comment.getCreatedDate(), comment.getUser().getRegin()))
-                .collect(Collectors.toList());
+        // 특정 게시글에 대한 모든 댓글 및 대댓글을 조회
+        List<Comment> comments = commentRepository.findAllCommentsAndRepliesByPostId(postId);
+
+        // CommentDTO는 부모 댓글과 대댓글을 함께 담고 있음
+        List<PostResponse.CommentDTO> commentDTOS = new ArrayList<>();
+        Map<Long, PostResponse.CommentDTO> commentMap = new HashMap<>(); // 대댓글을 해당 부모 댓글에 쉽게 추가하기 위해 만든 Map
+
+        // 댓글과 대댓글 엔티티를 DTO로 변환
+        comments.forEach(comment -> {
+            PostResponse.ReplyDTO replyDTO = new PostResponse.ReplyDTO(comment.getId(), comment.getUser().getNickName(), comment.getContent(), comment.getCreatedDate(), comment.getUser().getRegion());
+
+            // 부모 댓글이면, CommentDTO로 변환하고 commentDTOS 리스트에 추가
+            if (comment.getParent() == null) {
+                PostResponse.CommentDTO commentDTO = new PostResponse.CommentDTO(comment.getId(), comment.getUser().getNickName(), comment.getContent(), comment.getCreatedDate(), comment.getUser().getRegion(), new ArrayList<>());
+                commentDTOS.add(commentDTO);
+                commentMap.put(comment.getId(), commentDTO);
+            } else { // 자식 댓글이면, 부모 댓글의 replies 리스트에 추가
+                commentMap.get(comment.getParent().getId()).replies().add(replyDTO);
+            }
+        });
 
         Post postRef = entityManager.getReference(Post.class, postId);
         User userRef = entityManager.getReference(User.class, userId);
@@ -139,7 +154,6 @@ public class PostService {
                 .build();
 
         postReadStatusRepository.save(postReadStatus);
-
         return new PostResponse.FindPostByIdDTO(commentDTOS);
     }
 

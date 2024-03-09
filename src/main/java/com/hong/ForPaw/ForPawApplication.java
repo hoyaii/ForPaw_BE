@@ -39,7 +39,7 @@ public class ForPawApplication {
 				.password(passwordEncoder.encode("hong1234"))
 				.role(role)
 				.profileURL(profileURL)
-				.regin(region)
+				.region(region)
 				.subRegion(subRegin)
 				.build();
 	}

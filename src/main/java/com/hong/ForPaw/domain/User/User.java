@@ -38,14 +38,14 @@ public class User extends TimeStamp {
 
     // 활동 지역 - 시/도/군
     @Column
-    private String regin;
+    private String region;
 
     // 활동 지역 - 군/구
     @Column
     private String subRegion;
 
     @Builder
-    public User(Long id, String name, String nickName, String email, String password, Role role, String profileURL, String regin, String subRegion) {
+    public User(Long id, String name, String nickName, String email, String password, Role role, String profileURL, String region, String subRegion) {
         this.id = id;
         this.name = name;
         this.nickName = nickName;
@@ -53,7 +53,7 @@ public class User extends TimeStamp {
         this.password = password;
         this.role = role;
         this.profileURL = profileURL;
-        this.regin = regin;
+        this.region = region;
         this.subRegion = subRegion;
     }
 
@@ -63,7 +63,7 @@ public class User extends TimeStamp {
 
     public void updateProfile(String nickName, String region, String subRegion, String profileURL){
         this.nickName = nickName;
-        this.regin = regin;
+        this.region = region;
         this.subRegion = subRegion;
         this.profileURL = profileURL;
     }

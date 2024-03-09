@@ -17,7 +17,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     @Query("SELECT c FROM Comment c JOIN FETCH c.user WHERE c.post.id = :postId")
     List<Comment> findByPostIdWithUser(@Param("postId") Long postId);
 
-    List<Comment> findByPostId(Long postId);
+    // 모든 댓글과 대댓글을 한 번에 가져오기
+    @Query("SELECT c FROM Comment c LEFT JOIN FETCH c.user WHERE c.post.id = :postId ORDER BY c.parent.id ASC NULLS FIRST, c.createdDate ASC")
+    List<Comment> findAllCommentsAndRepliesByPostId(@Param("postId") Long postId);
 
     boolean existsById(Long id);
 
