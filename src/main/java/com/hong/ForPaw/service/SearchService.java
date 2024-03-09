@@ -38,19 +38,7 @@ public class SearchService {
         List<SearchResponse.ShelterDTO> shelterDTOS = getSheltersByKeyword(keyword, pageable);
 
         // 게시글
-        Page<Post> postPage = postRepository.findByTitleContaining(keyword, pageable);
-
-        List<SearchResponse.PostDTO> postDTOS = postPage.getContent().stream()
-                .map(post -> {
-                    List<SearchResponse.PostImageDTO> postImageDTOS = postImageRepository.findByPost(post).stream()
-                            .map(postImage -> new SearchResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
-                            .collect(Collectors.toList());
-
-                        return new SearchResponse.PostDTO(post.getId(), post.getTitle(), post.getContent(), post.getCreatedDate(),
-                                post.getCommentNum(), post.getLikeNum(), postImageDTOS);
-                })
-                .collect(Collectors.toList());
-
+        List<SearchResponse.PostDTO> postDTOS = getPostsByKeyword(keyword, pageable);
 
         // 그룹
         Page<Group> groupPage = groupRepository.findByNameContaining(keyword, pageable);
@@ -72,6 +60,15 @@ public class SearchService {
         return new SearchResponse.SearchSheltersDTO(shelterDTOS);
     }
 
+    @Transactional
+    public SearchResponse.SearchPostsDTO searchPosts(String keyword, Integer page, Integer size){
+
+        Pageable pageable =createPageable(page, size, "id");
+        List<SearchResponse.PostDTO> postDTOS = getPostsByKeyword(keyword, pageable);
+
+        return new SearchResponse.SearchPostsDTO(postDTOS);
+    }
+
     private List<SearchResponse.ShelterDTO> getSheltersByKeyword(String keyword, Pageable pageable){
 
         Page<Shelter> shelterPage = shelterRepository.findByNameContaining(keyword, pageable);
@@ -82,6 +79,24 @@ public class SearchService {
                 .collect(Collectors.toList());
 
         return shelterDTOS;
+    }
+
+    private List<SearchResponse.PostDTO> getPostsByKeyword(String keyword, Pageable pageable){
+
+        Page<Post> postPage = postRepository.findByTitleContaining(keyword, pageable);
+
+        List<SearchResponse.PostDTO> postDTOS = postPage.getContent().stream()
+                .map(post -> {
+                    List<SearchResponse.PostImageDTO> postImageDTOS = postImageRepository.findByPost(post).stream()
+                            .map(postImage -> new SearchResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
+                            .collect(Collectors.toList());
+
+                    return new SearchResponse.PostDTO(post.getId(), post.getTitle(), post.getContent(), post.getCreatedDate(),
+                            post.getCommentNum(), post.getLikeNum(), postImageDTOS);
+                })
+                .collect(Collectors.toList());
+
+        return postDTOS;
     }
 
     private Pageable createPageable(int page, int size, String sortProperty) {
