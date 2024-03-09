@@ -98,8 +98,7 @@ public class ShelterService {
         }
 
         List<ShelterResponse.ShelterDTO> shelterDTOS = shelterPage.getContent().stream()
-                .map(shelter -> new ShelterResponse.ShelterDTO(shelter.getCareRegNo(), shelter.getName(),
-                        shelter.getCareAddr(), shelter.getCareTel()))
+                .map(shelter -> new ShelterResponse.ShelterDTO(shelter.getCareRegNo(), shelter.getName()))
                 .collect(Collectors.toList());
 
         return new ShelterResponse.FindAllSheltersDTO(shelterDTOS);
