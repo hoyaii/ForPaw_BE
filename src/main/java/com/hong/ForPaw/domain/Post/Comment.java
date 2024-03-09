@@ -52,10 +52,9 @@ public class Comment extends TimeStamp {
     }
 
     @Builder
-    public Comment(User user, Post post, String content, Comment parent) {
+    public Comment(User user, Post post, String content) {
         this.user = user;
         this.post = post;
         this.content = content;
-        this.parent = parent;
     }
 }

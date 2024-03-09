@@ -248,6 +248,27 @@ public class PostService {
     }
 
     @Transactional
+    public PostResponse.CreateCommentDTO createReply(PostRequest.CreateCommentDTO requestDTO, Long userId, Long parentCommentId){
+        // 존재하지 않는 댓글에 대댓글을 달려고 하면 에러
+        Comment parent = commentRepository.findById(parentCommentId).orElseThrow(
+                () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
+        );
+        // 작성자
+        User userRef = entityManager.getReference(User.class, userId);
+
+        Comment comment = Comment.builder()
+                .user(userRef)
+                .post(parent.getPost())
+                .content(requestDTO.content())
+                .build();
+
+        parent.addChildComment(comment);
+        commentRepository.save(comment);
+
+        return new PostResponse.CreateCommentDTO(comment.getId());
+    }
+
+    @Transactional
     public void updateComment(PostRequest.UpdateCommentDTO requestDTO, Long commentId, Long userId){
         // 존재하지 않는 댓글인지 체크
         checkCommentExist(commentId);
