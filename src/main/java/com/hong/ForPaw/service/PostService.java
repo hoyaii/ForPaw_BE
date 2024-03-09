@@ -126,20 +126,21 @@ public class PostService {
         // 특정 게시글에 대한 모든 댓글 및 대댓글을 조회
         List<Comment> comments = commentRepository.findAllCommentsAndRepliesByPostId(postId);
 
-        // CommentDTO는 부모 댓글과 대댓글을 함께 담고 있음
+        // CommentDTO는 부모 댓글과 부모의 대댓글을 함께 담고 있음
         List<PostResponse.CommentDTO> commentDTOS = new ArrayList<>();
         Map<Long, PostResponse.CommentDTO> commentMap = new HashMap<>(); // 대댓글을 해당 부모 댓글에 쉽게 추가하기 위해 만든 Map
 
-        // 댓글과 대댓글 엔티티를 DTO로 변환
+        // 댓글과 대댓글 엔티티를 CommentDTO로 변환
         comments.forEach(comment -> {
             PostResponse.ReplyDTO replyDTO = new PostResponse.ReplyDTO(comment.getId(), comment.getUser().getNickName(), comment.getContent(), comment.getCreatedDate(), comment.getUser().getRegion());
 
-            // 부모 댓글이면, CommentDTO로 변환하고 commentDTOS 리스트에 추가
+            // 부모 댓글이면, CommentDTO로 변환해서 commentDTOS 리스트에 추가
             if (comment.getParent() == null) {
                 PostResponse.CommentDTO commentDTO = new PostResponse.CommentDTO(comment.getId(), comment.getUser().getNickName(), comment.getContent(), comment.getCreatedDate(), comment.getUser().getRegion(), new ArrayList<>());
                 commentDTOS.add(commentDTO);
                 commentMap.put(comment.getId(), commentDTO);
-            } else { // 자식 댓글이면, 부모 댓글의 replies 리스트에 추가
+            }
+            else { // 자식 댓글이면, 부모 댓글의 replies 리스트에 추가
                 commentMap.get(comment.getParent().getId()).replies().add(replyDTO);
             }
         });
@@ -262,7 +263,7 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse.CreateCommentDTO createReply(PostRequest.CreateCommentDTO requestDTO, Long userId, Long parentCommentId){
+    public PostResponse.CreateCommentDTO createReply(PostRequest.CreateCommentDTO requestDTO, Long postId, Long userId, Long parentCommentId){
         // 존재하지 않는 댓글에 대댓글을 달려고 하면 에러
         Comment parent = commentRepository.findById(parentCommentId).orElseThrow(
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
@@ -278,6 +279,14 @@ public class PostService {
 
         parent.addChildComment(comment);
         commentRepository.save(comment);
+
+        // 게시글의 댓글 수 증가
+        postRepository.incrementCommentNumById(postId);
+
+        // 알람 생성
+        User parentCommentUserRef = entityManager.getReference(User.class, parent.getUser());  // 댓글 작성자
+        String redirectURL = "post/"+postId+"/entire";
+        alarmService.send(parentCommentUserRef, AlarmType.comment, "새로운 대댓글: " + requestDTO.content(), redirectURL);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
     }
