@@ -35,12 +35,7 @@ public class SearchService {
         Pageable pageable = createPageable(0, 5, "id");
 
         // 보호소
-        Page<Shelter> shelterPage = shelterRepository.findByNameContaining(keyword, pageable);
-
-        List<SearchResponse.ShelterDTO> shelterDTOS = shelterPage.getContent().stream()
-                .filter(shelter -> shelter.getAnimalCnt() > 0)
-                .map(shelter -> new SearchResponse.ShelterDTO(shelter.getId(), shelter.getName()))
-                .collect(Collectors.toList());
+        List<SearchResponse.ShelterDTO> shelterDTOS = getSheltersByKeyword(keyword, pageable);
 
         // 게시글
         Page<Post> postPage = postRepository.findByTitleContaining(keyword, pageable);
@@ -66,6 +61,27 @@ public class SearchService {
                 .collect(Collectors.toList());
 
         return new SearchResponse.SearchAllDTO(shelterDTOS, postDTOS, groupDTOS);
+    }
+
+    @Transactional
+    public SearchResponse.SearchSheltersDTO searchShelters(String keyword, Integer page, Integer size){
+
+        Pageable pageable = createPageable(page, size, "id");
+        List<SearchResponse.ShelterDTO> shelterDTOS = getSheltersByKeyword(keyword, pageable);
+
+        return new SearchResponse.SearchSheltersDTO(shelterDTOS);
+    }
+    
+    private List<SearchResponse.ShelterDTO> getSheltersByKeyword(String keyword, Pageable pageable){
+
+        Page<Shelter> shelterPage = shelterRepository.findByNameContaining(keyword, pageable);
+
+        List<SearchResponse.ShelterDTO> shelterDTOS = shelterPage.getContent().stream()
+                .filter(shelter -> shelter.getAnimalCnt() > 0)
+                .map(shelter -> new SearchResponse.ShelterDTO(shelter.getId(), shelter.getName()))
+                .collect(Collectors.toList());
+
+        return shelterDTOS;
     }
 
     private Pageable createPageable(int page, int size, String sortProperty) {

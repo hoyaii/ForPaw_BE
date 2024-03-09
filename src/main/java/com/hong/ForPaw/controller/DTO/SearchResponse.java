@@ -7,6 +7,8 @@ public class SearchResponse {
 
     public record SearchAllDTO(List<ShelterDTO> shelters, List<PostDTO> posts, List<GroupDTO> groups) {}
 
+    public record SearchSheltersDTO(List<ShelterDTO> shelters) {}
+
     public record ShelterDTO(Long id, String name) {}
 
     public record PostDTO(Long id, String title, String content, LocalDateTime date, Integer commentNum, Integer likeNum, List<PostImageDTO> images){}
