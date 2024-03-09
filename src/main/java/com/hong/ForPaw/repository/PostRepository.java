@@ -50,5 +50,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     Page<Post> findAllByGroupId(Long groupId, Pageable pageable);
 
-    Page<Post> findByTitleContainingOrContentContaining(String titleKeyword, String contentKeyword, Pageable pageable);
+    @Query("SELECT p FROM Post p WHERE p.title LIKE %:title%")
+    Page<Post> findByTitleContaining(@Param("title") String title,Pageable pageable);
 }

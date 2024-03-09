@@ -38,11 +38,12 @@ public class SearchService {
         Page<Shelter> shelterPage = shelterRepository.findByNameContaining(keyword, pageable);
 
         List<SearchResponse.ShelterDTO> shelterDTOS = shelterPage.getContent().stream()
+                .filter(shelter -> shelter.getAnimalCnt() > 0)
                 .map(shelter -> new SearchResponse.ShelterDTO(shelter.getId(), shelter.getName()))
                 .collect(Collectors.toList());
 
         // 게시글
-        Page<Post> postPage = postRepository.findByTitleContainingOrContentContaining(keyword, keyword, pageable);
+        Page<Post> postPage = postRepository.findByTitleContaining(keyword, pageable);
 
         List<SearchResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {

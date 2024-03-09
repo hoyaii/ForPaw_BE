@@ -35,5 +35,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     @Query("SELECT g.description FROM Group g WHERE g.id = :groupId")
     String findDescriptionById(Long groupId);
 
-    Page<Group> findByNameContaining(String name, Pageable pageable);
+    @Query("SELECT g FROM Group g WHERE g.name LIKE %:name%")
+    Page<Group> findByNameContaining(@Param("name") String name, Pageable pageable);
 }

@@ -94,7 +94,7 @@ public class ShelterService {
     @Transactional
     public ShelterResponse.FindShelterListDTO findShelterList(Pageable pageable){
 
-        Page<Shelter> shelterPage = shelterRepository.findWithAnimalCntMoreThanOne(0L, pageable);
+        Page<Shelter> shelterPage = shelterRepository.findByAnimalCntGreaterThan(0L, pageable);
 
         List<ShelterResponse.ShelterDTO> shelterDTOS = shelterPage.getContent().stream()
                 .map(shelter -> new ShelterResponse.ShelterDTO(shelter.getId(), shelter.getName()))
@@ -111,7 +111,7 @@ public class ShelterService {
         );
 
         Pageable pageable = createPageable(page, size, sort);
-        Page<Animal> animalPage = animalRepository.findByShelterCareRegNo(shelterId, pageable);
+        Page<Animal> animalPage = animalRepository.findByShelterId(shelterId, pageable);
 
         List<ShelterResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> new ShelterResponse.AnimalDTO(animal.getId(), animal.getName(), animal.getAge()
