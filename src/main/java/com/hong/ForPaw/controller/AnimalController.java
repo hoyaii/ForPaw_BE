@@ -69,11 +69,4 @@ public class AnimalController {
         animalService.deleteApplyById(applyId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
-
-    @GetMapping("/shelters/{shelterId}/animals")
-    public ResponseEntity<?> findAnimalListByShelterId(@PathVariable Long shelterId, @RequestParam("page") Integer page, @RequestParam("size") Integer size, @RequestParam("sort") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
-
-        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalListByShelterId(page, size, sort, userDetails.getUser().getId(), shelterId);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
-    }
 }
