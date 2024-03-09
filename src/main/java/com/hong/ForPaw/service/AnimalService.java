@@ -237,26 +237,6 @@ public class AnimalService {
         applyRepository.deleteById(applyId);
     }
 
-    @Transactional
-    public AnimalResponse.FindAnimalListDTO findAnimalListByShelterId(Integer page, Integer size, String sort, Long userId, Long shelterId){
-
-        Pageable pageable = createPageable(page, size, sort);
-        Page<Animal> animalPage = animalRepository.findByShelterCareRegNo(shelterId, pageable);
-
-        // 보호소에 동물이 없다면
-        if(animalPage.isEmpty()){
-            throw new CustomException(ExceptionCode.ANIMAL_NOT_EXIST);
-        }
-
-        List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> new AnimalResponse.AnimalDTO(animal.getId(), animal.getName(), animal.getAge()
-                        , animal.getGender(), animal.getSpecialMark(), animal.getShelter().getRegionCode().getUprName()+" "+animal.getShelter().getRegionCode().getOrgName()
-                        , animal.getInquiryNum(), animal.getLikeNum(), favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
-                .collect(Collectors.toList());
-
-        return new AnimalResponse.FindAnimalListDTO(animalDTOS);
-    }
-
     private Pageable createPageable(int page, int size, String sortProperty) {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }

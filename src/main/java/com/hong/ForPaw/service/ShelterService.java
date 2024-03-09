@@ -4,17 +4,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.ShelterResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.RegionCode;
 import com.hong.ForPaw.controller.DTO.ShelterDTO;
 import com.hong.ForPaw.domain.Shelter;
 import com.hong.ForPaw.domain.User.Role;
-import com.hong.ForPaw.repository.RegionCodeRepository;
-import com.hong.ForPaw.repository.ShelterRepository;
-import com.hong.ForPaw.repository.UserRepository;
+import com.hong.ForPaw.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,8 @@ public class ShelterService {
 
     private final ShelterRepository shelterRepository;
     private final RegionCodeRepository regionCodeRepository;
+    private final AnimalRepository animalRepository;
+    private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final UserRepository userRepository;
 
     @Value("${openAPI.service-key2}")
@@ -89,19 +92,36 @@ public class ShelterService {
     }
 
     @Transactional
-    public ShelterResponse.FindAllSheltersDTO findAllShelters(Pageable pageable){
+    public ShelterResponse.FindShelterListDTO findShelterList(Pageable pageable){
 
         Page<Shelter> shelterPage = shelterRepository.findByAnimalCntGreaterThan(0L, pageable);
 
-        if(shelterPage.isEmpty()){
-            throw new CustomException(ExceptionCode.SHELTER_NOT_FOUND);
-        }
-
+        // 보호소에 동물이 없으면 필터링함
         List<ShelterResponse.ShelterDTO> shelterDTOS = shelterPage.getContent().stream()
+                .filter(shelter -> shelter.getAnimalCnt() > 0)
                 .map(shelter -> new ShelterResponse.ShelterDTO(shelter.getCareRegNo(), shelter.getName()))
                 .collect(Collectors.toList());
 
-        return new ShelterResponse.FindAllSheltersDTO(shelterDTOS);
+        return new ShelterResponse.FindShelterListDTO(shelterDTOS);
+    }
+
+    @Transactional
+    public ShelterResponse.FindShelterByIdDTO findShelterById(Long shelterId, Long userId, Integer page, Integer size, String sort){
+        // 보호소가 존재하지 않으면 에러
+        Shelter shelter = shelterRepository.findById(shelterId).orElseThrow(
+                () -> new CustomException(ExceptionCode.SHELTER_NOT_FOUND)
+        );
+
+        Pageable pageable = createPageable(page, size, sort);
+        Page<Animal> animalPage = animalRepository.findByShelterCareRegNo(shelterId, pageable);
+
+        List<ShelterResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
+                .map(animal -> new ShelterResponse.AnimalDTO(animal.getId(), animal.getName(), animal.getAge()
+                        , animal.getGender(), animal.getSpecialMark(), animal.getShelter().getRegionCode().getUprName()+" "+animal.getShelter().getRegionCode().getOrgName()
+                        , animal.getInquiryNum(), animal.getLikeNum(), favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
+                .collect(Collectors.toList());
+
+        return new ShelterResponse.FindShelterByIdDTO(shelter.getCareAddr(), shelter.getCareTel(), animalDTOS);
     }
 
     // 데이터 정합성 문제로 인해 사용 '보류' => 조회 단계에서 animalCnt가 1이상인 것만 조회하도록 수정
@@ -114,5 +134,9 @@ public class ShelterService {
         }
 
         shelterRepository.deleteZeroShelter();
+    }
+
+    private Pageable createPageable(int page, int size, String sortProperty) {
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 }

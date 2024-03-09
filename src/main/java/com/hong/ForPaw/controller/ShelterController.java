@@ -11,8 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
@@ -28,9 +26,9 @@ public class ShelterController {
     }
 
     @GetMapping("/shelters")
-    public ResponseEntity<?> findAllShelters(Pageable pageable){
+    public ResponseEntity<?> findShelterList(Pageable pageable){
 
-        ShelterResponse.FindAllSheltersDTO responseDTO = shelterService.findAllShelters(pageable);
+        ShelterResponse.FindShelterListDTO responseDTO = shelterService.findShelterList(pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, responseDTO));
     }
 
