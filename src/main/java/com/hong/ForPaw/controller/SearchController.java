@@ -31,4 +31,11 @@ public class SearchController {
         SearchResponse.SearchSheltersDTO responseDTO = searchService.searchShelters(keyword, page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
+
+    @GetMapping("/search/posts")
+    public ResponseEntity<?> searchPosts(@RequestParam String keyword, @RequestParam Integer page, @RequestParam Integer size){
+
+        SearchResponse.SearchPostsDTO responseDTO = searchService.searchPosts(keyword, page, size);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
 }
