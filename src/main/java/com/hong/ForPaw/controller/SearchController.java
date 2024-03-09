@@ -38,4 +38,11 @@ public class SearchController {
         SearchResponse.SearchPostsDTO responseDTO = searchService.searchPosts(keyword, page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
+
+    @GetMapping("/search/groups")
+    public ResponseEntity<?> searchGroups(@RequestParam String keyword, @RequestParam Integer page, @RequestParam Integer size){
+
+        SearchResponse.SearchGroupsDTO responseDTO = searchService.searchGroups(keyword, page, size);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
 }
