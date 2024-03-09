@@ -11,6 +11,8 @@ public class SearchResponse {
 
     public record SearchPostsDTO(List<PostDTO> posts) {}
 
+    public record SearchGroupsDTO(List<GroupDTO> groups) {}
+
     public record ShelterDTO(Long id, String name) {}
 
     public record PostDTO(Long id, String title, String content, LocalDateTime date, Integer commentNum, Integer likeNum, List<PostImageDTO> images){}

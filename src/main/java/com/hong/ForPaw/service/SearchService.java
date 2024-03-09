@@ -31,22 +31,17 @@ public class SearchService {
 
     @Transactional
     public SearchResponse.SearchAllDTO searchAll(String keyword){
-
+        // 전체 검색 시 일단 0페이지의 데이터 5개만 보내준다.
         Pageable pageable = createPageable(0, 5, "id");
 
-        // 보호소
-        List<SearchResponse.ShelterDTO> shelterDTOS = getSheltersByKeyword(keyword, pageable);
+        // 보호소 검색
+        List<SearchResponse.ShelterDTO> shelterDTOS = getShelterDTOsByKeyword(keyword, pageable);
 
-        // 게시글
-        List<SearchResponse.PostDTO> postDTOS = getPostsByKeyword(keyword, pageable);
+        // 게시글 검색
+        List<SearchResponse.PostDTO> postDTOS = getPostDTOsByKeyword(keyword, pageable);
 
-        // 그룹
-        Page<Group> groupPage = groupRepository.findByNameContaining(keyword, pageable);
-
-        List<SearchResponse.GroupDTO> groupDTOS = groupPage.getContent().stream()
-                .map(group -> new SearchResponse.GroupDTO(group.getId(), group.getName(), group.getDescription(), group.getParticipationNum(),
-                        group.getCategory(), group.getRegion(), group.getSubRegion(), group.getProfileURL(), group.getLikeNum()))
-                .collect(Collectors.toList());
+        // 그룹 검색
+        List<SearchResponse.GroupDTO> groupDTOS = getGroupDTOsByKeyword(keyword, pageable);
 
         return new SearchResponse.SearchAllDTO(shelterDTOS, postDTOS, groupDTOS);
     }
@@ -55,7 +50,7 @@ public class SearchService {
     public SearchResponse.SearchSheltersDTO searchShelters(String keyword, Integer page, Integer size){
 
         Pageable pageable = createPageable(page, size, "id");
-        List<SearchResponse.ShelterDTO> shelterDTOS = getSheltersByKeyword(keyword, pageable);
+        List<SearchResponse.ShelterDTO> shelterDTOS = getShelterDTOsByKeyword(keyword, pageable);
 
         return new SearchResponse.SearchSheltersDTO(shelterDTOS);
     }
@@ -64,12 +59,21 @@ public class SearchService {
     public SearchResponse.SearchPostsDTO searchPosts(String keyword, Integer page, Integer size){
 
         Pageable pageable =createPageable(page, size, "id");
-        List<SearchResponse.PostDTO> postDTOS = getPostsByKeyword(keyword, pageable);
+        List<SearchResponse.PostDTO> postDTOS = getPostDTOsByKeyword(keyword, pageable);
 
         return new SearchResponse.SearchPostsDTO(postDTOS);
     }
 
-    private List<SearchResponse.ShelterDTO> getSheltersByKeyword(String keyword, Pageable pageable){
+    @Transactional
+    public SearchResponse.SearchGroupsDTO searchGroups(String keyword, Integer page, Integer size){
+
+        Pageable pageable =createPageable(page, size, "id");
+        List<SearchResponse.GroupDTO> groupDTOS = getGroupDTOsByKeyword(keyword, pageable);
+
+        return new SearchResponse.SearchGroupsDTO(groupDTOS);
+    }
+
+    private List<SearchResponse.ShelterDTO> getShelterDTOsByKeyword(String keyword, Pageable pageable){
 
         Page<Shelter> shelterPage = shelterRepository.findByNameContaining(keyword, pageable);
 
@@ -81,7 +85,7 @@ public class SearchService {
         return shelterDTOS;
     }
 
-    private List<SearchResponse.PostDTO> getPostsByKeyword(String keyword, Pageable pageable){
+    private List<SearchResponse.PostDTO> getPostDTOsByKeyword(String keyword, Pageable pageable){
 
         Page<Post> postPage = postRepository.findByTitleContaining(keyword, pageable);
 
@@ -97,6 +101,18 @@ public class SearchService {
                 .collect(Collectors.toList());
 
         return postDTOS;
+    }
+
+    private List<SearchResponse.GroupDTO> getGroupDTOsByKeyword(String keyword, Pageable pageable){
+
+        Page<Group> groupPage = groupRepository.findByNameContaining(keyword, pageable);
+
+        List<SearchResponse.GroupDTO> groupDTOS = groupPage.getContent().stream()
+                .map(group -> new SearchResponse.GroupDTO(group.getId(), group.getName(), group.getDescription(), group.getParticipationNum(),
+                        group.getCategory(), group.getRegion(), group.getSubRegion(), group.getProfileURL(), group.getLikeNum()))
+                .collect(Collectors.toList());
+
+        return groupDTOS;
     }
 
     private Pageable createPageable(int page, int size, String sortProperty) {
