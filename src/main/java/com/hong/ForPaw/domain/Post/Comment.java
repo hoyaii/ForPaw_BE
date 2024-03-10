@@ -44,11 +44,15 @@ public class Comment extends TimeStamp {
     // 연관 관계 메서드
     public void addChildComment(Comment child) {
         this.children.add(child);
-        child.setParent(this);
+        child.updateParent(this);
     }
 
-    public void setParent(Comment parent) {
+    public void updateParent(Comment parent) {
         this.parent = parent;
+    }
+
+    public void updateComment(String content){
+        this.content = content;
     }
 
     @Builder

@@ -292,30 +292,34 @@ public class PostService {
 
     @Transactional
     public void updateComment(PostRequest.UpdateCommentDTO requestDTO, Long commentId, User user){
-        // 존재하지 않는 댓글인지 체크
-        checkCommentExist(commentId);
+        // 존재하지 않는 댓글이면 에러
+        Comment comment = commentRepository.findById(commentId).orElseThrow(
+                () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
+        );
 
         // 수정 권한 체크
-        checkCommentAuthority(commentId, user);
+        checkCommentAuthority(comment.getUser(), user);
 
-        commentRepository.updateCommentContent(commentId, requestDTO.content());
+        comment.updateComment(requestDTO.content());
     }
 
     // soft delete를 구현하기 전에는 부모 댓글 삭제시, 대댓글까지 모두 삭제 되도록 구현
     @Transactional
     public void deleteComment(Long postId, Long commentId, User user){
-        // 존재하지 않는 댓글인지 체크
-        checkCommentExist(commentId);
+        // 존재하지 않는 댓글이면 에러
+        Comment comment = commentRepository.findById(commentId).orElseThrow(
+                () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
+        );
 
         // 수정 권한 체크
-        checkCommentAuthority(commentId, user);
+        checkCommentAuthority(comment.getUser(), user);
 
         // 댓글 및 관련 대댓글 삭제 (CascadeType.ALL에 의해 처리됨)
         commentRepository.deleteById(commentId);
         commentLikeRepository.deleteAllByCommentId(commentId);
 
         // 게시글의 댓글 수 감소
-        Long childNum = commentRepository.countByParentId(commentId);
+        Integer childNum = comment.getChildren().size();
         postRepository.decrementCommentNumById(postId, childNum + 1);
     }
 
@@ -383,16 +387,13 @@ public class PostService {
         }
     }
 
-    private void checkCommentAuthority(Long commentId, User user) {
+    private void checkCommentAuthority(User writer, User accessor) {
         // 관리자면 수정 가능
-        if(user.getRole().equals(Role.ADMIN)){
+        if(accessor.getRole().equals(Role.ADMIN)){
             return;
         }
 
-        Long commentUserId = commentRepository.findUserIdByCommentId(commentId)
-                .orElseThrow( () -> new CustomException(ExceptionCode.USER_FORBIDDEN));
-
-        if(!commentUserId.equals(user.getId())){
+        if(!writer.getId().equals(accessor.getId())){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
     }
