@@ -11,7 +11,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -53,8 +52,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE p.title LIKE %:title%")
     Page<Post> findByTitleContaining(@Param("title") String title,Pageable pageable);
 
-    @Query(value = "SELECT p FROM Post p JOIN FETCH p.postImages WHERE p.postType = :postType",
+    @Query(value = "SELECT p FROM Post p JOIN FETCH p.postImages JOIN FETCH p.user WHERE p.postType = :postType",
             countQuery = "SELECT count(p) FROM Post p WHERE p.postType = :postType")
-    Page<Post> findByPostTypeWithImages(@Param("postType") PostType postType, Pageable pageable);
-
+    Page<Post> findByPostTypeWithImagesAndUser(@Param("postType") PostType postType, Pageable pageable);
 }

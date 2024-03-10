@@ -390,7 +390,7 @@ public class PostService {
 
     public List<PostResponse.PostDTO> getPostDTOsByType(PostType postType, Pageable pageable){
         // N+1 문제 방지를 위해 이미지까지 다 불러옴
-        Page<Post> postPage = postRepository.findByPostTypeWithImages(postType, pageable);
+        Page<Post> postPage = postRepository.findByPostTypeWithImagesAndUser(postType, pageable);
 
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
@@ -398,7 +398,7 @@ public class PostService {
                             .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
                             .collect(Collectors.toList());
 
-                    return new PostResponse.PostDTO(post.getId(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), post.getLikeNum(), postImageDTOS);
+                    return new PostResponse.PostDTO(post.getId(), post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), post.getLikeNum(), postImageDTOS);
                 })
                 .collect(Collectors.toList());
 
