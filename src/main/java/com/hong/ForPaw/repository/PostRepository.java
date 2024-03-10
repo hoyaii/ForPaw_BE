@@ -57,8 +57,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             countQuery = "SELECT count(p) FROM Post p WHERE p.postType = :postType")
     Page<Post> findByPostTypeWithImagesAndUser(@Param("postType") PostType postType, Pageable pageable);
 
-    @Query("SELECT p FROM Post p JOIN FETCH p.postImages JOIN FETCH p.user WHERE p.parent.id = :parentId")
+    @Query("SELECT distinct p FROM Post p JOIN FETCH p.postImages JOIN FETCH p.user WHERE p.parent.id = :parentId")
     List<Post> findByParentIdWithImagesAndUser(@Param("parentId") Long parentId);
-
-    List<Post> findByParentId(Long parentId);
 }

@@ -29,7 +29,7 @@ public class Post extends TimeStamp {
     @JoinColumn(name = "group_id")
     private Group group;
 
-    @OneToMany(mappedBy = "post", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostImage> postImages = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)

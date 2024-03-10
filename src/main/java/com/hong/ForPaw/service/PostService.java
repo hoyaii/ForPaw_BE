@@ -200,7 +200,7 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse.FIndQnaByIdDTO findQnaById(Long postId, Long userId){
+    public PostResponse.FIndQnaByIdDTO findQnaById(Long postId){
 
         List<PostResponse.AnswerDTO> postDTOS = postRepository.findByParentIdWithImagesAndUser(postId).stream()
                 .map(post -> {

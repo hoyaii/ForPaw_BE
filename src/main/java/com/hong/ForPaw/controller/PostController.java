@@ -71,7 +71,7 @@ public class PostController {
     @GetMapping("/posts/{postId}/qna")
     public ResponseEntity<?> findQnaById(@PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        PostResponse.FIndQnaByIdDTO responseDTO = postService.findQnaById(postId, userDetails.getUser().getId());
+        PostResponse.FIndQnaByIdDTO responseDTO = postService.findQnaById(postId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
