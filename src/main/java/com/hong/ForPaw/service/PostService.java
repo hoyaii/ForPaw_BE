@@ -55,11 +55,47 @@ public class PostService {
                 .content(requestDTO.content())
                 .build();
 
-        // PostImage 객체들에 Post 참조 설정
+        // 연관관계 설정
         postImages.forEach(post::addImage);
+
         postRepository.save(post);
 
         return new PostResponse.CreatePostDTO(post.getId());
+    }
+
+    @Transactional
+    public PostResponse.CreateAnswerDTO createAnswer(PostRequest.CreateAnswerDTO requestDTO, Long parentPostId, Long userId){
+        // 존재하지 않는 질문글에 답변을 달려고 하면 에러
+        Post parent = postRepository.findById(parentPostId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
+        );
+
+        User userRef = entityManager.getReference(User.class, userId);
+
+        List<PostImage> postImages = requestDTO.images().stream()
+                .map(postImageDTO -> PostImage.builder()
+                        .imageURL(postImageDTO.imageURL())
+                        .build())
+                .collect(Collectors.toList());
+
+        Post post = Post.builder()
+                .user(userRef)
+                .postType(PostType.answer)
+                .title(parent.getTitle() + "(답변)")
+                .content(requestDTO.content())
+                .build();
+
+        // 연관관계 설정
+        postImages.forEach(post::addImage);
+        parent.addChildPost(post);
+
+        postRepository.save(post);
+
+        // 알림 생성
+        String redirectURL = "post/"+parentPostId+"/entire";
+        alarmService.send(parent.getUser(), AlarmType.answer, "새로운 답변: " + requestDTO.content(), redirectURL);
+
+        return new PostResponse.CreateAnswerDTO(post.getId());
     }
 
     @Transactional

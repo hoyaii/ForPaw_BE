@@ -59,7 +59,7 @@ public class Post extends TimeStamp {
     private Integer viewNum = 0;
 
     @Builder
-    public Post(User user, Group group, PostType postType, String title, String content, PostImage... postImages) {
+    public Post(User user, Group group, PostType postType, String title, String content) {
         this.user = user;
         this.group = group;
         this.postType = postType;
