@@ -161,17 +161,22 @@ public class PostService {
 
     @Transactional
     public PostResponse.FindPostByIdDTO findPostById(Long postId, Long userId){
-        // 존재하지 않는 글인지 체크
-        checkPostExist(postId);
+        // 존재하지 않는 게시글이면 에러 발생
+        Post post = postRepository.findByIdWithUserAndPostImages(postId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
+        );
 
-        // 특정 게시글에 대한 모든 댓글 및 대댓글을 조회
-        List<Comment> comments = commentRepository.findAllCommentsAndRepliesByPostId(postId);
+        // 게시글 이미지 DTO
+        List<PostResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
+                .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
+                .collect(Collectors.toList());
 
-        // CommentDTO는 부모 댓글과 부모의 대댓글을 함께 담고 있음
+        // 댓글 DTO
         List<PostResponse.CommentDTO> commentDTOS = new ArrayList<>();
-        Map<Long, PostResponse.CommentDTO> commentMap = new HashMap<>(); // 대댓글을 해당 부모 댓글에 쉽게 추가하기 위해 만든 Map
+        Map<Long, PostResponse.CommentDTO> commentMap = new HashMap<>(); // map을 사용해서 대댓글을 해당 부모 댓글에 추가
 
-        // 댓글과 대댓글 엔티티를 CommentDTO로 변환
+        List<Comment> comments = commentRepository.findAllCommentsAndRepliesByPostId(postId); // 특정 게시글에 대한 모든 댓글 및 대댓글을 조회
+
         comments.forEach(comment -> {
             PostResponse.ReplyDTO replyDTO = new PostResponse.ReplyDTO(comment.getId(), comment.getUser().getNickName(), comment.getContent(), comment.getCreatedDate(), comment.getUser().getRegion());
 
@@ -186,33 +191,42 @@ public class PostService {
             }
         });
 
-        Post postRef = entityManager.getReference(Post.class, postId);
-        User userRef = entityManager.getReference(User.class, userId);
-
         // 게시글 읽음 처리 (화면에서 게시글 확인 여부가 필요한 곳이 있음)
+        User userRef = entityManager.getReference(User.class, userId);
         PostReadStatus postReadStatus = PostReadStatus.builder()
-                .post(postRef)
+                .post(post)
                 .user(userRef)
                 .build();
 
         postReadStatusRepository.save(postReadStatus);
-        return new PostResponse.FindPostByIdDTO(commentDTOS);
+
+        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), post.getLikeNum(), postImageDTOS, commentDTOS);
     }
 
     @Transactional
     public PostResponse.FIndQnaByIdDTO findQnaById(Long postId){
+        // 존재하지 않는 게시글이면 에러 발생
+        Post post = postRepository.findByIdWithUserAndPostImages(postId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
+        );
 
-        List<PostResponse.AnswerDTO> postDTOS = postRepository.findByParentIdWithImagesAndUser(postId).stream()
-                .map(post -> {
-                    List<PostResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
+        // 게시글 이미지 DTO
+        List<PostResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
+                .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
+                .collect(Collectors.toList());
+
+        // 답변 게시글 DTO
+        List<PostResponse.AnswerDTO> answerDTOS = postRepository.findByParentIdWithImagesAndUser(postId).stream()
+                .map(answer -> {
+                    List<PostResponse.PostImageDTO> answerImageDTOS = answer.getPostImages().stream()
                             .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
                             .collect(Collectors.toList());
 
-                    return new PostResponse.AnswerDTO(post.getId(), post.getUser().getNickName(), post.getContent(), post.getCreatedDate(), postImageDTOS);
+                    return new PostResponse.AnswerDTO(answer.getId(), answer.getUser().getNickName(), answer.getContent(), answer.getCreatedDate(), answerImageDTOS);
                 })
                 .collect(Collectors.toList());
 
-        return new PostResponse.FIndQnaByIdDTO(postDTOS);
+        return new PostResponse.FIndQnaByIdDTO(post.getUser().getNickName(), post.getContent(), post.getCreatedDate(), postImageDTOS, answerDTOS);
     }
 
     @Transactional
