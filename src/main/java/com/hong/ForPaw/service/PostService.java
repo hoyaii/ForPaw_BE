@@ -159,12 +159,12 @@ public class PostService {
     }
 
     @Transactional
-    public void updatePost(PostRequest.UpdatePostDTO requestDTO, Long userId, Long postId){
+    public void updatePost(PostRequest.UpdatePostDTO requestDTO, User user, Long postId){
         // 존재하지 않는 글인지 체크
         checkPostExist(postId);
 
         // 수정 권한 체크
-        checkPostAuthority(postId, userId);
+        checkPostAuthority(postId, user);
 
         postRepository.updatePostTitleAndContent(postId, requestDTO.title(), requestDTO.content());
 
@@ -189,12 +189,12 @@ public class PostService {
     }
 
     @Transactional
-    public void deletePost(Long postId, Long userId){
+    public void deletePost(Long postId, User user){
         // 존재하지 않는 글인지 체크
         checkPostExist(postId);
 
         // 수정 권한 체크
-        checkPostAuthority(postId, userId);
+        checkPostAuthority(postId, user);
 
         postLikeRepository.deleteAllByPostId(postId);
         postReadStatusRepository.deleteAllByPostId(postId);
@@ -291,23 +291,23 @@ public class PostService {
     }
 
     @Transactional
-    public void updateComment(PostRequest.UpdateCommentDTO requestDTO, Long commentId, Long userId){
+    public void updateComment(PostRequest.UpdateCommentDTO requestDTO, Long commentId, User user){
         // 존재하지 않는 댓글인지 체크
         checkCommentExist(commentId);
 
         // 수정 권한 체크
-        checkCommentAuthority(commentId, userId);
+        checkCommentAuthority(commentId, user);
 
         commentRepository.updateCommentContent(commentId, requestDTO.content());
     }
 
     @Transactional
-    public void deleteComment(Long postId, Long commentId, Long userId){
+    public void deleteComment(Long postId, Long commentId, User user){
         // 존재하지 않는 댓글인지 체크
         checkCommentExist(commentId);
 
         // 수정 권한 체크
-        checkCommentAuthority(commentId, userId);
+        checkCommentAuthority(commentId, user);
 
         // 댓글 및 관련 대댓글 삭제 (CascadeType.ALL에 의해 처리됨)
         commentRepository.deleteById(commentId);
@@ -346,7 +346,7 @@ public class PostService {
     }
 
     public List<PostResponse.PostDTO> getPostDTOsByType(PostType postType, Pageable pageable){
-
+        // N+1 문제 방지를 위해 이미지까지 다 불러옴
         Page<Post> postPage = postRepository.findByPostTypeWithImages(postType, pageable);
 
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
@@ -366,9 +366,9 @@ public class PostService {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 
-    private void checkPostAuthority(Long postId, Long userId){
+    private void checkPostAuthority(Long postId, User user){
         // 관리자면 수정 가능
-        if(userRepository.findRoleById(userId).orElse(Role.USER).equals(Role.ADMIN)){
+        if(user.getRole().equals(Role.ADMIN)){
             return;
         }
 
@@ -376,21 +376,21 @@ public class PostService {
         Long postUserId = postRepository.findUserIdByPostId(postId)
                 .orElseThrow( () -> new CustomException(ExceptionCode.USER_FORBIDDEN));
 
-        if(!postUserId.equals(userId)){
+        if(!postUserId.equals(user.getId())){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
     }
 
-    private void checkCommentAuthority(Long commentId, Long userId) {
+    private void checkCommentAuthority(Long commentId, User user) {
         // 관리자면 수정 가능
-        if(userRepository.findRoleById(userId).orElse(Role.USER).equals(Role.ADMIN)){
+        if(user.getRole().equals(Role.ADMIN)){
             return;
         }
 
         Long commentUserId = commentRepository.findUserIdByCommentId(commentId)
                 .orElseThrow( () -> new CustomException(ExceptionCode.USER_FORBIDDEN));
 
-        if(!commentUserId.equals(userId)){
+        if(!commentUserId.equals(user.getId())){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
     }

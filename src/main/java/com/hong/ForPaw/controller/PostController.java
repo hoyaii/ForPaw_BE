@@ -64,14 +64,14 @@ public class PostController {
     @PatchMapping("/posts/{postId}")
     public ResponseEntity<?> updatePost(@RequestBody PostRequest.UpdatePostDTO requestDTO, @PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        postService.updatePost(requestDTO, userDetails.getUser().getId(), postId);
+        postService.updatePost(requestDTO, userDetails.getUser(), postId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @DeleteMapping("/posts/{postId}")
     public ResponseEntity<?> deletePost(@PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        postService.deletePost(postId, userDetails.getUser().getId());
+        postService.deletePost(postId, userDetails.getUser());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
@@ -99,14 +99,14 @@ public class PostController {
     @PatchMapping("/posts/{postId}/comments/{commentId}")
     public ResponseEntity<?> updateComment(@RequestBody PostRequest.UpdateCommentDTO requestDTO, @PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        postService.updateComment(requestDTO, commentId, userDetails.getUser().getId());
+        postService.updateComment(requestDTO, commentId, userDetails.getUser());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @DeleteMapping("/posts/{postId}/comments/{commentId}")
     public ResponseEntity<?> deleteComment(@PathVariable Long postId, @PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        postService.deleteComment(postId, commentId, userDetails.getUser().getId());
+        postService.deleteComment(postId, commentId, userDetails.getUser());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
