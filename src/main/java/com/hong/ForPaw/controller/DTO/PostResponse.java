@@ -11,17 +11,21 @@ public class PostResponse {
 
     public record FindAllPostDTO(List<PostDTO> adoptions, List<PostDTO> protections, List<PostDTO> questions) {}
 
-    public record FindAdoptionPostDTO(List<PostDTO> adoptions) {}
+    public record FindAdoptionPostsDTO(List<PostDTO> adoptions) {}
 
-    public record FindProtectionPostDTO(List<PostDTO> protections) {}
+    public record FindProtectionPostsDTO(List<PostDTO> protections) {}
 
-    public record FindQuestionPostDTO(List<PostDTO> questions) {}
+    public record FindQnaPostsDTO(List<PostDTO> questions) {}
 
     public record PostDTO(Long id, String name, String title, String content, LocalDateTime date, Integer commentNum, Integer likeNum, List<PostImageDTO> images){}
 
     public record PostImageDTO(Long id, String imageURL) {}
 
     public record FindPostByIdDTO(List<CommentDTO> comments){}
+
+    public record FIndQnaByIdDTO(List<AnswerDTO> answers) {}
+
+    public record AnswerDTO(Long id, String name, String content, LocalDateTime date, List<PostImageDTO> images) {}
 
     public record CommentDTO(Long id, String name, String content, LocalDateTime date, String location, List<ReplyDTO> replies) {}
 

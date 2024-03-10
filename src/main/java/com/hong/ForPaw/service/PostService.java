@@ -116,7 +116,7 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse.FindAdoptionPostDTO findAdoptionPost(Integer page, Integer size, String sort){
+    public PostResponse.FindAdoptionPostsDTO findAdoptionPost(Integer page, Integer size, String sort){
 
         Pageable pageable = createPageable(page, size, sort);
         List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.adoption, pageable);
@@ -125,11 +125,11 @@ public class PostService {
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
         }
 
-        return new PostResponse.FindAdoptionPostDTO(adoptPostDTOS);
+        return new PostResponse.FindAdoptionPostsDTO(adoptPostDTOS);
     }
 
     @Transactional
-    public PostResponse.FindProtectionPostDTO findProtectionPost(Integer page, Integer size, String sort){
+    public PostResponse.FindProtectionPostsDTO findProtectionPost(Integer page, Integer size, String sort){
 
         Pageable pageable = createPageable(page, size, sort);
         List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.protection, pageable);
@@ -138,11 +138,11 @@ public class PostService {
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
         }
 
-        return new PostResponse.FindProtectionPostDTO(adoptPostDTOS);
+        return new PostResponse.FindProtectionPostsDTO(adoptPostDTOS);
     }
 
     @Transactional
-    public PostResponse.FindQuestionPostDTO findQuestionPost(Integer page, Integer size, String sort){
+    public PostResponse.FindQnaPostsDTO findQuestionPost(Integer page, Integer size, String sort){
 
         Pageable pageable = createPageable(page, size, sort);
         List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.question, pageable);
@@ -151,7 +151,7 @@ public class PostService {
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
         }
 
-        return new PostResponse.FindQuestionPostDTO(adoptPostDTOS);
+        return new PostResponse.FindQnaPostsDTO(adoptPostDTOS);
     }
 
     @Transactional
@@ -192,6 +192,22 @@ public class PostService {
 
         postReadStatusRepository.save(postReadStatus);
         return new PostResponse.FindPostByIdDTO(commentDTOS);
+    }
+
+    @Transactional
+    public PostResponse.FIndQnaByIdDTO findQnaById(Long postId, Long userId){
+
+        List<PostResponse.AnswerDTO> postDTOS = postRepository.findByParentIdWithImagesAndUser(postId).stream()
+                .map(post -> {
+                    List<PostResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
+                            .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
+                            .collect(Collectors.toList());
+
+                    return new PostResponse.AnswerDTO(post.getId(), post.getUser().getNickName(), post.getContent(), post.getCreatedDate(), postImageDTOS);
+                })
+                .collect(Collectors.toList());
+
+        return new PostResponse.FIndQnaByIdDTO(postDTOS);
     }
 
     @Transactional
