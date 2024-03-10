@@ -7,7 +7,7 @@ import java.util.List;
 
 public class PostRequest {
 
-    public record CreatePostDTO(String title, PostType postType, String content, List<PostImageDTO> images) {}
+    public record CreatePostDTO(String title, PostType type, String content, List<PostImageDTO> images) {}
 
     public record PostImageDTO(String imageURL) {}
 

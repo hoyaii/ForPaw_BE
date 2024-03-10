@@ -42,4 +42,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     void decrementLikeNumById(@Param("commentId") Long commentId);
 
     void deleteAllByPostId(Long postId);
+
+    @Query("SELECT COUNT(c) FROM Comment c WHERE c.parent.id = :parentId")
+    Long countByParentId(@Param("parentId") Long parentId);
 }

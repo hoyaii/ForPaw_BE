@@ -50,7 +50,7 @@ public class PostService {
 
         Post post = Post.builder()
                 .user(userRef)
-                .postType(requestDTO.postType())
+                .postType(requestDTO.type())
                 .title(requestDTO.title())
                 .content(requestDTO.content())
                 .build();
@@ -301,6 +301,7 @@ public class PostService {
         commentRepository.updateCommentContent(commentId, requestDTO.content());
     }
 
+    // soft delete를 구현하기 전에는 부모 댓글 삭제시, 대댓글까지 모두 삭제 되도록 구현
     @Transactional
     public void deleteComment(Long postId, Long commentId, User user){
         // 존재하지 않는 댓글인지 체크
@@ -314,7 +315,8 @@ public class PostService {
         commentLikeRepository.deleteAllByCommentId(commentId);
 
         // 게시글의 댓글 수 감소
-        postRepository.decrementCommentNumById(postId);
+        Long childNum = commentRepository.countByParentId(commentId);
+        postRepository.decrementCommentNumById(postId, childNum + 1);
     }
 
     @Transactional
