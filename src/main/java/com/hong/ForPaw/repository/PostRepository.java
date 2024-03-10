@@ -2,6 +2,7 @@ package com.hong.ForPaw.repository;
 
 import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Post.PostType;
+import com.hong.ForPaw.domain.User.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -42,9 +43,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p.user.id FROM Post p WHERE p.id = :postId")
     Optional<Long> findUserIdByPostId(@Param("postId") Long postId);
 
-    @Modifying
-    @Query("UPDATE Post p SET p.title = :title, p.content = :content WHERE p.id = :postId")
-    void updatePostTitleAndContent(@Param("postId") Long postId, @Param("title") String title, @Param("content") String content);
+    @Query("SELECT p.user FROM Post p WHERE p.id = :postId")
+    User findUserByPostId(Long postId);
 
     void deleteAllByGroupId(Long groupId);
 

@@ -160,13 +160,15 @@ public class PostService {
 
     @Transactional
     public void updatePost(PostRequest.UpdatePostDTO requestDTO, User user, Long postId){
-        // 존재하지 않는 글인지 체크
-        checkPostExist(postId);
+        // 존재하지 않는 글이면 에러
+        Post post = postRepository.findById(postId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
+        );
 
         // 수정 권한 체크
-        checkPostAuthority(postId, user);
+        checkPostAuthority(post.getUser(), user);
 
-        postRepository.updatePostTitleAndContent(postId, requestDTO.title(), requestDTO.content());
+        post.updatePost(requestDTO.title(), requestDTO.content());
 
         // 유지할 이미지를 제외한 모든 이미지 삭제
         if (requestDTO.retainedImageIds() != null && !requestDTO.retainedImageIds().isEmpty()) {
@@ -176,11 +178,9 @@ public class PostService {
         }
 
         // 새 이미지 추가
-        Post postRef = entityManager.getReference(Post.class, postId);
-
         List<PostImage> newImages = requestDTO.newImages().stream()
                 .map(postImageDTO -> PostImage.builder()
-                        .post(postRef)
+                        .post(post)
                         .imageURL(postImageDTO.imageURL())
                         .build())
                 .collect(Collectors.toList());
@@ -194,7 +194,8 @@ public class PostService {
         checkPostExist(postId);
 
         // 수정 권한 체크
-        checkPostAuthority(postId, user);
+        User writer = postRepository.findUserByPostId(postId);
+        checkPostAuthority(writer, user);
 
         postLikeRepository.deleteAllByPostId(postId);
         postReadStatusRepository.deleteAllByPostId(postId);
@@ -372,17 +373,13 @@ public class PostService {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 
-    private void checkPostAuthority(Long postId, User user){
+    private void checkPostAuthority(User writer, User accessor){
         // 관리자면 수정 가능
-        if(user.getRole().equals(Role.ADMIN)){
+        if(accessor.getRole().equals(Role.ADMIN)){
             return;
         }
 
-        // 작성자 본인이면 수정 가능
-        Long postUserId = postRepository.findUserIdByPostId(postId)
-                .orElseThrow( () -> new CustomException(ExceptionCode.USER_FORBIDDEN));
-
-        if(!postUserId.equals(user.getId())){
+        if(!writer.getId().equals(accessor.getId())){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
     }
