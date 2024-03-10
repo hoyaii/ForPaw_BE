@@ -32,6 +32,13 @@ public class Post extends TimeStamp {
     @OneToMany(mappedBy = "post", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<PostImage> postImages = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id")
+    private Post parent;
+
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Post> children = new ArrayList<>();
+
     @Column
     @Enumerated(EnumType.STRING)
     private PostType postType;
@@ -69,5 +76,14 @@ public class Post extends TimeStamp {
     public void addImage(PostImage postImage){
         postImages.add(postImage);
         postImage.setPost(this);
+    }
+
+    public void addChildPost(Post child){
+        this.children.add(child);
+        child.updateParent(this);
+    }
+
+    public void updateParent(Post parent){
+        this.parent =parent;
     }
 }
