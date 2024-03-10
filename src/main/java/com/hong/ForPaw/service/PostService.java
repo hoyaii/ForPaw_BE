@@ -70,6 +70,11 @@ public class PostService {
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
+        // 질문글에만 답변을 달 수 있다
+        if(!parent.getPostType().equals(PostType.question)){
+            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
+        }
+
         User userRef = entityManager.getReference(User.class, userId);
 
         List<PostImage> postImages = requestDTO.images().stream()
