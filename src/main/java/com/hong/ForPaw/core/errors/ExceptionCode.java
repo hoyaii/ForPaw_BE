@@ -56,6 +56,7 @@ public enum ExceptionCode {
 
     // 알람 관련 에러
     ALARM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 알람입니다."),
+    ALARM_NOT_EXIST(HttpStatus.NOT_FOUND, "알람 목록이 존재하지 않습니다."),
 
     // 잘못된 접근
     BAD_APPROACH(HttpStatus.BAD_REQUEST, "잘못된 접근입니다."),

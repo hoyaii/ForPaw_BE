@@ -55,6 +55,10 @@ public class AlarmService {
 
         List<Alarm> alarms = alarmRepository.findByReceiverId(userId);
 
+        if(alarms.isEmpty()){
+            throw new CustomException(ExceptionCode.ALARM_NOT_EXIST);
+        }
+
         List<AlarmResponse.AlarmDTO> alarmDTOS = alarms.stream()
                 .map(alarm -> new AlarmResponse.AlarmDTO(alarm.getId(), alarm.getContent(), alarm.getCreatedDate(), alarm.getIsRead() ))
                 .collect(Collectors.toList());
