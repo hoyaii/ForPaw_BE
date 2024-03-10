@@ -7,15 +7,16 @@ import java.util.List;
 
 public class AnimalResponse {
 
-    public record FindAnimalListDTO(List<AnimalDTO> animalDTOS){ }
+    public record FindAnimalListDTO(List<AnimalDTO> animals){ }
 
     public record AnimalDTO(Long id, String name, String age,
                             String gender, String specialMark, String region,
                             Integer inquiryNum, Integer likeNum, Boolean isLike,
-                            String profileURL
-    ){};
+                            String profileURL){};
 
-    public record FindAnimalByIdDTO(Long id, String happenPlace, String kind, String color,
+    public record FindAnimalByIdDTO(Long id, String name, String age,
+                                    String gender, String specialMark, String region, Boolean isLike,
+                                    String profileURL, String happenPlace, String kind, String color,
                                     String weight, LocalDate noticeSdt, LocalDate noticeEdt,
                                     String processState, String neuter){}
 

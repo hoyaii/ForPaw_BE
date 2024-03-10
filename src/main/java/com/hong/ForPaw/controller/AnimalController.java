@@ -35,9 +35,9 @@ public class AnimalController {
     }
 
     @GetMapping("/animals/{animalId}")
-    public ResponseEntity<?> findAnimalById(@PathVariable Long animalId){
+    public ResponseEntity<?> findAnimalById(@PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        AnimalResponse.FindAnimalByIdDTO responseDTO = animalService.findAnimalById(animalId);
+        AnimalResponse.FindAnimalByIdDTO responseDTO = animalService.findAnimalById(animalId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

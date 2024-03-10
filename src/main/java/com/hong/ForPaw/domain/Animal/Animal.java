@@ -61,9 +61,11 @@ public class Animal extends TimeStamp {
     @Column
     private String neuter;
 
-    // 특징
     @Column
     private String specialMark;
+
+    @Column
+    private String region;
 
     @Column
     private Integer likeNum = 0;
@@ -76,7 +78,7 @@ public class Animal extends TimeStamp {
 
 
     @Builder
-    public Animal(Long id, Shelter shelter, LocalDate happenDt, String happenPlace, String kind, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark, String name) {
+    public Animal(Long id, Shelter shelter, LocalDate happenDt, String happenPlace, String kind, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark, String name, String region) {
         this.id = id;
         this.shelter = shelter;
         this.happenDt = happenDt;
@@ -93,5 +95,6 @@ public class Animal extends TimeStamp {
         this.neuter = neuter;
         this.specialMark = specialMark;
         this.name = name;
+        this.region = region;
     }
 }

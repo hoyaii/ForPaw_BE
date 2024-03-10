@@ -9,6 +9,9 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
+
 
 @Repository
 public interface ShelterRepository extends JpaRepository<Shelter, Long> {
@@ -21,4 +24,7 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
 
     @Query("SELECT s FROM Shelter s WHERE s.name LIKE %:name%")
     Page<Shelter> findByNameContaining(@Param("name") String name, Pageable pageable);
+
+    @Query("SELECT s FROM Shelter s JOIN FETCH s.regionCode")
+    List<Shelter> findAllWithRegionCode();
 }

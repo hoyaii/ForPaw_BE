@@ -226,7 +226,7 @@ public class PostService {
                 })
                 .collect(Collectors.toList());
 
-        return new PostResponse.FIndQnaByIdDTO(post.getUser().getNickName(), post.getContent(), post.getCreatedDate(), postImageDTOS, answerDTOS);
+        return new PostResponse.FIndQnaByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), postImageDTOS, answerDTOS);
     }
 
     @Transactional
@@ -438,11 +438,11 @@ public class PostService {
         // 이미지, 유저와 패치조인 해와서 N+1 문제 방지
         Page<Post> postPage = postRepository.findByPostTypeWithImagesAndUser(PostType.question, pageable);
 
-        List<PostResponse.QnaDTO> answerDTOS = postPage.getContent().stream()
+        List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
                 .map(post -> new PostResponse.QnaDTO(post.getId(), post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getAnswerNum()))
                 .collect(Collectors.toList());
 
-        return answerDTOS;
+        return qnaDTOS;
     }
 
     private Pageable createPageable(int page, int size, String sortProperty) {

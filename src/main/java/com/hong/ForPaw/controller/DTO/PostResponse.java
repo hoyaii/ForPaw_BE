@@ -25,7 +25,7 @@ public class PostResponse {
 
     public record FindPostByIdDTO(String name, String title, String content, LocalDateTime date, Integer commentNum, Integer likeNum, List<PostImageDTO> images, List<CommentDTO> comments){}
 
-    public record FIndQnaByIdDTO(String name, String content, LocalDateTime date, List<PostImageDTO> images, List<AnswerDTO> answers) {}
+    public record FIndQnaByIdDTO(String name, String title, String content, LocalDateTime date, List<PostImageDTO> images, List<AnswerDTO> answers) {}
 
     public record AnswerDTO(Long id, String name, String content, LocalDateTime date, List<PostImageDTO> images) {}
 

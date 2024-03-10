@@ -61,7 +61,7 @@ public class AnimalService {
         RestTemplate restTemplate = new RestTemplate();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-        List<Shelter> shelters = shelterRepository.findAll();
+        List<Shelter> shelters = shelterRepository.findAllWithRegionCode();
 
         for(Shelter shelter : shelters){
             Long careRegNo = shelter.getId();
@@ -107,6 +107,7 @@ public class AnimalService {
                             .gender(itemDTO.sexCd())
                             .neuter(itemDTO.neuterYn())
                             .specialMark(itemDTO.specialMark())
+                            .region(shelter.getRegionCode().getUprName() + " " + shelter.getRegionCode().getOrgName())
                             .build();
 
                     animalRepository.save(animal);
@@ -131,23 +132,29 @@ public class AnimalService {
         }
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> new AnimalResponse.AnimalDTO(animal.getId(), animal.getName(), animal.getAge()
-                        , animal.getGender(), animal.getSpecialMark(), animal.getShelter().getRegionCode().getUprName()+" "+animal.getShelter().getRegionCode().getOrgName()
-                        , animal.getInquiryNum(), animal.getLikeNum(), favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
+                .map(animal -> {
+                    boolean isLike = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent();
+                    return new AnimalResponse.AnimalDTO(animal.getId(), animal.getName(), animal.getAge(), animal.getGender(),
+                            animal.getSpecialMark(), animal.getRegion(), animal.getInquiryNum(), animal.getLikeNum(), isLike,
+                            animal.getProfileURL());
+                })
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindAnimalListDTO(animalDTOS);
     }
 
     @Transactional
-    public AnimalResponse.FindAnimalByIdDTO findAnimalById(Long animalId){
+    public AnimalResponse.FindAnimalByIdDTO findAnimalById(Long animalId, Long userId){
 
         Animal animal = animalRepository.findById(animalId).orElseThrow(
                 () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
         );
 
-        return new AnimalResponse.FindAnimalByIdDTO(animalId, animal.getHappenPlace(), animal.getKind(), animal.getColor(),
-                animal.getWeight(), animal.getNoticeSdt(), animal.getNoticeEdt(), animal.getProcessState(), animal.getNeuter());
+        boolean isLike = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent();
+
+        return new AnimalResponse.FindAnimalByIdDTO(animalId, animal.getName(), animal.getAge(), animal.getGender(), animal.getSpecialMark(),
+                animal.getRegion(), isLike, animal.getProfileURL(), animal.getHappenPlace(), animal.getKind(), animal.getColor(), animal.getWeight(),
+                animal.getNoticeSdt(), animal.getNoticeEdt(), animal.getProcessState(), animal.getNeuter());
     }
 
     @Transactional
