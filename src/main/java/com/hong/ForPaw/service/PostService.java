@@ -57,8 +57,6 @@ public class PostService {
 
         // PostImage 객체들에 Post 참조 설정
         postImages.forEach(post::addImage);
-
-        postImageRepository.saveAll(postImages);
         postRepository.save(post);
 
         return new PostResponse.CreatePostDTO(post.getId());
@@ -198,7 +196,6 @@ public class PostService {
         // 수정 권한 체크
         checkPostAuthority(postId, userId);
 
-        postImageRepository.deleteAllByPostId(postId);
         postLikeRepository.deleteAllByPostId(postId);
         postReadStatusRepository.deleteAllByPostId(postId);
         commentRepository.deleteAllByPostId(postId);
@@ -350,11 +347,11 @@ public class PostService {
 
     public List<PostResponse.PostDTO> getPostDTOsByType(PostType postType, Pageable pageable){
 
-        Page<Post> postPage = postRepository.findByPostType(postType, pageable);
+        Page<Post> postPage = postRepository.findByPostTypeWithImages(postType, pageable);
 
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
-                    List<PostResponse.PostImageDTO> postImageDTOS = postImageRepository.findByPost(post).stream()
+                    List<PostResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
                             .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
                             .collect(Collectors.toList());
 
