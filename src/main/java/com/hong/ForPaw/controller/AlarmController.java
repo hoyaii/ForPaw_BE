@@ -21,10 +21,10 @@ public class AlarmController {
     private final AlarmService alarmService;
 
     @GetMapping(value = "/alarms/connect", produces = "text/event-stream")
-    public ResponseEntity<?> connectToAlarm(@RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "") String lastEventId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public SseEmitter connectToAlarm(@RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "") String lastEventId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         SseEmitter sseEmitter= alarmService.connectToAlarm(userDetails.getUser().getId().toString(), lastEventId);
-        return ResponseEntity.ok(ApiUtils.success(HttpStatus.OK, sseEmitter));
+        return sseEmitter;
     }
 
     @GetMapping("/alarms")
