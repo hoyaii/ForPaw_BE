@@ -115,7 +115,7 @@ public class PostService {
         List<PostResponse.PostDTO> protectionPosts = getPostDTOsByType(PostType.protection, pageable);
 
         // 질문해요 글 찾기
-        List<PostResponse.PostDTO> questionPosts = getPostDTOsByType(PostType.question, pageable);
+        List<PostResponse.QnaDTO> questionPosts = getQnaDTOs(pageable);
 
         return new PostResponse.FindAllPostDTO(adoptionPosts, protectionPosts, questionPosts);
     }
@@ -150,13 +150,13 @@ public class PostService {
     public PostResponse.FindQnaPostsDTO findQuestionPost(Integer page, Integer size, String sort){
 
         Pageable pageable = createPageable(page, size, sort);
-        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.question, pageable);
+        List<PostResponse.QnaDTO> qnaDTOS = getQnaDTOs(pageable);
 
-        if(adoptPostDTOS.isEmpty()){
+        if(qnaDTOS.isEmpty()){
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
         }
 
-        return new PostResponse.FindQnaPostsDTO(adoptPostDTOS);
+        return new PostResponse.FindQnaPostsDTO(qnaDTOS);
     }
 
     @Transactional
@@ -424,20 +424,25 @@ public class PostService {
     }
 
     public List<PostResponse.PostDTO> getPostDTOsByType(PostType postType, Pageable pageable){
-        // N+1 문제 방지를 위해 이미지까지 다 불러옴
+        // 이미지, 유저와 패치조인 해와서 N+1 문제 방지
         Page<Post> postPage = postRepository.findByPostTypeWithImagesAndUser(postType, pageable);
 
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
-                .map(post -> {
-                    List<PostResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
-                            .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
-                            .collect(Collectors.toList());
-
-                    return new PostResponse.PostDTO(post.getId(), post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), post.getLikeNum(), postImageDTOS);
-                })
+                .map(post ->  new PostResponse.PostDTO(post.getId(), post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), post.getLikeNum(), post.getPostImages().get(0).getImageURL()))
                 .collect(Collectors.toList());
 
         return postDTOS;
+    }
+
+    public List<PostResponse.QnaDTO> getQnaDTOs(Pageable pageable){
+        // 이미지, 유저와 패치조인 해와서 N+1 문제 방지
+        Page<Post> postPage = postRepository.findByPostTypeWithImagesAndUser(PostType.question, pageable);
+
+        List<PostResponse.QnaDTO> answerDTOS = postPage.getContent().stream()
+                .map(post -> new PostResponse.QnaDTO(post.getId(), post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getAnswerNum()))
+                .collect(Collectors.toList());
+
+        return answerDTOS;
     }
 
     private Pageable createPageable(int page, int size, String sortProperty) {

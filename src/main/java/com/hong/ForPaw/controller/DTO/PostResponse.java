@@ -9,7 +9,7 @@ public class PostResponse {
 
     public record CreateAnswerDTO(Long id) {}
 
-    public record FindAllPostDTO(List<PostDTO> adoptions, List<PostDTO> protections, List<PostDTO> questions) {}
+    public record FindAllPostDTO(List<PostDTO> adoptions, List<PostDTO> protections, List<QnaDTO> questions) {}
 
     public record FindAdoptionPostsDTO(List<PostDTO> adoptions) {}
 
