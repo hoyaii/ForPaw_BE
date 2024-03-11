@@ -289,6 +289,13 @@ public class GroupService {
         checkAlreadyApplyOrMember(groupApplicantOP);
 
         groupApplicantOP.get().updateRole(Role.USER);
+
+        // 알람 생성
+        User applicant = entityManager.getReference(User.class, applicantId);
+        String content = "가입이 승인 되었습니다!";
+        String redirectURL = "groups/" + groupId + "/detail";
+
+        alarmService.send(applicant, AlarmType.join, content, redirectURL);
     }
 
     @Transactional
@@ -304,6 +311,13 @@ public class GroupService {
         checkAlreadyApplyOrMember(groupUserOP);
 
         groupUserRepository.delete(groupUserOP.get());
+
+        // 알람 생성
+        User applicant = entityManager.getReference(User.class, applicantId);
+        String content = "가입이 거절 되었습니다.";
+        String redirectURL = "groups/" + groupId + "/detail";
+
+        alarmService.send(applicant, AlarmType.join, content, redirectURL);
     }
 
     @Transactional
