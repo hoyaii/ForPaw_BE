@@ -11,27 +11,64 @@ public class PostResponse {
 
     public record FindAllPostDTO(List<PostDTO> adoptions, List<PostDTO> protections, List<QnaDTO> questions) {}
 
-    public record FindAdoptionPostsDTO(List<PostDTO> adoptions) {}
+    public record FindAdoptionPostListDTO(List<PostDTO> adoptions) {}
 
-    public record FindProtectionPostsDTO(List<PostDTO> protections) {}
+    public record FindProtectionPostListDTO(List<PostDTO> protections) {}
 
-    public record FindQnaPostsDTO(List<QnaDTO> questions) {}
+    public record FindQnaPostListDTO(List<QnaDTO> questions) {}
 
-    public record PostDTO(Long id, String name, String title, String content, LocalDateTime date, Integer commentNum, Integer likeNum, String imageURL){}
+    public record PostDTO(Long id,
+                          String name,
+                          String title,
+                          String content,
+                          LocalDateTime date,
+                          Integer commentNum,
+                          Integer likeNum,
+                          String imageURL){}
 
-    public record QnaDTO(Long id, String name, String title, String content, LocalDateTime date, Integer answerNum) {}
+    public record QnaDTO(Long id,
+                         String name,
+                         String title,
+                         String content,
+                         LocalDateTime date,
+                         Integer answerNum) {}
 
     public record PostImageDTO(Long id, String imageURL) {}
 
-    public record FindPostByIdDTO(String name, String title, String content, LocalDateTime date, Integer commentNum, Integer likeNum, List<PostImageDTO> images, List<CommentDTO> comments){}
+    public record FindPostByIdDTO(String name,
+                                  String title,
+                                  String content,
+                                  LocalDateTime date,
+                                  Integer commentNum,
+                                  Integer likeNum,
+                                  List<PostImageDTO> images,
+                                  List<CommentDTO> comments){}
 
-    public record FIndQnaByIdDTO(String name, String title, String content, LocalDateTime date, List<PostImageDTO> images, List<AnswerDTO> answers) {}
+    public record FIndQnaByIdDTO(String name,
+                                 String title,
+                                 String content,
+                                 LocalDateTime date,
+                                 List<PostImageDTO> images,
+                                 List<AnswerDTO> answers) {}
 
-    public record AnswerDTO(Long id, String name, String content, LocalDateTime date, List<PostImageDTO> images) {}
+    public record AnswerDTO(Long id,
+                            String name,
+                            String content,
+                            LocalDateTime date,
+                            List<PostImageDTO> images) {}
 
-    public record CommentDTO(Long id, String name, String content, LocalDateTime date, String location, List<ReplyDTO> replies) {}
+    public record CommentDTO(Long id,
+                             String name,
+                             String content,
+                             LocalDateTime date,
+                             String location,
+                             List<ReplyDTO> replies) {}
 
-    public record ReplyDTO(Long id, String name, String content, LocalDateTime date, String location) {}
+    public record ReplyDTO(Long id,
+                           String name,
+                           String content,
+                           LocalDateTime date,
+                           String location) {}
 
     public record CreateCommentDTO(Long id) {}
 }

@@ -51,7 +51,7 @@ public class AlarmService {
     }
 
     @Transactional
-    public AlarmResponse.FindAlarmsDTO findAlarmList(Long userId){
+    public AlarmResponse.FindAlarmListDTO findAlarmList(Long userId){
 
         List<Alarm> alarms = alarmRepository.findByReceiverId(userId);
 
@@ -68,7 +68,7 @@ public class AlarmService {
                         alarm.getIsRead() ))
                 .collect(Collectors.toList());
 
-        return new AlarmResponse.FindAlarmsDTO(alarmDTOS);
+        return new AlarmResponse.FindAlarmListDTO(alarmDTOS);
     }
 
     @Transactional

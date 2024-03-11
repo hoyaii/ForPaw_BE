@@ -43,21 +43,21 @@ public class PostController {
     @GetMapping("/posts/adoption")
     public ResponseEntity<?> findAdoptionPostList(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @RequestParam("sort") String sort){
 
-        PostResponse.FindAdoptionPostsDTO responseDTO = postService.findAdoptionPostList(page, size, sort);
+        PostResponse.FindAdoptionPostListDTO responseDTO = postService.findAdoptionPostList(page, size, sort);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/protection")
     public ResponseEntity<?> findProtectionPostList(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @RequestParam("sort") String sort){
 
-        PostResponse.FindProtectionPostsDTO responseDTO = postService.findProtectionPostList(page, size, sort);
+        PostResponse.FindProtectionPostListDTO responseDTO = postService.findProtectionPostList(page, size, sort);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/question")
     public ResponseEntity<?> findQuestionPostList(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @RequestParam("sort") String sort){
 
-        PostResponse.FindQnaPostsDTO responseDTO = postService.findQuestionPostList(page, size, sort);
+        PostResponse.FindQnaPostListDTO responseDTO = postService.findQuestionPostList(page, size, sort);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

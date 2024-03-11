@@ -47,30 +47,30 @@ public class SearchService {
     }
 
     @Transactional
-    public SearchResponse.SearchSheltersDTO searchShelterList(String keyword, Integer page, Integer size){
+    public SearchResponse.SearchShelterListDTO searchShelterList(String keyword, Integer page, Integer size){
 
         Pageable pageable = createPageable(page, size, "id");
         List<SearchResponse.ShelterDTO> shelterDTOS = getShelterDTOsByKeyword(keyword, pageable);
 
-        return new SearchResponse.SearchSheltersDTO(shelterDTOS);
+        return new SearchResponse.SearchShelterListDTO(shelterDTOS);
     }
 
     @Transactional
-    public SearchResponse.SearchPostsDTO searchPostList(String keyword, Integer page, Integer size){
+    public SearchResponse.SearchPostListDTO searchPostList(String keyword, Integer page, Integer size){
 
         Pageable pageable =createPageable(page, size, "id");
         List<SearchResponse.PostDTO> postDTOS = getPostDTOsByKeyword(keyword, pageable);
 
-        return new SearchResponse.SearchPostsDTO(postDTOS);
+        return new SearchResponse.SearchPostListDTO(postDTOS);
     }
 
     @Transactional
-    public SearchResponse.SearchGroupsDTO searchGroupList(String keyword, Integer page, Integer size){
+    public SearchResponse.SearchGroupListDTO searchGroupList(String keyword, Integer page, Integer size){
 
         Pageable pageable =createPageable(page, size, "id");
         List<SearchResponse.GroupDTO> groupDTOS = getGroupDTOsByKeyword(keyword, pageable);
 
-        return new SearchResponse.SearchGroupsDTO(groupDTOS);
+        return new SearchResponse.SearchGroupListDTO(groupDTOS);
     }
 
     private List<SearchResponse.ShelterDTO> getShelterDTOsByKeyword(String keyword, Pageable pageable){

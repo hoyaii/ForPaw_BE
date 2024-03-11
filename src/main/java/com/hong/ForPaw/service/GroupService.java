@@ -99,7 +99,7 @@ public class GroupService {
     }
 
     @Transactional
-    public GroupResponse.FindAllGroupDTO findGroupList(Long userId, String region){
+    public GroupResponse.FindAllGroupListDTO findGroupList(Long userId, String region){
         // 이 API의 페이지네이션은 0페이지인 5개만 보내줄 것이다.
         Pageable pageable = createPageable(0, 5, "id");
 
@@ -115,12 +115,12 @@ public class GroupService {
         // 내 그룹 찾기
         List<GroupResponse.MyGroupDTO> myGroupDTOS = getMyGroupDTOS(userId, pageable);
 
-        return new GroupResponse.FindAllGroupDTO(recommendGroupDTOS, newGroupDTOS, localGroupDTOS, myGroupDTOS);
+        return new GroupResponse.FindAllGroupListDTO(recommendGroupDTOS, newGroupDTOS, localGroupDTOS, myGroupDTOS);
     }
 
     // 지역 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindLocalGroupDTO findLocalGroupList(Long userId, String region, Integer page, Integer size){
+    public GroupResponse.FindLocalGroupListDTO findLocalGroupList(Long userId, String region, Integer page, Integer size){
 
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, region, pageable);
@@ -129,12 +129,12 @@ public class GroupService {
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
         }
 
-        return new GroupResponse.FindLocalGroupDTO(localGroupDTOS);
+        return new GroupResponse.FindLocalGroupListDTO(localGroupDTOS);
     }
 
     // 새 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindNewGroupDTO findNewGroupList(Long userId, Integer page, Integer size){
+    public GroupResponse.FindNewGroupListDTO findNewGroupList(Long userId, Integer page, Integer size){
 
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, pageable);
@@ -143,12 +143,12 @@ public class GroupService {
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
         }
 
-        return new GroupResponse.FindNewGroupDTO(newGroupDTOS);
+        return new GroupResponse.FindNewGroupListDTO(newGroupDTOS);
     }
 
     // 내 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindMyGroupDTO findMyGroupList(Long userId, Integer page, Integer size){
+    public GroupResponse.FindMyGroupListDTO findMyGroupList(Long userId, Integer page, Integer size){
 
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.MyGroupDTO> myGroupDTOS = getMyGroupDTOS(userId, pageable);
@@ -157,7 +157,7 @@ public class GroupService {
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
         }
 
-        return new GroupResponse.FindMyGroupDTO(myGroupDTOS);
+        return new GroupResponse.FindMyGroupListDTO(myGroupDTOS);
     }
 
     @Transactional
@@ -184,7 +184,7 @@ public class GroupService {
 
     // 공지사항 추가조회
     @Transactional
-    public GroupResponse.FindNoticesDTO findNoticeList(Long userId, Long groupId, Integer page, Integer size){
+    public GroupResponse.FindNoticeListDTO findNoticeList(Long userId, Long groupId, Integer page, Integer size){
         // 그룹 존재 여부 체크
         checkGroupExist(groupId);
 
@@ -194,12 +194,12 @@ public class GroupService {
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.NoticeDTO> noticeDTOS = getNoticeDTOS(userId, groupId, pageable);
 
-        return new GroupResponse.FindNoticesDTO(noticeDTOS);
+        return new GroupResponse.FindNoticeListDTO(noticeDTOS);
     }
 
     // 정기모임 추가조회
     @Transactional
-    public GroupResponse.FindMeetingsDTO findMeetingList(Long userId, Long groupId, Integer page, Integer size){
+    public GroupResponse.FindMeetingListDTO findMeetingList(Long userId, Long groupId, Integer page, Integer size){
         // 그룹 존재 여부 체크
         checkGroupExist(groupId);
 
@@ -209,7 +209,7 @@ public class GroupService {
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.MeetingDTO> meetingsDTOS = getMeetingDTOS(groupId, pageable);
 
-        return new GroupResponse.FindMeetingsDTO(meetingsDTOS);
+        return new GroupResponse.FindMeetingListDTO(meetingsDTOS);
     }
 
     @Transactional

@@ -7,19 +7,32 @@ public class SearchResponse {
 
     public record SearchAllDTO(List<ShelterDTO> shelters, List<PostDTO> posts, List<GroupDTO> groups) {}
 
-    public record SearchSheltersDTO(List<ShelterDTO> shelters) {}
+    public record SearchShelterListDTO(List<ShelterDTO> shelters) {}
 
-    public record SearchPostsDTO(List<PostDTO> posts) {}
+    public record SearchPostListDTO(List<PostDTO> posts) {}
 
-    public record SearchGroupsDTO(List<GroupDTO> groups) {}
+    public record SearchGroupListDTO(List<GroupDTO> groups) {}
 
     public record ShelterDTO(Long id, String name) {}
 
-    public record PostDTO(Long id, String title, String content, LocalDateTime date, Integer commentNum, Integer likeNum, List<PostImageDTO> images){}
+    public record PostDTO(Long id,
+                          String title,
+                          String content,
+                          LocalDateTime date,
+                          Integer commentNum,
+                          Integer likeNum,
+                          List<PostImageDTO> images){}
 
     public record PostImageDTO(Long id, String imageURL) {}
 
-    public record GroupDTO(Long id, String name, String description, Integer participationNum, String category,
-                                    String region, String subRegion, String profileURL, Integer likeNum) {}
+    public record GroupDTO(Long id,
+                           String name,
+                           String description,
+                           Integer participationNum,
+                           String category,
+                           String region,
+                           String subRegion,
+                           String profileURL,
+                           Integer likeNum) {}
 
 }

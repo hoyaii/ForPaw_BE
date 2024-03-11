@@ -28,21 +28,21 @@ public class SearchController {
     @GetMapping("/search/shelters")
     public ResponseEntity<?> searchShelterList(@RequestParam String keyword, @RequestParam Integer page, @RequestParam Integer size){
 
-        SearchResponse.SearchSheltersDTO responseDTO = searchService.searchShelterList(keyword, page, size);
+        SearchResponse.SearchShelterListDTO responseDTO = searchService.searchShelterList(keyword, page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/search/posts")
     public ResponseEntity<?> searchPostList(@RequestParam String keyword, @RequestParam Integer page, @RequestParam Integer size){
 
-        SearchResponse.SearchPostsDTO responseDTO = searchService.searchPostList(keyword, page, size);
+        SearchResponse.SearchPostListDTO responseDTO = searchService.searchPostList(keyword, page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/search/groups")
     public ResponseEntity<?> searchGroupList(@RequestParam String keyword, @RequestParam Integer page, @RequestParam Integer size){
 
-        SearchResponse.SearchGroupsDTO responseDTO = searchService.searchGroupList(keyword, page, size);
+        SearchResponse.SearchGroupListDTO responseDTO = searchService.searchGroupList(keyword, page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }

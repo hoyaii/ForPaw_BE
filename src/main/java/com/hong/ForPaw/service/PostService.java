@@ -121,7 +121,7 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse.FindAdoptionPostsDTO findAdoptionPostList(Integer page, Integer size, String sort){
+    public PostResponse.FindAdoptionPostListDTO findAdoptionPostList(Integer page, Integer size, String sort){
 
         Pageable pageable = createPageable(page, size, sort);
         List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.adoption, pageable);
@@ -130,11 +130,11 @@ public class PostService {
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
         }
 
-        return new PostResponse.FindAdoptionPostsDTO(adoptPostDTOS);
+        return new PostResponse.FindAdoptionPostListDTO(adoptPostDTOS);
     }
 
     @Transactional
-    public PostResponse.FindProtectionPostsDTO findProtectionPostList(Integer page, Integer size, String sort){
+    public PostResponse.FindProtectionPostListDTO findProtectionPostList(Integer page, Integer size, String sort){
 
         Pageable pageable = createPageable(page, size, sort);
         List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.protection, pageable);
@@ -143,11 +143,11 @@ public class PostService {
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
         }
 
-        return new PostResponse.FindProtectionPostsDTO(adoptPostDTOS);
+        return new PostResponse.FindProtectionPostListDTO(adoptPostDTOS);
     }
 
     @Transactional
-    public PostResponse.FindQnaPostsDTO findQuestionPostList(Integer page, Integer size, String sort){
+    public PostResponse.FindQnaPostListDTO findQuestionPostList(Integer page, Integer size, String sort){
 
         Pageable pageable = createPageable(page, size, sort);
         List<PostResponse.QnaDTO> qnaDTOS = getQnaDTOs(pageable);
@@ -156,7 +156,7 @@ public class PostService {
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
         }
 
-        return new PostResponse.FindQnaPostsDTO(qnaDTOS);
+        return new PostResponse.FindQnaPostListDTO(qnaDTOS);
     }
 
     @Transactional

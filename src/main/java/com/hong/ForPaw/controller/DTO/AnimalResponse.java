@@ -11,19 +11,43 @@ public class AnimalResponse {
 
     public record FindLikeAnimalListDTO(List<AnimalDTO> animals) {}
 
-    public record AnimalDTO(Long id, String name, String age,
-                            String gender, String specialMark, String region,
-                            Integer inquiryNum, Integer likeNum, Boolean isLike,
+    public record AnimalDTO(Long id,
+                            String name,
+                            String age,
+                            String gender,
+                            String specialMark,
+                            String region,
+                            Integer inquiryNum,
+                            Integer likeNum,
+                            Boolean isLike,
                             String profileURL){};
 
-    public record FindAnimalByIdDTO(Long id, String name, String age,
-                                    String gender, String specialMark, String region, Boolean isLike,
-                                    String profileURL, String happenPlace, String kind, String color,
-                                    String weight, LocalDate noticeSdt, LocalDate noticeEdt,
-                                    String processState, String neuter){}
+    public record FindAnimalByIdDTO(Long id,
+                                    String name,
+                                    String age,
+                                    String gender,
+                                    String specialMark,
+                                    String region,
+                                    Boolean isLike,
+                                    String profileURL,
+                                    String happenPlace,
+                                    String kind,
+                                    String color,
+                                    String weight,
+                                    LocalDate noticeSdt,
+                                    LocalDate noticeEdt,
+                                    String processState,
+                                    String neuter){}
 
     public record FindApplyListDTO(List<ApplyDTO> adoptionApplyDTOS) { }
 
-    public record ApplyDTO(Long id, String animalName, String kind, String gender, String age, String userName,
-                           String tel, String residence, Status status){ }
+    public record ApplyDTO(Long id,
+                           String animalName,
+                           String kind,
+                           String gender,
+                           String age,
+                           String userName,
+                           String tel,
+                           String residence,
+                           Status status){ }
 }
