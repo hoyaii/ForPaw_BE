@@ -5,6 +5,7 @@ import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.User.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -48,8 +49,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     Page<Post> findAllByGroupId(Long groupId, Pageable pageable);
 
-    @Query("SELECT p FROM Post p WHERE p.title LIKE %:title%")
-    Page<Post> findByTitleContaining(@Param("title") String title,Pageable pageable);
+    @EntityGraph(attributePaths = {"postImages"})
+    Page<Post> findByTitleContaining(@Param("title") String title, Pageable pageable);
 
     @Query(value = "SELECT p FROM Post p JOIN FETCH p.postImages JOIN FETCH p.user WHERE p.postType = :postType",
             countQuery = "SELECT count(p) FROM Post p WHERE p.postType = :postType")

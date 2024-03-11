@@ -86,12 +86,12 @@ public class SearchService {
     }
 
     private List<SearchResponse.PostDTO> getPostDTOsByKeyword(String keyword, Pageable pageable){
-
+        // postImages를 페치조인 해서 조회
         Page<Post> postPage = postRepository.findByTitleContaining(keyword, pageable);
 
         List<SearchResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
-                    List<SearchResponse.PostImageDTO> postImageDTOS = postImageRepository.findByPost(post).stream()
+                    List<SearchResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
                             .map(postImage -> new SearchResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
                             .collect(Collectors.toList());
 
