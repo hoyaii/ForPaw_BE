@@ -213,6 +213,25 @@ public class GroupService {
     }
 
     @Transactional
+    public GroupResponse.MeetingDTO findMeetingById(Long meetingId, Long groupId, Long userId){
+        // 그룹 존재 여부 체크
+        checkGroupExist(groupId);
+
+        // 맴버인지 체크
+        checkIsMember(groupId, userId);
+
+        Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(
+                () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
+        );
+
+        List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository.findAllUsersByMeetingId(meeting.getId()).stream()
+                .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL()))
+                .toList();
+
+        return new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
+    }
+
+    @Transactional
     public void joinGroup(GroupRequest.JoinGroupDTO requestDTO, Long userId, Long groupId){
         // 존재하지 않는 그룹이면 에러 처리
         checkGroupExist(groupId);
