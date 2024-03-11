@@ -121,7 +121,7 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse.FindAdoptionPostsDTO findAdoptionPost(Integer page, Integer size, String sort){
+    public PostResponse.FindAdoptionPostsDTO findAdoptionPostList(Integer page, Integer size, String sort){
 
         Pageable pageable = createPageable(page, size, sort);
         List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.adoption, pageable);
@@ -134,7 +134,7 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse.FindProtectionPostsDTO findProtectionPost(Integer page, Integer size, String sort){
+    public PostResponse.FindProtectionPostsDTO findProtectionPostList(Integer page, Integer size, String sort){
 
         Pageable pageable = createPageable(page, size, sort);
         List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.protection, pageable);
@@ -147,7 +147,7 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse.FindQnaPostsDTO findQuestionPost(Integer page, Integer size, String sort){
+    public PostResponse.FindQnaPostsDTO findQuestionPostList(Integer page, Integer size, String sort){
 
         Pageable pageable = createPageable(page, size, sort);
         List<PostResponse.QnaDTO> qnaDTOS = getQnaDTOs(pageable);

@@ -47,7 +47,7 @@ public class SearchService {
     }
 
     @Transactional
-    public SearchResponse.SearchSheltersDTO searchShelters(String keyword, Integer page, Integer size){
+    public SearchResponse.SearchSheltersDTO searchShelterList(String keyword, Integer page, Integer size){
 
         Pageable pageable = createPageable(page, size, "id");
         List<SearchResponse.ShelterDTO> shelterDTOS = getShelterDTOsByKeyword(keyword, pageable);
@@ -56,7 +56,7 @@ public class SearchService {
     }
 
     @Transactional
-    public SearchResponse.SearchPostsDTO searchPosts(String keyword, Integer page, Integer size){
+    public SearchResponse.SearchPostsDTO searchPostList(String keyword, Integer page, Integer size){
 
         Pageable pageable =createPageable(page, size, "id");
         List<SearchResponse.PostDTO> postDTOS = getPostDTOsByKeyword(keyword, pageable);
@@ -65,7 +65,7 @@ public class SearchService {
     }
 
     @Transactional
-    public SearchResponse.SearchGroupsDTO searchGroups(String keyword, Integer page, Integer size){
+    public SearchResponse.SearchGroupsDTO searchGroupList(String keyword, Integer page, Integer size){
 
         Pageable pageable =createPageable(page, size, "id");
         List<SearchResponse.GroupDTO> groupDTOS = getGroupDTOsByKeyword(keyword, pageable);

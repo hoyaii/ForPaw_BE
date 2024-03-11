@@ -51,7 +51,7 @@ public class AlarmService {
     }
 
     @Transactional
-    public AlarmResponse.FindAlarmsDTO findAlarms(Long userId){
+    public AlarmResponse.FindAlarmsDTO findAlarmList(Long userId){
 
         List<Alarm> alarms = alarmRepository.findByReceiverId(userId);
 

@@ -28,9 +28,9 @@ public class AlarmController {
     }
 
     @GetMapping("/alarms")
-    public ResponseEntity<?> findAlarms(@AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findAlarmList(@AuthenticationPrincipal CustomUserDetails userDetails){
 
-        AlarmResponse.FindAlarmsDTO responseDTO = alarmService.findAlarms(userDetails.getUser().getId());
+        AlarmResponse.FindAlarmsDTO responseDTO = alarmService.findAlarmList(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

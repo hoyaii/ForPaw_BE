@@ -120,7 +120,7 @@ public class GroupService {
 
     // 지역 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindLocalGroupDTO findLocalGroup(Long userId, String region, Integer page, Integer size){
+    public GroupResponse.FindLocalGroupDTO findLocalGroupList(Long userId, String region, Integer page, Integer size){
 
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, region, pageable);
@@ -134,7 +134,7 @@ public class GroupService {
 
     // 새 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindNewGroupDTO findNewGroup(Long userId, Integer page, Integer size){
+    public GroupResponse.FindNewGroupDTO findNewGroupList(Long userId, Integer page, Integer size){
 
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, pageable);
@@ -148,7 +148,7 @@ public class GroupService {
 
     // 내 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindMyGroupDTO findMyGroup(Long userId, Integer page, Integer size){
+    public GroupResponse.FindMyGroupDTO findMyGroupList(Long userId, Integer page, Integer size){
 
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.MyGroupDTO> myGroupDTOS = getMyGroupDTOS(userId, pageable);

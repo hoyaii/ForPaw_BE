@@ -48,23 +48,23 @@ public class GroupController {
     }
 
     @GetMapping("/groups/local")
-    public ResponseEntity<?> findLocalGroup(@RequestParam("region") String region, @RequestParam("page") Integer page, @RequestParam("size") Integer size, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findLocalGroupList(@RequestParam("region") String region, @RequestParam("page") Integer page, @RequestParam("size") Integer size, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        GroupResponse.FindLocalGroupDTO responseDTO = groupService.findLocalGroup(userDetails.getUser().getId(), region, page, size);
+        GroupResponse.FindLocalGroupDTO responseDTO = groupService.findLocalGroupList(userDetails.getUser().getId(), region, page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/groups/new")
-    public ResponseEntity<?> findNewGroup(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findNewGroupList(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        GroupResponse.FindNewGroupDTO responseDTO = groupService.findNewGroup(userDetails.getUser().getId(), page, size);
+        GroupResponse.FindNewGroupDTO responseDTO = groupService.findNewGroupList(userDetails.getUser().getId(), page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/groups/my")
-    public ResponseEntity<?> findMyGroup(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findMyGroupList(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        GroupResponse.FindMyGroupDTO responseDTO = groupService.findMyGroup(userDetails.getUser().getId(), page, size);
+        GroupResponse.FindMyGroupDTO responseDTO = groupService.findMyGroupList(userDetails.getUser().getId(), page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -76,14 +76,14 @@ public class GroupController {
     }
 
     @GetMapping("/groups/{groupId}/notices")
-    public ResponseEntity<?> findNotices(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam("page") Integer page, @RequestParam("size") Integer size){
+    public ResponseEntity<?> findNoticeList(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam("page") Integer page, @RequestParam("size") Integer size){
 
         GroupResponse.FindNoticesDTO responseDTO = groupService.findNoticeList(userDetails.getUser().getId(), groupId, page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/groups/{groupId}/meetings")
-    public ResponseEntity<?> findMeetings(@PathVariable Long groupId, @RequestParam("page") Integer page, @RequestParam("size") Integer size, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findMeetingList(@PathVariable Long groupId, @RequestParam("page") Integer page, @RequestParam("size") Integer size, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         GroupResponse.FindMeetingsDTO responseDTO = groupService.findMeetingList(userDetails.getUser().getId(), groupId, page, size);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
