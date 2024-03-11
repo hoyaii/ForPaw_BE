@@ -40,7 +40,7 @@ public class Meeting extends TimeStamp {
     private Long cost;
 
     @Column
-    private Integer participantNum = 0;
+    private Integer participantNum = 1; // 모임 생성자가 있으니
 
     @Column
     private Integer maxNum;

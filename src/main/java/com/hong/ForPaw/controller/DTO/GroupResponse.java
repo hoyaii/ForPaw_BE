@@ -84,8 +84,8 @@ public class GroupResponse {
                              LocalDateTime date,
                              String location,
                              Long cost,
-                             Integer participantCnt,
-                             Integer maxCnt,
+                             Integer participantNum,
+                             Integer maxNum,
                              String profileURL,
                              String description,
                              List<ParticipantDTO> participants) {}
