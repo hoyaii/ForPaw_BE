@@ -58,9 +58,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT distinct p FROM Post p JOIN FETCH p.postImages JOIN FETCH p.user WHERE p.parent.id = :parentId")
     List<Post> findByParentIdWithImagesAndUser(@Param("parentId") Long parentId);
 
-    @Query("SELECT p FROM Post p " +
-            "LEFT JOIN FETCH p.user " +
-            "LEFT JOIN FETCH p.postImages " +
-            "WHERE p.id = :postId")
-    Optional<Post> findByIdWithUserAndPostImages(@Param("postId") Long postId);
+    @EntityGraph(attributePaths = {"user", "postImages"})
+    Optional<Post> findById(Long postId);
 }

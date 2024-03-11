@@ -161,8 +161,8 @@ public class PostService {
 
     @Transactional
     public PostResponse.FindPostByIdDTO findPostById(Long postId, Long userId){
-        // 존재하지 않는 게시글이면 에러 발생
-        Post post = postRepository.findByIdWithUserAndPostImages(postId).orElseThrow(
+        // user, postImages를 패치조인 해서 조회
+        Post post = postRepository.findById(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
@@ -217,8 +217,8 @@ public class PostService {
 
     @Transactional
     public PostResponse.FIndQnaByIdDTO findQnaById(Long postId){
-        // 존재하지 않는 게시글이면 에러 발생
-        Post post = postRepository.findByIdWithUserAndPostImages(postId).orElseThrow(
+        // user, postImages를 패치조인 해서 조회
+        Post post = postRepository.findById(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
