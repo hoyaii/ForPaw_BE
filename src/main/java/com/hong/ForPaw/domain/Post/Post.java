@@ -58,9 +58,6 @@ public class Post extends TimeStamp {
     @Column
     private Integer likeNum = 0;
 
-    @Column
-    private Integer viewNum = 0;
-
     @Builder
     public Post(User user, Group group, PostType postType, String title, String content) {
         this.user = user;

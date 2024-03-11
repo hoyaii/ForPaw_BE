@@ -693,7 +693,7 @@ public class GroupService {
 
                     return new GroupResponse.NoticeDTO(
                             notice.getId(),
-                            notice.getUser().getName(),
+                            notice.getUser().getNickName(),
                             notice.getCreatedDate(),
                             notice.getTitle(),
                             isRead);

@@ -219,6 +219,7 @@ public class AnimalService {
 
         // 좋아요가 이미 있다면 삭제, 없다면 추가
         if (favoriteAnimalOP.isPresent()) {
+            animalRepository.decrementLikeNumById(animalId);
             favoriteAnimalRepository.delete(favoriteAnimalOP.get());
         }
         else {
@@ -226,6 +227,8 @@ public class AnimalService {
                     .user(userRef)
                     .animal(animalRef)
                     .build();
+
+            animalRepository.incrementLikeNumById(animalId);
             favoriteAnimalRepository.save(favoriteAnimal);
         }
     }
