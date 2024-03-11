@@ -256,6 +256,7 @@ public class AnimalService {
                 .residence(requestDTO.residence())
                 .build();
 
+        animalRepository.incrementInquiryNumById(animalId);
         applyRepository.save(apply);
     }
 

@@ -25,5 +25,9 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
     @Query("UPDATE Animal a SET a.likeNum = a.likeNum - 1 WHERE a.id = :animalId AND a.likeNum > 0")
     void decrementLikeNumById(@Param("animalId") Long animalId);
 
+    @Modifying
+    @Query("UPDATE Animal a SET a.inquiryNum = a.inquiryNum + 1 WHERE a.id = :animalId")
+    void incrementInquiryNumById(@Param("animalId") Long animalId);
+
     boolean existsById(Long id);
 }
