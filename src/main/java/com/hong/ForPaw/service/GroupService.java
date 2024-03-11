@@ -162,11 +162,10 @@ public class GroupService {
 
     @Transactional
     public GroupResponse.FindGroupDetailByIdDTO findGroupDetailById(Long userId, Long groupId){
-        // 그룹 존재 여부 체크
-        checkGroupExist(groupId);
-
-        // 그룹 설명
-        String description = groupRepository.findDescriptionById(groupId);
+        // 그룹이 존재하지 않으면 에러
+        Group group = groupRepository.findById(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
+        );
 
         // 정기 모임과 공지사항은 0페이지의 5개만 보여준다.
         Pageable pageable = createPageable(0, 5, "id");
@@ -180,11 +179,12 @@ public class GroupService {
         // 가입자
         List<GroupResponse.MemberDTO> memberDTOS = getMemberDTOS(groupId);
 
-        return new GroupResponse.FindGroupDetailByIdDTO(description, noticeDTOS, meetingDTOS, memberDTOS);
+        return new GroupResponse.FindGroupDetailByIdDTO(group.getProfileURL(), group.getName(),group.getDescription(), noticeDTOS, meetingDTOS, memberDTOS);
     }
 
+    // 공지사항 추가조회
     @Transactional
-    public GroupResponse.FindNoticesDTO findNotices(Long userId, Long groupId, Integer page, Integer size){
+    public GroupResponse.FindNoticesDTO findNoticeList(Long userId, Long groupId, Integer page, Integer size){
         // 그룹 존재 여부 체크
         checkGroupExist(groupId);
 
@@ -197,8 +197,9 @@ public class GroupService {
         return new GroupResponse.FindNoticesDTO(noticeDTOS);
     }
 
+    // 정기모임 추가조회
     @Transactional
-    public GroupResponse.FindMeetingsDTO findMeetings(Long userId, Long groupId, Integer page, Integer size){
+    public GroupResponse.FindMeetingsDTO findMeetingList(Long userId, Long groupId, Integer page, Integer size){
         // 그룹 존재 여부 체크
         checkGroupExist(groupId);
 
@@ -634,7 +635,7 @@ public class GroupService {
         List<GroupResponse.NoticeDTO> noticeDTOS = notices.getContent().stream()
                 .map(notice -> {
                     boolean isRead = postReadStatusRepository.existsByUserIdAndPostId(userId, notice.getId());
-                    return new GroupResponse.NoticeDTO(notice.getId(), notice.getUser().getName(), notice.getCreatedDate(), notice.getTitle(), notice.getContent(), isRead);
+                    return new GroupResponse.NoticeDTO(notice.getId(), notice.getUser().getName(), notice.getCreatedDate(), notice.getTitle(), isRead);
                 })
                 .collect(Collectors.toList());
 

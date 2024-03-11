@@ -134,8 +134,15 @@ public class AnimalService {
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
                     boolean isLike = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent();
-                    return new AnimalResponse.AnimalDTO(animal.getId(), animal.getName(), animal.getAge(), animal.getGender(),
-                            animal.getSpecialMark(), animal.getRegion(), animal.getInquiryNum(), animal.getLikeNum(), isLike,
+                    return new AnimalResponse.AnimalDTO(animal.getId(),
+                            animal.getName(),
+                            animal.getAge(),
+                            animal.getGender(),
+                            animal.getSpecialMark(),
+                            animal.getRegion(),
+                            animal.getInquiryNum(),
+                            animal.getLikeNum(),
+                            isLike,
                             animal.getProfileURL());
                 })
                 .collect(Collectors.toList());
@@ -152,17 +159,30 @@ public class AnimalService {
 
         boolean isLike = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent();
 
-        return new AnimalResponse.FindAnimalByIdDTO(animalId, animal.getName(), animal.getAge(), animal.getGender(), animal.getSpecialMark(),
-                animal.getRegion(), isLike, animal.getProfileURL(), animal.getHappenPlace(), animal.getKind(), animal.getColor(), animal.getWeight(),
-                animal.getNoticeSdt(), animal.getNoticeEdt(), animal.getProcessState(), animal.getNeuter());
+        return new AnimalResponse.FindAnimalByIdDTO(animalId,
+                animal.getName(),
+                animal.getAge(),
+                animal.getGender(),
+                animal.getSpecialMark(),
+                animal.getRegion(),
+                isLike,
+                animal.getProfileURL(),
+                animal.getHappenPlace(),
+                animal.getKind(),
+                animal.getColor(),
+                animal.getWeight(),
+                animal.getNoticeSdt(),
+                animal.getNoticeEdt(),
+                animal.getProcessState(),
+                animal.getNeuter());
     }
 
     @Transactional
     public void likeAnimal(Long userId, Long animalId){
         // 존재하지 않는 동물이면 에러
         if(!animalRepository.existsById(animalId)){
-            throw new CustomException(ExceptionCode.ANIMAL_NOT_FOUND);
-        }
+                throw new CustomException(ExceptionCode.ANIMAL_NOT_FOUND);
+            }
 
         Animal animalRef = entityManager.getReference(Animal.class, animalId);
         User userRef = entityManager.getReference(User.class, userId);
