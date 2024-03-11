@@ -22,7 +22,6 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
 
     Page<Shelter> findByAnimalCntGreaterThan(Long animalCnt, Pageable pageable);
 
-    @Query("SELECT s FROM Shelter s WHERE s.name LIKE %:name%")
     Page<Shelter> findByNameContaining(@Param("name") String name, Pageable pageable);
 
     @Query("SELECT s FROM Shelter s JOIN FETCH s.regionCode")

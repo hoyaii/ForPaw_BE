@@ -40,6 +40,5 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     @Query("UPDATE Group g SET g.likeNum = g.likeNum - 1 WHERE g.id = :groupId AND g.likeNum > 0")
     void decrementLikeNumById(@Param("groupId") Long groupId);
 
-    @Query("SELECT g FROM Group g WHERE g.name LIKE %:name%")
     Page<Group> findByNameContaining(@Param("name") String name, Pageable pageable);
 }

@@ -26,7 +26,6 @@ public class SearchService {
 
     private final ShelterRepository shelterRepository;
     private final PostRepository postRepository;
-    private final PostImageRepository postImageRepository;
     private final GroupRepository groupRepository;
 
     @Transactional

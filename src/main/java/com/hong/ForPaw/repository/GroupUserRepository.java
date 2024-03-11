@@ -1,5 +1,6 @@
 package com.hong.ForPaw.repository;
 
+import com.hong.ForPaw.domain.Group.Group;
 import com.hong.ForPaw.domain.Group.GroupUser;
 import com.hong.ForPaw.domain.Group.Role;
 import com.hong.ForPaw.domain.User.User;
@@ -20,8 +21,6 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
 
     Optional<GroupUser> findByGroupIdAndUserId(Long groupId, Long userId);
 
-    Page<GroupUser> findByUserId(Long userId, Pageable pageable);
-
     void deleteByGroupIdAndUserId(Long groupId, Long userId);
 
     void deleteAllByGroupId(Long groupId);
@@ -41,4 +40,10 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
 
     @Query("SELECT gu.role FROM GroupUser gu WHERE gu.user.id = :userId AND gu.group.id = :groupId")
     Role findRoleByUserIdAndGroupId(Long userId, Long groupId);
+
+    @Query("SELECT gu.group FROM GroupUser gu WHERE gu.user.id = :userId")
+    List<Group> findGroupsByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT gu.group FROM GroupUser gu WHERE gu.user.id = :userId")
+    Page<Group> findGroupPageByUserId(@Param("userId") Long userId, Pageable pageable);
 }
