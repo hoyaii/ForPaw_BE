@@ -441,8 +441,8 @@ public class PostService {
     }
 
     public List<PostResponse.PostDTO> getPostDTOsByType(PostType postType, Pageable pageable){
-        // 이미지, 유저와 패치조인 해와서 N+1 문제 방지
-        Page<Post> postPage = postRepository.findByPostTypeWithImagesAndUser(postType, pageable);
+        // 이미지, 유저를 패치조인하여 조회
+        Page<Post> postPage = postRepository.findByPostType(postType, pageable);
 
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post ->  new PostResponse.PostDTO(
@@ -460,8 +460,8 @@ public class PostService {
     }
 
     public List<PostResponse.QnaDTO> getQnaDTOs(Pageable pageable){
-        // 이미지, 유저와 패치조인 해와서 N+1 문제 방지
-        Page<Post> postPage = postRepository.findByPostTypeWithImagesAndUser(PostType.question, pageable);
+        // 이미지, 유저를 패치조인하여 조회
+        Page<Post> postPage = postRepository.findByPostType(PostType.question, pageable);
 
         List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
                 .map(post -> new PostResponse.QnaDTO(

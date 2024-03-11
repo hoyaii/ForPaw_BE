@@ -52,9 +52,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @EntityGraph(attributePaths = {"postImages"})
     Page<Post> findByTitleContaining(@Param("title") String title, Pageable pageable);
 
-    @Query(value = "SELECT p FROM Post p JOIN FETCH p.postImages JOIN FETCH p.user WHERE p.postType = :postType",
-            countQuery = "SELECT count(p) FROM Post p WHERE p.postType = :postType")
-    Page<Post> findByPostTypeWithImagesAndUser(@Param("postType") PostType postType, Pageable pageable);
+    @EntityGraph(attributePaths = {"postImages", "user"})
+    Page<Post> findByPostType(PostType postType, Pageable pageable);
 
     @Query("SELECT distinct p FROM Post p JOIN FETCH p.postImages JOIN FETCH p.user WHERE p.parent.id = :parentId")
     List<Post> findByParentIdWithImagesAndUser(@Param("parentId") Long parentId);
