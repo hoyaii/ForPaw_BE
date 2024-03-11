@@ -31,7 +31,14 @@ public class AnimalController {
     public ResponseEntity<?> findAnimalList(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @RequestParam("sort") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(page, size, sort, userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, responseDTO));
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
+    @GetMapping("/animals/like")
+    public ResponseEntity<?> findLikeAnimalList(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        AnimalResponse.FindLikeAnimalListDTO responseDTO = animalService.findLikeAnimalList(page, size, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/animals/{animalId}")
