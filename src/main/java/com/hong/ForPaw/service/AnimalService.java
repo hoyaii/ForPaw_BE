@@ -130,10 +130,11 @@ public class AnimalService {
             throw new CustomException(ExceptionCode.ANIMAL_NOT_EXIST);
         }
 
+        // 사용자가 '좋아요' 표시한 Animal의 ID 목록
+        List<Long> likedAnimalIds = favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId);
+
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> {
-                    boolean isLike = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent();
-                    return new AnimalResponse.AnimalDTO(
+                .map(animal -> new AnimalResponse.AnimalDTO(
                             animal.getId(),
                             animal.getName(),
                             animal.getAge(),
@@ -142,9 +143,8 @@ public class AnimalService {
                             animal.getRegion(),
                             animal.getInquiryNum(),
                             animal.getLikeNum(),
-                            isLike,
-                            animal.getProfileURL());
-                })
+                            likedAnimalIds.contains(animal.getId()),
+                            animal.getProfileURL()))
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindAnimalListDTO(animalDTOS);
