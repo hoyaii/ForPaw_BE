@@ -60,7 +60,12 @@ public class AlarmService {
         }
 
         List<AlarmResponse.AlarmDTO> alarmDTOS = alarms.stream()
-                .map(alarm -> new AlarmResponse.AlarmDTO(alarm.getId(), alarm.getContent(), alarm.getRedirectURL(), alarm.getCreatedDate(), alarm.getIsRead() ))
+                .map(alarm -> new AlarmResponse.AlarmDTO(
+                        alarm.getId(),
+                        alarm.getContent(),
+                        alarm.getRedirectURL(),
+                        alarm.getCreatedDate(),
+                        alarm.getIsRead() ))
                 .collect(Collectors.toList());
 
         return new AlarmResponse.FindAlarmsDTO(alarmDTOS);
@@ -98,7 +103,13 @@ public class AlarmService {
                 (key, emitter) -> {
                     // 클라이언트가 서버에 연결된 후 발생한 알림은 캐시에 저장되어, 클라이언트가 다시 연결할 때 놓친 알림을 제공할 수 있음
                     emitterRepository.saveEventCache(key, alarm);
-                    sendNotification(emitter, eventId, key, new AlarmResponse.AlarmDTO(alarm.getId(), alarm.getContent(), alarm.getRedirectURL(), alarm.getCreatedDate(), false));
+                    AlarmResponse.AlarmDTO alarmDTO = new AlarmResponse.AlarmDTO(
+                            alarm.getId(),
+                            alarm.getContent(),
+                            alarm.getRedirectURL(),
+                            alarm.getCreatedDate(),
+                            false);
+                    sendNotification(emitter, eventId, key, alarmDTO);
                 }
         );
     }

@@ -171,27 +171,39 @@ public class PostService {
                 .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
                 .collect(Collectors.toList());
 
-        // 댓글 DTO
+        // 댓글 DTO (특정 게시글에 대한 모든 댓글 및 대댓글을 들고 있음)
         List<PostResponse.CommentDTO> commentDTOS = new ArrayList<>();
         Map<Long, PostResponse.CommentDTO> commentMap = new HashMap<>(); // map을 사용해서 대댓글을 해당 부모 댓글에 추가
 
-        List<Comment> comments = commentRepository.findAllCommentsAndRepliesByPostId(postId); // 특정 게시글에 대한 모든 댓글 및 대댓글을 조회
+        List<Comment> comments = commentRepository.findAllCommentsWithRepliesByPostId(postId);
 
         comments.forEach(comment -> {
-            PostResponse.ReplyDTO replyDTO = new PostResponse.ReplyDTO(comment.getId(), comment.getUser().getNickName(), comment.getContent(), comment.getCreatedDate(), comment.getUser().getRegion());
-
             // 부모 댓글이면, CommentDTO로 변환해서 commentDTOS 리스트에 추가
             if (comment.getParent() == null) {
-                PostResponse.CommentDTO commentDTO = new PostResponse.CommentDTO(comment.getId(), comment.getUser().getNickName(), comment.getContent(), comment.getCreatedDate(), comment.getUser().getRegion(), new ArrayList<>());
+                PostResponse.CommentDTO commentDTO = new PostResponse.CommentDTO(
+                        comment.getId(),
+                        comment.getUser().getNickName(),
+                        comment.getContent(),
+                        comment.getCreatedDate(),
+                        comment.getUser().getRegion(),
+                        new ArrayList<>());
+
                 commentDTOS.add(commentDTO);
                 commentMap.put(comment.getId(), commentDTO);
             }
-            else { // 자식 댓글이면, 부모 댓글의 replies 리스트에 추가
+            else { // 자식 댓글이면, ReplyDTO로 변환해서 부모 댓글의 replies 리스트에 추가
+                PostResponse.ReplyDTO replyDTO = new PostResponse.ReplyDTO(
+                        comment.getId(),
+                        comment.getUser().getNickName(),
+                        comment.getContent(),
+                        comment.getCreatedDate(),
+                        comment.getUser().getRegion());
+
                 commentMap.get(comment.getParent().getId()).replies().add(replyDTO);
             }
         });
 
-        // 게시글 읽음 처리 (화면에서 게시글 확인 여부가 필요한 곳이 있음)
+        // 게시글 읽음 처리
         User userRef = entityManager.getReference(User.class, userId);
         PostReadStatus postReadStatus = PostReadStatus.builder()
                 .post(post)
@@ -222,7 +234,12 @@ public class PostService {
                             .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
                             .collect(Collectors.toList());
 
-                    return new PostResponse.AnswerDTO(answer.getId(), answer.getUser().getNickName(), answer.getContent(), answer.getCreatedDate(), answerImageDTOS);
+                    return new PostResponse.AnswerDTO(
+                            answer.getId(),
+                            answer.getUser().getNickName(),
+                            answer.getContent(),
+                            answer.getCreatedDate(),
+                            answerImageDTOS);
                 })
                 .collect(Collectors.toList());
 
@@ -428,7 +445,15 @@ public class PostService {
         Page<Post> postPage = postRepository.findByPostTypeWithImagesAndUser(postType, pageable);
 
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
-                .map(post ->  new PostResponse.PostDTO(post.getId(), post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), post.getLikeNum(), post.getPostImages().get(0).getImageURL()))
+                .map(post ->  new PostResponse.PostDTO(
+                        post.getId(),
+                        post.getUser().getNickName(),
+                        post.getTitle(),
+                        post.getContent(),
+                        post.getCreatedDate(),
+                        post.getCommentNum(),
+                        post.getLikeNum(),
+                        post.getPostImages().get(0).getImageURL()))
                 .collect(Collectors.toList());
 
         return postDTOS;
@@ -439,7 +464,13 @@ public class PostService {
         Page<Post> postPage = postRepository.findByPostTypeWithImagesAndUser(PostType.question, pageable);
 
         List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
-                .map(post -> new PostResponse.QnaDTO(post.getId(), post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getAnswerNum()))
+                .map(post -> new PostResponse.QnaDTO(
+                        post.getId(),
+                        post.getUser().getNickName(),
+                        post.getTitle(),
+                        post.getContent(),
+                        post.getCreatedDate(),
+                        post.getAnswerNum()))
                 .collect(Collectors.toList());
 
         return qnaDTOS;

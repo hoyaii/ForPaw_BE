@@ -409,6 +409,7 @@ public class GroupService {
                 .description(requestDTO.description())
                 .profileURL(requestDTO.profileURL())
                 .build();
+
         meetingRepository.save(meeting);
 
         // 주최자를 맴버로 저장
@@ -509,14 +510,23 @@ public class GroupService {
                 .map(Group::getId)
                 .collect(Collectors.toSet());
 
-        // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순  3. 비슷한 연관관계 (카테고리, 설명) => 3번은 AI를 사용해야 하기 때문에 일단은 1과 2의 기준으로 추천
+        // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순
         Sort sort = Sort.by(Sort.Order.desc("likeNum"), Sort.Order.desc("participationNum"));
         Pageable pageableForRecommend = PageRequest.of(0, 1000, sort);
 
         Page<Group> recommendGroups = groupRepository.findByRegion(region, pageableForRecommend);
         List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = recommendGroups.getContent().stream()
                 .filter(group -> !myGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
-                .map(group -> new GroupResponse.RecommendGroupDTO(group.getId(), group.getName(), group.getDescription(), group.getParticipationNum(), group.getCategory() ,group.getRegion(), group.getSubRegion(), group.getProfileURL(), group.getLikeNum()))
+                .map(group -> new GroupResponse.RecommendGroupDTO(
+                        group.getId(),
+                        group.getName(),
+                        group.getDescription(),
+                        group.getParticipationNum(),
+                        group.getCategory(),
+                        group.getRegion(),
+                        group.getSubRegion(),
+                        group.getProfileURL(),
+                        group.getLikeNum()))
                 .collect(Collectors.toList());
 
         // 매번 동일하게 추천을 할 수는 없으니, 간추린 추천 목록 중에서 5개를 랜덤으로 보내준다.
@@ -537,7 +547,16 @@ public class GroupService {
         Page<Group> localGroups = groupRepository.findByRegion(region, pageable);
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroups.getContent().stream()
                 .filter(group -> !myGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
-                .map(group -> new GroupResponse.LocalGroupDTO(group.getId(), group.getName(), group.getDescription(), group.getParticipationNum(), group.getCategory(), group.getRegion(), group.getSubRegion(), group.getProfileURL(), group.getLikeNum()))
+                .map(group -> new GroupResponse.LocalGroupDTO(
+                        group.getId(),
+                        group.getName(),
+                        group.getDescription(),
+                        group.getParticipationNum(),
+                        group.getCategory(),
+                        group.getRegion(),
+                        group.getSubRegion(),
+                        group.getProfileURL(),
+                        group.getLikeNum()))
                 .collect(Collectors.toList());
 
         return localGroupDTOS;
@@ -552,7 +571,13 @@ public class GroupService {
         Page<Group> newGroups = groupRepository.findAll(pageable);
         List<GroupResponse.NewGroupDTO> newGroupDTOS = newGroups.getContent().stream()
                 .filter(group -> !myGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
-                .map(group -> new GroupResponse.NewGroupDTO(group.getId(), group.getName(), group.getCategory(), group.getRegion(), group.getSubRegion(), group.getProfileURL()))
+                .map(group -> new GroupResponse.NewGroupDTO(
+                        group.getId(),
+                        group.getName(),
+                        group.getCategory(),
+                        group.getRegion(),
+                        group.getSubRegion(),
+                        group.getProfileURL()))
                 .collect(Collectors.toList());
 
         return newGroupDTOS;
@@ -563,8 +588,16 @@ public class GroupService {
         List<Group> myGroups = getMyGroups(userId, pageable);
 
         List<GroupResponse.MyGroupDTO> myGroupDTOS = myGroups.stream()
-                .map(group -> new GroupResponse.MyGroupDTO(group.getId(), group.getName(), group.getDescription(),
-                        group.getParticipationNum(), group.getCategory(), group.getRegion(), group.getSubRegion(), group.getProfileURL(), group.getLikeNum()))
+                .map(group -> new GroupResponse.MyGroupDTO(
+                        group.getId(),
+                        group.getName(),
+                        group.getDescription(),
+                        group.getParticipationNum(),
+                        group.getCategory(),
+                        group.getRegion(),
+                        group.getSubRegion(),
+                        group.getProfileURL(),
+                        group.getLikeNum()))
                 .collect(Collectors.toList());
 
         return myGroupDTOS;
@@ -635,7 +668,13 @@ public class GroupService {
         List<GroupResponse.NoticeDTO> noticeDTOS = notices.getContent().stream()
                 .map(notice -> {
                     boolean isRead = postReadStatusRepository.existsByUserIdAndPostId(userId, notice.getId());
-                    return new GroupResponse.NoticeDTO(notice.getId(), notice.getUser().getName(), notice.getCreatedDate(), notice.getTitle(), isRead);
+
+                    return new GroupResponse.NoticeDTO(
+                            notice.getId(),
+                            notice.getUser().getName(),
+                            notice.getCreatedDate(),
+                            notice.getTitle(),
+                            isRead);
                 })
                 .collect(Collectors.toList());
 
@@ -650,7 +689,18 @@ public class GroupService {
                     List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository.findAllUsersByMeetingId(meeting.getId()).stream()
                             .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL()))
                             .toList();
-                    return new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
+
+                    return new GroupResponse.MeetingDTO(
+                            meeting.getId(),
+                            meeting.getName(),
+                            meeting.getDate(),
+                            meeting.getLocation(),
+                            meeting.getCost(),
+                            meeting.getParticipantNum(),
+                            meeting.getMaxNum(),
+                            meeting.getProfileURL(),
+                            meeting.getDescription(),
+                            participantDTOS);
                 })
                 .toList();
 
@@ -665,7 +715,11 @@ public class GroupService {
         List<GroupResponse.MemberDTO> memberDTOS = users.stream()
                 .map(user -> {
                     Role role = groupUserRepository.findRoleByUserIdAndGroupId(user.getId(), groupId);
-                    return new GroupResponse.MemberDTO(user.getId(), user.getNickName(), role, user.getProfileURL());
+                    return new GroupResponse.MemberDTO(
+                            user.getId(),
+                            user.getNickName(),
+                            role,
+                            user.getProfileURL());
                 })
                 .collect(Collectors.toList());
 

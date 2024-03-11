@@ -95,8 +95,14 @@ public class SearchService {
                             .map(postImage -> new SearchResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
                             .collect(Collectors.toList());
 
-                    return new SearchResponse.PostDTO(post.getId(), post.getTitle(), post.getContent(), post.getCreatedDate(),
-                            post.getCommentNum(), post.getLikeNum(), postImageDTOS);
+                    return new SearchResponse.PostDTO(
+                            post.getId(),
+                            post.getTitle(),
+                            post.getContent(),
+                            post.getCreatedDate(),
+                            post.getCommentNum(),
+                            post.getLikeNum(),
+                            postImageDTOS);
                 })
                 .collect(Collectors.toList());
 
@@ -108,8 +114,16 @@ public class SearchService {
         Page<Group> groupPage = groupRepository.findByNameContaining(keyword, pageable);
 
         List<SearchResponse.GroupDTO> groupDTOS = groupPage.getContent().stream()
-                .map(group -> new SearchResponse.GroupDTO(group.getId(), group.getName(), group.getDescription(), group.getParticipationNum(),
-                        group.getCategory(), group.getRegion(), group.getSubRegion(), group.getProfileURL(), group.getLikeNum()))
+                .map(group -> new SearchResponse.GroupDTO(
+                        group.getId(),
+                        group.getName(),
+                        group.getDescription(),
+                        group.getParticipationNum(),
+                        group.getCategory(),
+                        group.getRegion(),
+                        group.getSubRegion(),
+                        group.getProfileURL(),
+                        group.getLikeNum()))
                 .collect(Collectors.toList());
 
         return groupDTOS;

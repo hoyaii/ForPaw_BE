@@ -114,9 +114,16 @@ public class ShelterService {
         Page<Animal> animalPage = animalRepository.findByShelterId(shelterId, pageable);
 
         List<ShelterResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> new ShelterResponse.AnimalDTO(animal.getId(), animal.getName(), animal.getAge()
-                        , animal.getGender(), animal.getSpecialMark(), animal.getShelter().getRegionCode().getUprName()+" "+animal.getShelter().getRegionCode().getOrgName()
-                        , animal.getInquiryNum(), animal.getLikeNum(), favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
+                .map(animal -> new ShelterResponse.AnimalDTO(
+                        animal.getId(),
+                        animal.getName(),
+                        animal.getAge(),
+                        animal.getGender(),
+                        animal.getSpecialMark(),
+                        animal.getRegion(),
+                        animal.getInquiryNum(),
+                        animal.getLikeNum(),
+                        favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
                 .collect(Collectors.toList());
 
         return new ShelterResponse.FindShelterByIdDTO(shelter.getCareAddr(), shelter.getCareTel(), animalDTOS);

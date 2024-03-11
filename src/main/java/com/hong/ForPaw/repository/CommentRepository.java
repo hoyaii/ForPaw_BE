@@ -1,7 +1,6 @@
 package com.hong.ForPaw.repository;
 
 import com.hong.ForPaw.domain.Post.Comment;
-import com.hong.ForPaw.domain.Post.Post;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -19,7 +18,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     // 모든 댓글과 대댓글을 한 번에 가져오기
     @Query("SELECT c FROM Comment c LEFT JOIN FETCH c.user WHERE c.post.id = :postId ORDER BY c.parent.id ASC NULLS FIRST, c.createdDate ASC")
-    List<Comment> findAllCommentsAndRepliesByPostId(@Param("postId") Long postId);
+    List<Comment> findAllCommentsWithRepliesByPostId(@Param("postId") Long postId);
 
     boolean existsById(Long id);
 
