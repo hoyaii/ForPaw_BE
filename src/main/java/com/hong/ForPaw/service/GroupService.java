@@ -352,6 +352,7 @@ public class GroupService {
 
         // 좋아요가 이미 있다면 삭제, 없다면 추가
         if (favoriteGroupOP.isPresent()) {
+            groupRepository.decrementLikeNumById(groupId);
             favoriteGroupRepository.delete(favoriteGroupOP.get());
         }
         else {
@@ -359,6 +360,8 @@ public class GroupService {
                     .user(userRef)
                     .group(groupRef)
                     .build();
+
+            groupRepository.incrementLikeNumById(groupId);
             favoriteGroupRepository.save(favoriteGroup);
         }
     }
