@@ -7,7 +7,9 @@ import java.util.List;
 
 public class AnimalResponse {
 
-    public record FindAnimalListDTO(List<AnimalDTO> animals){ }
+    public record FindAnimalListDTO(List<AnimalDTO> animals) {}
+
+    public record FindLikeAnimalListDTO(List<AnimalDTO> animals) {}
 
     public record AnimalDTO(Long id, String name, String age,
                             String gender, String specialMark, String region,

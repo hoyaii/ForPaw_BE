@@ -126,7 +126,6 @@ public class AnimalService {
         Pageable pageable =createPageable(page, size, sort);
         Page<Animal> animalPage = animalRepository.findAll(pageable);
 
-        // 동물이 데이터베이스상에 없음
         if(animalPage.isEmpty()){
             throw new CustomException(ExceptionCode.ANIMAL_NOT_EXIST);
         }
@@ -134,7 +133,8 @@ public class AnimalService {
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
                     boolean isLike = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent();
-                    return new AnimalResponse.AnimalDTO(animal.getId(),
+                    return new AnimalResponse.AnimalDTO(
+                            animal.getId(),
                             animal.getName(),
                             animal.getAge(),
                             animal.getGender(),
@@ -148,6 +148,34 @@ public class AnimalService {
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindAnimalListDTO(animalDTOS);
+    }
+
+    @Transactional
+    public AnimalResponse.FindLikeAnimalListDTO findLikeAnimalList(Integer page, Integer size, Long userId){
+
+        Pageable pageable =createPageable(page, size, "id");
+        Page<Animal> animalPage = favoriteAnimalRepository.findAnimalByUserId(userId, pageable);
+
+        if(animalPage.isEmpty()){
+            throw new CustomException(ExceptionCode.ANIMAL_NOT_EXIST);
+        }
+
+        List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
+                .map(animal -> new AnimalResponse.AnimalDTO(
+                        animal.getId(),
+                        animal.getName(),
+                        animal.getAge(),
+                        animal.getGender(),
+                        animal.getSpecialMark(),
+                        animal.getRegion(),
+                        animal.getInquiryNum(),
+                        animal.getLikeNum(),
+                        true,
+                        animal.getProfileURL()
+                ))
+                .collect(Collectors.toList());
+
+        return new AnimalResponse.FindLikeAnimalListDTO(animalDTOS);
     }
 
     @Transactional
