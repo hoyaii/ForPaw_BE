@@ -300,10 +300,10 @@ public class GroupService {
         checkAdminAuthority(groupId, userId);
 
         // 신청한 적이 없거나 이미 가입했는지 체크
-        Optional<GroupUser> groupApplicantOP = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId);
-        checkAlreadyApplyOrMember(groupApplicantOP);
+        Optional<GroupUser> groupUserOP = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId);
+        checkAlreadyApplyOrMember(groupUserOP);
 
-        groupApplicantOP.get().updateRole(Role.REJECTED);
+        groupUserRepository.delete(groupUserOP.get());
     }
 
     @Transactional
@@ -519,8 +519,8 @@ public class GroupService {
         // 권한 체크 (메니저급만 삭제 가능)
         checkAdminAuthority(groupId, userId);
 
-        meetingRepository.deleteById(meetingId);
         meetingUserRepository.deleteAllByMeetingId(meetingId);
+        meetingRepository.deleteById(meetingId);
     }
 
     private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region){
@@ -661,8 +661,8 @@ public class GroupService {
         // 가입 신청한 적이 없음
         if(groupApplicantOP.isEmpty()){
             throw new CustomException(ExceptionCode.GROUP_NOT_APPLY);
-        } // 이미 승인되어 회원이거나 거절됌
-        else if(groupApplicantOP.get().getRole().equals(Role.USER) || groupApplicantOP.get().getRole().equals(Role.ADMIN) || groupApplicantOP.get().getRole().equals(Role.REJECTED)){
+        } // 이미 승인된 회원
+        else if(groupApplicantOP.get().getRole().equals(Role.USER) || groupApplicantOP.get().getRole().equals(Role.ADMIN)){
             throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
         }
     }
