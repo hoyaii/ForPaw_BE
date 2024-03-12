@@ -715,14 +715,13 @@ public class GroupService {
     }
 
     private List<GroupResponse.MeetingDTO> getMeetingDTOS(Long groupId, Pageable pageable){
-
+        // meetingUser를 패치조인 해서 조회
         Page<Meeting> meetings = meetingRepository.findByGroupId(groupId, pageable);
 
         List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
                 .map(meeting -> {
-                    List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository
-                            .findAllUsersByMeetingId(meeting.getId()).stream()
-                            .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL()))
+                    List<GroupResponse.ParticipantDTO> participantDTOS = meeting.getMeetingUsers().stream()
+                            .map(meetingUser -> new GroupResponse.ParticipantDTO(meetingUser.getUser().getProfileURL()))
                             .toList();
 
                     return new GroupResponse.MeetingDTO(

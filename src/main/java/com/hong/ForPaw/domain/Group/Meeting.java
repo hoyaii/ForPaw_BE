@@ -30,7 +30,7 @@ public class Meeting extends TimeStamp {
     @JoinColumn(name = "user_id")
     private User creator; // 주최자
 
-    @OneToMany(mappedBy = "meetingUser", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MeetingUser> meetingUsers = new ArrayList<>();
 
     @Column
