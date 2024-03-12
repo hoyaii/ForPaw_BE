@@ -6,6 +6,7 @@ import com.hong.ForPaw.domain.Group.Role;
 import com.hong.ForPaw.domain.User.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -46,4 +47,7 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
 
     @Query("SELECT gu.group FROM GroupUser gu WHERE gu.user.id = :userId")
     Page<Group> findGroupPageByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user"})
+    List<GroupUser> findByGroupId(@Param("groupId") Long groupId);
 }

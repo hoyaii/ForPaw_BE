@@ -742,19 +742,16 @@ public class GroupService {
     }
 
     private List<GroupResponse.MemberDTO> getMemberDTOS(Long groupId){
+        // user를 패치조인 해서 조회
+        List<GroupUser> groupUsers = groupUserRepository.findByGroupId(groupId);
 
-        List<Role> roles = Arrays.asList(Role.USER, Role.ADMIN, Role.CREATOR);
-        List<User> users = groupUserRepository.findAllUsersByGroupIdInRole(groupId, roles);
-
-        List<GroupResponse.MemberDTO> memberDTOS = users.stream()
-                .map(user -> {
-                    Role role = groupUserRepository.findRoleByUserIdAndGroupId(user.getId(), groupId);
-                    return new GroupResponse.MemberDTO(
-                            user.getId(),
-                            user.getNickName(),
-                            role,
-                            user.getProfileURL());
-                })
+        List<GroupResponse.MemberDTO> memberDTOS = groupUsers.stream()
+                .filter(groupUser -> !groupUser.getRole().equals(Role.TEMP))
+                .map(groupUser -> new GroupResponse.MemberDTO(
+                        groupUser.getUser().getId(),
+                        groupUser.getUser().getNickName(),
+                        groupUser.getRole(),
+                        groupUser.getUser().getProfileURL()))
                 .collect(Collectors.toList());
 
         return memberDTOS;
