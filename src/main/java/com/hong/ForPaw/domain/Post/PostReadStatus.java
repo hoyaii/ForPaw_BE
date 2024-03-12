@@ -32,5 +32,3 @@ public class PostReadStatus extends TimeStamp {
         this.post = post;
     }
 }
-
-// 나중에 게시글이 삭제되면, 관련된 PostReadStatus들도 삭제되는 로직을 구현하자

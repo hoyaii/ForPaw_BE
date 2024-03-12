@@ -7,12 +7,14 @@ import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Group.*;
 import com.hong.ForPaw.domain.Post.Post;
+import com.hong.ForPaw.domain.Post.PostReadStatus;
 import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.*;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -446,14 +448,14 @@ public class GroupService {
                 .profileURL(requestDTO.profileURL())
                 .build();
 
-        meetingRepository.save(meeting);
-
         // 주최자를 맴버로 저장
         MeetingUser meetingUser = MeetingUser.builder()
-                .meeting(meeting)
                 .user(userRef)
                 .build();
-        meetingUserRepository.save(meetingUser);
+
+        // 양방향 관계 설정 후 meeting 저장 (cascade에 의해 meetingUser도 자동으로 저장됨)
+        meeting.addMeetingUser(meetingUser);
+        meetingRepository.save(meeting);
 
         // 알람 생성
         List<User> users = groupUserRepository.findAllUsersByGroupIdWithoutMe(groupId, userId);
@@ -486,7 +488,9 @@ public class GroupService {
     @Transactional
     public void joinMeeting(Long groupId, Long meetingId, Long userId){
         // 존재하지 않는 모임이면 에러 처리
-        checkMeetingExist(meetingId);
+        Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(
+                () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
+        );
 
         // 그룹의 맴버가 아니면 에러 처리
         checkIsMember(groupId, userId);
@@ -496,13 +500,12 @@ public class GroupService {
             throw new CustomException(ExceptionCode.MEETING_ALREADY_JOIN);
         }
 
-        Meeting meetingRef = entityManager.getReference(Meeting.class, meetingId);
         User userRef = entityManager.getReference(User.class, userId);
-
         MeetingUser meetingUser = MeetingUser.builder()
-                .meeting(meetingRef)
                 .user(userRef)
                 .build();
+
+        meeting.addMeetingUser(meetingUser);
         meetingUserRepository.save(meetingUser);
 
         // 참가자 수 증가
@@ -696,19 +699,18 @@ public class GroupService {
     }
 
     private List<GroupResponse.NoticeDTO> getNoticeDTOS(Long userId, Long groupId, Pageable pageable){
+        // user를 패치조인 해서 조회
+        Page<Post> notices = postRepository.findByGroupId(groupId, pageable);
+        // 해당 유저가 읽은 post의 id 목록
+        List<Long> postIds = postRepository.findPostIdsByUserId(userId);
 
-        Page<Post> notices = postRepository.findAllByGroupId(groupId, pageable);
         List<GroupResponse.NoticeDTO> noticeDTOS = notices.getContent().stream()
-                .map(notice -> {
-                    boolean isRead = postReadStatusRepository.existsByUserIdAndPostId(userId, notice.getId());
-
-                    return new GroupResponse.NoticeDTO(
+                .map(notice -> new GroupResponse.NoticeDTO(
                             notice.getId(),
                             notice.getUser().getNickName(),
                             notice.getCreatedDate(),
                             notice.getTitle(),
-                            isRead);
-                })
+                            postIds.contains(notice.getId())))
                 .collect(Collectors.toList());
 
         return noticeDTOS;
@@ -746,7 +748,7 @@ public class GroupService {
         List<GroupUser> groupUsers = groupUserRepository.findByGroupId(groupId);
 
         List<GroupResponse.MemberDTO> memberDTOS = groupUsers.stream()
-                .filter(groupUser -> !groupUser.getRole().equals(Role.TEMP))
+                .filter(groupUser -> !groupUser.getRole().equals(Role.TEMP)) // 가입 승인 상태가 아니면 제외
                 .map(groupUser -> new GroupResponse.MemberDTO(
                         groupUser.getUser().getId(),
                         groupUser.getUser().getNickName(),

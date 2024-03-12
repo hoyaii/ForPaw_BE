@@ -47,7 +47,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     void deleteAllByGroupId(Long groupId);
 
-    Page<Post> findAllByGroupId(Long groupId, Pageable pageable);
+    @EntityGraph(attributePaths = {"user"})
+    Page<Post> findByGroupId(Long groupId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"postImages"})
     Page<Post> findByTitleContaining(@Param("title") String title, Pageable pageable);
@@ -60,4 +61,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @EntityGraph(attributePaths = {"user", "postImages"})
     Optional<Post> findById(Long postId);
+
+    @Query("SELECT prs.post.id FROM PostReadStatus prs WHERE prs.user.id = :userId")
+    List<Long> findPostIdsByUserId(@Param("userId") Long userId);
 }
