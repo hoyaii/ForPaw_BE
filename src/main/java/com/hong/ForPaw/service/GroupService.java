@@ -10,6 +10,7 @@ import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.*;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -37,6 +38,7 @@ public class GroupService {
     private final PostReadStatusRepository postReadStatusRepository;
     private final AlarmService alarmService;
     private final EntityManager entityManager;
+    private final JPAQueryFactory jpaQueryFactory;
 
     @Transactional
     public void createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId){

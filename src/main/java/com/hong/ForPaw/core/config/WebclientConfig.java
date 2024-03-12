@@ -17,7 +17,7 @@ import java.time.Duration;
 import java.util.function.Function;
 
 @Configuration
-public class webclientConfig {
+public class WebclientConfig {
 
     @Bean
     public ReactorResourceFactory resourceFactory() {
