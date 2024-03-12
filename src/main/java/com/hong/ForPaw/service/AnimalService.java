@@ -13,6 +13,7 @@ import com.hong.ForPaw.controller.DTO.AnimalDTO;
 import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Shelter;
 import com.hong.ForPaw.repository.*;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -24,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import javax.persistence.EntityManager;
 import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;

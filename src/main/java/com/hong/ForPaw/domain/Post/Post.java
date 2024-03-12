@@ -3,12 +3,12 @@ package com.hong.ForPaw.domain.Post;
 import com.hong.ForPaw.domain.Group.Group;
 import com.hong.ForPaw.domain.TimeStamp;
 import com.hong.ForPaw.domain.User.User;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 

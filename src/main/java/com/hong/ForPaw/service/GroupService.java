@@ -10,12 +10,12 @@ import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.*;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityManager;
 import java.util.*;
 
 import org.springframework.data.domain.PageRequest;
@@ -434,7 +434,7 @@ public class GroupService {
 
         Meeting meeting = Meeting.builder()
                 .group(groupRef)
-                .user(userRef)
+                .creator(userRef)
                 .name(requestDTO.name())
                 .date(requestDTO.date())
                 .location(requestDTO.location())
@@ -714,10 +714,12 @@ public class GroupService {
 
     private List<GroupResponse.MeetingDTO> getMeetingDTOS(Long groupId, Pageable pageable){
 
-        Page<Meeting> meetings = meetingRepository.findAllByGroupId(groupId, pageable);
+        Page<Meeting> meetings = meetingRepository.findByGroupId(groupId, pageable);
+
         List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
                 .map(meeting -> {
-                    List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository.findAllUsersByMeetingId(meeting.getId()).stream()
+                    List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository
+                            .findAllUsersByMeetingId(meeting.getId()).stream()
                             .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL()))
                             .toList();
 

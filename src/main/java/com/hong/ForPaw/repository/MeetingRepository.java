@@ -9,8 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-
 @Repository
 public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
@@ -26,5 +24,5 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
     void deleteAllByGroupId(Long groupId);
 
-    Page<Meeting> findAllByGroupId(Long groupId, Pageable pageable);
+    Page<Meeting> findByGroupId(Long groupId, Pageable pageable);
 }

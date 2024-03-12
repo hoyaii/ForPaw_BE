@@ -2,12 +2,13 @@ package com.hong.ForPaw.domain.Animal;
 
 import com.hong.ForPaw.domain.Shelter;
 import com.hong.ForPaw.domain.TimeStamp;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.*;
+
 import java.time.LocalDate;
 
 @Entity
