@@ -31,4 +31,8 @@ public class MeetingUser extends TimeStamp {
         this.meeting = meeting;
         this.user = user;
     }
+
+    public void updateMeeting(Meeting meeting){
+        this.meeting = meeting;
+    }
 }

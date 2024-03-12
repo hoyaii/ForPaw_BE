@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -27,6 +29,9 @@ public class Meeting extends TimeStamp {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User creator; // 주최자
+
+    @OneToMany(mappedBy = "meetingUser", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MeetingUser> meetingUsers = new ArrayList<>();
 
     @Column
     private String name;
@@ -73,5 +78,10 @@ public class Meeting extends TimeStamp {
         this.maxNum = maxNum;
         this.description = description;
         this.profileURL = profileURL;
+    }
+
+    public void addMeetingUser(MeetingUser meetingUser){
+        meetingUsers.add(meetingUser);
+        meetingUser.updateMeeting(this);
     }
 }
