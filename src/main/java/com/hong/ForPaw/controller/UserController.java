@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -24,7 +25,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/auth/login")
-    public ResponseEntity<?> login(@RequestBody UserRequest.LoginDTO requestDTO) {
+    public ResponseEntity<?> login(@RequestBody UserRequest.LoginDTO requestDTO, Errors errors) {
 
         Map<String, String> tokens = userService.login(requestDTO);
 
@@ -60,49 +61,49 @@ public class UserController {
     }
 
     @PostMapping("/accounts")
-    public ResponseEntity<?> join(@RequestBody UserRequest.JoinDTO requestDTO){
+    public ResponseEntity<?> join(@RequestBody UserRequest.JoinDTO requestDTO, Errors errors){
 
         userService.join(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, null));
     }
 
     @PostMapping("/accounts/social")
-    public ResponseEntity<?> socialJoin(@RequestBody UserRequest.SocialJoinDTO requestDTO){
+    public ResponseEntity<?> socialJoin(@RequestBody UserRequest.SocialJoinDTO requestDTO, Errors errors){
 
         userService.socialJoin(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, null));
     }
 
     @PostMapping("/accounts/check")
-    public ResponseEntity<?> checkAndSendCode(@RequestBody UserRequest.EmailDTO requestDTO){
+    public ResponseEntity<?> checkAndSendCode(@RequestBody UserRequest.EmailDTO requestDTO, Errors errors){
 
         userService.checkAndSendCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/check/verify")
-    public ResponseEntity<?> verifyRegisterCode(@RequestBody UserRequest.VerifyCodeDTO requestDTO){
+    public ResponseEntity<?> verifyRegisterCode(@RequestBody UserRequest.VerifyCodeDTO requestDTO, Errors errors){
 
         userService.verifyCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/recovery")
-    public ResponseEntity<?> sendRecoveryCode(@RequestBody UserRequest.EmailDTO requestDTO){
+    public ResponseEntity<?> sendRecoveryCode(@RequestBody UserRequest.EmailDTO requestDTO, Errors errors){
 
         userService.sendRecoveryCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/recovery/verify")
-    public ResponseEntity<?> verifyAndSendPassword(@RequestBody UserRequest.VerifyCodeDTO requestDTO){
+    public ResponseEntity<?> verifyAndSendPassword(@RequestBody UserRequest.VerifyCodeDTO requestDTO, Errors errors){
 
         userService.verifyAndSendPassword(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/password/verify")
-    public ResponseEntity<?> verifyPassword(@RequestBody UserRequest.CurPasswordDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> verifyPassword(@RequestBody UserRequest.CurPasswordDTO requestDTO, Errors errors, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         userService.verifyPassword(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
@@ -110,7 +111,7 @@ public class UserController {
 
 
     @PatchMapping("/accounts/password")
-    public ResponseEntity<?> updatePassword(@RequestBody UserRequest.UpdatePasswordDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> updatePassword(@RequestBody UserRequest.UpdatePasswordDTO requestDTO, Errors errors, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         userService.updatePassword(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
@@ -124,21 +125,21 @@ public class UserController {
     }
 
     @PatchMapping("/accounts/profile")
-    public ResponseEntity<?> updateProfile(@RequestBody UserRequest.UpdateProfileDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> updateProfile(@RequestBody UserRequest.UpdateProfileDTO requestDTO, Errors errors, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         userService.updateProfile(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PatchMapping("/auth/access")
-    public ResponseEntity<?> updateAccessToken(@RequestBody UserRequest.UpdateAccessTokenDTO requestDTO){
+    public ResponseEntity<?> updateAccessToken(@RequestBody UserRequest.UpdateAccessTokenDTO requestDTO, Errors errors){
 
         UserResponse.AccessTokenDTO responseDTO = userService.updateAccessToken(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PatchMapping("/accounts/role")
-    public ResponseEntity<?> updateRole(@RequestBody UserRequest.UpdateRoleDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> updateRole(@RequestBody UserRequest.UpdateRoleDTO requestDTO, Errors errors, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         userService.updateRole(requestDTO, userDetails.getUser().getId(), userDetails.getUser().getRole());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
