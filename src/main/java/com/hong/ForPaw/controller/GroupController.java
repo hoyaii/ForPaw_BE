@@ -22,8 +22,8 @@ public class GroupController {
     @PostMapping("/groups")
     public ResponseEntity<?> createGroup(@RequestBody GroupRequest.CreateGroupDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        groupService.createGroup(requestDTO, userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+        GroupResponse.CreateGroupDTO responseDTO = groupService.createGroup(requestDTO, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/groups/{groupId}")

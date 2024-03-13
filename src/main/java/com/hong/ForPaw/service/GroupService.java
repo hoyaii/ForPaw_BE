@@ -39,7 +39,7 @@ public class GroupService {
     private final EntityManager entityManager;
 
     @Transactional
-    public void createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId){
+    public GroupResponse.CreateGroupDTO createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId){
         // 이름 중복 체크
         if(groupRepository.existsByName(requestDTO.name())){
             throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
@@ -66,8 +66,10 @@ public class GroupService {
 
         // 그룹 참여자 수 1로 레디스에 저장
         redisService.storeDate("groupParticipantNum", group.getId().toString(), Long.toString(1L));
-
+        
         groupUserRepository.save(groupUser);
+
+        return new GroupResponse.CreateGroupDTO(group.getId());
     }
 
     // 수정 화면에서 사용하는 API

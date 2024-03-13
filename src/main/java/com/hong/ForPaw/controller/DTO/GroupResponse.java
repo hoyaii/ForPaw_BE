@@ -94,6 +94,8 @@ public class GroupResponse {
 
     public record MemberDTO(Long id, String name, Role role, String profileURL) {}
 
+    public record CreateGroupDTO(Long id) {}
+
     public record CreateMeetingDTO(Long id) {}
 
     public record CreateNoticeDTO(Long id) {}
