@@ -57,8 +57,8 @@ public class AnimalController {
     @PostMapping("/animals/{animalId}/apply")
     public ResponseEntity<?> applyAdoption(@RequestBody AnimalRequest.ApplyAdoptionDTO requestDTO, @PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        animalService.applyAdoption(requestDTO, userDetails.getUser().getId(), animalId);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+        AnimalResponse.CreateApplyDTO responseDTO = animalService.applyAdoption(requestDTO, userDetails.getUser().getId(), animalId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, requestDTO));
     }
 
     @GetMapping("/applies")

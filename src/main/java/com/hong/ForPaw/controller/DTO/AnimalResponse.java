@@ -41,6 +41,8 @@ public class AnimalResponse {
 
     public record FindApplyListDTO(List<ApplyDTO> applies) { }
 
+    public record CreateApplyDTO(Long id) {}
+
     public record ApplyDTO(Long id,
                            String animalName,
                            String kind,

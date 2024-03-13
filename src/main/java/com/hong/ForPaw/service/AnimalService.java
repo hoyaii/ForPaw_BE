@@ -241,7 +241,7 @@ public class AnimalService {
     }
 
     @Transactional
-    public void applyAdoption(AnimalRequest.ApplyAdoptionDTO requestDTO, Long userId, Long animalId){
+    public AnimalResponse.CreateApplyDTO applyAdoption(AnimalRequest.ApplyAdoptionDTO requestDTO, Long userId, Long animalId){
         // 동물이 존재하지 않으면 에러
         if(!animalRepository.existsById(animalId)){
             throw new CustomException(ExceptionCode.ANIMAL_NOT_FOUND);
@@ -268,6 +268,8 @@ public class AnimalService {
         // 동물의 문의 횟수 증가
         Long inquiryNum = redisService.getDataInLong("inquiryNum", animalId.toString());
         redisService.storeDate("inquiryNum", animalId.toString(), Long.toString(inquiryNum + 1L));
+
+        return new AnimalResponse.CreateApplyDTO(apply.getId());
     }
 
     @Transactional
