@@ -34,7 +34,7 @@ public class ShelterService {
     private final RegionCodeRepository regionCodeRepository;
     private final AnimalRepository animalRepository;
     private final FavoriteAnimalRepository favoriteAnimalRepository;
-    private final UserRepository userRepository;
+    private final RedisService redisService;
 
     @Value("${openAPI.service-key2}")
     private String serviceKey;
@@ -113,17 +113,25 @@ public class ShelterService {
         Pageable pageable = createPageable(page, size, sort);
         Page<Animal> animalPage = animalRepository.findByShelterId(shelterId, pageable);
 
+        // 사용자가 '좋아요' 표시한 Animal의 ID 목록
+        List<Long> likedAnimalIds = favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId);
+
         List<ShelterResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> new ShelterResponse.AnimalDTO(
+                .map(animal -> {
+                    Long inquiryNum = redisService.getDataInLong("inquiryNum", animal.getId().toString());
+
+                    return new ShelterResponse.AnimalDTO(
                         animal.getId(),
                         animal.getName(),
                         animal.getAge(),
                         animal.getGender(),
                         animal.getSpecialMark(),
                         animal.getRegion(),
-                        animal.getInquiryNum(),
+                        inquiryNum,
                         animal.getLikeNum(),
-                        favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent(), animal.getProfileURL() ))
+                        likedAnimalIds.contains(animal.getId()),
+                        animal.getProfileURL());
+                })
                 .collect(Collectors.toList());
 
         return new ShelterResponse.FindShelterByIdDTO(shelter.getCareAddr(), shelter.getCareTel(), animalDTOS);

@@ -545,7 +545,7 @@ public class GroupService {
         Set<Long> joinedGroupIds = getGroupIds(userId);
 
         // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순
-        Sort sort = Sort.by(Sort.Order.desc("likeNum"), Sort.Order.desc("participationNum"));
+        Sort sort = Sort.by(Sort.Order.desc("likeNum"), Sort.Order.desc("ㅊ"));
         Pageable pageableForRecommend = PageRequest.of(0, 1000, sort);
 
         Page<Group> recommendGroups = groupRepository.findByRegion(region, pageableForRecommend);

@@ -41,7 +41,7 @@ public class AnimalService {
     private final AnimalRepository animalRepository;
     private final ShelterRepository shelterRepository;
     private final FavoriteAnimalRepository favoriteAnimalRepository;
-    private final UserRepository userRepository;
+    private final RedisService redisService;
     private final ApplyRepository applyRepository;
     private final EntityManager entityManager;
 
@@ -134,17 +134,21 @@ public class AnimalService {
         List<Long> likedAnimalIds = favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId);
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> new AnimalResponse.AnimalDTO(
-                            animal.getId(),
-                            animal.getName(),
-                            animal.getAge(),
-                            animal.getGender(),
-                            animal.getSpecialMark(),
-                            animal.getRegion(),
-                            animal.getInquiryNum(),
-                            animal.getLikeNum(),
-                            likedAnimalIds.contains(animal.getId()),
-                            animal.getProfileURL()))
+                .map(animal -> {
+                    Long inquiryNum = redisService.getDataInLong("inquiryNum", animal.getId().toString());
+
+                    return new AnimalResponse.AnimalDTO(
+                        animal.getId(),
+                        animal.getName(),
+                        animal.getAge(),
+                        animal.getGender(),
+                        animal.getSpecialMark(),
+                        animal.getRegion(),
+                        inquiryNum,
+                        animal.getLikeNum(),
+                        likedAnimalIds.contains(animal.getId()),
+                        animal.getProfileURL());
+                })
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindAnimalListDTO(animalDTOS);
@@ -161,18 +165,21 @@ public class AnimalService {
         }
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> new AnimalResponse.AnimalDTO(
+                .map(animal -> {
+                    Long inquiryNum = redisService.getDataInLong("inquiryNum", animal.getId().toString());
+
+                    return new AnimalResponse.AnimalDTO(
                         animal.getId(),
                         animal.getName(),
                         animal.getAge(),
                         animal.getGender(),
                         animal.getSpecialMark(),
                         animal.getRegion(),
-                        animal.getInquiryNum(),
+                        inquiryNum,
                         animal.getLikeNum(),
                         true,
-                        animal.getProfileURL()
-                ))
+                        animal.getProfileURL());
+                })
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindLikeAnimalListDTO(animalDTOS);
@@ -256,8 +263,11 @@ public class AnimalService {
                 .residence(requestDTO.residence())
                 .build();
 
-        animalRepository.incrementInquiryNumById(animalId);
         applyRepository.save(apply);
+
+        // 동물의 문의 횟수 증가
+        Long inquiryNum = redisService.getDataInLong("inquiryNum", animalId.toString());
+        redisService.storeDate("inquiryNum", animalId.toString(), Long.toString(inquiryNum + 1L));
     }
 
     @Transactional
@@ -289,9 +299,14 @@ public class AnimalService {
     @Transactional
     public void deleteApplyById(Long applyId, Long userId){
         // 지원하지 않았거나, 권한이 없으면 에러
-        if(!applyRepository.existsByApplyIdAndAnimalId(applyId, userId)){
+        if(!applyRepository.existsByApplyIdAndUserId(applyId, userId)){
             throw new CustomException(ExceptionCode.APPLY_NOT_FOUND);
         }
+
+        // 동물의 문의 횟수 감소
+        Long animalId = applyRepository.findAnimalIdById(applyId);
+        Long inquiryNum = redisService.getDataInLong("inquiryNum", animalId.toString());
+        redisService.storeDate("inquiryNum", animalId.toString(), Long.toString(inquiryNum - 1L));
 
         applyRepository.deleteById(applyId);
     }

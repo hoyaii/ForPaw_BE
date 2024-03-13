@@ -17,7 +17,7 @@ public class AnimalResponse {
                             String gender,
                             String specialMark,
                             String region,
-                            Integer inquiryNum,
+                            Long inquiryNum,
                             Integer likeNum,
                             Boolean isLike,
                             String profileURL){};
@@ -39,7 +39,7 @@ public class AnimalResponse {
                                     String processState,
                                     String neuter){}
 
-    public record FindApplyListDTO(List<ApplyDTO> adoptionApplyDTOS) { }
+    public record FindApplyListDTO(List<ApplyDTO> applies) { }
 
     public record ApplyDTO(Long id,
                            String animalName,

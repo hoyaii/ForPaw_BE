@@ -422,8 +422,9 @@ public class PostService {
         commentLikeRepository.deleteAllByCommentId(commentId);
 
         // 게시글의 댓글 수 감소
+        Long childNum = Long.valueOf(comment.getChildren().size());
         Long commentNum = redisService.getDataInLong("commentNum", postId.toString());
-        redisService.storeDate("commentNum", postId.toString(), Long.toString(commentNum - 1L));
+        redisService.storeDate("commentNum", postId.toString(), Long.toString(commentNum - 1L -  childNum));
     }
 
     @Transactional

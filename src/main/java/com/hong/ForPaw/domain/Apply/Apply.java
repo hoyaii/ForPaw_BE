@@ -9,12 +9,14 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-
-
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Apply extends TimeStamp {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -23,10 +25,6 @@ public class Apply extends TimeStamp {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "animal_id")
     private Animal animal;
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     @Column
     @Enumerated(EnumType.STRING)

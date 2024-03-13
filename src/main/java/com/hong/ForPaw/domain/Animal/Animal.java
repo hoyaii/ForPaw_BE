@@ -72,11 +72,7 @@ public class Animal extends TimeStamp {
     private Integer likeNum = 0;
 
     @Column
-    private Integer inquiryNum = 0;
-
-    @Column
     private String name;
-
 
     @Builder
     public Animal(Long id, Shelter shelter, LocalDate happenDt, String happenPlace, String kind, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark, String name, String region) {
