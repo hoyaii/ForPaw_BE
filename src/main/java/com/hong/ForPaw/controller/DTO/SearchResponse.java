@@ -19,7 +19,7 @@ public class SearchResponse {
                           String title,
                           String content,
                           LocalDateTime date,
-                          Integer commentNum,
+                          Long commentNum,
                           Integer likeNum,
                           List<PostImageDTO> images){}
 

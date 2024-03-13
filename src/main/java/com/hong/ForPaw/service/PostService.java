@@ -208,6 +208,9 @@ public class PostService {
             }
         });
 
+        // 댓글 수
+        Long commentNum = redisService.getDataInLong("commentNum", postId.toString());
+
         // 게시글 읽음 처리
         User userRef = entityManager.getReference(User.class, userId);
         PostReadStatus postReadStatus = PostReadStatus.builder()
@@ -217,7 +220,7 @@ public class PostService {
 
         postReadStatusRepository.save(postReadStatus);
 
-        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), post.getLikeNum(), postImageDTOS, commentDTOS);
+        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), commentNum, post.getLikeNum(), postImageDTOS, commentDTOS);
     }
 
     @Transactional
@@ -295,6 +298,10 @@ public class PostService {
         commentRepository.deleteAllByPostId(postId);
         commentLikeRepository.deleteAllByPostId(postId);
         postRepository.deleteById(postId);
+
+        // 레디스에 저장된 댓글 수, 답변 수 삭제
+        redisService.removeData("answerNum", postId.toString());
+        redisService.removeData("commentNum", postId.toString());
     }
 
     @Transactional
@@ -342,7 +349,8 @@ public class PostService {
         commentRepository.save(comment);
 
         // 게시글의 댓글 수 증가
-        postRepository.incrementCommentNumById(postId);
+        Long commentNum = redisService.getDataInLong("commentNum", postId.toString());
+        redisService.storeDate("commentNum", postId.toString(), Long.toString(commentNum + 1L));
 
         // 게시글 작성자의 userId를 구해서, 프록시 객체 생성
         Long postUserId = postRepository.findUserIdByPostId(postId).get(); // 이미 앞에서 존재하는 글임을 체크함
@@ -374,7 +382,8 @@ public class PostService {
         commentRepository.save(comment);
 
         // 게시글의 댓글 수 증가
-        postRepository.incrementCommentNumById(postId);
+        Long commentNum = redisService.getDataInLong("commentNum", postId.toString());
+        redisService.storeDate("commentNum", postId.toString(), Long.toString(commentNum + 1L));
 
         // 알람 생성
         User parentCommentUserRef = entityManager.getReference(User.class, parent.getUser().getId()); // 작성자
@@ -413,8 +422,8 @@ public class PostService {
         commentLikeRepository.deleteAllByCommentId(commentId);
 
         // 게시글의 댓글 수 감소
-        Integer childNum = comment.getChildren().size();
-        postRepository.decrementCommentNumById(postId, childNum + 1);
+        Long commentNum = redisService.getDataInLong("commentNum", postId.toString());
+        redisService.storeDate("commentNum", postId.toString(), Long.toString(commentNum - 1L));
     }
 
     @Transactional
@@ -450,15 +459,19 @@ public class PostService {
         Page<Post> postPage = postRepository.findByPostType(postType, pageable);
 
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
-                .map(post ->  new PostResponse.PostDTO(
+                .map(post ->  {
+                    Long commentNum = redisService.getDataInLong("commentNum", post.getId().toString());
+
+                    return new PostResponse.PostDTO(
                         post.getId(),
                         post.getUser().getNickName(),
                         post.getTitle(),
                         post.getContent(),
                         post.getCreatedDate(),
-                        post.getCommentNum(),
+                        commentNum,
                         post.getLikeNum(),
-                        post.getPostImages().get(0).getImageURL()))
+                        post.getPostImages().get(0).getImageURL());
+                })
                 .collect(Collectors.toList());
 
         return postDTOS;

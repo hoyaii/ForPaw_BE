@@ -22,7 +22,7 @@ public class PostResponse {
                           String title,
                           String content,
                           LocalDateTime date,
-                          Integer commentNum,
+                          Long commentNum,
                           Integer likeNum,
                           String imageURL){}
 
@@ -39,7 +39,7 @@ public class PostResponse {
                                   String title,
                                   String content,
                                   LocalDateTime date,
-                                  Integer commentNum,
+                                  Long commentNum,
                                   Integer likeNum,
                                   List<PostImageDTO> images,
                                   List<CommentDTO> comments){}

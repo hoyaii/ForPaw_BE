@@ -27,6 +27,7 @@ public class SearchService {
     private final ShelterRepository shelterRepository;
     private final PostRepository postRepository;
     private final GroupRepository groupRepository;
+    private final RedisService redisService;
 
     @Transactional
     public SearchResponse.SearchAllDTO searchAll(String keyword){
@@ -94,12 +95,14 @@ public class SearchService {
                             .map(postImage -> new SearchResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
                             .collect(Collectors.toList());
 
+                    Long commentNum = redisService.getDataInLong("commentNum", post.getId().toString());
+
                     return new SearchResponse.PostDTO(
                             post.getId(),
                             post.getTitle(),
                             post.getContent(),
                             post.getCreatedDate(),
-                            post.getCommentNum(),
+                            commentNum,
                             post.getLikeNum(),
                             postImageDTOS);
                 })
