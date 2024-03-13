@@ -23,7 +23,7 @@ public class PostResponse {
                           String content,
                           LocalDateTime date,
                           Long commentNum,
-                          Integer likeNum,
+                          Long likeNum,
                           String imageURL){}
 
     public record QnaDTO(Long id,
@@ -40,7 +40,7 @@ public class PostResponse {
                                   String content,
                                   LocalDateTime date,
                                   Long commentNum,
-                                  Integer likeNum,
+                                  Long likeNum,
                                   List<PostImageDTO> images,
                                   List<CommentDTO> comments){}
 

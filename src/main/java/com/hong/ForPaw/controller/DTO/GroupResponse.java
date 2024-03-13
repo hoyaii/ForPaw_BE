@@ -33,7 +33,7 @@ public class GroupResponse {
                                     String region,
                                     String subRegion,
                                     String profileURL,
-                                    Integer likeNum) {}
+                                    Long likeNum) {}
 
     public record NewGroupDTO(Long id,
                               String name,
@@ -50,7 +50,7 @@ public class GroupResponse {
                                 String region,
                                 String subRegion,
                                 String profileURL,
-                                Integer likeNum) {}
+                                Long likeNum) {}
 
     public record MyGroupDTO(Long id,
                              String name,
@@ -60,7 +60,7 @@ public class GroupResponse {
                              String region,
                              String subRegion,
                              String profileURL,
-                             Integer likeNum) {}
+                             Long likeNum) {}
 
     public record FindGroupDetailByIdDTO(String profileURL,
                                          String name,

@@ -24,7 +24,7 @@ public class RedisService {
         redisTemplate.opsForValue().set(buildKey(type, id), value);
     }
 
-    public void incrementCount(String type, String id, Long cnt){
+    public void incrementCnt(String type, String id, Long cnt){
 
         redisTemplate.opsForValue().increment(buildKey(type, id), cnt);
     }

@@ -50,7 +50,7 @@ public class Post extends TimeStamp {
     private String content;
 
     @Column
-    private Integer likeNum = 0;
+    private Long likeNum = 0L;
 
     @Builder
     public Post(User user, Group group, PostType postType, String title, String content) {

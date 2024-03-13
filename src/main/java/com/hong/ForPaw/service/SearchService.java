@@ -96,6 +96,7 @@ public class SearchService {
                             .collect(Collectors.toList());
 
                     Long commentNum = redisService.getDataInLong("commentNum", post.getId().toString());
+                    Long likeNum = redisService.getDataInLong("postLikeNum", post.getId().toString());
 
                     return new SearchResponse.PostDTO(
                             post.getId(),
@@ -103,7 +104,7 @@ public class SearchService {
                             post.getContent(),
                             post.getCreatedDate(),
                             commentNum,
-                            post.getLikeNum(),
+                            likeNum,
                             postImageDTOS);
                 })
                 .collect(Collectors.toList());
@@ -118,6 +119,7 @@ public class SearchService {
         List<SearchResponse.GroupDTO> groupDTOS = groupPage.getContent().stream()
                 .map(group -> {
                     Long participantNum = redisService.getDataInLong("participantNum", group.getId().toString());
+                    Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
 
                     return new SearchResponse.GroupDTO(
                         group.getId(),
@@ -128,7 +130,7 @@ public class SearchService {
                         group.getRegion(),
                         group.getSubRegion(),
                         group.getProfileURL(),
-                        group.getLikeNum());
+                        likeNum);
                 })
                 .collect(Collectors.toList());
 

@@ -20,7 +20,7 @@ public class SearchResponse {
                           String content,
                           LocalDateTime date,
                           Long commentNum,
-                          Integer likeNum,
+                          Long likeNum,
                           List<PostImageDTO> images){}
 
     public record PostImageDTO(Long id, String imageURL) {}
@@ -33,6 +33,6 @@ public class SearchResponse {
                            String region,
                            String subRegion,
                            String profileURL,
-                           Integer likeNum) {}
+                           Long likeNum) {}
 
 }

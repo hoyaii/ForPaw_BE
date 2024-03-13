@@ -98,7 +98,7 @@ public class PostService {
         postRepository.save(post);
 
         // 게시글의 답변 수 레디스에 저장
-        redisService.incrementCount("answerNum", parentPostId.toString(), 1L);
+        redisService.incrementCnt("answerNum", parentPostId.toString(), 1L);
 
         // 알림 생성
         String redirectURL = "post/"+parentPostId+"/entire";
@@ -207,6 +207,9 @@ public class PostService {
             }
         });
 
+        // 좋아요 수
+        Long likeNum = redisService.getDataInLong("postLikeNum", postId.toString());
+
         // 댓글 수
         Long commentNum = redisService.getDataInLong("commentNum", postId.toString());
 
@@ -219,7 +222,7 @@ public class PostService {
 
         postReadStatusRepository.save(postReadStatus);
 
-        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), commentNum, post.getLikeNum(), postImageDTOS, commentDTOS);
+        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), commentNum, likeNum, postImageDTOS, commentDTOS);
     }
 
     @Transactional
@@ -318,7 +321,7 @@ public class PostService {
 
         // 이미 좋아요를 눌렀다면, 취소하는 액션이니 게시글의 좋아요 수를 감소시키고 하고, postLike 엔티티 삭제
         if(postLikeOP.isPresent()){
-            postRepository.decrementLikeNumById(postId);
+            redisService.decrementCnt("postLikeNum", postId.toString(), 1L);
             postLikeRepository.delete(postLikeOP.get());
         }
         else { // 좋아요를 누르지 않았다면, 좋아요 수를 증가키고, 엔티티 저장
@@ -327,7 +330,7 @@ public class PostService {
 
             PostLike postLike = PostLike.builder().user(userRef).post(postRef).build();
 
-            postRepository.incrementLikeNumById(postId);
+            redisService.incrementCnt("postLikeNum", postId.toString(), 1L);
             postLikeRepository.save(postLike);
         }
     }
@@ -349,7 +352,7 @@ public class PostService {
         commentRepository.save(comment);
 
         // 게시글의 댓글 수 증가
-        redisService.incrementCount("commentNum", postId.toString(), 1L);
+        redisService.incrementCnt("commentNum", postId.toString(), 1L);
 
         // 게시글 작성자의 userId를 구해서, 프록시 객체 생성
         Long postUserId = postRepository.findUserIdByPostId(postId).get(); // 이미 앞에서 존재하는 글임을 체크함
@@ -381,7 +384,7 @@ public class PostService {
         commentRepository.save(comment);
 
         // 게시글의 댓글 수 증가
-        redisService.incrementCount("commentNum", postId.toString(), 1L);
+        redisService.incrementCnt("commentNum", postId.toString(), 1L);
 
         // 알람 생성
         User parentCommentUserRef = entityManager.getReference(User.class, parent.getUser().getId()); // 작성자
@@ -438,7 +441,7 @@ public class PostService {
 
         // 이미 좋아요를 눌렀다면, 취소하는 액션이니 게시글의 좋아요 수를 감소시키고 하고, postLike 엔티티 삭제
         if(commentLikeOP.isPresent()){
-            commentRepository.decrementLikeNumById(commentId);
+            redisService.decrementCnt("commentLikeNum", commentId.toString(), 1L);
             commentLikeRepository.delete(commentLikeOP.get());
         }
         else{ // 좋아요를 누르지 않았다면, 좋아요 수를 증가키고, 엔티티 저장
@@ -447,7 +450,7 @@ public class PostService {
 
             CommentLike commentLike = CommentLike.builder().user(userRef).comment(commentRef).build();
 
-            commentRepository.incrementLikeNumById(commentId);
+            redisService.incrementCnt("commentLikeNum", commentId.toString(), 1L);
             commentLikeRepository.save(commentLike);
         }
     }
@@ -459,6 +462,7 @@ public class PostService {
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post ->  {
                     Long commentNum = redisService.getDataInLong("commentNum", post.getId().toString());
+                    Long likeNum = redisService.getDataInLong("postLikeNum", post.getId().toString());
 
                     return new PostResponse.PostDTO(
                         post.getId(),
@@ -467,7 +471,7 @@ public class PostService {
                         post.getContent(),
                         post.getCreatedDate(),
                         commentNum,
-                        post.getLikeNum(),
+                        likeNum,
                         post.getPostImages().get(0).getImageURL());
                 })
                 .collect(Collectors.toList());

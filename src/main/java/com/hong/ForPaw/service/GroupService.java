@@ -294,7 +294,7 @@ public class GroupService {
         groupApplicantOP.get().updateRole(Role.USER);
 
         // 그룹 참가자 수 증가
-        redisService.incrementCount("groupParticipantNum", groupId.toString(), 1L);
+        redisService.incrementCnt("groupParticipantNum", groupId.toString(), 1L);
 
         // 알람 생성
         User applicant = entityManager.getReference(User.class, applicantId);
@@ -372,7 +372,7 @@ public class GroupService {
 
         // 좋아요가 이미 있다면 삭제, 없다면 추가
         if (favoriteGroupOP.isPresent()) {
-            groupRepository.decrementLikeNumById(groupId);
+            redisService.decrementCnt("groupLikeNum", groupId.toString(), 1L);
             favoriteGroupRepository.delete(favoriteGroupOP.get());
         }
         else {
@@ -381,7 +381,7 @@ public class GroupService {
                     .group(groupRef)
                     .build();
 
-            groupRepository.incrementLikeNumById(groupId);
+            redisService.incrementCnt("groupLikeNum", groupId.toString(), 1L);
             favoriteGroupRepository.save(favoriteGroup);
         }
     }
@@ -524,7 +524,7 @@ public class GroupService {
         meetingUserRepository.save(meetingUser);
 
         // 그룹 참가자 수 증가
-        redisService.incrementCount("meetingParticipantNum", meetingId.toString(), 1L);
+        redisService.incrementCnt("meetingParticipantNum", meetingId.toString(), 1L);
     }
 
     @Transactional
@@ -574,6 +574,7 @@ public class GroupService {
                 .filter(group -> !joinedGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> {
                     Long participantNum = redisService.getDataInLong("groupParticipantNum", group.getId().toString());
+                    Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
 
                     return new GroupResponse.RecommendGroupDTO(
                         group.getId(),
@@ -584,7 +585,7 @@ public class GroupService {
                         group.getRegion(),
                         group.getSubRegion(),
                         group.getProfileURL(),
-                        group.getLikeNum());
+                        likeNum);
                 })
                 .collect(Collectors.toList());
 
@@ -607,6 +608,7 @@ public class GroupService {
                 .filter(group -> !joinedGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> {
                     Long participantNum = redisService.getDataInLong("groupParticipantNum", group.getId().toString());
+                    Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
 
                     return new GroupResponse.LocalGroupDTO(
                         group.getId(),
@@ -617,7 +619,7 @@ public class GroupService {
                         group.getRegion(),
                         group.getSubRegion(),
                         group.getProfileURL(),
-                        group.getLikeNum());
+                        likeNum);
                 })
                 .collect(Collectors.toList());
 
@@ -651,6 +653,7 @@ public class GroupService {
         List<GroupResponse.MyGroupDTO> myGroupDTOS = joinedGroups.stream()
                 .map(group -> {
                     Long participantNum = redisService.getDataInLong("groupParticipantNum", group.getId().toString());
+                    Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
 
                     return new GroupResponse.MyGroupDTO(
                         group.getId(),
@@ -661,7 +664,7 @@ public class GroupService {
                         group.getRegion(),
                         group.getSubRegion(),
                         group.getProfileURL(),
-                        group.getLikeNum());
+                        likeNum);
                 })
                 .collect(Collectors.toList());
 
