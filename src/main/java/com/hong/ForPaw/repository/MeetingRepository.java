@@ -1,6 +1,7 @@
 package com.hong.ForPaw.repository;
 
 import com.hong.ForPaw.domain.Group.Meeting;
+import com.hong.ForPaw.domain.Post.Post;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -21,4 +22,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
     @EntityGraph(attributePaths = {"meetingUsers"})
     Page<Meeting> findByGroupId(Long groupId, Pageable pageable);
+
+    @Query("SELECT m.id FROM Meeting m WHERE m.group.id = :groupId")
+    List<String> findMeetingIdsByGroupId(@Param("groupId") Long groupId);
 }

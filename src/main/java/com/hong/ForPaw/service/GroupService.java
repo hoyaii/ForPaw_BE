@@ -66,7 +66,7 @@ public class GroupService {
 
         // 그룹 참여자 수 1로 레디스에 저장
         redisService.storeDate("groupParticipantNum", group.getId().toString(), Long.toString(1L));
-        
+
         groupUserRepository.save(groupUser);
 
         return new GroupResponse.CreateGroupDTO(group.getId());
@@ -396,7 +396,12 @@ public class GroupService {
         // 권한체크 (그룹장만 삭제 가능)
         checkCreatorAuthority(groupId, userId);
 
-        // redis에 저장된 참가자수 삭제
+        // redis에 저장된 meetingParticipantNum, groupParticipantNum 데이터 삭제
+        List<String> meetingIds = meetingRepository.findMeetingIdsByGroupId(groupId);
+        meetingIds.forEach(meetingId ->
+                redisService.removeData("meetingParticipantNum", meetingId.toString())
+        );
+
         redisService.removeData("groupParticipantNum", groupId.toString());
 
         // 관련 데이터 삭제
