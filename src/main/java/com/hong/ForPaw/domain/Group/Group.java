@@ -38,9 +38,6 @@ public class Group extends TimeStamp {
     @Column
     private Integer likeNum = 0;
 
-    @Column
-    private Integer participationNum = 0;
-
     @Builder
     public Group(String name, String region, String subRegion, String description, String category, String profileURL) {
         this.name = name;

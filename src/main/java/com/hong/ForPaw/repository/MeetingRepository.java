@@ -17,14 +17,6 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
     boolean existsById(Long id);
 
-    @Modifying
-    @Query("UPDATE Meeting m SET m.participantNum = m.participantNum + 1 WHERE m.id = :meetingId")
-    void incrementParticipantNumById(@Param("meetingId") Long meetingId);
-
-    @Modifying
-    @Query("UPDATE Meeting m SET m.participantNum = m.participantNum - 1 WHERE m.id = :meetingId AND m.participantNum > 0")
-    void decrementParticipantNumById(@Param("meetingId") Long meetingId);
-
     void deleteAllByGroupId(Long groupId);
 
     @EntityGraph(attributePaths = {"meetingUsers"})

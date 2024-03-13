@@ -116,16 +116,20 @@ public class SearchService {
         Page<Group> groupPage = groupRepository.findByNameContaining(keyword, pageable);
 
         List<SearchResponse.GroupDTO> groupDTOS = groupPage.getContent().stream()
-                .map(group -> new SearchResponse.GroupDTO(
+                .map(group -> {
+                    Long participantNum = redisService.getDataInLong("participantNum", group.getId().toString());
+
+                    return new SearchResponse.GroupDTO(
                         group.getId(),
                         group.getName(),
                         group.getDescription(),
-                        group.getParticipationNum(),
+                        participantNum,
                         group.getCategory(),
                         group.getRegion(),
                         group.getSubRegion(),
                         group.getProfileURL(),
-                        group.getLikeNum()))
+                        group.getLikeNum());
+                })
                 .collect(Collectors.toList());
 
         return groupDTOS;

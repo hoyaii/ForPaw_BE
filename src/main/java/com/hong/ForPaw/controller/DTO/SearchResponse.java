@@ -28,7 +28,7 @@ public class SearchResponse {
     public record GroupDTO(Long id,
                            String name,
                            String description,
-                           Integer participationNum,
+                           Long participationNum,
                            String category,
                            String region,
                            String subRegion,

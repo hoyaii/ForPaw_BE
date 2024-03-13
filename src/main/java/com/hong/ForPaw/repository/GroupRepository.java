@@ -23,14 +23,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     boolean existsById(Long id);
 
     @Modifying
-    @Query("UPDATE Group g SET g.participationNum = g.participationNum + 1 WHERE g.id = :groupId")
-    void incrementParticipantNumById(@Param("groupId") Long groupId);
-
-    @Modifying
-    @Query("UPDATE Group g SET g.participationNum = g.participationNum - 1 WHERE g.id = :groupId AND g.participationNum > 0")
-    void decrementParticipantNumById(@Param("groupId") Long groupId);
-
-    @Modifying
     @Query("UPDATE Group g SET g.likeNum = g.likeNum + 1 WHERE g.id = :groupId")
     void incrementLikeNumById(@Param("groupId") Long groupId);
 

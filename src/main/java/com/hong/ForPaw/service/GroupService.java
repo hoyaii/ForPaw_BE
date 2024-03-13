@@ -34,7 +34,7 @@ public class GroupService {
     private final MeetingRepository meetingRepository;
     private final MeetingUserRepository meetingUserRepository;
     private final PostRepository postRepository;
-    private final PostReadStatusRepository postReadStatusRepository;
+    private final RedisService redisService;
     private final AlarmService alarmService;
     private final EntityManager entityManager;
 
@@ -63,6 +63,9 @@ public class GroupService {
                 .user(userRef)
                 .role(Role.CREATOR)
                 .build();
+
+        // 그룹 참여자 수 1로 레디스에 저장
+        redisService.storeDate("groupParticipantNum", group.getId().toString(), Long.toString(1L));
 
         groupUserRepository.save(groupUser);
     }
@@ -227,7 +230,9 @@ public class GroupService {
                 .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL()))
                 .toList();
 
-        return new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
+        Long participantNum = redisService.getDataInLong("meetingParticipantNum", meeting.getId().toString());
+
+        return new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getDate(), meeting.getLocation(), meeting.getCost(), participantNum, meeting.getMaxNum(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
     }
 
     @Transactional
@@ -252,9 +257,6 @@ public class GroupService {
                 .greeting(requestDTO.greeting())
                 .build();
         groupUserRepository.save(groupUser);
-
-        // 그룹 참가자 수 증가
-        groupRepository.incrementParticipantNumById(groupId);
     }
 
     @Transactional
@@ -272,7 +274,8 @@ public class GroupService {
         groupUserRepository.deleteByGroupIdAndUserId(groupId, userId);
 
         // 그룹 참가자 수 감소
-        groupRepository.decrementParticipantNumById(groupId);
+        Long participantNum = redisService.getDataInLong("groupParticipantNum", groupId.toString());
+        redisService.storeDate("groupParticipantNum", groupId.toString(), Long.toString(participantNum - 1L));
     }
 
     @Transactional
@@ -288,6 +291,10 @@ public class GroupService {
         checkAlreadyApplyOrMember(groupApplicantOP);
 
         groupApplicantOP.get().updateRole(Role.USER);
+
+        // 그룹 참가자 수 증가
+        Long participantNum = redisService.getDataInLong("groupParticipantNum", groupId.toString());
+        redisService.storeDate("groupParticipantNum", groupId.toString(), Long.toString(participantNum + 1L));
 
         // 알람 생성
         User applicant = entityManager.getReference(User.class, applicantId);
@@ -387,6 +394,9 @@ public class GroupService {
         // 권한체크 (그룹장만 삭제 가능)
         checkCreatorAuthority(groupId, userId);
 
+        // redis에 저장된 참가자수 삭제
+        redisService.removeData("groupParticipantNum", groupId.toString());
+
         // 관련 데이터 삭제
         favoriteGroupRepository.deleteAllByGroupId(groupId);
         groupUserRepository.deleteAllByGroupId(groupId);
@@ -453,6 +463,9 @@ public class GroupService {
         meeting.addMeetingUser(meetingUser);
         meetingRepository.save(meeting);
 
+        // 정기 모임 참여자수 1로 저장
+        redisService.storeDate("meetingParticipantNum", meeting.getId().toString(), Long.toString(1L));
+
         // 알람 생성
         List<User> users = groupUserRepository.findAllUsersByGroupIdWithoutMe(groupId, userId);
 
@@ -505,8 +518,9 @@ public class GroupService {
         meeting.addMeetingUser(meetingUser);
         meetingUserRepository.save(meetingUser);
 
-        // 참가자 수 증가
-        meetingRepository.incrementParticipantNumById(meetingId);
+        // 그룹 참가자 수 증가
+        Long participantNum = redisService.getDataInLong("meetingParticipantNum", meetingId.toString());
+        redisService.storeDate("meetingParticipantNum", meetingId.toString(), Long.toString(participantNum + 1L));
     }
 
     @Transactional
@@ -525,7 +539,8 @@ public class GroupService {
         meetingUserRepository.deleteByMeetingIdAndUserId(meetingId, userId);
 
         // 참가자 수 감소
-        meetingRepository.decrementParticipantNumById(meetingId);
+        Long participantNum = redisService.getDataInLong("meetingParticipantNum", meetingId.toString());
+        redisService.storeDate("meetingParticipantNum", meetingId.toString(), Long.toString(participantNum - 1L));
     }
 
     @Transactional
@@ -536,6 +551,9 @@ public class GroupService {
         // 권한 체크 (메니저급만 삭제 가능)
         checkAdminAuthority(groupId, userId);
 
+        // redis에 저장된 참가자 수 삭제
+        redisService.removeData("meetingParticipantNum", meetingId.toString());
+
         meetingUserRepository.deleteAllByMeetingId(meetingId);
         meetingRepository.deleteById(meetingId);
     }
@@ -545,22 +563,26 @@ public class GroupService {
         Set<Long> joinedGroupIds = getGroupIds(userId);
 
         // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순
-        Sort sort = Sort.by(Sort.Order.desc("likeNum"), Sort.Order.desc("ㅊ"));
-        Pageable pageableForRecommend = PageRequest.of(0, 1000, sort);
+        Sort sort = Sort.by(Sort.Order.desc("likeNum"));
+        Pageable pageableForRecommend = PageRequest.of(0, 30, sort);
 
         Page<Group> recommendGroups = groupRepository.findByRegion(region, pageableForRecommend);
         List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = recommendGroups.getContent().stream()
                 .filter(group -> !joinedGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
-                .map(group -> new GroupResponse.RecommendGroupDTO(
+                .map(group -> {
+                    Long participantNum = redisService.getDataInLong("groupParticipantNum", group.getId().toString());
+
+                    return new GroupResponse.RecommendGroupDTO(
                         group.getId(),
                         group.getName(),
                         group.getDescription(),
-                        group.getParticipationNum(),
+                        participantNum,
                         group.getCategory(),
                         group.getRegion(),
                         group.getSubRegion(),
                         group.getProfileURL(),
-                        group.getLikeNum()))
+                        group.getLikeNum());
+                })
                 .collect(Collectors.toList());
 
         // 매번 동일하게 추천을 할 수는 없으니, 간추린 추천 목록 중에서 5개를 랜덤으로 보내준다.
@@ -580,16 +602,20 @@ public class GroupService {
 
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroups.getContent().stream()
                 .filter(group -> !joinedGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
-                .map(group -> new GroupResponse.LocalGroupDTO(
+                .map(group -> {
+                    Long participantNum = redisService.getDataInLong("groupParticipantNum", group.getId().toString());
+
+                    return new GroupResponse.LocalGroupDTO(
                         group.getId(),
                         group.getName(),
                         group.getDescription(),
-                        group.getParticipationNum(),
+                        participantNum,
                         group.getCategory(),
                         group.getRegion(),
                         group.getSubRegion(),
                         group.getProfileURL(),
-                        group.getLikeNum()))
+                        group.getLikeNum());
+                })
                 .collect(Collectors.toList());
 
         return localGroupDTOS;
@@ -620,16 +646,20 @@ public class GroupService {
         List<Group> joinedGroups = groupUserRepository.findGroupsByUserId(userId, pageable).getContent();
 
         List<GroupResponse.MyGroupDTO> myGroupDTOS = joinedGroups.stream()
-                .map(group -> new GroupResponse.MyGroupDTO(
+                .map(group -> {
+                    Long participantNum = redisService.getDataInLong("groupParticipantNum", group.getId().toString());
+
+                    return new GroupResponse.MyGroupDTO(
                         group.getId(),
                         group.getName(),
                         group.getDescription(),
-                        group.getParticipationNum(),
+                        participantNum,
                         group.getCategory(),
                         group.getRegion(),
                         group.getSubRegion(),
                         group.getProfileURL(),
-                        group.getLikeNum()))
+                        group.getLikeNum());
+                })
                 .collect(Collectors.toList());
 
         return myGroupDTOS;
@@ -724,13 +754,15 @@ public class GroupService {
                             .map(meetingUser -> new GroupResponse.ParticipantDTO(meetingUser.getUser().getProfileURL()))
                             .toList();
 
+                    Long participantNum = redisService.getDataInLong("meetingParticipantNum", meeting.getId().toString());
+
                     return new GroupResponse.MeetingDTO(
                             meeting.getId(),
                             meeting.getName(),
                             meeting.getDate(),
                             meeting.getLocation(),
                             meeting.getCost(),
-                            meeting.getParticipantNum(),
+                            participantNum,
                             meeting.getMaxNum(),
                             meeting.getProfileURL(),
                             meeting.getDescription(),
