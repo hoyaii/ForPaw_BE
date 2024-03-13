@@ -297,7 +297,21 @@ public class AnimalService {
     }
 
     @Transactional
-    public void deleteApplyById(Long applyId, Long userId){
+    public void updateApply(AnimalRequest.UpdateApplyDTO requestDTO, Long applyId, Long userId){
+        // 지원하지 않았거나, 권한이 없으면 에러
+        if(!applyRepository.existsByApplyIdAndUserId(applyId, userId)){
+            throw new CustomException(ExceptionCode.APPLY_NOT_FOUND);
+        }
+
+        Apply apply = applyRepository.findById(applyId).orElseThrow(
+                () -> new CustomException(ExceptionCode.APPLY_NOT_FOUND)
+        );
+
+        apply.updateApply(requestDTO.name(), requestDTO.tel(), requestDTO.residence());
+    }
+
+    @Transactional
+    public void deleteApply(Long applyId, Long userId){
         // 지원하지 않았거나, 권한이 없으면 에러
         if(!applyRepository.existsByApplyIdAndUserId(applyId, userId)){
             throw new CustomException(ExceptionCode.APPLY_NOT_FOUND);

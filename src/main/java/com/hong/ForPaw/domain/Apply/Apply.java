@@ -48,4 +48,10 @@ public class Apply extends TimeStamp {
         this.tel = tel;
         this.residence = residence;
     }
+
+    public void updateApply(String name, String tel, String residence){
+        this.name = name;
+        this.tel = tel;
+        this.residence = residence;
+    }
 }

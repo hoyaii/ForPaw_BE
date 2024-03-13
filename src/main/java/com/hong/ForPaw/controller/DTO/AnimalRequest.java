@@ -5,4 +5,8 @@ public class AnimalRequest {
     public record ApplyAdoptionDTO(String name,
                                    String tel,
                                    String residence) { }
+
+    public record UpdateApplyDTO(String name,
+                                 String tel,
+                                 String residence) {}
 }

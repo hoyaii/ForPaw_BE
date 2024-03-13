@@ -6,7 +6,6 @@ import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.AnimalService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -71,9 +70,9 @@ public class AnimalController {
 
     // 권한 처리가 필요함
     @DeleteMapping ("/applies/{applyId}")
-    public ResponseEntity<?> deleteApplyById(@PathVariable Long applyId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> deleteApply(@PathVariable Long applyId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
-        animalService.deleteApplyById(applyId, userDetails.getUser().getId());
+        animalService.deleteApply(applyId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }
