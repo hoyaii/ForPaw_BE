@@ -16,7 +16,6 @@ public class GroupRequest {
             String subRegion,
             @NotBlank(message = "그룹의 설명을 입력해주세요.")
             String description,
-            @NotBlank
             String category,
             @NotBlank
             String profileURL){}
@@ -29,7 +28,6 @@ public class GroupRequest {
             String subRegion,
             @NotBlank(message = "그룹의 설명을 입력해주세요.")
             String description,
-            @NotBlank
             String category,
             @NotBlank
             String profileURL){}

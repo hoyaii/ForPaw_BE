@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
@@ -20,14 +21,14 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping("/posts")
-    public ResponseEntity<?> createPost(@RequestBody PostRequest.CreatePostDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> createPost(@RequestBody PostRequest.CreatePostDTO requestDTO, Errors errors, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         PostResponse.CreatePostDTO responseDTO = postService.createPost(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/posts/{postId}/qna")
-    public ResponseEntity<?> createAnswer(@RequestBody PostRequest.CreateAnswerDTO requestDTO, @PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> createAnswer(@RequestBody PostRequest.CreateAnswerDTO requestDTO, Errors errors, @PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         PostResponse.CreateAnswerDTO responseDTO = postService.createAnswer(requestDTO, postId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
@@ -76,7 +77,7 @@ public class PostController {
     }
 
     @PatchMapping("/posts/{postId}")
-    public ResponseEntity<?> updatePost(@RequestBody PostRequest.UpdatePostDTO requestDTO, @PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> updatePost(@RequestBody PostRequest.UpdatePostDTO requestDTO, Errors errors, @PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         postService.updatePost(requestDTO, userDetails.getUser(), postId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
@@ -97,21 +98,21 @@ public class PostController {
     }
 
     @PostMapping("/posts/{postId}/comments")
-    public ResponseEntity<?> createComment(@RequestBody PostRequest.CreateCommentDTO requestDTO, @PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> createComment(@RequestBody PostRequest.CreateCommentDTO requestDTO, Errors errors, @PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         PostResponse.CreateCommentDTO responseDTO = postService.createComment(requestDTO, userDetails.getUser().getId(), postId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/posts/{postId}/comments/{commentId}/reply")
-    public ResponseEntity<?> createReply(@RequestBody PostRequest.CreateCommentDTO requestDTO, @PathVariable Long postId, @PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> createReply(@RequestBody PostRequest.CreateCommentDTO requestDTO, Errors errors, @PathVariable Long postId, @PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         PostResponse.CreateCommentDTO responseDTO = postService.createReply(requestDTO, postId, userDetails.getUser().getId(), commentId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PatchMapping("/posts/{postId}/comments/{commentId}")
-    public ResponseEntity<?> updateComment(@RequestBody PostRequest.UpdateCommentDTO requestDTO, @PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> updateComment(@RequestBody PostRequest.UpdateCommentDTO requestDTO, Errors errors, @PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetails){
 
         postService.updateComment(requestDTO, commentId, userDetails.getUser());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
