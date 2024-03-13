@@ -24,6 +24,16 @@ public class RedisService {
         redisTemplate.opsForValue().set(buildKey(type, id), value);
     }
 
+    public void incrementCount(String type, String id, Long cnt){
+
+        redisTemplate.opsForValue().increment(buildKey(type, id), cnt);
+    }
+
+    public void decrementCnt(String type, String id, Long cnt){
+
+        redisTemplate.opsForValue().decrement(buildKey(type, id), cnt);
+    }
+
     // 데이터 존재 여부
     public boolean isDateExist(String type, String id) {
         return redisTemplate.hasKey(buildKey(type, id));

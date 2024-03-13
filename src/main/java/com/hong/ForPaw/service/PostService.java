@@ -98,8 +98,7 @@ public class PostService {
         postRepository.save(post);
 
         // 게시글의 답변 수 레디스에 저장
-        Long answerNum = redisService.getDataInLong("answerNum", parentPostId.toString());
-        redisService.storeDate("answerNum", parentPostId.toString(), Long.toString(answerNum + 1L));
+        redisService.incrementCount("answerNum", parentPostId.toString(), 1L);
 
         // 알림 생성
         String redirectURL = "post/"+parentPostId+"/entire";
@@ -264,6 +263,7 @@ public class PostService {
         // 수정 권한 체크
         checkPostAuthority(post.getUser(), user);
 
+        // 제목, 본문 업데이트
         post.updatePost(requestDTO.title(), requestDTO.content());
 
         // 유지할 이미지를 제외한 모든 이미지 삭제
@@ -349,8 +349,7 @@ public class PostService {
         commentRepository.save(comment);
 
         // 게시글의 댓글 수 증가
-        Long commentNum = redisService.getDataInLong("commentNum", postId.toString());
-        redisService.storeDate("commentNum", postId.toString(), Long.toString(commentNum + 1L));
+        redisService.incrementCount("commentNum", postId.toString(), 1L);
 
         // 게시글 작성자의 userId를 구해서, 프록시 객체 생성
         Long postUserId = postRepository.findUserIdByPostId(postId).get(); // 이미 앞에서 존재하는 글임을 체크함
@@ -382,8 +381,7 @@ public class PostService {
         commentRepository.save(comment);
 
         // 게시글의 댓글 수 증가
-        Long commentNum = redisService.getDataInLong("commentNum", postId.toString());
-        redisService.storeDate("commentNum", postId.toString(), Long.toString(commentNum + 1L));
+        redisService.incrementCount("commentNum", postId.toString(), 1L);
 
         // 알람 생성
         User parentCommentUserRef = entityManager.getReference(User.class, parent.getUser().getId()); // 작성자
@@ -423,8 +421,7 @@ public class PostService {
 
         // 게시글의 댓글 수 감소
         Long childNum = Long.valueOf(comment.getChildren().size());
-        Long commentNum = redisService.getDataInLong("commentNum", postId.toString());
-        redisService.storeDate("commentNum", postId.toString(), Long.toString(commentNum - 1L -  childNum));
+        redisService.decrementCnt("commentNum", postId.toString(), 1L + childNum);
     }
 
     @Transactional

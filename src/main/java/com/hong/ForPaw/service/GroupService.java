@@ -276,8 +276,7 @@ public class GroupService {
         groupUserRepository.deleteByGroupIdAndUserId(groupId, userId);
 
         // 그룹 참가자 수 감소
-        Long participantNum = redisService.getDataInLong("groupParticipantNum", groupId.toString());
-        redisService.storeDate("groupParticipantNum", groupId.toString(), Long.toString(participantNum - 1L));
+        redisService.decrementCnt("groupParticipantNum", groupId.toString(), 1L);
     }
 
     @Transactional
@@ -295,8 +294,7 @@ public class GroupService {
         groupApplicantOP.get().updateRole(Role.USER);
 
         // 그룹 참가자 수 증가
-        Long participantNum = redisService.getDataInLong("groupParticipantNum", groupId.toString());
-        redisService.storeDate("groupParticipantNum", groupId.toString(), Long.toString(participantNum + 1L));
+        redisService.incrementCount("groupParticipantNum", groupId.toString(), 1L);
 
         // 알람 생성
         User applicant = entityManager.getReference(User.class, applicantId);
@@ -526,8 +524,7 @@ public class GroupService {
         meetingUserRepository.save(meetingUser);
 
         // 그룹 참가자 수 증가
-        Long participantNum = redisService.getDataInLong("meetingParticipantNum", meetingId.toString());
-        redisService.storeDate("meetingParticipantNum", meetingId.toString(), Long.toString(participantNum + 1L));
+        redisService.incrementCount("meetingParticipantNum", meetingId.toString(), 1L);
     }
 
     @Transactional
@@ -546,8 +543,7 @@ public class GroupService {
         meetingUserRepository.deleteByMeetingIdAndUserId(meetingId, userId);
 
         // 참가자 수 감소
-        Long participantNum = redisService.getDataInLong("meetingParticipantNum", meetingId.toString());
-        redisService.storeDate("meetingParticipantNum", meetingId.toString(), Long.toString(participantNum - 1L));
+        redisService.decrementCnt("meetingParticipantNum", meetingId.toString(), 1L);
     }
 
     @Transactional
