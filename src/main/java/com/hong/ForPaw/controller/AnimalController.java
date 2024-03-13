@@ -68,6 +68,13 @@ public class AnimalController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
+    @PatchMapping("/applies/{applyId}")
+    public ResponseEntity<?> updateApply(@RequestBody AnimalRequest.UpdateApplyDTO requestDTO, @PathVariable Long applyId, @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        animalService.updateApply(requestDTO, applyId, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
     // 권한 처리가 필요함
     @DeleteMapping ("/applies/{applyId}")
     public ResponseEntity<?> deleteApply(@PathVariable Long applyId, @AuthenticationPrincipal CustomUserDetails userDetails){
