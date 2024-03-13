@@ -31,7 +31,7 @@ public class PostResponse {
                          String title,
                          String content,
                          LocalDateTime date,
-                         Integer answerNum) {}
+                         Long answerNum) {}
 
     public record PostImageDTO(Long id, String imageURL) {}
 

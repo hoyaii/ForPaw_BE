@@ -12,10 +12,16 @@ public class RedisService {
 
     private final StringRedisTemplate redisTemplate;
 
-    // 데이터 저장
+    // 데이터 저장 (유효 기간 존재)
     public void storeDate(String type, String id, String value, Long expirationTime) {
 
         redisTemplate.opsForValue().set(buildKey(type, id), value, expirationTime, TimeUnit.MILLISECONDS);
+    }
+
+    // 유효 기간 X
+    public void storeDate(String type, String id, String value) {
+
+        redisTemplate.opsForValue().set(buildKey(type, id), value);
     }
 
     // 데이터 존재 여부

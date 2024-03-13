@@ -50,9 +50,6 @@ public class Post extends TimeStamp {
     private String content;
 
     @Column
-    private Integer answerNum = 0;
-
-    @Column
     private Integer commentNum = 0;
 
     @Column

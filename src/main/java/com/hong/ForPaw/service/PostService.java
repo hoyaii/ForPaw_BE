@@ -33,7 +33,7 @@ public class PostService {
     private final PostReadStatusRepository postReadStatusRepository;
     private final CommentRepository commentRepository;
     private final CommentLikeRepository commentLikeRepository;
-    private final AlarmRepository alarmRepository;
+    private final RedisService redisService;
     private final UserRepository userRepository;
     private final AlarmService alarmService;
     private final EntityManager entityManager;
@@ -96,6 +96,10 @@ public class PostService {
         parent.addChildPost(post);
 
         postRepository.save(post);
+
+        // 게시글의 답변 수 레디스에 저장
+        Long answerNum = redisService.getDataInLong("answerNum", parentPostId.toString());
+        redisService.storeDate("answerNum", parentPostId.toString(), Long.toString(answerNum + 1L));
 
         // 알림 생성
         String redirectURL = "post/"+parentPostId+"/entire";
@@ -465,13 +469,17 @@ public class PostService {
         Page<Post> postPage = postRepository.findByPostType(PostType.question, pageable);
 
         List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
-                .map(post -> new PostResponse.QnaDTO(
+                .map(post -> {
+                    Long answerNum = redisService.getDataInLong("answerNum", post.getId().toString());
+
+                    return new PostResponse.QnaDTO(
                         post.getId(),
                         post.getUser().getNickName(),
                         post.getTitle(),
                         post.getContent(),
                         post.getCreatedDate(),
-                        post.getAnswerNum()))
+                        answerNum);
+                })
                 .collect(Collectors.toList());
 
         return qnaDTOS;

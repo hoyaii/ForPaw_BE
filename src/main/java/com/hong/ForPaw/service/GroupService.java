@@ -7,14 +7,11 @@ import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Group.*;
 import com.hong.ForPaw.domain.Post.Post;
-import com.hong.ForPaw.domain.Post.PostReadStatus;
 import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.*;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +37,6 @@ public class GroupService {
     private final PostReadStatusRepository postReadStatusRepository;
     private final AlarmService alarmService;
     private final EntityManager entityManager;
-    private final JPAQueryFactory jpaQueryFactory;
 
     @Transactional
     public void createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId){
@@ -71,9 +67,10 @@ public class GroupService {
         groupUserRepository.save(groupUser);
     }
 
+    // 수정 화면에서 사용하는 API
     @Transactional
     public GroupResponse.FindGroupByIdDTO findGroupById(Long groupId, Long userId){
-        // 조회 권한 체크 (수정을 위해 가져오는 정보니 권한 체크 필요)
+        // 조회 권한 체크
         checkAdminAuthority(groupId, userId);
 
         Group group = groupRepository.findById(groupId).orElseThrow(
@@ -226,7 +223,7 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
         );
 
-        List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository.findAllUsersByMeetingId(meeting.getId()).stream()
+        List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository.findUsersByMeetingId(meeting.getId()).stream()
                 .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL()))
                 .toList();
 
@@ -395,7 +392,6 @@ public class GroupService {
         groupUserRepository.deleteAllByGroupId(groupId);
         postRepository.deleteAllByGroupId(groupId);
         meetingRepository.deleteAllByGroupId(groupId);
-        meetingUserRepository.deleteAllByGroupId(groupId);
         groupRepository.deleteById(groupId);
     }
 
@@ -505,6 +501,7 @@ public class GroupService {
                 .user(userRef)
                 .build();
 
+        // 양방향 관계 설정 후 meeting 저장
         meeting.addMeetingUser(meetingUser);
         meetingUserRepository.save(meetingUser);
 
@@ -620,7 +617,7 @@ public class GroupService {
 
     private List<GroupResponse.MyGroupDTO> getMyGroupDTOS(Long userId, Pageable pageable){
 
-        List<Group> joinedGroups = groupUserRepository.findGroupPageByUserId(userId, pageable).getContent();
+        List<Group> joinedGroups = groupUserRepository.findGroupsByUserId(userId, pageable).getContent();
 
         List<GroupResponse.MyGroupDTO> myGroupDTOS = joinedGroups.stream()
                 .map(group -> new GroupResponse.MyGroupDTO(
@@ -720,6 +717,7 @@ public class GroupService {
         // meetingUser를 패치조인 해서 조회
         Page<Meeting> meetings = meetingRepository.findByGroupId(groupId, pageable);
 
+        // user를 가져올 때, 10개씩 들고온다 (batch)
         List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
                 .map(meeting -> {
                     List<GroupResponse.ParticipantDTO> participantDTOS = meeting.getMeetingUsers().stream()
