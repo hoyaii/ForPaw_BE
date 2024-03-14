@@ -1,5 +1,6 @@
 package com.hong.ForPaw.service;
 
+import com.hong.ForPaw.controller.DTO.GoogleDTO;
 import com.hong.ForPaw.controller.DTO.KakaoDTO;
 import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
@@ -21,9 +22,12 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collections;
@@ -59,6 +63,22 @@ public class UserService {
     @Value("${kakao.redirect.uri}")
     private String kakaoRedirectURI;
 
+    @Value("${google.client.id}")
+    private String googleClientId;
+
+    @Value("${google.token.uri}")
+    private String googleTokenURI;
+
+    @Value("${google.client.passowrd}")
+    private String googleClientSecret;
+
+    @Value("${google.redirect.uri}")
+    private String googleRedirectURI;
+
+    @Value("${google.userInfo.uri}")
+    private  String googleUserInfoURI;
+
+
     @Transactional
     public Map<String, String> login(UserRequest.LoginDTO requestDTO){
 
@@ -79,10 +99,33 @@ public class UserService {
     public Map<String, String> kakaoLogin(String code) {
         // 카카오 엑세스 토큰 획득 => 유저 정보 획득
         KakaoDTO.TokenDTO token = getKakaoToken(code);
-        KakaoDTO.UserInfoDTO userInfo = getUserInfo(token.access_token());
+        KakaoDTO.UserInfoDTO userInfo = getKakaoUserInfo(token.access_token());
 
         // 카카오 계정으로 가입한 계정의 이메일은 {카카오 id}@kakao.com로 구성
         String email = userInfo.id().toString() + "@kakao.com";
+
+        // 가입되지 않음 => email을 넘겨서 추가 정보를 입력하도록 함
+        if(userRepository.findByEmail(email).isEmpty()){
+            Map<String, String> response = new HashMap<>();
+            response.put("email", email);
+            return response;
+        }
+
+        User user = userRepository.findByEmail(email).get();
+        checkDuplicateLogin(user);
+
+        return createToken(user);
+    }
+
+    @Transactional
+    public Map<String, String> googleLogin(String code){
+        // 구글 엑세스 토큰 획득
+        GoogleDTO.TokenDTO token = getGoogleToken(code);
+        System.out.println("ho1-----------------");
+        GoogleDTO.UserInfoDTO userInfoDTO = getGoogleUserInfo(token.access_token());
+        System.out.println("ho2-----------------");
+
+        String email = userInfoDTO.id().toString() + "@google.com";
 
         // 가입되지 않음 => email을 넘겨서 추가 정보를 입력하도록 함
         if(userRepository.findByEmail(email).isEmpty()){
@@ -386,13 +429,45 @@ public class UserService {
         return response.block();
     }
 
-    public KakaoDTO.UserInfoDTO getUserInfo(String token) {
+    public KakaoDTO.UserInfoDTO getKakaoUserInfo(String token) {
 
         Flux<KakaoDTO.UserInfoDTO> response = webClient.get()
                 .uri(kakaoUserInfoURI)
                 .header("Authorization", "Bearer " + token)
                 .retrieve()
                 .bodyToFlux(KakaoDTO.UserInfoDTO.class);
+
+        return response.blockFirst();
+    }
+
+    public GoogleDTO.TokenDTO getGoogleToken(String code) {
+        String decode = URLDecoder.decode(code, StandardCharsets.UTF_8);
+
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("code", decode);
+        formData.add("client_id", googleClientId);
+        formData.add("client_secret", googleClientSecret);
+        formData.add("redirect_uri", googleRedirectURI);
+        formData.add("grant_type", "authorization_code");
+
+        Mono<GoogleDTO.TokenDTO> response = webClient.post()
+                .uri(googleTokenURI)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData(formData))
+                .retrieve()
+                .bodyToMono(GoogleDTO.TokenDTO.class);
+
+        return response.block();
+    }
+
+    public GoogleDTO.UserInfoDTO getGoogleUserInfo(String token) {
+
+        Flux<GoogleDTO.UserInfoDTO> response = webClient.get()
+                .uri(googleUserInfoURI)
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .bodyToFlux(GoogleDTO.UserInfoDTO.class);
+
         return response.blockFirst();
     }
 }
