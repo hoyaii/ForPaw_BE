@@ -60,6 +60,27 @@ public class UserController {
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.kakaoLoginDTO(tokenOrEmail.get("accessToken"), "")));
     }
 
+    @PostMapping("/auth/login/google")
+    public ResponseEntity<?> googleLogin(@RequestParam String code){
+
+        Map<String, String> tokenOrEmail = userService.googleLogin(code);
+
+        // 가입된 계정이 아님
+        if(tokenOrEmail.get("email") != null){
+            return ResponseEntity.ok().body((ApiUtils.success(HttpStatus.OK, new UserResponse.googleLoginDTO("", tokenOrEmail.get("email")))));
+        }
+
+        // 가입된 계정이면, jwt 토큰 반환
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokenOrEmail.get("refreshToken"))
+                        .httpOnly(true)
+                        .secure(true)
+                        .sameSite("None")
+                        .maxAge(JWTProvider.REFRESH_EXP)
+                        .build().toString())
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.googleLoginDTO(tokenOrEmail.get("accessToken"), "")));
+    }
+
     @PostMapping("/accounts")
     public ResponseEntity<?> join(@RequestBody UserRequest.JoinDTO requestDTO, Errors errors){
 

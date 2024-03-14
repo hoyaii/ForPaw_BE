@@ -22,7 +22,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -105,7 +104,7 @@ public class UserService {
         String email = userInfo.id().toString() + "@kakao.com";
 
         // 가입되지 않음 => email을 넘겨서 추가 정보를 입력하도록 함
-        if(userRepository.findByEmail(email).isEmpty()){
+        if(isNotMember(email)){
             Map<String, String> response = new HashMap<>();
             response.put("email", email);
             return response;
@@ -121,14 +120,11 @@ public class UserService {
     public Map<String, String> googleLogin(String code){
         // 구글 엑세스 토큰 획득
         GoogleDTO.TokenDTO token = getGoogleToken(code);
-        System.out.println("ho1-----------------");
         GoogleDTO.UserInfoDTO userInfoDTO = getGoogleUserInfo(token.access_token());
-        System.out.println("ho2-----------------");
 
-        String email = userInfoDTO.id().toString() + "@google.com";
+        String email = userInfoDTO.email();
 
-        // 가입되지 않음 => email을 넘겨서 추가 정보를 입력하도록 함
-        if(userRepository.findByEmail(email).isEmpty()){
+        if(isNotMember(email)){
             Map<String, String> response = new HashMap<>();
             response.put("email", email);
             return response;
@@ -469,5 +465,9 @@ public class UserService {
                 .bodyToFlux(GoogleDTO.UserInfoDTO.class);
 
         return response.blockFirst();
+    }
+
+    private boolean isNotMember(String email){
+        return userRepository.findByEmail(email).isEmpty();
     }
 }
