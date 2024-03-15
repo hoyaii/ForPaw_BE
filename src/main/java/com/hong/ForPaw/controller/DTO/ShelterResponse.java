@@ -17,7 +17,7 @@ public class ShelterResponse {
                             String specialMark,
                             String region,
                             Long inquiryNum,
-                            Integer likeNum,
+                            Long likeNum,
                             Boolean isLike,
                             String profileURL
     ){};

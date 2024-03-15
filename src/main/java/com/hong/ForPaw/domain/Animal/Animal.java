@@ -69,9 +69,6 @@ public class Animal extends TimeStamp {
     private String region;
 
     @Column
-    private Integer likeNum = 0;
-
-    @Column
     private String name;
 
     @Builder

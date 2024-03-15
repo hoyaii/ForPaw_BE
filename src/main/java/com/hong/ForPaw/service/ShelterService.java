@@ -119,6 +119,7 @@ public class ShelterService {
         List<ShelterResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
                     Long inquiryNum = redisService.getDataInLong("inquiryNum", animal.getId().toString());
+                    Long likeNum = redisService.getDataInLong("postLikeNum", animal.getId().toString());
 
                     return new ShelterResponse.AnimalDTO(
                         animal.getId(),
@@ -128,7 +129,7 @@ public class ShelterService {
                         animal.getSpecialMark(),
                         animal.getRegion(),
                         inquiryNum,
-                        animal.getLikeNum(),
+                        likeNum,
                         likedAnimalIds.contains(animal.getId()),
                         animal.getProfileURL());
                 })

@@ -136,6 +136,7 @@ public class AnimalService {
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
                     Long inquiryNum = redisService.getDataInLong("inquiryNum", animal.getId().toString());
+                    Long likeNum = redisService.getDataInLong("postLikeNum", animal.getId().toString());
 
                     return new AnimalResponse.AnimalDTO(
                         animal.getId(),
@@ -145,7 +146,7 @@ public class AnimalService {
                         animal.getSpecialMark(),
                         animal.getRegion(),
                         inquiryNum,
-                        animal.getLikeNum(),
+                        likeNum,
                         likedAnimalIds.contains(animal.getId()),
                         animal.getProfileURL());
                 })
@@ -167,6 +168,7 @@ public class AnimalService {
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
                     Long inquiryNum = redisService.getDataInLong("inquiryNum", animal.getId().toString());
+                    Long likeNum = redisService.getDataInLong("postLikeNum", animal.getId().toString());
 
                     return new AnimalResponse.AnimalDTO(
                         animal.getId(),
@@ -176,7 +178,7 @@ public class AnimalService {
                         animal.getSpecialMark(),
                         animal.getRegion(),
                         inquiryNum,
-                        animal.getLikeNum(),
+                        likeNum,
                         true,
                         animal.getProfileURL());
                 })
@@ -224,7 +226,7 @@ public class AnimalService {
         // 좋아요가 이미 있다면 삭제, 없다면 추가
         if (favoriteAnimalOP.isPresent()) {
             favoriteAnimalRepository.delete(favoriteAnimalOP.get());
-            animalRepository.decrementLikeNumById(animalId);
+            redisService.decrementCnt("animalLikeNum", animalId.toString(), 1L);
         }
         else {
             Animal animalRef = entityManager.getReference(Animal.class, animalId);
@@ -236,7 +238,7 @@ public class AnimalService {
                     .build();
 
             favoriteAnimalRepository.save(favoriteAnimal);
-            animalRepository.incrementLikeNumById(animalId);
+            redisService.incrementCnt("animalLikeNum", animalId.toString(), 1L);
         }
     }
 

@@ -17,13 +17,5 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
 
     Page<Animal> findByShelterId(Long careRegNo, Pageable pageable);
 
-    @Modifying
-    @Query("UPDATE Animal a SET a.likeNum = a.likeNum + 1 WHERE a.id = :animalId")
-    void incrementLikeNumById(@Param("animalId") Long animalId);
-
-    @Modifying
-    @Query("UPDATE Animal a SET a.likeNum = a.likeNum - 1 WHERE a.id = :animalId AND a.likeNum > 0")
-    void decrementLikeNumById(@Param("animalId") Long animalId);
-
     boolean existsById(Long id);
 }
