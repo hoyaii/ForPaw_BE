@@ -23,4 +23,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     boolean existsById(Long id);
 
     Page<Group> findByNameContaining(@Param("name") String name, Pageable pageable);
+
+    @Query("SELECT g.id FROM Group g")
+    Page<Long> findGroupIds(Pageable pageable);
 }

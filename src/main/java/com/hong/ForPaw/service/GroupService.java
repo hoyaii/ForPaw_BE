@@ -13,6 +13,7 @@ import com.hong.ForPaw.repository.*;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -384,6 +385,36 @@ public class GroupService {
             favoriteGroupRepository.save(favoriteGroup);
             redisService.incrementCnt("groupLikeNum", groupId.toString(), 1L);
         }
+    }
+
+    @Scheduled(cron = "0 0 * * * *")
+    public void syncLikes() {
+        // 업데이트는 50개씩 진행
+        int page = 0;
+        int batchSize = 50;
+
+        Pageable pageable = PageRequest.of(page, batchSize);
+        Page<Long> groupIdsPage;
+
+        do {
+            groupIdsPage = processLikesBatch(pageable);
+            pageable = pageable.next();
+        } while (groupIdsPage != null && groupIdsPage.hasNext());
+    }
+
+    @Transactional
+    public Page<Long> processLikesBatch(Pageable pageable) {
+
+        Page<Long> groupIdsPage = groupRepository.findGroupIds(pageable);
+        List<Long> groupIds = groupIdsPage.getContent();
+
+        for (Long groupId : groupIds) {
+            Long likeNum = redisService.getDataInLong("groupLikeNum", groupId.toString());
+            if (likeNum != null) {
+                postRepository.updateLikeNum(likeNum, groupId);
+            }
+        }
+        return groupIdsPage;
     }
 
     @Transactional
