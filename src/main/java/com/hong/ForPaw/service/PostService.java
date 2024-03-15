@@ -336,6 +336,36 @@ public class PostService {
         }
     }
 
+    @Scheduled(cron = "0 0 * * * *")
+    public void syncLikes() {
+        // 업데이트는 50개씩 진행
+        int page = 0;
+        int batchSize = 50;
+
+        Pageable pageable = PageRequest.of(page, batchSize);
+        Page<Long> postIdsPage;
+
+        do {
+            postIdsPage = processLikesBatch(pageable);
+            pageable = pageable.next();
+        } while (postIdsPage != null && postIdsPage.hasNext());
+    }
+
+    @Transactional
+    public Page<Long> processLikesBatch(Pageable pageable) {
+
+        Page<Long> postIdsPage = postRepository.findPostIds(pageable);
+        List<Long> postIds = postIdsPage.getContent();
+
+        for (Long postId : postIds) {
+            Long likeNum = redisService.getDataInLong("postLikeNum", postId.toString());
+            if (likeNum != null) {
+                postRepository.updateLikeNum(likeNum, postId);
+            }
+        }
+        return postIdsPage;
+    }
+
     @Transactional
     public PostResponse.CreateCommentDTO createComment(PostRequest.CreateCommentDTO requestDTO, Long userId, Long postId){
         // 존재하지 않는 글이면 에러
