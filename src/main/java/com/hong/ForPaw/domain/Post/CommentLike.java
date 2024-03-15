@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 
 
 @Entity
+@Table(name = "comment_like", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"user_id", "comment_id"})
+})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class CommentLike extends TimeStamp {

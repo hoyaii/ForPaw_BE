@@ -12,6 +12,9 @@ import lombok.NoArgsConstructor;
 
 
 @Entity
+@Table(name = "favorite_animal", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"user_id", "animal_id"})
+})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class FavoriteAnimal extends TimeStamp {

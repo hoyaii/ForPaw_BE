@@ -10,6 +10,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "favorite_group", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"user_id", "group_id"})
+})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class FavoriteGroup extends TimeStamp {

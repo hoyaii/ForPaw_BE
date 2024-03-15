@@ -365,24 +365,24 @@ public class GroupService {
         // 존재하지 않는 그룹이면 에러
         checkGroupExist(groupId);
 
-        Group groupRef = entityManager.getReference(Group.class, groupId);
-        User userRef = entityManager.getReference(User.class, userId);
-
         Optional<FavoriteGroup> favoriteGroupOP = favoriteGroupRepository.findByUserIdAndGroupId(userId, groupId);
 
         // 좋아요가 이미 있다면 삭제, 없다면 추가
         if (favoriteGroupOP.isPresent()) {
-            redisService.decrementCnt("groupLikeNum", groupId.toString(), 1L);
             favoriteGroupRepository.delete(favoriteGroupOP.get());
+            redisService.decrementCnt("groupLikeNum", groupId.toString(), 1L);
         }
         else {
+            Group groupRef = entityManager.getReference(Group.class, groupId);
+            User userRef = entityManager.getReference(User.class, userId);
+
             FavoriteGroup favoriteGroup = FavoriteGroup.builder()
                     .user(userRef)
                     .group(groupRef)
                     .build();
 
-            redisService.incrementCnt("groupLikeNum", groupId.toString(), 1L);
             favoriteGroupRepository.save(favoriteGroup);
+            redisService.incrementCnt("groupLikeNum", groupId.toString(), 1L);
         }
     }
 

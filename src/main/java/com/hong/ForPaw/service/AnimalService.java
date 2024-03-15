@@ -219,24 +219,24 @@ public class AnimalService {
                 throw new CustomException(ExceptionCode.ANIMAL_NOT_FOUND);
             }
 
-        Animal animalRef = entityManager.getReference(Animal.class, animalId);
-        User userRef = entityManager.getReference(User.class, userId);
-
         Optional<FavoriteAnimal> favoriteAnimalOP = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animalId);
 
         // 좋아요가 이미 있다면 삭제, 없다면 추가
         if (favoriteAnimalOP.isPresent()) {
-            animalRepository.decrementLikeNumById(animalId);
             favoriteAnimalRepository.delete(favoriteAnimalOP.get());
+            animalRepository.decrementLikeNumById(animalId);
         }
         else {
+            Animal animalRef = entityManager.getReference(Animal.class, animalId);
+            User userRef = entityManager.getReference(User.class, userId);
+
             FavoriteAnimal favoriteAnimal = FavoriteAnimal.builder()
                     .user(userRef)
                     .animal(animalRef)
                     .build();
 
-            animalRepository.incrementLikeNumById(animalId);
             favoriteAnimalRepository.save(favoriteAnimal);
+            animalRepository.incrementLikeNumById(animalId);
         }
     }
 

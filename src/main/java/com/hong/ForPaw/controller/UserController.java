@@ -39,7 +39,7 @@ public class UserController {
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.loginDTO(tokens.get("accessToken"))));
     }
 
-    @PostMapping("/auth/login/kakao")
+    @GetMapping("/auth/login/kakao")
     public ResponseEntity<?> kakaoLogin(@RequestParam String code) {
 
         Map<String, String> tokenOrEmail = userService.kakaoLogin(code);
@@ -60,7 +60,7 @@ public class UserController {
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.kakaoLoginDTO(tokenOrEmail.get("accessToken"), "")));
     }
 
-    @PostMapping("/auth/login/google")
+    @GetMapping("/auth/login/google")
     public ResponseEntity<?> googleLogin(@RequestParam String code){
 
         Map<String, String> tokenOrEmail = userService.googleLogin(code);

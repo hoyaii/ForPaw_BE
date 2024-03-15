@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -321,8 +322,8 @@ public class PostService {
 
         // 이미 좋아요를 눌렀다면, 취소하는 액션이니 게시글의 좋아요 수를 감소시키고 하고, postLike 엔티티 삭제
         if(postLikeOP.isPresent()){
-            redisService.decrementCnt("postLikeNum", postId.toString(), 1L);
             postLikeRepository.delete(postLikeOP.get());
+            redisService.decrementCnt("postLikeNum", postId.toString(), 1L);
         }
         else { // 좋아요를 누르지 않았다면, 좋아요 수를 증가키고, 엔티티 저장
             User userRef = entityManager.getReference(User.class, userId);
@@ -330,8 +331,8 @@ public class PostService {
 
             PostLike postLike = PostLike.builder().user(userRef).post(postRef).build();
 
-            redisService.incrementCnt("postLikeNum", postId.toString(), 1L);
             postLikeRepository.save(postLike);
+            redisService.incrementCnt("postLikeNum", postId.toString(), 1L);
         }
     }
 
@@ -441,8 +442,8 @@ public class PostService {
 
         // 이미 좋아요를 눌렀다면, 취소하는 액션이니 게시글의 좋아요 수를 감소시키고 하고, postLike 엔티티 삭제
         if(commentLikeOP.isPresent()){
-            redisService.decrementCnt("commentLikeNum", commentId.toString(), 1L);
             commentLikeRepository.delete(commentLikeOP.get());
+            redisService.decrementCnt("commentLikeNum", commentId.toString(), 1L);
         }
         else{ // 좋아요를 누르지 않았다면, 좋아요 수를 증가키고, 엔티티 저장
             User userRef = entityManager.getReference(User.class, userId);
@@ -450,8 +451,8 @@ public class PostService {
 
             CommentLike commentLike = CommentLike.builder().user(userRef).comment(commentRef).build();
 
-            redisService.incrementCnt("commentLikeNum", commentId.toString(), 1L);
             commentLikeRepository.save(commentLike);
+            redisService.incrementCnt("commentLikeNum", commentId.toString(), 1L);
         }
     }
 

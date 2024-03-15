@@ -48,4 +48,11 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT prs.post.id FROM PostReadStatus prs WHERE prs.user.id = :userId")
     List<Long> findPostIdsByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query("UPDATE Post p SET p.likeNum = :likeNum WHERE p.id = :postId")
+    void updateLikeNum(@Param("likeNum") Long likeNum, @Param("postId") Long postId);
+
+    @Query("SELECT p.id FROM Post p")
+    Page<Long> findPostIds(Pageable pageable);
 }
