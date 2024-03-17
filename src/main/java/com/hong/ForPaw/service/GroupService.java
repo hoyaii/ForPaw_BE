@@ -387,7 +387,7 @@ public class GroupService {
         }
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 15 * * * *")
     public void syncLikes() {
         // 업데이트는 50개씩 진행
         int page = 0;
