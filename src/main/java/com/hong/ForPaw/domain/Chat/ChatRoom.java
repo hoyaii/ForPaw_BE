@@ -1,6 +1,7 @@
 package com.hong.ForPaw.domain.Chat;
 
 import com.hong.ForPaw.domain.Group.Group;
+import com.hong.ForPaw.domain.TimeStamp;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -11,7 +12,7 @@ import static jakarta.persistence.FetchType.LAZY;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class ChatRoom {
+public class ChatRoom extends TimeStamp {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
