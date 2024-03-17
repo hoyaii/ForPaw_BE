@@ -13,6 +13,8 @@ import com.hong.ForPaw.controller.DTO.AnimalDTO;
 import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Shelter;
 import com.hong.ForPaw.repository.*;
+import com.hong.ForPaw.repository.Animal.AnimalRepository;
+import com.hong.ForPaw.repository.Animal.FavoriteAnimalRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,4 +1,4 @@
-package com.hong.ForPaw.repository;
+package com.hong.ForPaw.repository.Group;
 
 import com.hong.ForPaw.domain.Group.FavoriteGroup;
 import org.springframework.data.jpa.repository.JpaRepository;

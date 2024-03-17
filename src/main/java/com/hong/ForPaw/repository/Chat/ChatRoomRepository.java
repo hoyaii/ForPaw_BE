@@ -1,4 +1,4 @@
-package com.hong.ForPaw.repository;
+package com.hong.ForPaw.repository.Chat;
 
 import com.hong.ForPaw.domain.Chat.ChatRoom;
 import org.springframework.data.jpa.repository.JpaRepository;

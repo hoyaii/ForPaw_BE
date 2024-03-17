@@ -10,6 +10,8 @@ import com.hong.ForPaw.controller.DTO.ShelterDTO;
 import com.hong.ForPaw.domain.Shelter;
 import com.hong.ForPaw.domain.User.Role;
 import com.hong.ForPaw.repository.*;
+import com.hong.ForPaw.repository.Animal.AnimalRepository;
+import com.hong.ForPaw.repository.Animal.FavoriteAnimalRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;

@@ -9,6 +9,7 @@ import com.hong.ForPaw.domain.Post.*;
 import com.hong.ForPaw.domain.User.Role;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.*;
+import com.hong.ForPaw.repository.Post.*;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

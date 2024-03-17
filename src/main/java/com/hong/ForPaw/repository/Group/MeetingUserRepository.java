@@ -1,4 +1,4 @@
-package com.hong.ForPaw.repository;
+package com.hong.ForPaw.repository.Group;
 
 import com.hong.ForPaw.domain.Group.MeetingUser;
 import com.hong.ForPaw.domain.User.User;

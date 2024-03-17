@@ -1,4 +1,4 @@
-package com.hong.ForPaw.repository;
+package com.hong.ForPaw.repository.Post;
 
 import com.hong.ForPaw.domain.Post.CommentLike;
 import com.hong.ForPaw.domain.Post.PostLike;

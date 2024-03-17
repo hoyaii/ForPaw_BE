@@ -1,4 +1,4 @@
-package com.hong.ForPaw.repository;
+package com.hong.ForPaw.repository.Animal;
 
 import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Animal.FavoriteAnimal;

@@ -1,4 +1,4 @@
-package com.hong.ForPaw.repository;
+package com.hong.ForPaw.repository.Alarm;
 
 import com.hong.ForPaw.domain.Alarm.Alarm;
 import org.springframework.data.jpa.repository.JpaRepository;
