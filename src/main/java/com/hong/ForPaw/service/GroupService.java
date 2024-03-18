@@ -17,6 +17,9 @@ import com.hong.ForPaw.repository.Group.*;
 import com.hong.ForPaw.repository.Post.PostRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.core.*;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -44,6 +47,8 @@ public class GroupService {
     private final ChatUserRepository chatUserRepository;
     private final RedisService redisService;
     private final AlarmService alarmService;
+    private final RabbitTemplate rabbitTemplate;
+    private final AmqpAdmin amqpAdmin;
     private final EntityManager entityManager;
 
     @Transactional
@@ -93,7 +98,25 @@ public class GroupService {
 
         chatUserRepository.save(chatUser);
 
+        // 그룹 채팅방에 대한 queue와 exchange 생성
+        createChatExchangeAndQueue(chatRoom.getId(), userId, group.getId());
+
         return new GroupResponse.CreateGroupDTO(group.getId());
+    }
+
+    public void createChatExchangeAndQueue(Long chatRoomId, Long applicantId, Long groupId){
+        // exchange 생성
+        String exchangeName = "chatroom." + chatRoomId + ".exchange";
+        FanoutExchange fanoutExchange = new FanoutExchange(exchangeName);
+        amqpAdmin.declareExchange(fanoutExchange);
+
+        // queue 생성 (그룹장의 큐)
+        String queueName = "user.queue." + applicantId + ".chatroom." + groupId;
+        Queue userQueue = new Queue(queueName, true);
+        amqpAdmin.declareQueue(userQueue);
+
+        Binding binding = BindingBuilder.bind(userQueue).to(fanoutExchange);
+        amqpAdmin.declareBinding(binding);
     }
 
     // 수정 화면에서 사용하는 API
@@ -344,6 +367,18 @@ public class GroupService {
                 .build();
 
         chatUserRepository.save(chatUser);
+
+        // 맴버의 큐 생성 (for 그룹 채팅)
+        String queueName = "user.queue." + applicantId + ".chatroom." + groupId;
+        String exchangeName = "chatroom.fanout." + groupId;
+
+        Queue userQueue = new Queue(queueName, true);
+        amqpAdmin.declareQueue(userQueue);
+
+        // 해당 그룹 채팅방의 Fanout Exchange와 큐를 바인딩
+        FanoutExchange fanoutExchange = new FanoutExchange(exchangeName);
+        Binding binding = BindingBuilder.bind(userQueue).to(fanoutExchange);
+        amqpAdmin.declareBinding(binding);
     }
 
     @Transactional

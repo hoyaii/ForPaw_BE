@@ -58,6 +58,9 @@ public enum ExceptionCode {
     ALARM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 알람입니다."),
     ALARM_NOT_EXIST(HttpStatus.NOT_FOUND, "알람 목록이 존재하지 않습니다."),
 
+    // 채팅방 관련 에어
+    CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."),
+
     // 잘못된 접근
     BAD_APPROACH(HttpStatus.BAD_REQUEST, "잘못된 접근입니다."),
     EXCEED_REQUEST_NUM(HttpStatus.BAD_REQUEST, "가능한 요청 횟수를 초과하였습니다."),

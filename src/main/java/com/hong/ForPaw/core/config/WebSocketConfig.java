@@ -14,6 +14,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // 클라이언트가 WebSocket 연결을 시작할 수 있는 경로를 지정
         registry.addEndpoint("/ws")
+                .setAllowedOriginPatterns("*")
                 .withSockJS();
     }
 
@@ -22,6 +23,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.enableStompBrokerRelay("/topic", "/queue")
                 .setRelayHost("localhost")
                 .setRelayPort(61613); // RabbitMQ STOMP port
+
         registry.setApplicationDestinationPrefixes("/app");
     }
 }
