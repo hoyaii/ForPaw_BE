@@ -5,10 +5,12 @@ import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
+import com.hong.ForPaw.domain.Chat.ChatRoom;
 import com.hong.ForPaw.domain.Group.*;
 import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.User.User;
+import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Group.*;
 import com.hong.ForPaw.repository.Post.PostRepository;
 import jakarta.persistence.EntityManager;
@@ -36,6 +38,7 @@ public class GroupService {
     private final MeetingRepository meetingRepository;
     private final MeetingUserRepository meetingUserRepository;
     private final PostRepository postRepository;
+    private final ChatRoomRepository chatRoomRepository;
     private final RedisService redisService;
     private final AlarmService alarmService;
     private final EntityManager entityManager;
@@ -66,10 +69,18 @@ public class GroupService {
                 .role(Role.CREATOR)
                 .build();
 
+        groupUserRepository.save(groupUser);
+
         // 그룹 참여자 수 1로 레디스에 저장
         redisService.storeDate("groupParticipantNum", group.getId().toString(), Long.toString(1L));
 
-        groupUserRepository.save(groupUser);
+        // 그룹 채팅방 생성
+        ChatRoom chatRoom = ChatRoom.builder()
+                .group(group)
+                .name(group.getName())
+                .build();
+
+        chatRoomRepository.save(chatRoom);
 
         return new GroupResponse.CreateGroupDTO(group.getId());
     }

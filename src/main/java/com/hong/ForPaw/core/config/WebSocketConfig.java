@@ -12,7 +12,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws").withSockJS();
+        // 클라이언트가 WebSocket 연결을 시작할 수 있는 경로를 지정
+        registry.addEndpoint("/ws")
+                .withSockJS();
     }
 
     @Override

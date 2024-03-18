@@ -4,6 +4,7 @@ import com.hong.ForPaw.domain.TimeStamp;
 import com.hong.ForPaw.domain.User.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -24,6 +25,7 @@ public class ChatUser extends TimeStamp {
     @JoinColumn(name = "chatRoom_id")
     private ChatRoom chatRoom;
 
+    @Builder
     public ChatUser(User user, ChatRoom chatRoom) {
         this.user = user;
         this.chatRoom = chatRoom;

@@ -3,6 +3,7 @@ package com.hong.ForPaw.domain.Chat;
 import com.hong.ForPaw.domain.User.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -25,6 +26,7 @@ public class Message {
 
     private String content;
 
+    @Builder
     public Message(User user, ChatRoom chatRoom, String content) {
         this.user = user;
         this.chatRoom = chatRoom;

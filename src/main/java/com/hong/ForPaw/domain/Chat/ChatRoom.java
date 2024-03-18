@@ -4,6 +4,7 @@ import com.hong.ForPaw.domain.Group.Group;
 import com.hong.ForPaw.domain.TimeStamp;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -24,6 +25,7 @@ public class ChatRoom extends TimeStamp {
 
     private String name;
 
+    @Builder
     public ChatRoom(Group group, String name) {
         this.group = group;
         this.name = name;
