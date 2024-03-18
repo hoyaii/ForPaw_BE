@@ -111,7 +111,7 @@ public class GroupService {
         amqpAdmin.declareExchange(fanoutExchange);
 
         // queue 생성 (그룹장의 큐)
-        String queueName = "user.queue." + applicantId + ".chatroom." + groupId;
+        String queueName = "user.queue." + applicantId + ".chatroom." + chatRoomId;
         Queue userQueue = new Queue(queueName, true);
         amqpAdmin.declareQueue(userQueue);
 
@@ -369,8 +369,8 @@ public class GroupService {
         chatUserRepository.save(chatUser);
 
         // 맴버의 큐 생성 (for 그룹 채팅)
-        String queueName = "user.queue." + applicantId + ".chatroom." + groupId;
-        String exchangeName = "chatroom.fanout." + groupId;
+        String queueName = "user.queue." + applicantId + ".chatroom." + chatRoom.getId();
+        String exchangeName = "chatroom." + chatRoom.getId() + ".exchange";
 
         Queue userQueue = new Queue(queueName, true);
         amqpAdmin.declareQueue(userQueue);
