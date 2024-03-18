@@ -480,6 +480,14 @@ public class GroupService {
         postRepository.deleteAllByGroupId(groupId);
         meetingRepository.deleteAllByGroupId(groupId);
         groupRepository.deleteById(groupId);
+
+        // 그룹 채팅방 삭제
+        User userRef = entityManager.getReference(User.class, userId);
+        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
+        ChatUser chatUser = chatUserRepository.findByUserAndChatRoom(userRef, chatRoom);
+
+        chatUserRepository.delete(chatUser);
+        chatRoomRepository.delete(chatRoom);
     }
 
     @Transactional
