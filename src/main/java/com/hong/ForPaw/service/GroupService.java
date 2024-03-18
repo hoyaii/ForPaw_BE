@@ -6,11 +6,13 @@ import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Chat.ChatRoom;
+import com.hong.ForPaw.domain.Chat.ChatUser;
 import com.hong.ForPaw.domain.Group.*;
 import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
+import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Group.*;
 import com.hong.ForPaw.repository.Post.PostRepository;
 import jakarta.persistence.EntityManager;
@@ -39,6 +41,7 @@ public class GroupService {
     private final MeetingUserRepository meetingUserRepository;
     private final PostRepository postRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatUserRepository chatUserRepository;
     private final RedisService redisService;
     private final AlarmService alarmService;
     private final EntityManager entityManager;
@@ -81,6 +84,14 @@ public class GroupService {
                 .build();
 
         chatRoomRepository.save(chatRoom);
+
+        // 그룹장 채팅방에 추가
+        ChatUser chatUser = ChatUser.builder()
+                .chatRoom(chatRoom)
+                .user(userRef)
+                .build();
+
+        chatUserRepository.save(chatUser);
 
         return new GroupResponse.CreateGroupDTO(group.getId());
     }
@@ -271,6 +282,7 @@ public class GroupService {
                 .group(groupRef)
                 .greeting(requestDTO.greeting())
                 .build();
+
         groupUserRepository.save(groupUser);
     }
 
@@ -290,6 +302,13 @@ public class GroupService {
 
         // 그룹 참가자 수 감소
         redisService.decrementCnt("groupParticipantNum", groupId.toString(), 1L);
+
+        // 그룹 채팅방에서 탈퇴
+        User userRef = entityManager.getReference(User.class, userId);
+        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
+
+        ChatUser chatUser = chatUserRepository.findByUserAndChatRoom(userRef, chatRoom);
+        chatUserRepository.delete(chatUser);
     }
 
     @Transactional
@@ -315,6 +334,16 @@ public class GroupService {
         String redirectURL = "groups/" + groupId + "/detail";
 
         alarmService.send(applicant, AlarmType.join, content, redirectURL);
+
+        // 그룹 채팅방에 참여
+        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
+
+        ChatUser chatUser = ChatUser.builder()
+                .user(applicant)
+                .chatRoom(chatRoom)
+                .build();
+
+        chatUserRepository.save(chatUser);
     }
 
     @Transactional
