@@ -15,11 +15,14 @@ import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Group.*;
 import com.hong.ForPaw.repository.Post.PostRepository;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.data.domain.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -47,7 +50,9 @@ public class GroupService {
     private final ChatUserRepository chatUserRepository;
     private final RedisService redisService;
     private final AlarmService alarmService;
-    private final RabbitTemplate rabbitTemplate;
+    private final RabbitListenerEndpointRegistry rabbitListenerEndpointRegistry;
+    private final RabbitListenerContainerFactory<?> rabbitListenerContainerFactory;
+    private final ConnectionFactory connectionFactory;
     private final AmqpAdmin amqpAdmin;
     private final EntityManager entityManager;
 
@@ -335,7 +340,7 @@ public class GroupService {
     }
 
     @Transactional
-    public void approveJoin(Long userId, Long applicantId, Long groupId){
+    public void approveJoin(Long userId, Long applicantId, Long groupId) {
         // 존재하지 않는 그룹이면 에러
         checkGroupExist(groupId);
 
