@@ -1,14 +1,9 @@
 package com.hong.ForPaw.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.MessageRequest;
-import com.hong.ForPaw.core.errors.CustomException;
-import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Chat.ChatRoom;
 import com.hong.ForPaw.domain.Chat.Message;
 import com.hong.ForPaw.domain.User.User;
-import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
-import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Chat.MessageRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -37,26 +32,32 @@ public class ChatService {
     private final EntityManager entityManager;
 
     @Transactional
-    public void sendMessage(Long chatRoomId, Long senderId, String senderName, String content){
-        // 그룹의 채팅방
-        ChatRoom chatRoomRef = entityManager.getReference(ChatRoom.class, chatRoomId);
+    public void sendMessage(MessageRequest.SendMessageDTO requestDTO, Long senderId, String senderName){
+        // 우선 메시지 DB에 저장
+        LocalDateTime date = LocalDateTime.now();
+        ChatRoom chatRoomRef = entityManager.getReference(ChatRoom.class, requestDTO.chatRoomId());
         User userRef = entityManager.getReference(User.class, senderId);
 
         Message message = Message.builder()
                 .sender(userRef)
                 .chatRoom(chatRoomRef)
                 .senderName(senderName)
-                .content(content)
-                .date(LocalDateTime.now())
+                .content(requestDTO.content())
+                .date(date)
                 .build();
 
         messageRepository.save(message);
 
-        // DTO를 통해 메시지 전송
-        MessageRequest.MessageDTO messageDTO = new MessageRequest.MessageDTO(senderId, chatRoomId, senderName, content, message.getDate());
-        String exchangeName = "chatroom." + chatRoomId + ".exchange";
+        // 전송을 위한 메시지 DTO
+        MessageRequest.MessageDTO messageDTO = new MessageRequest.MessageDTO(message.getId(), senderName, requestDTO.content(), date);
 
+        // 메시지 브로커에 전송
+        String exchangeName = "chatroom." + requestDTO.chatRoomId() + ".exchange";
         rabbitTemplate.convertAndSend(exchangeName, "", messageDTO);
+
+        // STOMP 프로토콜로 실시간으로 메시지 전송 (for 화면)
+        String destination = "/topic/chatRoom." + requestDTO.chatRoomId();
+        messagingTemplate.convertAndSend(destination, messageDTO);
     }
 
     public void registerExchange(Long chatRoomId){
@@ -68,14 +69,14 @@ public class ChatService {
 
     public void registerQueue(Long userId, Long chatRoomId){
 
-        String queueName = "user.queue." + userId + ".chatroom." + chatRoomId;
         String exchangeName = "chatroom." + chatRoomId + ".exchange";
+        FanoutExchange fanoutExchange = new FanoutExchange(exchangeName);
 
+        String queueName = "user.queue." + userId + ".chatroom." + chatRoomId;
         Queue userQueue = new Queue(queueName, true);
         amqpAdmin.declareQueue(userQueue);
 
         // 해당 그룹 채팅방의 Fanout Exchange와 큐를 바인딩
-        FanoutExchange fanoutExchange = new FanoutExchange(exchangeName);
         Binding binding = BindingBuilder.bind(userQueue).to(fanoutExchange);
         amqpAdmin.declareBinding(binding);
     }
@@ -89,26 +90,9 @@ public class ChatService {
         endpoint.setId(listenerId);
         endpoint.setQueueNames(queueName);
         endpoint.setMessageListener(message -> {
-            try {
-                ObjectMapper objectMapper = new ObjectMapper();
 
-                String messageBody = new String(message.getBody());
-                MessageRequest.MessageDTO messageDTO = objectMapper.readValue(messageBody, MessageRequest.MessageDTO.class);
-
-                sendStompMessage(messageDTO);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
         });
 
         rabbitListenerEndpointRegistry.registerListenerContainer(endpoint, rabbitListenerContainerFactory, true);
-    }
-
-    private void sendStompMessage(MessageRequest.MessageDTO messageDTO) {
-        // 클라이언트가 구독하는 주제 경로
-        String destination = "/topic/chatRoom." + messageDTO.chatRoomId();
-
-        // 메시지를 해당 주제의 구독자들에게 전송
-        messagingTemplate.convertAndSend(destination, messageDTO);
     }
 }

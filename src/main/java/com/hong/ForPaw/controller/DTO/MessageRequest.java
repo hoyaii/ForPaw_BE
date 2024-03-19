@@ -4,5 +4,7 @@ import java.time.LocalDateTime;
 
 public class MessageRequest {
 
-    public record MessageDTO(Long senderId, Long chatRoomId, String sender, String content, LocalDateTime time) {}
+    public record SendMessageDTO(Long chatRoomId, String content) {}
+
+    public record MessageDTO(Long messageId, String senderName, String content, LocalDateTime time) {}
 }
