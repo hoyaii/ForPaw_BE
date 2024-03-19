@@ -52,4 +52,12 @@ public class ChatService {
 
         rabbitTemplate.convertAndSend(exchangeName, "", messageDTO);
     }
+
+    public void sendStompMessage(MessageRequest.MessageDTO messageDTO) {
+        // 클라이언트가 구독하는 주제 경로
+        String destination = "/topic/chatRoom." + messageDTO.chatRoomId();
+
+        // 메시지를 해당 주제의 구독자들에게 전송
+        messagingTemplate.convertAndSend(destination, messageDTO);
+    }
 }

@@ -12,7 +12,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // 클라이언트가 WebSocket 연결을 시작할 수 있는 경로를 지정
+        // 여기서 "/ws"는 클라이언트가 웹소켓 서버에 연결을 시도할 때 사용하는 URL 경로
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*")
                 .withSockJS();

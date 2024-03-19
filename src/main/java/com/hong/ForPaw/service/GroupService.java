@@ -1,7 +1,10 @@
 package com.hong.ForPaw.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.GroupRequest;
 import com.hong.ForPaw.controller.DTO.GroupResponse;
+import com.hong.ForPaw.controller.DTO.MessageRequest;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
@@ -32,6 +35,8 @@ import java.util.*;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
 
 import java.util.stream.Collectors;
 
