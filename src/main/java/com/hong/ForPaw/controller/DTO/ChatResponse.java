@@ -12,4 +12,13 @@ public class ChatResponse {
                              String content,
                              LocalDateTime date,
                              boolean isMine) {}
+
+    public record FindChatRoomListDTO(List<ChatResponse.RoomDTO> rooms) {}
+
+    public record RoomDTO(Long chatRoomId,
+                          String name,
+                          String lastMessage,
+                          LocalDateTime lastMessageTime,
+                          Long offset) {}
+
 }
