@@ -6,5 +6,5 @@ public class MessageRequest {
 
     public record SendMessageDTO(Long chatRoomId, String content) {}
 
-    public record MessageDTO(Long messageId, String senderName, String content, LocalDateTime time) {}
+    public record MessageDTO(Long messageId, Long senderId,String senderName, String content, LocalDateTime time) {}
 }

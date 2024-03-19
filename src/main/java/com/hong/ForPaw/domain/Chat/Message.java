@@ -1,32 +1,26 @@
 package com.hong.ForPaw.domain.Chat;
 
-import com.hong.ForPaw.domain.TimeStamp;
-import com.hong.ForPaw.domain.User.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-@Entity
+@Document
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Message implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User sender;
+    private Long chatRoomId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chatRoom_id")
-    private ChatRoom chatRoom;
+    private Long senderId; // 내가 보낸 메시지인지 판별을 위해 도입
 
     private String senderName;
 
@@ -35,9 +29,9 @@ public class Message implements Serializable {
     private LocalDateTime date;
 
     @Builder
-    public Message(User sender, ChatRoom chatRoom, String senderName, String content, LocalDateTime date) {
-        this.sender = sender;
-        this.chatRoom = chatRoom;
+    public Message(Long chatRoomId, Long senderId, String senderName, String content, LocalDateTime date) {
+        this.chatRoomId = chatRoomId;
+        this.senderId = senderId;
         this.senderName = senderName;
         this.content = content;
         this.date = date;

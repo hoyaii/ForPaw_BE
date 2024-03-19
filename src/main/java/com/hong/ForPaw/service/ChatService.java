@@ -29,18 +29,15 @@ public class ChatService {
     private final RabbitTemplate rabbitTemplate;
     private final SimpMessagingTemplate messagingTemplate;
     private final AmqpAdmin amqpAdmin;
-    private final EntityManager entityManager;
 
     @Transactional
     public void sendMessage(MessageRequest.SendMessageDTO requestDTO, Long senderId, String senderName){
         // 우선 메시지 DB에 저장
         LocalDateTime date = LocalDateTime.now();
-        ChatRoom chatRoomRef = entityManager.getReference(ChatRoom.class, requestDTO.chatRoomId());
-        User userRef = entityManager.getReference(User.class, senderId);
 
         Message message = Message.builder()
-                .sender(userRef)
-                .chatRoom(chatRoomRef)
+                .chatRoomId(requestDTO.chatRoomId())
+                .senderId(senderId)
                 .senderName(senderName)
                 .content(requestDTO.content())
                 .date(date)
@@ -49,7 +46,7 @@ public class ChatService {
         messageRepository.save(message);
 
         // 전송을 위한 메시지 DTO
-        MessageRequest.MessageDTO messageDTO = new MessageRequest.MessageDTO(message.getId(), senderName, requestDTO.content(), date);
+        MessageRequest.MessageDTO messageDTO = new MessageRequest.MessageDTO(message.getId(), senderId, senderName, requestDTO.content(), date);
 
         // 메시지 브로커에 전송
         String exchangeName = "chatroom." + requestDTO.chatRoomId() + ".exchange";
