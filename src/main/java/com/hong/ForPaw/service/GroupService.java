@@ -1,10 +1,7 @@
 package com.hong.ForPaw.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.GroupRequest;
 import com.hong.ForPaw.controller.DTO.GroupResponse;
-import com.hong.ForPaw.controller.DTO.MessageRequest;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
@@ -18,14 +15,10 @@ import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Group.*;
 import com.hong.ForPaw.repository.Post.PostRepository;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
-import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
-import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.data.domain.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -35,8 +28,6 @@ import java.util.*;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.web.socket.TextMessage;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.util.stream.Collectors;
 
@@ -55,9 +46,7 @@ public class GroupService {
     private final ChatUserRepository chatUserRepository;
     private final RedisService redisService;
     private final AlarmService alarmService;
-    private final RabbitListenerEndpointRegistry rabbitListenerEndpointRegistry;
-    private final RabbitListenerContainerFactory<?> rabbitListenerContainerFactory;
-    private final ConnectionFactory connectionFactory;
+    private final ChatService chatService;
     private final AmqpAdmin amqpAdmin;
     private final EntityManager entityManager;
 
@@ -108,25 +97,12 @@ public class GroupService {
 
         chatUserRepository.save(chatUser);
 
-        // 그룹 채팅방에 대한 queue와 exchange 생성
-        createChatExchangeAndQueue(chatRoom.getId(), userId, group.getId());
+        // 그룹 채팅방의 exchange 등록 후 그룹장에 대한 큐와 리스너 등록
+        chatService.registerExchange(chatRoom.getId());
+        chatService.registerQueue(userId, chatRoom.getId());
+        chatService.registerListener(userId, chatRoom.getId());
 
         return new GroupResponse.CreateGroupDTO(group.getId());
-    }
-
-    public void createChatExchangeAndQueue(Long chatRoomId, Long applicantId, Long groupId){
-        // exchange 생성
-        String exchangeName = "chatroom." + chatRoomId + ".exchange";
-        FanoutExchange fanoutExchange = new FanoutExchange(exchangeName);
-        amqpAdmin.declareExchange(fanoutExchange);
-
-        // queue 생성 (그룹장의 큐)
-        String queueName = "user.queue." + applicantId + ".chatroom." + chatRoomId;
-        Queue userQueue = new Queue(queueName, true);
-        amqpAdmin.declareQueue(userQueue);
-
-        Binding binding = BindingBuilder.bind(userQueue).to(fanoutExchange);
-        amqpAdmin.declareBinding(binding);
     }
 
     // 수정 화면에서 사용하는 API
@@ -345,7 +321,7 @@ public class GroupService {
     }
 
     @Transactional
-    public void approveJoin(Long userId, Long applicantId, Long groupId) {
+    public void approveJoin(Long userId, Long applicantId, Long groupId){
         // 존재하지 않는 그룹이면 에러
         checkGroupExist(groupId);
 
@@ -378,17 +354,9 @@ public class GroupService {
 
         chatUserRepository.save(chatUser);
 
-        // 맴버의 큐 생성 (for 그룹 채팅)
-        String queueName = "user.queue." + applicantId + ".chatroom." + chatRoom.getId();
-        String exchangeName = "chatroom." + chatRoom.getId() + ".exchange";
-
-        Queue userQueue = new Queue(queueName, true);
-        amqpAdmin.declareQueue(userQueue);
-
-        // 해당 그룹 채팅방의 Fanout Exchange와 큐를 바인딩
-        FanoutExchange fanoutExchange = new FanoutExchange(exchangeName);
-        Binding binding = BindingBuilder.bind(userQueue).to(fanoutExchange);
-        amqpAdmin.declareBinding(binding);
+        // 맴버에 대한 큐와 리스너 등록
+        chatService.registerQueue(applicantId, chatRoom.getId());
+        chatService.registerListener(applicantId, chatRoom.getId());
     }
 
     @Transactional
