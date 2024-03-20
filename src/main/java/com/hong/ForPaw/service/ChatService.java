@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,6 +43,9 @@ public class ChatService {
 
     @Transactional
     public void sendMessage(ChatRequest.SendMessageDTO requestDTO, Long senderId, String senderName){
+        // 권한 체크
+        checkChatAuthority(senderId, requestDTO.chatRoomId());
+
         // 우선 메시지 DB에 저장
         LocalDateTime date = LocalDateTime.now();
 
@@ -74,14 +78,16 @@ public class ChatService {
 
         List<ChatResponse.RoomDTO> roomDTOS = chatUsers.stream()
                 .map(chatUser -> {
-                    Message lastMessage = messageRepository.findFirstByChatRoomIdOrderByDateDesc(chatUser.getChatRoom().getId()).orElseThrow(
-                            () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
-                    );
+                    Optional<Message> lastMessageOP = messageRepository.findFirstByChatRoomIdOrderByDateDesc(chatUser.getChatRoom().getId());
+
+                    String lastMessageContent = lastMessageOP.map(Message::getContent).orElse(null);
+                    LocalDateTime lastMessageDate = lastMessageOP.map(Message::getDate).orElse(null);
+
                     return new ChatResponse.RoomDTO(
                             chatUser.getChatRoom().getId(),
                             chatUser.getChatRoom().getName(),
-                            lastMessage.getContent(),
-                            lastMessage.getDate(),
+                            lastMessageContent,
+                            lastMessageDate,
                             chatUser.getOffset());
                 })
                 .collect(Collectors.toList());
@@ -91,8 +97,10 @@ public class ChatService {
 
     @Transactional
     public ChatResponse.FindMessageListInRoomDTO findMessageListInRoom(Long chatRoomId, Long userId, Integer page){
+        // 권한 체크
+        ChatUser chatUser = checkChatAuthority(userId, chatRoomId);
 
-        Pageable pageable = createPageable(page, 10);
+        Pageable pageable = createPageable(page, 10, "id");
         Page<Message> messages = messageRepository.findByChatRoomId(chatRoomId, pageable);
 
         List<ChatResponse.MessageDTD> messageDTDS = messages.getContent().stream()
@@ -103,7 +111,24 @@ public class ChatService {
                         message.getSenderId().equals(userId)))
                 .collect(Collectors.toList());
 
+        // 메시지 읽음 처리
+        List<Message> messageList = messages.getContent();
+        if (!messageList.isEmpty()) {
+            Message lastMessage = messageList.get(messageList.size() - 1);
+            chatUser.updateLstReadMessage(lastMessage.getId());
+        }
+
         return new ChatResponse.FindMessageListInRoomDTO(messageDTDS);
+    }
+
+    @Transactional
+    public void readMessage(ChatRequest.ReadMessageDTO requestDTO, Long userId){
+        // 권한 체크
+        ChatUser chatUser = chatUserRepository.findByUserIdAndChatRoomId(userId, requestDTO.chatRoomId()).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_FORBIDDEN)
+        );
+
+        chatUser.updateLstReadMessage(requestDTO.messageId());
     }
 
     public void registerExchange(Long chatRoomId){
@@ -142,7 +167,17 @@ public class ChatService {
         rabbitListenerEndpointRegistry.registerListenerContainer(endpoint, rabbitListenerContainerFactory, true);
     }
 
-    private Pageable createPageable(int page, int size) {
-        return PageRequest.of(page, size);
+    private Pageable createPageable(int page, int size, String sortProperty) {
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
+    }
+
+    private ChatUser checkChatAuthority(Long userId, Long chatRoomId){
+        // 채팅방에 들어와있는지 여부 체크
+        Optional<ChatUser> chatUserOP = chatUserRepository.findByUserIdAndChatRoomId(userId, chatRoomId);
+        if(chatUserOP.isEmpty()){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
+
+        return chatUserOP.get();
     }
 }

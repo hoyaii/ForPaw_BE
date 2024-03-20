@@ -316,7 +316,7 @@ public class GroupService {
         User userRef = entityManager.getReference(User.class, userId);
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
 
-        ChatUser chatUser = chatUserRepository.findByUserAndChatRoom(userRef, chatRoom);
+        ChatUser chatUser = chatUserRepository.findByUserAndChatRoom(userRef, chatRoom).get();
         chatUserRepository.delete(chatUser);
     }
 
@@ -497,7 +497,7 @@ public class GroupService {
         // 그룹 채팅방 삭제
         User userRef = entityManager.getReference(User.class, userId);
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
-        ChatUser chatUser = chatUserRepository.findByUserAndChatRoom(userRef, chatRoom);
+        ChatUser chatUser = chatUserRepository.findByUserAndChatRoom(userRef, chatRoom).get();
 
         chatUserRepository.delete(chatUser);
         chatRoomRepository.delete(chatRoom);

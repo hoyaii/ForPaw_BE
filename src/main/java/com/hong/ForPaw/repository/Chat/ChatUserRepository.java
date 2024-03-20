@@ -10,11 +10,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ChatUserRepository extends JpaRepository<ChatUser, Long> {
 
-    ChatUser findByUserAndChatRoom(User user, ChatRoom chatRoom);
+    Optional<ChatUser> findByUserAndChatRoom(User user, ChatRoom chatRoom);
+
+    Optional<ChatUser> findByUserIdAndChatRoomId(Long userId, Long chatRoomId);
 
     @EntityGraph(attributePaths = {"chatRoom"})
     List<ChatUser> findByUserId(Long userId);
