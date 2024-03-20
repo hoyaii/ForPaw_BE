@@ -43,4 +43,10 @@ public class ChatController {
         ChatResponse.FindMessageListInRoomDTO responseDTO = chatService.findMessageListInRoom(chatRoomId, userDetails.getUser().getId(), page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
+
+    @MessageMapping("/message.read")
+    public void readMessage(@Payload ChatRequest.ReadMessageDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        chatService.readMessage(requestDTO, userDetails.getUser().getId());
+    }
 }
