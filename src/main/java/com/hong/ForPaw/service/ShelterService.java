@@ -22,6 +22,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -40,6 +41,7 @@ public class ShelterService {
     private final RedisService redisService;
     private final ObjectMapper mapper;
     private final RestTemplate restTemplate;
+    private final WebClient webClient;
 
     @Value("${openAPI.service-key2}")
     private String serviceKey;
@@ -51,37 +53,34 @@ public class ShelterService {
     public void loadShelterData(Role role) {
         List<RegionCode> regionCodeList = regionCodeRepository.findAll();
 
-        for (RegionCode regionCode : regionCodeList) {
+        regionCodeList.forEach(regionCode -> {
             Integer uprCd = regionCode.getUprCd();
             Integer orgCd = regionCode.getOrgCd();
 
-            try {
-                URI uri = buildURI(baseUrl, serviceKey, uprCd, orgCd);
+            URI uri = buildURI(baseUrl, serviceKey, uprCd, orgCd);
 
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
-                headers.set("Accept", "*/*;q=0.9"); // HTTP_ERROR 방지
-                HttpEntity<?> entity = new HttpEntity<>(null, headers);
+            webClient.get()
+                    .uri(uri)
+                    .retrieve() // 요청 실행
+                    .bodyToMono(String.class) // 응답을 String으로 변환
+                    .subscribe(response -> { // 비동기적 결과 처리
+                        try {
+                            ShelterDTO json = mapper.readValue(response, ShelterDTO.class);
+                            List<ShelterDTO.itemDTO> itemDTOS = json.response().body().items().item();
 
-                ResponseEntity<String> responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);
-                String response = responseEntity.getBody();
-                ShelterDTO json = mapper.readValue(response, ShelterDTO.class);
-                List<ShelterDTO.itemDTO> itemDTOS = json.response().body().items().item();
-
-                for (ShelterDTO.itemDTO itemDTO : itemDTOS) {
-                    com.hong.ForPaw.domain.Shelter shelter = com.hong.ForPaw.domain.Shelter.builder()
-                            .regionCode(regionCode)
-                            .id(itemDTO.careRegNo())
-                            .name(itemDTO.careNm()).build();
-
-                    shelterRepository.save(shelter);
-                }
-
-            } catch (Exception e) {
-                System.err.println("JSON 파싱 오류가 발생했습니다. 재시도 중...: ");
-                System.out.println(e);
-            }
-        }
+                            itemDTOS.forEach(itemDTO -> {
+                                com.hong.ForPaw.domain.Shelter shelter = com.hong.ForPaw.domain.Shelter.builder()
+                                        .regionCode(regionCode)
+                                        .id(itemDTO.careRegNo())
+                                        .name(itemDTO.careNm())
+                                        .build();
+                                shelterRepository.save(shelter);
+                            });
+                        } catch (Exception e) {
+                            System.err.println("JSON 파싱 오류가 발생했습니다. 재시도 중...: " + e.getMessage());
+                        }
+                    });
+        });
     }
 
     @Transactional
@@ -146,8 +145,12 @@ public class ShelterService {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 
-    private URI buildURI(String baseUrl, String serviceKey, Integer uprCd, Integer orgCd) throws URISyntaxException {
+    private URI buildURI(String baseUrl, String serviceKey, Integer uprCd, Integer orgCd) {
         String url = baseUrl + "?serviceKey=" + serviceKey + "&upr_cd=" + uprCd + "&org_cd=" + orgCd + "&_type=json";
-        return new URI(url);
+        try {
+            return new URI(url);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
