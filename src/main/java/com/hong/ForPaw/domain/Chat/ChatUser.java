@@ -25,9 +25,11 @@ public class ChatUser extends TimeStamp {
     @JoinColumn(name = "chatRoom_id")
     private ChatRoom chatRoom;
 
-    private Long lastReadMessageId;
+    @Column
+    private Long lastMessageId = 0L;
 
-    private Long offset;
+    @Column
+    private Long lastMessageIdx = 0L;
 
     @Builder
     public ChatUser(User user, ChatRoom chatRoom) {
@@ -35,7 +37,8 @@ public class ChatUser extends TimeStamp {
         this.chatRoom = chatRoom;
     }
 
-    public void updateLstReadMessage(Long lastReadMessageId){
-        this.lastReadMessageId = lastReadMessageId;
+    public void updateLastMessage(Long lastMessageId, Long lastMessageIdx){
+        this.lastMessageId = lastMessageId;
+        this.lastMessageIdx = lastMessageIdx;
     }
 }

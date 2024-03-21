@@ -23,6 +23,7 @@ public class ChatRoom extends TimeStamp {
     @JoinColumn(name = "group_id")
     private Group group;
 
+    @Column
     private String name;
 
     @Builder

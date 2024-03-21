@@ -4,9 +4,9 @@ import com.hong.ForPaw.controller.DTO.ChatRequest;
 import com.hong.ForPaw.controller.DTO.ChatResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
-import com.hong.ForPaw.domain.Chat.ChatRoom;
 import com.hong.ForPaw.domain.Chat.ChatUser;
 import com.hong.ForPaw.domain.Chat.Message;
+import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Chat.MessageRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -37,6 +38,7 @@ public class ChatService {
     private final RabbitListenerContainerFactory<?> rabbitListenerContainerFactory;
     private final MessageRepository messageRepository;
     private final ChatUserRepository chatUserRepository;
+    private final ChatRoomRepository chatRoomRepository;
     private final RabbitTemplate rabbitTemplate;
     private final SimpMessagingTemplate messagingTemplate;
     private final AmqpAdmin amqpAdmin;
@@ -78,17 +80,21 @@ public class ChatService {
 
         List<ChatResponse.RoomDTO> roomDTOS = chatUsers.stream()
                 .map(chatUser -> {
-                    Optional<Message> lastMessageOP = messageRepository.findFirstByChatRoomIdOrderByDateDesc(chatUser.getChatRoom().getId());
-
+                    // 마지막으로 읽은 메시지
+                    Optional<Message> lastMessageOP = messageRepository.findById(chatUser.getLastMessageId());
                     String lastMessageContent = lastMessageOP.map(Message::getContent).orElse(null);
                     LocalDateTime lastMessageDate = lastMessageOP.map(Message::getDate).orElse(null);
+
+                    // 마지막으로 읽은 페이지
+                    Long lastReadMessageIdx = chatUser.getLastMessageIdx();
+                    Long offset = lastReadMessageIdx != 0L ? lastReadMessageIdx / 50 : 0L;
 
                     return new ChatResponse.RoomDTO(
                             chatUser.getChatRoom().getId(),
                             chatUser.getChatRoom().getName(),
                             lastMessageContent,
                             lastMessageDate,
-                            chatUser.getOffset());
+                            offset);
                 })
                 .collect(Collectors.toList());
 
@@ -96,39 +102,47 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatResponse.FindMessageListInRoomDTO findMessageListInRoom(Long chatRoomId, Long userId, Integer page){
+    public ChatResponse.FindMessageListInRoomDTO findMessageListInRoom(Long chatRoomId, Long userId, Integer startPage){
         // 권한 체크
         ChatUser chatUser = checkChatAuthority(userId, chatRoomId);
 
-        Pageable pageable = createPageable(page, 10, "id");
-        Page<Message> messages = messageRepository.findByChatRoomId(chatRoomId, pageable);
+        List<ChatResponse.MessageDTD> messageDTOs = new ArrayList<>();
+        boolean isLast = false;
+        int currentPage = startPage;
 
-        List<ChatResponse.MessageDTD> messageDTDS = messages.getContent().stream()
-                .map(message -> new ChatResponse.MessageDTD(message.getId(),
-                        message.getSenderName(),
-                        message.getContent(),
-                        message.getDate(),
-                        message.getSenderId().equals(userId)))
-                .collect(Collectors.toList());
+        while(!isLast) {
+            Pageable pageable = PageRequest.of(currentPage, 50, Sort.by("id"));
+            Page<Message> messages = messageRepository.findByChatRoomId(chatRoomId, pageable);
+            isLast = messages.isLast(); // 현재 페이지가 마지막 페이지인지 확인
 
-        // 메시지 읽음 처리
-        List<Message> messageList = messages.getContent();
-        if (!messageList.isEmpty()) {
-            Message lastMessage = messageList.get(messageList.size() - 1);
-            chatUser.updateLstReadMessage(lastMessage.getId());
+            List<ChatResponse.MessageDTD> currentMessages = messages.getContent().stream()
+                    .map(message -> new ChatResponse.MessageDTD(message.getId(),
+                            message.getSenderName(),
+                            message.getContent(),
+                            message.getDate(),
+                            message.getSenderId().equals(userId)))
+                    .toList();
+
+            messageDTOs.addAll(currentMessages); // 현재 페이지의 데이터를 추가
+            currentPage++; // 다음 페이지로 이동
         }
 
-        return new ChatResponse.FindMessageListInRoomDTO(messageDTDS);
+        // 마지막으로 읽은 메시지의 id와 index 업데이트
+        if (!messageDTOs.isEmpty()) {
+            ChatResponse.MessageDTD lastMessageDTO = messageDTOs.get(messageDTOs.size() - 1);
+            long chatNum = messageRepository.countByChatRoomId(chatRoomId);
+
+            chatUser.updateLastMessage(lastMessageDTO.messageId(), chatNum - 1);
+        }
+
+        return new ChatResponse.FindMessageListInRoomDTO(chatUser.getLastMessageId(), messageDTOs);
     }
 
     @Transactional
     public void readMessage(ChatRequest.ReadMessageDTO requestDTO, Long userId){
         // 권한 체크
-        ChatUser chatUser = chatUserRepository.findByUserIdAndChatRoomId(userId, requestDTO.chatRoomId()).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_FORBIDDEN)
-        );
-
-        chatUser.updateLstReadMessage(requestDTO.messageId());
+        ChatUser chatUser = checkChatAuthority(userId, requestDTO.chatRoomId());
+        chatUser.updateLastMessage(requestDTO.messageId(), chatUser.getLastMessageIdx() + 1);
     }
 
     public void registerExchange(Long chatRoomId){

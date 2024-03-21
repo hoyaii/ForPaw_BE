@@ -5,7 +5,7 @@ import java.util.List;
 
 public class ChatResponse {
 
-    public record FindMessageListInRoomDTO(List<ChatResponse.MessageDTD> messages) {}
+    public record FindMessageListInRoomDTO(Long lastMessageId, List<ChatResponse.MessageDTD> messages) {}
 
     public record MessageDTD(Long messageId,
                              String senderName,
@@ -17,7 +17,7 @@ public class ChatResponse {
 
     public record RoomDTO(Long chatRoomId,
                           String name,
-                          String lastMessage,
+                          String lastMessageContent,
                           LocalDateTime lastMessageTime,
                           Long offset) {}
 
