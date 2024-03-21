@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -46,6 +47,8 @@ public class AnimalService {
     private final RedisService redisService;
     private final ApplyRepository applyRepository;
     private final EntityManager entityManager;
+    private final ObjectMapper mapper;
+    private final RestTemplate restTemplate;
 
     @Value("${openAPI.service-key2}")
     private String serviceKey;
@@ -58,40 +61,32 @@ public class AnimalService {
 
     @Transactional
     public void loadAnimalDate() {
-        // shelter 돌면서 => animal 정보 쭉 떙겨온다 => shelter를 패치하고 => animal 등록
-        ObjectMapper mapper = new ObjectMapper();
-        RestTemplate restTemplate = new RestTemplate();
+        List<Shelter> shelters = shelterRepository.findAll();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-
-        List<Shelter> shelters = shelterRepository.findAllWithRegionCode();
 
         for(Shelter shelter : shelters){
             Long careRegNo = shelter.getId();
 
             try {
-                String url = baseUrl + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
+                URI uri = buildURI(baseUrl, serviceKey, careRegNo);
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
                 headers.set("Accept", "*/*;q=0.9"); // HTTP_ERROR 방지
                 HttpEntity<?> entity = new HttpEntity<>(null, headers);
 
-                URI uri = new URI(url);
-
                 ResponseEntity<String> responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);
                 String response = responseEntity.getBody();
-                System.out.println(response);
-
                 AnimalDTO json = mapper.readValue(response, AnimalDTO.class);
                 List<AnimalDTO.ItemDTO> itemDTOS = json.response().body().items().item();
-                boolean isShelterUpdate = false; // 보호소 업데이트 여부 (동물을 조회할 때 보호소 나머지 정보도 등장함)
+
+                // 보호소 정보 업데이트
+                if (!itemDTOS.isEmpty()) {
+                    AnimalDTO.ItemDTO firstItemDTO = itemDTOS.get(0);
+                    shelter.updateShelterInfo(firstItemDTO.careTel(), firstItemDTO.careAddr(), Long.valueOf(json.response().body().totalCount()));
+                }
 
                 for (AnimalDTO.ItemDTO itemDTO : itemDTOS) {
-                    if (!isShelterUpdate) {
-                        shelter.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), Long.valueOf(json.response().body().totalCount()));
-                        isShelterUpdate = true;
-                    }
-
                     Animal animal = Animal.builder()
                             .id(Long.valueOf(itemDTO.desertionNo()))
                             .name(createAnimalName())
@@ -111,7 +106,6 @@ public class AnimalService {
                             .specialMark(itemDTO.specialMark())
                             .region(shelter.getRegionCode().getUprName() + " " + shelter.getRegionCode().getOrgName())
                             .build();
-
                     animalRepository.save(animal);
                 }
             }
@@ -124,7 +118,6 @@ public class AnimalService {
 
     @Transactional
     public AnimalResponse.FindAnimalListDTO findAnimalList(Integer page, Integer size, String sort, Long userId){
-
         Pageable pageable =createPageable(page, size, sort);
         Page<Animal> animalPage = animalRepository.findAll(pageable);
 
@@ -159,7 +152,6 @@ public class AnimalService {
 
     @Transactional
     public AnimalResponse.FindLikeAnimalListDTO findLikeAnimalList(Integer page, Integer size, Long userId){
-
         Pageable pageable =createPageable(page, size, "id");
         Page<Animal> animalPage = favoriteAnimalRepository.findAnimalByUserId(userId, pageable);
 
@@ -191,7 +183,6 @@ public class AnimalService {
 
     @Transactional
     public AnimalResponse.FindAnimalByIdDTO findAnimalById(Long animalId, Long userId){
-
         Animal animal = animalRepository.findById(animalId).orElseThrow(
                 () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
         );
@@ -278,7 +269,6 @@ public class AnimalService {
 
     @Transactional
     public AnimalResponse.FindApplyListDTO findApplyList(Long userId){
-
         List<Apply> applies = applyRepository.findByUserId(userId);
 
         // 지원서가 존재하지 않음
@@ -339,5 +329,10 @@ public class AnimalService {
     public String createAnimalName() {
         int index = ThreadLocalRandom.current().nextInt(animalNames.length);
         return animalNames[index];
+    }
+
+    private URI buildURI(String baseUrl, String serviceKey, Long careRegNo) throws URISyntaxException {
+        String url = baseUrl + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
+        return new URI(url);
     }
 }

@@ -42,7 +42,6 @@ public class PostService {
 
     @Transactional
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId){
-
         User userRef = entityManager.getReference(User.class, userId);
 
         List<PostImage> postImages = requestDTO.images().stream()
@@ -128,7 +127,6 @@ public class PostService {
 
     @Transactional
     public PostResponse.FindAdoptionPostListDTO findAdoptionPostList(Integer page, Integer size, String sort){
-
         Pageable pageable = createPageable(page, size, sort);
         List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.adoption, pageable);
 
@@ -141,7 +139,6 @@ public class PostService {
 
     @Transactional
     public PostResponse.FindProtectionPostListDTO findProtectionPostList(Integer page, Integer size, String sort){
-
         Pageable pageable = createPageable(page, size, sort);
         List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.protection, pageable);
 
@@ -154,7 +151,6 @@ public class PostService {
 
     @Transactional
     public PostResponse.FindQnaPostListDTO findQuestionPostList(Integer page, Integer size, String sort){
-
         Pageable pageable = createPageable(page, size, sort);
         List<PostResponse.QnaDTO> qnaDTOS = getQnaDTOs(pageable);
 
@@ -354,7 +350,6 @@ public class PostService {
 
     @Transactional
     public Page<Long> processLikesBatch(Pageable pageable) {
-
         Page<Long> postIdsPage = postRepository.findPostIds(pageable);
         List<Long> postIds = postIdsPage.getContent();
 
@@ -559,14 +554,12 @@ public class PostService {
     }
 
     private void checkPostExist(Long postId){
-
         if (!postRepository.existsById(postId)) {
             throw new CustomException(ExceptionCode.POST_NOT_FOUND);
         }
     }
 
     private void checkCommentExist(Long commentId){
-
         if(!commentRepository.existsById(commentId)){
             throw new CustomException(ExceptionCode.COMMENT_NOT_FOUND);
         }

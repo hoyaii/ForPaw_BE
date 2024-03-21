@@ -47,7 +47,6 @@ public class SearchService {
 
     @Transactional
     public SearchResponse.SearchShelterListDTO searchShelterList(String keyword, Integer page, Integer size){
-
         Pageable pageable = createPageable(page, size, "id");
         List<SearchResponse.ShelterDTO> shelterDTOS = getShelterDTOsByKeyword(keyword, pageable);
 
@@ -56,7 +55,6 @@ public class SearchService {
 
     @Transactional
     public SearchResponse.SearchPostListDTO searchPostList(String keyword, Integer page, Integer size){
-
         Pageable pageable =createPageable(page, size, "id");
         List<SearchResponse.PostDTO> postDTOS = getPostDTOsByKeyword(keyword, pageable);
 
@@ -65,7 +63,6 @@ public class SearchService {
 
     @Transactional
     public SearchResponse.SearchGroupListDTO searchGroupList(String keyword, Integer page, Integer size){
-
         Pageable pageable =createPageable(page, size, "id");
         List<SearchResponse.GroupDTO> groupDTOS = getGroupDTOsByKeyword(keyword, pageable);
 
@@ -73,7 +70,6 @@ public class SearchService {
     }
 
     private List<SearchResponse.ShelterDTO> getShelterDTOsByKeyword(String keyword, Pageable pageable){
-
         Page<Shelter> shelterPage = shelterRepository.findByNameContaining(keyword, pageable);
 
         List<SearchResponse.ShelterDTO> shelterDTOS = shelterPage.getContent().stream()
@@ -112,7 +108,6 @@ public class SearchService {
     }
 
     private List<SearchResponse.GroupDTO> getGroupDTOsByKeyword(String keyword, Pageable pageable){
-
         Page<Group> groupPage = groupRepository.findByNameContaining(keyword, pageable);
 
         List<SearchResponse.GroupDTO> groupDTOS = groupPage.getContent().stream()

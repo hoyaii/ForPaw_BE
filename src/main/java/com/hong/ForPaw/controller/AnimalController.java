@@ -22,56 +22,48 @@ public class AnimalController {
 
     @GetMapping("/animals/import")
     public ResponseEntity<?> loadAnimals() {
-
         animalService.loadAnimalDate();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @GetMapping("/animals")
     public ResponseEntity<?> findAnimalList(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @RequestParam("sort") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
-
         AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(page, size, sort, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/animals/like")
     public ResponseEntity<?> findLikeAnimalList(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @AuthenticationPrincipal CustomUserDetails userDetails){
-
         AnimalResponse.FindLikeAnimalListDTO responseDTO = animalService.findLikeAnimalList(page, size, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/animals/{animalId}")
     public ResponseEntity<?> findAnimalById(@PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails){
-
         AnimalResponse.FindAnimalByIdDTO responseDTO = animalService.findAnimalById(animalId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/animals/{animalId}/like")
     public ResponseEntity<?> likeAnimal(@PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails){
-
         animalService.likeAnimal(userDetails.getUser().getId(), animalId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/animals/{animalId}/apply")
     public ResponseEntity<?> applyAdoption(@RequestBody AnimalRequest.ApplyAdoptionDTO requestDTO, Errors errors, @PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails){
-
         AnimalResponse.CreateApplyDTO responseDTO = animalService.applyAdoption(requestDTO, userDetails.getUser().getId(), animalId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, requestDTO));
     }
 
     @GetMapping("/applies")
     public ResponseEntity<?> findApplyList(@AuthenticationPrincipal CustomUserDetails userDetails){
-
         AnimalResponse.FindApplyListDTO responseDTO = animalService.findApplyList(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PatchMapping("/applies/{applyId}")
     public ResponseEntity<?> updateApply(@RequestBody AnimalRequest.UpdateApplyDTO requestDTO, Errors errors, @PathVariable Long applyId, @AuthenticationPrincipal CustomUserDetails userDetails){
-
         animalService.updateApply(requestDTO, applyId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
@@ -79,7 +71,6 @@ public class AnimalController {
     // 권한 처리가 필요함
     @DeleteMapping ("/applies/{applyId}")
     public ResponseEntity<?> deleteApply(@PathVariable Long applyId, @AuthenticationPrincipal CustomUserDetails userDetails){
-
         animalService.deleteApply(applyId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }

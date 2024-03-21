@@ -158,7 +158,6 @@ public class GroupService {
     // 지역 그룹 추가 조회
     @Transactional
     public GroupResponse.FindLocalGroupListDTO findLocalGroupList(Long userId, String region, Integer page, Integer size){
-
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, region, pageable);
 
@@ -172,7 +171,6 @@ public class GroupService {
     // 새 그룹 추가 조회
     @Transactional
     public GroupResponse.FindNewGroupListDTO findNewGroupList(Long userId, Integer page, Integer size){
-
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, pageable);
 
@@ -186,7 +184,6 @@ public class GroupService {
     // 내 그룹 추가 조회
     @Transactional
     public GroupResponse.FindMyGroupListDTO findMyGroupList(Long userId, Integer page, Integer size){
-
         Pageable pageable = createPageable(page, size, "id");
         List<GroupResponse.MyGroupDTO> myGroupDTOS = getMyGroupDTOS(userId, pageable);
 
@@ -458,7 +455,6 @@ public class GroupService {
 
     @Transactional
     public Page<Long> processLikesBatch(Pageable pageable) {
-
         Page<Long> groupIdsPage = groupRepository.findGroupIds(pageable);
         List<Long> groupIds = groupIdsPage.getContent();
 
@@ -740,7 +736,6 @@ public class GroupService {
     }
 
     private List<GroupResponse.MyGroupDTO> getMyGroupDTOS(Long userId, Pageable pageable){
-
         List<Group> joinedGroups = groupUserRepository.findGroupsByUserId(userId, pageable).getContent();
 
         List<GroupResponse.MyGroupDTO> myGroupDTOS = joinedGroups.stream()
@@ -765,7 +760,6 @@ public class GroupService {
     }
 
     private Set<Long> getGroupIds(Long userId){
-
         List<Group> groups = groupUserRepository.findGroupsByUserId(userId);
 
         Set<Long> groupIds = groups.stream()
@@ -780,7 +774,6 @@ public class GroupService {
     }
 
     public void checkIsMember(Long groupId, Long userId){
-
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(groupUser -> groupUser.getRole().equals(Role.USER) || groupUser.getRole().equals(Role.ADMIN) || groupUser.getRole().equals(Role.CREATOR))
                 .orElseThrow( () -> new CustomException(ExceptionCode.GROUP_NOT_MEMBER));
@@ -794,7 +787,6 @@ public class GroupService {
     }
 
     private void checkCreatorAuthority(Long groupId, Long userId){
-
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(groupUser -> groupUser.getRole().equals(Role.CREATOR))
                 .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
@@ -811,14 +803,12 @@ public class GroupService {
     }
 
     private void checkGroupExist(Long groupId){
-
         if(!groupRepository.existsById(groupId)){
             throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
         }
     }
 
     private void checkMeetingExist(Long meetingId){
-
         if(!meetingRepository.existsById(meetingId)){
             throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
         }

@@ -146,14 +146,12 @@ public class ChatService {
     }
 
     public void registerExchange(Long chatRoomId){
-
         String exchangeName = "chatroom." + chatRoomId + ".exchange";
         FanoutExchange fanoutExchange = new FanoutExchange(exchangeName);
         amqpAdmin.declareExchange(fanoutExchange);
     }
 
     public void registerQueue(Long userId, Long chatRoomId){
-
         String exchangeName = "chatroom." + chatRoomId + ".exchange";
         FanoutExchange fanoutExchange = new FanoutExchange(exchangeName);
 

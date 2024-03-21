@@ -52,7 +52,6 @@ public class AlarmService {
 
     @Transactional
     public AlarmResponse.FindAlarmListDTO findAlarmList(Long userId){
-
         List<Alarm> alarms = alarmRepository.findByReceiverId(userId);
 
         if(alarms.isEmpty()){

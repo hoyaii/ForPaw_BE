@@ -14,23 +14,19 @@ public class RedisService {
 
     // 데이터 저장 (유효 기간 존재)
     public void storeDate(String type, String id, String value, Long expirationTime) {
-
         redisTemplate.opsForValue().set(buildKey(type, id), value, expirationTime, TimeUnit.MILLISECONDS);
     }
 
     // 유효 기간 X
     public void storeDate(String type, String id, String value) {
-
         redisTemplate.opsForValue().set(buildKey(type, id), value);
     }
 
     public void incrementCnt(String type, String id, Long cnt){
-
         redisTemplate.opsForValue().increment(buildKey(type, id), cnt);
     }
 
     public void decrementCnt(String type, String id, Long cnt){
-
         redisTemplate.opsForValue().decrement(buildKey(type, id), cnt);
     }
 
@@ -41,7 +37,6 @@ public class RedisService {
 
     // 저장된 데이터와 일치여부 비교
     public boolean validateData(String type, String id, String value){
-
         String storedData = redisTemplate.opsForValue().get(buildKey(type, id));
         return storedData.equals(value);
     }
@@ -51,7 +46,6 @@ public class RedisService {
 
     // 데이터 반환 - Long 반환
     public Long getDataInLong(String type, String id){
-
         String value = redisTemplate.opsForValue().get(buildKey(type, id));
         if(value == null) return 0L;
 

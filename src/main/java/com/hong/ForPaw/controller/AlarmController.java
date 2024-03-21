@@ -23,21 +23,18 @@ public class AlarmController {
 
     @GetMapping(value = "/alarms/connect", produces = "text/event-stream")
     public SseEmitter connectToAlarm(@RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "") String lastEventId, @AuthenticationPrincipal CustomUserDetails userDetails){
-
         SseEmitter sseEmitter= alarmService.connectToAlarm(userDetails.getUser().getId().toString(), lastEventId);
         return sseEmitter;
     }
 
     @GetMapping("/alarms")
     public ResponseEntity<?> findAlarmList(@AuthenticationPrincipal CustomUserDetails userDetails){
-
         AlarmResponse.FindAlarmListDTO responseDTO = alarmService.findAlarmList(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/alarms/read")
     public ResponseEntity<?> readAlarm(@RequestBody AlarmRequest.ReadAlarmDTO requestDTO, Errors errors, @AuthenticationPrincipal CustomUserDetails userDetails){
-
         alarmService.readAlarm(requestDTO.id(), userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }

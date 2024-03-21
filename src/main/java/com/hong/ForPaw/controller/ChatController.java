@@ -26,27 +26,23 @@ public class ChatController {
 
     @MessageMapping("/message.send")
     public void sendMessage(@Payload ChatRequest.SendMessageDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) {
-
         chatService.sendMessage(requestDTO, userDetails.getUser().getId(), userDetails.getUsername());
     }
 
     @GetMapping("/chatRooms")
     public ResponseEntity<?> findChatRoomList(@AuthenticationPrincipal CustomUserDetails userDetails){
-
         ChatResponse.FindChatRoomListDTO responseDTO = chatService.findChatRoomList(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/chatRooms/{chatRoomId}/messages")
     public ResponseEntity<?> findMessageListInRoom(@PathVariable Long chatRoomId, @RequestParam("page") Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
-
         ChatResponse.FindMessageListInRoomDTO responseDTO = chatService.findMessageListInRoom(chatRoomId, userDetails.getUser().getId(), page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @MessageMapping("/message.read")
     public void readMessage(@Payload ChatRequest.ReadMessageDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) {
-
         chatService.readMessage(requestDTO, userDetails.getUser().getId());
     }
 }

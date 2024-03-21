@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,6 +38,8 @@ public class ShelterService {
     private final AnimalRepository animalRepository;
     private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final RedisService redisService;
+    private final ObjectMapper mapper;
+    private final RestTemplate restTemplate;
 
     @Value("${openAPI.service-key2}")
     private String serviceKey;
@@ -46,15 +49,6 @@ public class ShelterService {
 
     @Transactional
     public void loadShelterData(Role role) {
-
-        // 관리자만 사용 가능 (테스트 상황에선 주석 처리)
-        //if(role.equals(Role.ADMIN)){
-        //    throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        //}
-
-        ObjectMapper mapper = new ObjectMapper();
-        RestTemplate restTemplate = new RestTemplate();
-
         List<RegionCode> regionCodeList = regionCodeRepository.findAll();
 
         for (RegionCode regionCode : regionCodeList) {
@@ -62,18 +56,15 @@ public class ShelterService {
             Integer orgCd = regionCode.getOrgCd();
 
             try {
-                String url = baseUrl + "?serviceKey=" + serviceKey + "&upr_cd=" + uprCd + "&org_cd=" + orgCd + "&_type=json";
+                URI uri = buildURI(baseUrl, serviceKey, uprCd, orgCd);
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
                 headers.set("Accept", "*/*;q=0.9"); // HTTP_ERROR 방지
                 HttpEntity<?> entity = new HttpEntity<>(null, headers);
 
-                URI uri = new URI(url);
-
                 ResponseEntity<String> responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);
                 String response = responseEntity.getBody();
-
                 ShelterDTO json = mapper.readValue(response, ShelterDTO.class);
                 List<ShelterDTO.itemDTO> itemDTOS = json.response().body().items().item();
 
@@ -143,7 +134,6 @@ public class ShelterService {
     // 데이터 정합성 문제로 인해 사용 '보류' => 조회 단계에서 animalCnt가 1이상인 것만 조회하도록 수정
     @Transactional
     public void deleteZeroShelter(Role role){
-
         // 관리자만 사용 가능 (테스트 상황에선 주석 처리)
         if(role.equals(Role.ADMIN)){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
@@ -154,5 +144,10 @@ public class ShelterService {
 
     private Pageable createPageable(int page, int size, String sortProperty) {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
+    }
+
+    private URI buildURI(String baseUrl, String serviceKey, Integer uprCd, Integer orgCd) throws URISyntaxException {
+        String url = baseUrl + "?serviceKey=" + serviceKey + "&upr_cd=" + uprCd + "&org_cd=" + orgCd + "&_type=json";
+        return new URI(url);
     }
 }

@@ -26,7 +26,6 @@ public class UserController {
 
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody UserRequest.LoginDTO requestDTO, Errors errors) {
-
         Map<String, String> tokens = userService.login(requestDTO);
 
         return ResponseEntity.ok()
@@ -41,7 +40,6 @@ public class UserController {
 
     @GetMapping("/auth/login/kakao")
     public ResponseEntity<?> kakaoLogin(@RequestParam String code) {
-
         Map<String, String> tokenOrEmail = userService.kakaoLogin(code);
 
         // 가입된 계정이 아님
@@ -62,7 +60,6 @@ public class UserController {
 
     @GetMapping("/auth/login/google")
     public ResponseEntity<?> googleLogin(@RequestParam String code){
-
         Map<String, String> tokenOrEmail = userService.googleLogin(code);
 
         // 가입된 계정이 아님
@@ -83,49 +80,42 @@ public class UserController {
 
     @PostMapping("/accounts")
     public ResponseEntity<?> join(@RequestBody UserRequest.JoinDTO requestDTO, Errors errors){
-
         userService.join(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, null));
     }
 
     @PostMapping("/accounts/social")
     public ResponseEntity<?> socialJoin(@RequestBody UserRequest.SocialJoinDTO requestDTO, Errors errors){
-
         userService.socialJoin(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, null));
     }
 
     @PostMapping("/accounts/check")
     public ResponseEntity<?> checkAndSendCode(@RequestBody UserRequest.EmailDTO requestDTO, Errors errors){
-
         userService.checkAndSendCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/check/verify")
     public ResponseEntity<?> verifyRegisterCode(@RequestBody UserRequest.VerifyCodeDTO requestDTO, Errors errors){
-
         userService.verifyCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/recovery")
     public ResponseEntity<?> sendRecoveryCode(@RequestBody UserRequest.EmailDTO requestDTO, Errors errors){
-
         userService.sendRecoveryCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/recovery/verify")
     public ResponseEntity<?> verifyAndSendPassword(@RequestBody UserRequest.VerifyCodeDTO requestDTO, Errors errors){
-
         userService.verifyAndSendPassword(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/password/verify")
     public ResponseEntity<?> verifyPassword(@RequestBody UserRequest.CurPasswordDTO requestDTO, Errors errors, @AuthenticationPrincipal CustomUserDetails userDetails){
-
         userService.verifyPassword(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
@@ -133,35 +123,30 @@ public class UserController {
 
     @PatchMapping("/accounts/password")
     public ResponseEntity<?> updatePassword(@RequestBody UserRequest.UpdatePasswordDTO requestDTO, Errors errors, @AuthenticationPrincipal CustomUserDetails userDetails){
-
         userService.updatePassword(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @GetMapping("/accounts/profile")
     public ResponseEntity<?> findProfile(@AuthenticationPrincipal CustomUserDetails userDetails){
-
         UserResponse.ProfileDTO responseDTO = userService.findProfile(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PatchMapping("/accounts/profile")
     public ResponseEntity<?> updateProfile(@RequestBody UserRequest.UpdateProfileDTO requestDTO, Errors errors, @AuthenticationPrincipal CustomUserDetails userDetails){
-
         userService.updateProfile(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PatchMapping("/auth/access")
     public ResponseEntity<?> updateAccessToken(@RequestBody UserRequest.UpdateAccessTokenDTO requestDTO, Errors errors){
-
         UserResponse.AccessTokenDTO responseDTO = userService.updateAccessToken(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PatchMapping("/accounts/role")
     public ResponseEntity<?> updateRole(@RequestBody UserRequest.UpdateRoleDTO requestDTO, Errors errors, @AuthenticationPrincipal CustomUserDetails userDetails){
-
         userService.updateRole(requestDTO, userDetails.getUser().getId(), userDetails.getUser().getRole());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }

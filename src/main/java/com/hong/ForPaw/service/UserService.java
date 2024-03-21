@@ -80,7 +80,6 @@ public class UserService {
 
     @Transactional
     public Map<String, String> login(UserRequest.LoginDTO requestDTO){
-
         User user = userRepository.findByEmail(requestDTO.email()).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
         );
@@ -138,7 +137,6 @@ public class UserService {
 
     @Transactional
     public void join(UserRequest.JoinDTO requestDTO){
-
         if (!requestDTO.password().equals(requestDTO.passwordConfirm()))
             throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
 
@@ -158,7 +156,6 @@ public class UserService {
 
     @Transactional
     public void socialJoin(UserRequest.SocialJoinDTO requestDTO){
-
         User user = User.builder()
                 .name(requestDTO.name())
                 .nickName(requestDTO.nickName())
@@ -214,7 +211,6 @@ public class UserService {
 
     @Transactional
     public void verifyAndSendPassword(UserRequest.VerifyCodeDTO requestDTO){
-
         // 레디스를 통해 해당 코드가 유효한지 확인
         if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
             throw new CustomException(ExceptionCode.CODE_WRONG);
@@ -231,7 +227,6 @@ public class UserService {
     // 재설정 화면에서 실시간으로 일치여부를 확인하기 위해 사용
     @Transactional
     public void verifyPassword(UserRequest.CurPasswordDTO requestDTO, Long userId){
-
         User user = userRepository.findById(userId).get();
 
         if(!passwordEncoder.matches(requestDTO.password(), user.getPassword())){
@@ -241,7 +236,6 @@ public class UserService {
 
     @Transactional
     public void updatePassword(UserRequest.UpdatePasswordDTO requestDTO, Long userId){
-
         User user = userRepository.findById(userId).get();
 
         // verifyPassword()로 일치 여부를 확인하지만, 해당 단계를 거치지 않고 인위적으로 요청을 보낼 수 있어서 한 번더 검증
@@ -257,14 +251,12 @@ public class UserService {
 
     @Transactional
     public UserResponse.ProfileDTO findProfile(Long userId){
-
         User user = userRepository.findById(userId).get();
         return new UserResponse.ProfileDTO(user.getName(), user.getNickName(), user.getRegion(), user.getSubRegion(), user.getProfileURL());
     }
 
     @Transactional
     public void updateProfile(UserRequest.UpdateProfileDTO requestDTO, Long userId){
-
         User user = userRepository.findById(userId).get();
         user.updateProfile(requestDTO.nickName(),requestDTO.region(), requestDTO.subRegion(), requestDTO.profileURL());
     }
@@ -293,7 +285,6 @@ public class UserService {
     // 관지라 API
     @Transactional
     public void updateRole(UserRequest.UpdateRoleDTO requestDTO, Long userId, Role role){
-
         // 관리자만 사용 가능 (테스트 상황에선 주석 처리)
         //if(role.equals(Role.ADMIN)){
         //    throw new CustomException(ExceptionCode.USER_FORBIDDEN);
@@ -304,7 +295,6 @@ public class UserService {
     }
 
     private String sendCodeByMail(String toEmail){
-
         String verificationCode = generateVerificationCode();
         String subject = "[ForPaw] 이메일 인증 코드입니다.";
         String text = "인증 코드는 다음과 같습니다: " + verificationCode + "\n이 코드를 입력하여 이메일을 인증해 주세요.";
@@ -314,14 +304,12 @@ public class UserService {
     }
 
     private void sendPasswordByMail(String toEmail, String password){
-
         String subject = "[ForPaw] 임시 비밀번호 입니다.";
         String text = "임시 비밀번호: " + password + "\n로그인 후 비밀번호를 변경해 주세요.";
         sendMail(fromEmail, toEmail, subject, text);
     }
 
     private void sendMail(String fromEmail, String toEmail, String subject, String text){
-
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(toEmail);
@@ -332,7 +320,6 @@ public class UserService {
 
     // 알파벳, 숫자를 조합해서 인증 코드 생성
     private String generateVerificationCode() {
-
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         SecureRandom random = new SecureRandom();
 
@@ -345,7 +332,6 @@ public class UserService {
 
     // 알파벳, 숫자, 특수문자가 모두 포함되도록 해서 임시 비밀번호 생성
     private String generatePassword() {
-
         String specialChars = "!@#$%^&*";
         String numbers = "0123456789";
         String upperCaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -381,7 +367,6 @@ public class UserService {
 
     // 중복 로그인 체크 => 만약 이미 로그인된 상태라면 기존 세션은 삭제
     public void checkDuplicateLogin(User user){
-
         String accessToken = redisService.getDataInStr("accessToken", String.valueOf(user.getId()));
         if(accessToken != null){
             redisService.removeData("accessToken", String.valueOf(user.getId()));
@@ -408,7 +393,6 @@ public class UserService {
     }
 
     public KakaoDTO.TokenDTO getKakaoToken(String code) {
-
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("grant_type", "authorization_code");
         formData.add("client_id", kakaoAPIKey);
@@ -426,7 +410,6 @@ public class UserService {
     }
 
     public KakaoDTO.UserInfoDTO getKakaoUserInfo(String token) {
-
         Flux<KakaoDTO.UserInfoDTO> response = webClient.get()
                 .uri(kakaoUserInfoURI)
                 .header("Authorization", "Bearer " + token)
@@ -457,7 +440,6 @@ public class UserService {
     }
 
     public GoogleDTO.UserInfoDTO getGoogleUserInfo(String token) {
-
         Flux<GoogleDTO.UserInfoDTO> response = webClient.get()
                 .uri(googleUserInfoURI)
                 .header("Authorization", "Bearer " + token)
