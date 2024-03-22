@@ -7,9 +7,12 @@ import io.netty.handler.timeout.WriteTimeoutHandler;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.buffer.DataBufferFactory;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.client.reactive.ReactorResourceFactory;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
@@ -28,14 +31,25 @@ public class WebClientConfig {
 
     @Bean
     public WebClient webClient() {
+        // 1MB
+        int bufferSize = 1 * 1024 * 1024;
+
+        ExchangeStrategies.Builder exchangeStrategiesBuilder = ExchangeStrategies.builder();
+        exchangeStrategiesBuilder.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(bufferSize));
+        ExchangeStrategies exchangeStrategies = exchangeStrategiesBuilder.build();
+
         Function<HttpClient, HttpClient> mapper = client -> HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
-                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(10))
-                        .addHandlerLast(new WriteTimeoutHandler(10)))
-                .responseTimeout(Duration.ofSeconds(10000));
+                .doOnConnected(connection ->
+                        connection.addHandlerLast(new ReadTimeoutHandler(30))
+                                .addHandlerLast(new WriteTimeoutHandler(30)))
+                .responseTimeout(Duration.ofSeconds(30));
 
-        ClientHttpConnector connector =
-                new ReactorClientHttpConnector(resourceFactory(), mapper);
-        return WebClient.builder().clientConnector(connector).build();
+        ClientHttpConnector connector = new ReactorClientHttpConnector(resourceFactory(), mapper);
+
+        return WebClient.builder()
+                .exchangeStrategies(exchangeStrategies)
+                .clientConnector(connector)
+                .build();
     }
 }

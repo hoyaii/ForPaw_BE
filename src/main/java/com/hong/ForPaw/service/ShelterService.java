@@ -23,10 +23,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,34 +59,38 @@ public class ShelterService {
     public void loadShelterData(Role role) {
         List<RegionCode> regionCodeList = regionCodeRepository.findAll();
 
-        regionCodeList.forEach(regionCode -> {
-            Integer uprCd = regionCode.getUprCd();
-            Integer orgCd = regionCode.getOrgCd();
+        Flux.fromIterable(regionCodeList)
+                .delayElements(Duration.ofMillis(50))
+                .flatMap(regionCode -> {
+                    Integer uprCd = regionCode.getUprCd();
+                    Integer orgCd = regionCode.getOrgCd();
 
-            URI uri = buildURI(baseUrl, serviceKey, uprCd, orgCd);
+                    URI uri = buildURI(baseUrl, serviceKey, uprCd, orgCd);
 
-            webClient.get()
-                    .uri(uri)
-                    .retrieve() // 요청 실행
-                    .bodyToMono(String.class) // 응답을 String으로 변환
-                    .subscribe(response -> { // 비동기적 결과 처리
-                        try {
-                            ShelterDTO json = mapper.readValue(response, ShelterDTO.class);
-                            List<ShelterDTO.itemDTO> itemDTOS = json.response().body().items().item();
+                    return webClient.get()
+                            .uri(uri)
+                            .retrieve()
+                            .bodyToMono(String.class)
+                            .flatMapMany(response -> {
+                                try {
+                                    ShelterDTO json = mapper.readValue(response, ShelterDTO.class);
+                                    List<ShelterDTO.itemDTO> itemDTOS = Optional.ofNullable(json.response().body().items())
+                                            .map(ShelterDTO.ItemsDTO::item)
+                                            .orElse(Collections.emptyList());
 
-                            itemDTOS.forEach(itemDTO -> {
-                                com.hong.ForPaw.domain.Shelter shelter = com.hong.ForPaw.domain.Shelter.builder()
-                                        .regionCode(regionCode)
-                                        .id(itemDTO.careRegNo())
-                                        .name(itemDTO.careNm())
-                                        .build();
-                                shelterRepository.save(shelter);
+                                    return Flux.fromIterable(itemDTOS)
+                                            .map(itemDTO -> Shelter.builder()
+                                                    .regionCode(regionCode)
+                                                    .id(itemDTO.careRegNo())
+                                                    .name(itemDTO.careNm())
+                                                    .build());
+                                } catch (Exception e) {
+                                    return Flux.empty();
+                                }
                             });
-                        } catch (Exception e) {
-                            System.err.println("JSON 파싱 오류가 발생했습니다. 재시도 중...: " + e.getMessage());
-                        }
-                    });
-        });
+                })
+                .collectList()
+                .subscribe(shelterRepository::saveAll);
     }
 
     @Transactional

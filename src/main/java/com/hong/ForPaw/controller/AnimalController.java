@@ -22,7 +22,7 @@ public class AnimalController {
 
     @GetMapping("/animals/import")
     public ResponseEntity<?> loadAnimals() {
-        animalService.loadAnimalDate();
+        animalService.loadAnimalData();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 

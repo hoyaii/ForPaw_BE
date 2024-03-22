@@ -23,16 +23,17 @@ public class RegionCodeService {
         InputStream inputStream = TypeReference.class.getResourceAsStream("/sigungu.json");
         RegionsDTO json = mapper.readValue(inputStream, RegionsDTO.class);
 
-        json.regions().forEach(region -> region.subRegions().forEach(subRegion -> {
-            RegionCode regionCode = RegionCode.builder()
-                    .uprCd(region.orgCd())
-                    .uprName(region.orgdownNm())
-                    .orgCd(subRegion.orgCd())
-                    .orgName(subRegion.orgdownNm())
-                    .build();
+        json.regions().forEach(region ->
+                        region.subRegions().forEach(subRegion -> {
+                            RegionCode regionCode = RegionCode.builder()
+                                    .uprCd(region.orgCd())
+                                    .uprName(region.orgdownNm())
+                                    .orgCd(subRegion.orgCd())
+                                    .orgName(subRegion.orgdownNm())
+                                    .build();
 
-            regionCodeRepository.save(regionCode);
-        })
+                            regionCodeRepository.save(regionCode);
+                        })
         );
     }
 }

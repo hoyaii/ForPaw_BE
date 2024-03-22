@@ -26,11 +26,17 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
@@ -48,6 +54,7 @@ public class AnimalService {
     private final ApplyRepository applyRepository;
     private final EntityManager entityManager;
     private final ObjectMapper mapper;
+    private final WebClient webClient;
     private final RestTemplate restTemplate;
 
     @Value("${openAPI.service-key2}")
@@ -60,60 +67,57 @@ public class AnimalService {
     private String[] animalNames;
 
     @Transactional
-    public void loadAnimalDate() {
+    public void loadAnimalData() {
         List<Shelter> shelters = shelterRepository.findAll();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-        for(Shelter shelter : shelters){
-            Long careRegNo = shelter.getId();
+        Flux.fromIterable(shelters)
+                .delayElements(Duration.ofMillis(50)) // 각 요청 사이에 0.05초 지연
+                .flatMap(shelter -> {
+                    Long careRegNo = shelter.getId();
+                    URI uri = buildURI(baseUrl, serviceKey, careRegNo);
 
-            try {
-                URI uri = buildURI(baseUrl, serviceKey, careRegNo);
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
-                headers.set("Accept", "*/*;q=0.9"); // HTTP_ERROR 방지
-                HttpEntity<?> entity = new HttpEntity<>(null, headers);
-
-                ResponseEntity<String> responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);
-                String response = responseEntity.getBody();
-                AnimalDTO json = mapper.readValue(response, AnimalDTO.class);
-                List<AnimalDTO.ItemDTO> itemDTOS = json.response().body().items().item();
-
-                // 보호소 정보 업데이트
-                if (!itemDTOS.isEmpty()) {
-                    AnimalDTO.ItemDTO firstItemDTO = itemDTOS.get(0);
-                    shelter.updateShelterInfo(firstItemDTO.careTel(), firstItemDTO.careAddr(), Long.valueOf(json.response().body().totalCount()));
-                }
-
-                for (AnimalDTO.ItemDTO itemDTO : itemDTOS) {
-                    Animal animal = Animal.builder()
-                            .id(Long.valueOf(itemDTO.desertionNo()))
-                            .name(createAnimalName())
-                            .shelter(shelter) // 연관관계 매핑
-                            .happenDt(LocalDate.parse(itemDTO.happenDt(), formatter))
-                            .happenPlace(itemDTO.happenPlace())
-                            .kind(itemDTO.kindCd())
-                            .color(itemDTO.colorCd())
-                            .age(itemDTO.age())
-                            .weight(itemDTO.weight())
-                            .noticeSdt(LocalDate.parse(itemDTO.noticeSdt(), formatter))
-                            .noticeEdt(LocalDate.parse(itemDTO.noticeEdt(), formatter))
-                            .profileURL(itemDTO.popfile())
-                            .processState(itemDTO.processState())
-                            .gender(itemDTO.sexCd())
-                            .neuter(itemDTO.neuterYn())
-                            .specialMark(itemDTO.specialMark())
-                            .region(shelter.getRegionCode().getUprName() + " " + shelter.getRegionCode().getOrgName())
-                            .build();
-                    animalRepository.save(animal);
-                }
-            }
-            catch (Exception e){
-                System.err.println("JSON 파싱 오류가 발생했습니다. 재시도 중...: ");
-                System.out.println(e);
-            }
-        }
+                    return webClient.get()
+                            .uri(uri)
+                            .retrieve()
+                            .bodyToMono(String.class)
+                            .flatMapMany(response -> {
+                                try {
+                                    AnimalDTO json = mapper.readValue(response, AnimalDTO.class);
+                                    return Flux.fromIterable(Optional.ofNullable(json.response().body().items())
+                                                    .map(AnimalDTO.ItemsDTO::item)
+                                                    .orElse(Collections.emptyList()))
+                                            .map(itemDTO -> {
+                                                Animal animal = Animal.builder()
+                                                        .id(Long.valueOf(itemDTO.desertionNo()))
+                                                        .name(createAnimalName())
+                                                        .shelter(shelter)
+                                                        .happenDt(LocalDate.parse(itemDTO.happenDt(), formatter))
+                                                        .happenPlace(itemDTO.happenPlace())
+                                                        .kind(itemDTO.kindCd())
+                                                        .color(itemDTO.colorCd())
+                                                        .age(itemDTO.age())
+                                                        .weight(itemDTO.weight())
+                                                        .noticeSdt(LocalDate.parse(itemDTO.noticeSdt(), formatter))
+                                                        .noticeEdt(LocalDate.parse(itemDTO.noticeEdt(), formatter))
+                                                        .profileURL(itemDTO.popfile())
+                                                        .processState(itemDTO.processState())
+                                                        .gender(itemDTO.sexCd())
+                                                        .neuter(itemDTO.neuterYn())
+                                                        .specialMark(itemDTO.specialMark())
+                                                        .region(shelter.getRegionCode().getUprName() + " " + shelter.getRegionCode().getOrgName())
+                                                        .build();
+                                                return animal;
+                                            });
+                                } catch (Exception e) {
+                                    return Flux.empty();
+                                }
+                            })
+                            .collectList()
+                            .doOnNext(animalRepository::saveAll);
+                })
+                .then()
+                .subscribe();
     }
 
     @Transactional
@@ -331,8 +335,13 @@ public class AnimalService {
         return animalNames[index];
     }
 
-    private URI buildURI(String baseUrl, String serviceKey, Long careRegNo) throws URISyntaxException {
+    private URI buildURI(String baseUrl, String serviceKey, Long careRegNo) {
         String url = baseUrl + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
-        return new URI(url);
+
+        try {
+            return new URI(url);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
