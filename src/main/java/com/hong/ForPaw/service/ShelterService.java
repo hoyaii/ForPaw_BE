@@ -19,6 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -56,7 +57,8 @@ public class ShelterService {
     private String baseUrl;
 
     @Transactional
-    public void loadShelterData(Role role) {
+    @Scheduled(cron = "0 0 6 * * MON") // 매주 월요일 새벽 6시에 실행
+    public void loadShelterData() {
         List<RegionCode> regionCodeList = regionCodeRepository.findAll();
 
         Flux.fromIterable(regionCodeList)

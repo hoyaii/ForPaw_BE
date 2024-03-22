@@ -23,6 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -67,6 +68,7 @@ public class AnimalService {
     private String[] animalNames;
 
     @Transactional
+    @Scheduled(cron = "0 0 0,12 * * *") // 매일 자정과 정오에 실행
     public void loadAnimalData() {
         List<Shelter> shelters = shelterRepository.findAll();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");

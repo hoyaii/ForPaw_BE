@@ -21,7 +21,7 @@ public class ShelterController {
 
     @GetMapping("/shelters/import")
     public ResponseEntity<?> loadShelter(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        shelterService.loadShelterData(userDetails.getUser().getRole());
+        shelterService.loadShelterData();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
