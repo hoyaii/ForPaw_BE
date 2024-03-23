@@ -38,7 +38,6 @@ public class PostService {
     private final CommentLikeRepository commentLikeRepository;
     private final RedisService redisService;
     private final UserRepository userRepository;
-    private final AlarmService alarmService;
     private final BrokerService brokerService;
     private final EntityManager entityManager;
 

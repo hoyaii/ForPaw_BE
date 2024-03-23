@@ -29,7 +29,7 @@ public class AlarmService {
     private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 60;
 
     @Transactional
-    public SseEmitter connectToAlarm(String userId, String lastEventId) { // 여기서 userId는 서버에 연결된 클라이언트의 id
+    public SseEmitter connectToAlarm(String userId) { // 여기서 userId는 서버에 연결된 클라이언트의 id
         // SseEmitter 객체 생성
         String emitterId = generateIdByTime(userId);
         SseEmitter emitter = emitterRepository.save(emitterId, new SseEmitter(DEFAULT_TIMEOUT));
@@ -41,11 +41,6 @@ public class AlarmService {
         // 503 에러를 방지하기 위한 더미 이벤트 전송
         String eventId = generateIdByTime(userId);
         sendNotification(emitter, eventId, emitterId, "EventStream Created. [userId=" + userId + "]");
-
-        // 클라이언트가 미수신한 이벤트 처리
-        if (hasUnreceivedAlarm(lastEventId)) {
-            sendMissingAlarm(lastEventId, userId, emitterId, emitter);
-        }
 
         return emitter;
     }
@@ -97,8 +92,6 @@ public class AlarmService {
         // 각 Emitter로 알림 전송
         emitters.forEach(
                 (key, emitter) -> {
-                    // 클라이언트가 서버에 연결된 후 발생한 알림은 캐시에 저장되어, 클라이언트가 다시 연결할 때 놓친 알림을 제공할 수 있음
-                    emitterRepository.saveEventCache(key, alarm);
                     AlarmResponse.AlarmDTO alarmDTO = new AlarmResponse.AlarmDTO(
                             alarm.getId(),
                             alarm.getContent(),
@@ -139,14 +132,5 @@ public class AlarmService {
 
     private String generateIdByTime(String userId) {
         return userId + "_" + System.currentTimeMillis();
-    }
-
-    private Alarm createAlarm(User receiver, AlarmType alarmType, String content, String redirectURL){
-        return Alarm.builder()
-                .receiver(receiver)
-                .content(content)
-                .redirectURL(redirectURL)
-                .alarmType(alarmType)
-                .build();
     }
 }
