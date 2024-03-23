@@ -24,7 +24,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Optional<Long> findUserIdByPostId(@Param("postId") Long postId);
 
     @Query("SELECT p.user FROM Post p WHERE p.id = :postId")
-    User findUserByPostId(Long postId);
+    Optional<User> findUserByPostId(Long postId);
 
     void deleteAllByGroupId(Long groupId);
 
@@ -37,11 +37,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @EntityGraph(attributePaths = {"postImages", "user"})
     Page<Post> findByPostType(PostType postType, Pageable pageable);
 
-    @Query("SELECT distinct p FROM Post p JOIN FETCH p.postImages JOIN FETCH p.user WHERE p.parent.id = :parentId")
-    List<Post> findByParentIdWithImagesAndUser(@Param("parentId") Long parentId);
-
-    @EntityGraph(attributePaths = {"user", "postImages"})
-    Optional<Post> findById(Long postId);
+    @Query("SELECT p FROM Post p JOIN FETCH p.user WHERE p.parent.id = :parentId")
+    List<Post> findByParentIdWithUser(@Param("parentId") Long parentId);
 
     @Query("SELECT p FROM Post p JOIN FETCH p.user WHERE p.id = :postId")
     Optional<Post> findByIdWithUser(@Param("postId") Long postId);

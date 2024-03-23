@@ -248,7 +248,7 @@ public class PostService {
                 .collect(Collectors.toList());
 
         // 답변 게시글 DTO
-        List<PostResponse.AnswerDTO> answerDTOS = postRepository.findByParentIdWithImagesAndUser(postId).stream()
+        List<PostResponse.AnswerDTO> answerDTOS = postRepository.findByParentIdWithUser(postId).stream()
                 .map(answer -> {
                     List<PostResponse.PostImageDTO> answerImageDTOS = answer.getPostImages().stream()
                             .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
@@ -269,12 +269,12 @@ public class PostService {
     @Transactional
     public void updatePost(PostRequest.UpdatePostDTO requestDTO, User user, Long postId){
         // 존재하지 않는 글이면 에러
-        Post post = postRepository.findById(postId).orElseThrow(
+        Post post = postRepository.findByIdWithUser(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
         // 수정 권한 체크
-        checkPostAuthority(post.getUser(), user);
+        checkPostAuthority(post.getUser().getId(), user);
 
         // 제목, 본문 업데이트
         post.updatePost(requestDTO.title(), requestDTO.content());
@@ -299,12 +299,13 @@ public class PostService {
 
     @Transactional
     public void deletePost(Long postId, User user){
-        // 존재하지 않는 글인지 체크
-        checkPostExist(postId);
+        // 존재하지 않은 포스트면 에러
+        Long writerId = postRepository.findUserIdByPostId(postId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
+        );
 
         // 수정 권한 체크
-        User writer = postRepository.findUserByPostId(postId);
-        checkPostAuthority(writer, user);
+        checkPostAuthority(writerId, user);
 
         postLikeRepository.deleteAllByPostId(postId);
         postReadStatusRepository.deleteAllByPostId(postId);
@@ -568,13 +569,13 @@ public class PostService {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 
-    private void checkPostAuthority(User writer, User accessor){
+    private void checkPostAuthority(Long writerId, User accessor){
         // 관리자면 수정 가능
         if(accessor.getRole().equals(Role.ADMIN)){
             return;
         }
 
-        if(!writer.getId().equals(accessor.getId())){
+        if(!writerId.equals(accessor.getId())){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
     }
@@ -587,18 +588,6 @@ public class PostService {
 
         if(!writer.getId().equals(accessor.getId())){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        }
-    }
-
-    private void checkPostExist(Long postId){
-        if (!postRepository.existsById(postId)) {
-            throw new CustomException(ExceptionCode.POST_NOT_FOUND);
-        }
-    }
-
-    private void checkCommentExist(Long commentId){
-        if(!commentRepository.existsById(commentId)){
-            throw new CustomException(ExceptionCode.COMMENT_NOT_FOUND);
         }
     }
 }
