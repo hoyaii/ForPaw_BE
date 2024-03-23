@@ -23,9 +23,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p.user.id FROM Post p WHERE p.id = :postId")
     Optional<Long> findUserIdByPostId(@Param("postId") Long postId);
 
-    @Query("SELECT p.user FROM Post p WHERE p.id = :postId")
-    Optional<User> findUserByPostId(Long postId);
-
     void deleteAllByGroupId(Long groupId);
 
     @EntityGraph(attributePaths = {"user"})

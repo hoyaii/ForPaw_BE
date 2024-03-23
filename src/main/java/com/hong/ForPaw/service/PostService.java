@@ -460,12 +460,12 @@ public class PostService {
     @Transactional
     public void updateComment(PostRequest.UpdateCommentDTO requestDTO, Long commentId, User user){
         // 존재하지 않는 댓글이면 에러
-        Comment comment = commentRepository.findById(commentId).orElseThrow(
+        Comment comment = commentRepository.findByIdWithUser(commentId).orElseThrow(
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
 
         // 수정 권한 체크
-        checkCommentAuthority(comment.getUser(), user);
+        checkCommentAuthority(comment.getUser().getId(), user);
 
         comment.updateComment(requestDTO.content());
     }
@@ -479,7 +479,7 @@ public class PostService {
         );
 
         // 수정 권한 체크
-        checkCommentAuthority(comment.getUser(), user);
+        checkCommentAuthority(comment.getUser().getId(), user);
 
         // 게시글의 댓글 수 감소
         Long childNum = Long.valueOf(comment.getChildren().size());
@@ -580,13 +580,13 @@ public class PostService {
         }
     }
 
-    private void checkCommentAuthority(User writer, User accessor) {
+    private void checkCommentAuthority(Long writerId, User accessor) {
         // 관리자면 수정 가능
         if(accessor.getRole().equals(Role.ADMIN)){
             return;
         }
 
-        if(!writer.getId().equals(accessor.getId())){
+        if(!writerId.equals(accessor.getId())){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
     }
