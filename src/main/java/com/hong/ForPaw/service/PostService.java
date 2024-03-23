@@ -394,8 +394,8 @@ public class PostService {
         redisService.incrementCnt("commentNum", postId.toString(), 1L);
 
         // 게시글 작성자의 userId를 구해서, 프록시 객체 생성
-        Long postUserId = postRepository.findUserIdByPostId(postId).get(); // 이미 앞에서 존재하는 글임을 체크함
-        User postUserRef = entityManager.getReference(User.class, postUserId);
+        Long postWriterId = postRepository.findUserIdByPostId(postId).get(); // 이미 앞에서 존재하는 글임을 체크함
+        User postUserRef = entityManager.getReference(User.class, postWriterId);
 
         // 알람 생성
         String content = "새로운 댓글: " + requestDTO.content();
@@ -408,7 +408,7 @@ public class PostService {
                 .redirectURL(redirectURL)
                 .build();
 
-        String routingKey = "user." + postUserId;
+        String routingKey = "user." + postWriterId;
         brokerService.produceAlarm(routingKey, alarm);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
@@ -416,8 +416,8 @@ public class PostService {
 
     @Transactional
     public PostResponse.CreateCommentDTO createReply(PostRequest.CreateCommentDTO requestDTO, Long postId, Long userId, Long parentCommentId){
-        // 존재하지 않는 댓글에 대댓글을 달려고 하면 에러
-        Comment parent = commentRepository.findById(parentCommentId).orElseThrow(
+        // post와 user를 패치조인해서 가져옴. 또 존재하지 않는 댓글이면 에러
+        Comment parentComment = commentRepository.findById(parentCommentId).orElseThrow(
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
         // 작성자
@@ -425,29 +425,29 @@ public class PostService {
 
         Comment comment = Comment.builder()
                 .user(userRef)
-                .post(parent.getPost())
+                .post(parentComment.getPost())
                 .content(requestDTO.content())
                 .build();
 
-        parent.addChildComment(comment);
+        parentComment.addChildComment(comment);
         commentRepository.save(comment);
 
         // 게시글의 댓글 수 증가
         redisService.incrementCnt("commentNum", postId.toString(), 1L);
 
         // 알람 생성
-        User parentCommentUserRef = entityManager.getReference(User.class, parent.getUser().getId()); // 작성자
+        User parentCommentUser = parentComment.getUser(); // 작성자
         String content = "새로운 대댓글: " + requestDTO.content();
         String redirectURL = "posts/"+postId;
 
         Alarm alarm = Alarm.builder()
-                .receiver(parentCommentUserRef)
+                .receiver(parentCommentUser)
                 .alarmType(AlarmType.comment)
                 .content(content)
                 .redirectURL(redirectURL)
                 .build();
 
-        String routingKey = "user." + parent.getUser().getId();
+        String routingKey = "user." + parentComment.getUser().getId();
         brokerService.produceAlarm(routingKey, alarm);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
