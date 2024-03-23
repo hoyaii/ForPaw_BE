@@ -7,6 +7,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 
 import java.time.LocalDateTime;
@@ -31,6 +32,7 @@ public class Meeting extends TimeStamp {
     private User creator; // 주최자
 
     @OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 500)
     private List<MeetingUser> meetingUsers = new ArrayList<>();
 
     @Column
