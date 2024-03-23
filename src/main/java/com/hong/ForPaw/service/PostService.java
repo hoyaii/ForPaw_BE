@@ -4,6 +4,7 @@ import com.hong.ForPaw.controller.DTO.PostRequest;
 import com.hong.ForPaw.controller.DTO.PostResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Post.*;
 import com.hong.ForPaw.domain.User.Role;
@@ -38,6 +39,7 @@ public class PostService {
     private final RedisService redisService;
     private final UserRepository userRepository;
     private final AlarmService alarmService;
+    private final BrokerService brokerService;
     private final EntityManager entityManager;
 
     @Transactional
@@ -68,12 +70,12 @@ public class PostService {
     @Transactional
     public PostResponse.CreateAnswerDTO createAnswer(PostRequest.CreateAnswerDTO requestDTO, Long parentPostId, Long userId){
         // 존재하지 않는 질문글에 답변을 달려고 하면 에러
-        Post parent = postRepository.findById(parentPostId).orElseThrow(
+        Post parentPost = postRepository.findById(parentPostId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
         // 질문글에만 답변을 달 수 있다
-        if(!parent.getPostType().equals(PostType.question)){
+        if(!parentPost.getPostType().equals(PostType.question)){
             throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
         }
 
@@ -88,13 +90,13 @@ public class PostService {
         Post post = Post.builder()
                 .user(userRef)
                 .postType(PostType.answer)
-                .title(parent.getTitle() + "(답변)")
+                .title(parentPost.getTitle() + "(답변)")
                 .content(requestDTO.content())
                 .build();
 
         // 연관관계 설정
         postImages.forEach(post::addImage);
-        parent.addChildPost(post);
+        parentPost.addChildPost(post);
 
         postRepository.save(post);
 
@@ -102,8 +104,18 @@ public class PostService {
         redisService.incrementCnt("answerNum", parentPostId.toString(), 1L);
 
         // 알림 생성
+        String content = "새로운 답변: " + requestDTO.content();
         String redirectURL = "post/"+parentPostId+"/entire";
-        alarmService.send(parent.getUser(), AlarmType.answer, "새로운 답변: " + requestDTO.content(), redirectURL);
+
+        Alarm alarm = Alarm.builder()
+                .receiver(parentPost.getUser())
+                .alarmType(AlarmType.answer)
+                .content(content)
+                .redirectURL(redirectURL)
+                .build();
+
+        String routingKey = "user." + parentPost.getUser().getId();
+        brokerService.produceAlarm(routingKey, alarm);
 
         return new PostResponse.CreateAnswerDTO(post.getId());
     }
@@ -386,8 +398,18 @@ public class PostService {
         User postUserRef = entityManager.getReference(User.class, postUserId);
 
         // 알람 생성
-        String redirectURL = "post/"+postId+"/entire";
-        alarmService.send(postUserRef, AlarmType.comment, "새로운 댓글: " + requestDTO.content(), redirectURL);
+        String content = "새로운 댓글: " + requestDTO.content();
+        String redirectURL = "post/"+postId;
+
+        Alarm alarm = Alarm.builder()
+                .receiver(postUserRef)
+                .alarmType(AlarmType.comment)
+                .content(content)
+                .redirectURL(redirectURL)
+                .build();
+
+        String routingKey = "user." + postUserId;
+        brokerService.produceAlarm(routingKey, alarm);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
     }
@@ -415,8 +437,18 @@ public class PostService {
 
         // 알람 생성
         User parentCommentUserRef = entityManager.getReference(User.class, parent.getUser().getId()); // 작성자
-        String redirectURL = "post/"+postId+"/entire";
-        alarmService.send(parentCommentUserRef, AlarmType.comment, "새로운 대댓글: " + requestDTO.content(), redirectURL);
+        String content = "새로운 대댓글: " + requestDTO.content();
+        String redirectURL = "posts/"+postId;
+
+        Alarm alarm = Alarm.builder()
+                .receiver(parentCommentUserRef)
+                .alarmType(AlarmType.comment)
+                .content(content)
+                .redirectURL(redirectURL)
+                .build();
+
+        String routingKey = "user." + parent.getUser().getId();
+        brokerService.produceAlarm(routingKey, alarm);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
     }

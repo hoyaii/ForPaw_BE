@@ -4,6 +4,7 @@ import com.hong.ForPaw.controller.DTO.GroupRequest;
 import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Chat.ChatRoom;
 import com.hong.ForPaw.domain.Chat.ChatUser;
@@ -11,6 +12,7 @@ import com.hong.ForPaw.domain.Group.*;
 import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.User.User;
+import com.hong.ForPaw.repository.Alarm.AlarmRepository;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Group.*;
@@ -46,8 +48,7 @@ public class GroupService {
     private final ChatUserRepository chatUserRepository;
     private final RedisService redisService;
     private final AlarmService alarmService;
-    private final ChatService chatService;
-    private final AmqpAdmin amqpAdmin;
+    private final AlarmRepository alarmRepository;
     private final EntityManager entityManager;
     private final BrokerService brokerService;
 
@@ -344,7 +345,15 @@ public class GroupService {
         String content = "가입이 승인 되었습니다!";
         String redirectURL = "groups/" + groupId + "/detail";
 
-        alarmService.send(applicant, AlarmType.join, content, redirectURL);
+        Alarm alarm = Alarm.builder()
+                .receiver(applicant)
+                .alarmType(AlarmType.join)
+                .content(content)
+                .redirectURL(redirectURL)
+                .build();
+
+        String routingKey = "user." + applicantId;
+        brokerService.produceAlarm(routingKey, alarm);
 
         // 그룹 채팅방에 참여
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
@@ -384,7 +393,15 @@ public class GroupService {
         String content = "가입이 거절 되었습니다.";
         String redirectURL = "groups/" + groupId + "/detail";
 
-        alarmService.send(applicant, AlarmType.join, content, redirectURL);
+        Alarm alarm = Alarm.builder()
+                .receiver(applicant)
+                .alarmType(AlarmType.join)
+                .content(content)
+                .redirectURL(redirectURL)
+                .build();
+
+        String routingKey = "user." + applicantId;
+        brokerService.produceAlarm(routingKey, alarm);
     }
 
     @Transactional
@@ -415,7 +432,15 @@ public class GroupService {
             String content = "공지: " + requestDTO.title();
             String redirectURL = "posts/" + notice.getId() + "/entire";
 
-            alarmService.send(user, AlarmType.notice, content, redirectURL);
+            Alarm alarm = Alarm.builder()
+                    .receiver(user)
+                    .alarmType(AlarmType.notice)
+                    .content(content)
+                    .redirectURL(redirectURL)
+                    .build();
+
+            String routingKey = "user." + user.getId();
+            brokerService.produceAlarm(routingKey, alarm);
         }
 
         return new GroupResponse.CreateNoticeDTO(notice.getId());
@@ -576,7 +601,15 @@ public class GroupService {
             String content = "새로운 정기 모임: " + requestDTO.name();
             String redirectURL = "groups/" + groupId + "/meetings/"+meeting.getId();
 
-            alarmService.send(user, AlarmType.newMeeting, content, redirectURL);
+            Alarm alarm = Alarm.builder()
+                    .receiver(user)
+                    .alarmType(AlarmType.newMeeting)
+                    .content(content)
+                    .redirectURL(redirectURL)
+                    .build();
+
+            String routingKey = "user." + user.getId();
+            brokerService.produceAlarm(routingKey, alarm);
         }
         
         return new GroupResponse.CreateMeetingDTO(meeting.getId());

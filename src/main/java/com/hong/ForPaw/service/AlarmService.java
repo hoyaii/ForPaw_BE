@@ -86,12 +86,9 @@ public class AlarmService {
     }
 
     @Transactional
-    public void send(User receiver, AlarmType alarmType, String content, String redirectURL) {
-        // 알림 생성 및 저장
-        Alarm alarm = alarmRepository.save(createAlarm(receiver, alarmType, content, redirectURL));
-
+    public void send(Alarm alarm) {
         // 이벤트 ID 생성
-        String receiverId = receiver.getId().toString();
+        String receiverId = alarm.getReceiver().getId().toString();
         String eventId = generateIdByTime(receiverId);
 
         // SSE Emitter 조회 => 사용자가 여러 기기에서 접속하여 여러 Emitter를 생성했더라도, 모든 Emitter를 찾아 알림을 전송
