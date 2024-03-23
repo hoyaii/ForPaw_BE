@@ -50,7 +50,7 @@ public class PostService {
                 .map(postImageDTO -> PostImage.builder()
                         .imageURL(postImageDTO.imageURL())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
 
         Post post = Post.builder()
                 .user(userRef)
@@ -379,7 +379,9 @@ public class PostService {
     @Transactional
     public PostResponse.CreateCommentDTO createComment(PostRequest.CreateCommentDTO requestDTO, Long userId, Long postId){
         // 존재하지 않는 글이면 에러
-        checkPostExist(postId);
+        Long postWriterId = postRepository.findUserIdByPostId(postId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
+        );
 
         User userRef = entityManager.getReference(User.class, userId);
         Post postRef = entityManager.getReference(Post.class, postId);
@@ -395,11 +397,8 @@ public class PostService {
         // 게시글의 댓글 수 증가
         redisService.incrementCnt("commentNum", postId.toString(), 1L);
 
-        // 게시글 작성자의 userId를 구해서, 프록시 객체 생성
-        Long postWriterId = postRepository.findUserIdByPostId(postId).get(); // 이미 앞에서 존재하는 글임을 체크함
-        User postUserRef = entityManager.getReference(User.class, postWriterId);
-
         // 알람 생성
+        User postUserRef = entityManager.getReference(User.class, postWriterId);
         String content = "새로운 댓글: " + requestDTO.content();
         String redirectURL = "post/"+postId;
 
