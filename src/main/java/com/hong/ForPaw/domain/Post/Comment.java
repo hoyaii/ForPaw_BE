@@ -29,9 +29,6 @@ public class Comment extends TimeStamp {
     @JoinColumn(name = "post_id")
     private Post post;
 
-    @Column
-    private String content;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id") // 부모 댓글을 가리키는 외래키
     private Comment parent;
@@ -39,6 +36,9 @@ public class Comment extends TimeStamp {
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 100)
     private List<Comment> children = new ArrayList<>();
+
+    @Column
+    private String content;
 
     // 연관 관계 메서드
     public void addChildComment(Comment child) {
