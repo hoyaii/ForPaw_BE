@@ -1,7 +1,6 @@
 package com.hong.ForPaw.repository.Post;
 
 import com.hong.ForPaw.domain.Post.Comment;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,9 +13,8 @@ import java.util.Optional;
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long> {
 
-    @Override
-    @EntityGraph(attributePaths = {"user", "post"})
-    Optional<Comment> findById(Long id);
+    @Query("SELECT c FROM Comment c JOIN FETCH c.user WHERE c.id = :commentId")
+    Optional<Comment> findByIdWithUser(@Param("commentId") Long commentId);
 
     @Query("SELECT c.user.id FROM Comment c WHERE c.id = :commentId")
     Optional<Long> findUserIdByCommentId(@Param("commentId") Long commentId);

@@ -417,16 +417,18 @@ public class PostService {
 
     @Transactional
     public PostResponse.CreateCommentDTO createReply(PostRequest.CreateCommentDTO requestDTO, Long postId, Long userId, Long parentCommentId){
-        // post와 user를 패치조인해서 가져옴. 또 존재하지 않는 댓글이면 에러
-        Comment parentComment = commentRepository.findById(parentCommentId).orElseThrow(
+        // 존재하지 않는 댓글이면 에러
+        Comment parentComment = commentRepository.findByIdWithUser(parentCommentId).orElseThrow(
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
+
         // 작성자
         User userRef = entityManager.getReference(User.class, userId);
+        Post postRef = entityManager.getReference(Post.class, postId);
 
         Comment comment = Comment.builder()
                 .user(userRef)
-                .post(parentComment.getPost())
+                .post(postRef)
                 .content(requestDTO.content())
                 .build();
 
@@ -490,10 +492,12 @@ public class PostService {
     @Transactional
     public void likeComment(Long commentId, Long userId){
         // 존재하지 않는 댓글인지 체크
-        checkCommentExist(commentId);
+        Long commentWriterId = commentRepository.findUserIdByCommentId(commentId).orElseThrow(
+                () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
+        );
 
         // 자기 자신의 댓글에는 좋아요를 할 수 없다.
-        if(commentRepository.isOwnComment(commentId, userId)){
+        if(commentWriterId.equals(userId)){
             throw new CustomException(ExceptionCode.COMMENT_CANT_LIKE);
         }
 
