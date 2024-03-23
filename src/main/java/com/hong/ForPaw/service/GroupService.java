@@ -17,6 +17,7 @@ import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Group.*;
 import com.hong.ForPaw.repository.Post.PostRepository;
+import com.hong.ForPaw.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -44,9 +45,8 @@ public class GroupService {
     private final PostRepository postRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatUserRepository chatUserRepository;
+    private final UserRepository userRepository;
     private final RedisService redisService;
-    private final AlarmService alarmService;
-    private final AlarmRepository alarmRepository;
     private final EntityManager entityManager;
     private final BrokerService brokerService;
 
@@ -643,9 +643,12 @@ public class GroupService {
             throw new CustomException(ExceptionCode.MEETING_ALREADY_JOIN);
         }
 
+        // 기본 프로필은 나중에 주소를 설정해야 함
         User userRef = entityManager.getReference(User.class, userId);
+        String profileURL = userRepository.findProfileById(userId).orElse("www.s3.basicProfile");
         MeetingUser meetingUser = MeetingUser.builder()
                 .user(userRef)
+                .profileURL(profileURL)
                 .build();
 
         // 양방향 관계 설정 후 meeting 저장
@@ -878,7 +881,7 @@ public class GroupService {
         List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
                 .map(meeting -> {
                     List<GroupResponse.ParticipantDTO> participantDTOS = meeting.getMeetingUsers().stream()
-                            .map(meetingUser -> new GroupResponse.ParticipantDTO(meetingUser.getUser().getProfileURL()))
+                            .map(meetingUser -> new GroupResponse.ParticipantDTO(meetingUser.getProfileURL()))
                             .toList();
 
                     Long participantNum = redisService.getDataInLong("meetingParticipantNum", meeting.getId().toString());

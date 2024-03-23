@@ -27,10 +27,13 @@ public class MeetingUser extends TimeStamp {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Column
+    private String profileURL;
+
     @Builder
-    public MeetingUser(Meeting meeting, User user) {
-        this.meeting = meeting;
+    public MeetingUser(User user, String profileURL) {
         this.user = user;
+        this.profileURL = profileURL;
     }
 
     public void updateMeeting(Meeting meeting){
