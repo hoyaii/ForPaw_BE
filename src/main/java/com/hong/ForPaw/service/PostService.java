@@ -189,8 +189,7 @@ public class PostService {
         List<PostResponse.CommentDTO> commentDTOS = new ArrayList<>();
         Map<Long, PostResponse.CommentDTO> commentMap = new HashMap<>(); // map을 사용해서 대댓글을 해당 부모 댓글에 추가
 
-        List<Comment> comments = commentRepository.findAllCommentsWithRepliesByPostId(postId);
-
+        List<Comment> comments = commentRepository.findByPostIdWithUserAndParent(postId);
         comments.forEach(comment -> {
             // 부모 댓글이면, CommentDTO로 변환해서 commentDTOS 리스트에 추가
             if (comment.getParent() == null) {
@@ -213,7 +212,8 @@ public class PostService {
                         comment.getCreatedDate(),
                         comment.getUser().getRegion());
 
-                commentMap.get(comment.getParent().getId()).replies().add(replyDTO);
+                Long parentId = comment.getParent().getId();
+                commentMap.get(parentId).replies().add(replyDTO);
             }
         });
 
