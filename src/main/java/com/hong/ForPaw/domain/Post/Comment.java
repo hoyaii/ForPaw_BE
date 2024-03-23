@@ -7,6 +7,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +37,7 @@ public class Comment extends TimeStamp {
     private Comment parent;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 100)
     private List<Comment> children = new ArrayList<>();
 
     // 연관 관계 메서드
