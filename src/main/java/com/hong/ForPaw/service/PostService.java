@@ -319,11 +319,13 @@ public class PostService {
 
     @Transactional
     public void likePost(Long postId, Long userId){
-        // 존재하지 않는 글인지 체크
-        checkPostExist(postId);
+        // 존재하지 않는 글이면 에러
+        Long postWriterId = postRepository.findUserIdByPostId(postId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
+        );
 
         // 자기 자신의 글에는 좋아요를 할 수 없다.
-        if (postRepository.isOwnPost(postId, userId)) {
+        if (postWriterId.equals(userId)) {
             throw new CustomException(ExceptionCode.POST_CANT_LIKE);
         }
 
