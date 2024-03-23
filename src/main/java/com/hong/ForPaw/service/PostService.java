@@ -70,7 +70,7 @@ public class PostService {
     @Transactional
     public PostResponse.CreateAnswerDTO createAnswer(PostRequest.CreateAnswerDTO requestDTO, Long parentPostId, Long userId){
         // 존재하지 않는 질문글에 답변을 달려고 하면 에러
-        Post parentPost = postRepository.findById(parentPostId).orElseThrow(
+        Post parentPost = postRepository.findByIdWithUser(parentPostId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
@@ -85,7 +85,7 @@ public class PostService {
                 .map(postImageDTO -> PostImage.builder()
                         .imageURL(postImageDTO.imageURL())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
 
         Post post = Post.builder()
                 .user(userRef)

@@ -20,9 +20,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     boolean existsById(Long id);
 
-    @Query("SELECT (COUNT(p) > 0) FROM Post p WHERE p.id = :postId AND p.user.id = :userId")
-    boolean isOwnPost(@Param("postId") Long postId, @Param("userId") Long userId);
-
     @Query("SELECT p.user.id FROM Post p WHERE p.id = :postId")
     Optional<Long> findUserIdByPostId(@Param("postId") Long postId);
 
@@ -45,6 +42,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @EntityGraph(attributePaths = {"user", "postImages"})
     Optional<Post> findById(Long postId);
+
+    @Query("SELECT p FROM Post p JOIN FETCH p.user WHERE p.id = :postId")
+    Optional<Post> findByIdWithUser(@Param("postId") Long postId);
 
     @Query("SELECT prs.post.id FROM PostReadStatus prs WHERE prs.user.id = :userId")
     List<Long> findPostIdsByUserId(@Param("userId") Long userId);
