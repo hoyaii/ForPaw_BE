@@ -34,14 +34,11 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ChatService {
 
-    private final RabbitListenerEndpointRegistry rabbitListenerEndpointRegistry;
-    private final RabbitListenerContainerFactory<?> rabbitListenerContainerFactory;
     private final MessageRepository messageRepository;
     private final ChatUserRepository chatUserRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final RabbitTemplate rabbitTemplate;
     private final SimpMessagingTemplate messagingTemplate;
-    private final AmqpAdmin amqpAdmin;
 
     @Transactional
     public void sendMessage(ChatRequest.SendMessageDTO requestDTO, Long senderId, String senderName){
@@ -143,40 +140,6 @@ public class ChatService {
         // 권한 체크
         ChatUser chatUser = checkChatAuthority(userId, requestDTO.chatRoomId());
         chatUser.updateLastMessage(requestDTO.messageId(), chatUser.getLastMessageIdx() + 1);
-    }
-
-    public void registerExchange(Long chatRoomId){
-        String exchangeName = "chatroom." + chatRoomId + ".exchange";
-        FanoutExchange fanoutExchange = new FanoutExchange(exchangeName);
-        amqpAdmin.declareExchange(fanoutExchange);
-    }
-
-    public void registerQueue(Long userId, Long chatRoomId){
-        String exchangeName = "chatroom." + chatRoomId + ".exchange";
-        FanoutExchange fanoutExchange = new FanoutExchange(exchangeName);
-
-        String queueName = "user.queue." + userId + ".chatroom." + chatRoomId;
-        Queue userQueue = new Queue(queueName, true);
-        amqpAdmin.declareQueue(userQueue);
-
-        // 해당 그룹 채팅방의 Fanout Exchange와 큐를 바인딩
-        Binding binding = BindingBuilder.bind(userQueue).to(fanoutExchange);
-        amqpAdmin.declareBinding(binding);
-    }
-
-    public void registerListener(Long userId, Long chatRoomId) {
-        // listenerId는 각 리스너의 고유 id
-        String listenerId = "chatroom.listener." + userId + "." + chatRoomId;
-        String queueName = "user.queue." + userId + ".chatroom." + chatRoomId;
-
-        SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
-        endpoint.setId(listenerId);
-        endpoint.setQueueNames(queueName);
-        endpoint.setMessageListener(message -> {
-
-        });
-
-        rabbitListenerEndpointRegistry.registerListenerContainer(endpoint, rabbitListenerContainerFactory, true);
     }
 
     private Pageable createPageable(int page, int size, String sortProperty) {

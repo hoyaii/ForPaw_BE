@@ -49,6 +49,7 @@ public class GroupService {
     private final ChatService chatService;
     private final AmqpAdmin amqpAdmin;
     private final EntityManager entityManager;
+    private final BrokerService brokerService;
 
     @Transactional
     public GroupResponse.CreateGroupDTO createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId){
@@ -98,9 +99,13 @@ public class GroupService {
         chatUserRepository.save(chatUser);
 
         // 그룹 채팅방의 exchange 등록 후 그룹장에 대한 큐와 리스너 등록
-        chatService.registerExchange(chatRoom.getId());
-        chatService.registerQueue(userId, chatRoom.getId());
-        chatService.registerListener(userId, chatRoom.getId());
+        String exchangeName = "chatroom." + chatRoom.getId() + ".exchange";
+        String queueName = "user.queue." + userId + ".chatroom." + chatRoom.getId();
+        String listenerId = "chatroom.listener." + userId + "." + chatRoom.getId();
+
+        brokerService.registerExchange(exchangeName);
+        brokerService.registerQueue(exchangeName, queueName);
+        brokerService.registerListener(listenerId, queueName);
 
         return new GroupResponse.CreateGroupDTO(group.getId());
     }
@@ -352,8 +357,12 @@ public class GroupService {
         chatUserRepository.save(chatUser);
 
         // 맴버에 대한 큐와 리스너 등록
-        chatService.registerQueue(applicantId, chatRoom.getId());
-        chatService.registerListener(applicantId, chatRoom.getId());
+        String exchangeName = "chatroom." + chatRoom.getId() + ".exchange";
+        String queueName = "user.queue." + applicantId + ".chatroom." + chatRoom.getId();
+        String listenerId = "chatroom.listener." + applicantId + "." + chatRoom.getId();
+
+        brokerService.registerQueue(exchangeName, queueName);
+        brokerService.registerListener(listenerId, queueName);
     }
 
     @Transactional

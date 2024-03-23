@@ -40,7 +40,7 @@ public class AlarmService {
 
         // 503 에러를 방지하기 위한 더미 이벤트 전송
         String eventId = generateIdByTime(userId);
-        sendNotification(emitter, eventId, emitterId, "EventStream Created. [userEmail=" + userId + "]");
+        sendNotification(emitter, eventId, emitterId, "EventStream Created. [userId=" + userId + "]");
 
         // 클라이언트가 미수신한 이벤트 처리
         if (hasUnreceivedAlarm(lastEventId)) {

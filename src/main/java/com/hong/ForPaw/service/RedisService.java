@@ -32,7 +32,7 @@ public class RedisService {
 
     // 데이터 존재 여부
     public boolean isDateExist(String type, String id) {
-        return redisTemplate.hasKey(buildKey(type, id));
+        return Boolean.TRUE.equals(redisTemplate.hasKey(buildKey(type, id)));
     }
 
     // 저장된 데이터와 일치여부 비교
