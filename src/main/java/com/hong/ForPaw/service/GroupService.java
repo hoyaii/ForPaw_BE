@@ -19,8 +19,6 @@ import com.hong.ForPaw.repository.Group.*;
 import com.hong.ForPaw.repository.Post.PostRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import org.springframework.amqp.core.*;
-import org.springframework.amqp.core.Queue;
 import org.springframework.data.domain.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -875,10 +873,8 @@ public class GroupService {
     }
 
     private List<GroupResponse.MeetingDTO> getMeetingDTOS(Long groupId, Pageable pageable){
-        // meetingUser를 패치조인 해서 조회
         Page<Meeting> meetings = meetingRepository.findByGroupId(groupId, pageable);
 
-        // user를 가져올 때, 10개씩 들고온다 (batch)
         List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
                 .map(meeting -> {
                     List<GroupResponse.ParticipantDTO> participantDTOS = meeting.getMeetingUsers().stream()
@@ -906,7 +902,7 @@ public class GroupService {
 
     private List<GroupResponse.MemberDTO> getMemberDTOS(Long groupId){
         // user를 패치조인 해서 조회
-        List<GroupUser> groupUsers = groupUserRepository.findByGroupId(groupId);
+        List<GroupUser> groupUsers = groupUserRepository.findByGroupIdWithUser(groupId);
 
         List<GroupResponse.MemberDTO> memberDTOS = groupUsers.stream()
                 .filter(groupUser -> !groupUser.getRole().equals(Role.TEMP)) // 가입 승인 상태가 아니면 제외

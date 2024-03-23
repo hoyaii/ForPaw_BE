@@ -25,7 +25,6 @@ public class MeetingUser extends TimeStamp {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    @BatchSize(size = 10)
     private User user;
 
     @Builder

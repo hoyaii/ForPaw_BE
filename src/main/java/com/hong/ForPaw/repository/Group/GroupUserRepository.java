@@ -36,12 +36,6 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
     @Query("SELECT gu.user FROM GroupUser gu WHERE gu.group.id = :groupId AND gu.user.id NOT IN (:myId)")
     List<User> findAllUsersByGroupIdWithoutMe(@Param("groupId") Long groupId, @Param("myId") Long myId);
 
-    @Query("SELECT gu.user FROM GroupUser gu WHERE gu.group.id = :groupId AND gu.role IN :roles")
-    List<User> findAllUsersByGroupIdInRole(@Param("groupId") Long groupId, @Param("roles") List<Role> roles);
-
-    @Query("SELECT gu.role FROM GroupUser gu WHERE gu.user.id = :userId AND gu.group.id = :groupId")
-    Role findRoleByUserIdAndGroupId(Long userId, Long groupId);
-
     @Query("SELECT gu.group FROM GroupUser gu WHERE gu.user.id = :userId")
     List<Group> findGroupsByUserId(@Param("userId") Long userId);
 
@@ -49,5 +43,6 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
     Page<Group> findGroupsByUserId(@Param("userId") Long userId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})
-    List<GroupUser> findByGroupId(@Param("groupId") Long groupId);
+    @Query("SELECT gu FROM GroupUser gu WHERE gu.group.id = :groupId")
+    List<GroupUser> findByGroupIdWithUser(@Param("groupId") Long groupId);
 }

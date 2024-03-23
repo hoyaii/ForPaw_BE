@@ -24,7 +24,7 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
 
     Page<Shelter> findByNameContaining(@Param("name") String name, Pageable pageable);
 
-    @Override
     @EntityGraph(attributePaths = {"regionCode"})
-    List<Shelter> findAll();
+    @Query("SELECT s FROM Shelter s")
+    List<Shelter> findAllWithRegionCode();
 }

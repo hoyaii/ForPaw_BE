@@ -521,8 +521,8 @@ public class PostService {
     }
 
     public List<PostResponse.PostDTO> getPostDTOsByType(PostType postType, Pageable pageable){
-        // 이미지, 유저를 패치조인하여 조회
-        Page<Post> postPage = postRepository.findByPostType(postType, pageable);
+        // 유저를 패치조인하여 조회
+        Page<Post> postPage = postRepository.findByPostTypeWithUser(postType, pageable);
 
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post ->  {
@@ -545,8 +545,8 @@ public class PostService {
     }
 
     public List<PostResponse.QnaDTO> getQnaDTOs(Pageable pageable){
-        // 이미지, 유저를 패치조인하여 조회
-        Page<Post> postPage = postRepository.findByPostType(PostType.question, pageable);
+        // 유저를 패치조인하여 조회
+        Page<Post> postPage = postRepository.findByPostTypeWithUser(PostType.question, pageable);
 
         List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
                 .map(post -> {

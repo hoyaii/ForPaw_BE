@@ -10,11 +10,7 @@ import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Chat.MessageRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.amqp.core.*;
-import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
-import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -73,7 +69,7 @@ public class ChatService {
     @Transactional
     public ChatResponse.FindChatRoomListDTO findChatRoomList(Long userId){
         // chatRoom을 패치조인
-        List<ChatUser> chatUsers = chatUserRepository.findByUserId(userId);
+        List<ChatUser> chatUsers = chatUserRepository.findByUserIdWithChatRoom(userId);
 
         List<ChatResponse.RoomDTO> roomDTOS = chatUsers.stream()
                 .map(chatUser -> {

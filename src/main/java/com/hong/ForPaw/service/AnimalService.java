@@ -22,15 +22,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -70,7 +67,7 @@ public class AnimalService {
     @Transactional
     @Scheduled(cron = "0 0 0,12 * * *") // 매일 자정과 정오에 실행
     public void loadAnimalData() {
-        List<Shelter> shelters = shelterRepository.findAll();
+        List<Shelter> shelters = shelterRepository.findAllWithRegionCode();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
 
         Flux.fromIterable(shelters)

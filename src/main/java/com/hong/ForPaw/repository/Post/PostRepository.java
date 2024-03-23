@@ -2,7 +2,6 @@ package com.hong.ForPaw.repository.Post;
 
 import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Post.PostType;
-import com.hong.ForPaw.domain.User.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -28,16 +27,18 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @EntityGraph(attributePaths = {"user"})
     Page<Post> findByGroupId(Long groupId, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"postImages"})
     Page<Post> findByTitleContaining(@Param("title") String title, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"postImages", "user"})
-    Page<Post> findByPostType(PostType postType, Pageable pageable);
+    @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT p FROM Post p WHERE p.postType = :postType")
+    Page<Post> findByPostTypeWithUser(@Param("postType") PostType postType, Pageable pageable);
 
-    @Query("SELECT p FROM Post p JOIN FETCH p.user WHERE p.parent.id = :parentId")
+    @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT p FROM Post p WHERE p.parent.id = :parentId")
     List<Post> findByParentIdWithUser(@Param("parentId") Long parentId);
 
-    @Query("SELECT p FROM Post p JOIN FETCH p.user WHERE p.id = :postId")
+    @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT p FROM Post p WHERE p.id = :postId")
     Optional<Post> findByIdWithUser(@Param("postId") Long postId);
 
     @Query("SELECT prs.post.id FROM PostReadStatus prs WHERE prs.user.id = :userId")

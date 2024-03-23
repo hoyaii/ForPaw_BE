@@ -20,7 +20,6 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
     void deleteAllByGroupId(Long groupId);
 
-    @EntityGraph(attributePaths = {"meetingUsers"})
     Page<Meeting> findByGroupId(Long groupId, Pageable pageable);
 
     @Query("SELECT m.id FROM Meeting m WHERE m.group.id = :groupId")

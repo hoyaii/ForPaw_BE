@@ -12,7 +12,4 @@ import java.util.List;
 public interface PostReadStatusRepository extends JpaRepository<PostReadStatus, Long> {
 
     void deleteAllByPostId(Long postId);
-
-    @Query("SELECT COUNT(ps) > 0 FROM PostReadStatus ps WHERE ps.user.id = :userId AND ps.post.id = :postId")
-    boolean existsByUserIdAndPostId(@Param("userId") Long userId, @Param("postId") Long postId);
 }
