@@ -480,13 +480,14 @@ public class PostService {
         // 수정 권한 체크
         checkCommentAuthority(comment.getUser().getId(), user);
 
-        // 게시글의 댓글 수 감소
         Long childNum = Long.valueOf(comment.getChildren().size());
-        redisService.decrementCnt("commentNum", postId.toString(), 1L + childNum);
 
         // 댓글 및 관련 대댓글 삭제 (CascadeType.ALL에 의해 처리됨)
         commentRepository.deleteById(commentId);
         commentLikeRepository.deleteAllByCommentId(commentId);
+
+        // 게시글의 댓글 수 감소
+        redisService.decrementCnt("commentNum", postId.toString(), 1L + childNum);
     }
 
     @Transactional

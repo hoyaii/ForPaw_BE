@@ -20,9 +20,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableStompBrokerRelay("/topic", "/queue")
+        registry.enableStompBrokerRelay("/room")
                 .setRelayHost("localhost")
-                .setRelayPort(61613); // RabbitMQ STOMP port
+                .setRelayPort(61613);
 
         registry.setApplicationDestinationPrefixes("/app");
     }

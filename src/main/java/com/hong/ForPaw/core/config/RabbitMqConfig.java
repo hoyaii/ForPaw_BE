@@ -1,8 +1,7 @@
 package com.hong.ForPaw.core.config;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.amqp.core.DirectExchange;
-import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.annotation.RabbitListenerConfigurer;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -71,6 +70,12 @@ public class RabbitMqConfig implements RabbitListenerConfigurer {
         registrar.setContainerFactory(factory); // 컨테이너 팩토리를 등록
         registrar.setEndpointRegistry(rabbitListenerEndpointRegistry()); // 리스너 엔드포인트 레지스트리를 설정
         registrar.setMessageHandlerMethodFactory(messageHandlerMethodFactory()); // 메시지 핸들러 메서드 팩토리를 설정
+    }
+
+    // 채팅을 위한 Exchange
+    @Bean
+    DirectExchange chatExchange() {
+        return new DirectExchange("chat.exchange");
     }
 
     // 알람을 위한 Exchange

@@ -12,7 +12,6 @@ import com.hong.ForPaw.domain.Group.*;
 import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.User.User;
-import com.hong.ForPaw.repository.Alarm.AlarmRepository;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Group.*;
@@ -98,13 +97,12 @@ public class GroupService {
         chatUserRepository.save(chatUser);
 
         // 그룹 채팅방의 exchange 등록 후 그룹장에 대한 큐와 리스너 등록
-        String exchangeName = "chatroom." + chatRoom.getId() + ".exchange";
-        String queueName = "user.queue." + userId + ".chatroom." + chatRoom.getId();
-        String listenerId = "chatroom.listener." + userId + "." + chatRoom.getId();
+        String exchangeName = "chat.exchange";
+        String queueName = "chat." + chatRoom.getId();
+        String listenerId = "chat." + chatRoom.getId();
 
-        brokerService.registerExchange(exchangeName);
-        brokerService.registerQueue(exchangeName, queueName);
-        brokerService.registerListener(listenerId, queueName);
+        brokerService.registerChatQueue(exchangeName, queueName);
+        brokerService.registerChatListener(listenerId, queueName);
 
         return new GroupResponse.CreateGroupDTO(group.getId());
     }
@@ -362,14 +360,6 @@ public class GroupService {
                 .build();
 
         chatUserRepository.save(chatUser);
-
-        // 맴버에 대한 큐와 리스너 등록
-        String exchangeName = "chatroom." + chatRoom.getId() + ".exchange";
-        String queueName = "user.queue." + applicantId + ".chatroom." + chatRoom.getId();
-        String listenerId = "chatroom.listener." + applicantId + "." + chatRoom.getId();
-
-        brokerService.registerQueue(exchangeName, queueName);
-        brokerService.registerListener(listenerId, queueName);
     }
 
     @Transactional

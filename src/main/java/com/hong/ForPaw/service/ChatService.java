@@ -41,29 +41,18 @@ public class ChatService {
         // 권한 체크
         checkChatAuthority(senderId, requestDTO.chatRoomId());
 
-        // 우선 메시지 DB에 저장
-        LocalDateTime date = LocalDateTime.now();
-
-        Message message = Message.builder()
-                .chatRoomId(requestDTO.chatRoomId())
-                .senderId(senderId)
-                .senderName(senderName)
-                .content(requestDTO.content())
-                .date(date)
-                .build();
-
-        messageRepository.save(message);
-
         // 전송을 위한 메시지 DTO
-        ChatRequest.MessageDTO messageDTO = new ChatRequest.MessageDTO(message.getId(), senderId, senderName, requestDTO.content(), date);
+        LocalDateTime date = LocalDateTime.now();
+        ChatRequest.MessageDTO messageDTO = new ChatRequest.MessageDTO(requestDTO.chatRoomId(), senderId, senderName, requestDTO.content(), date);
+
+        // STOMP 프로토콜을 통한 실시간 메시지 전송
+        String destination = "/room/" + messageDTO.chatRoomId();
+        messagingTemplate.convertAndSend(destination, messageDTO);
 
         // 메시지 브로커에 전송
-        String exchangeName = "chatroom." + requestDTO.chatRoomId() + ".exchange";
-        rabbitTemplate.convertAndSend(exchangeName, "", messageDTO);
-
-        // STOMP 프로토콜로 실시간으로 메시지 전송 (for 화면)
-        String destination = "/topic/chatRoom." + requestDTO.chatRoomId();
-        messagingTemplate.convertAndSend(destination, messageDTO);
+        String exchangeName = "chat.exchange";
+        String routingKey = "chat." + requestDTO.chatRoomId();
+        rabbitTemplate.convertAndSend(exchangeName, routingKey, messageDTO);
     }
 
     @Transactional

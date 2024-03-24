@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,7 +25,7 @@ public class ChatController {
 
     private final ChatService chatService;
 
-    @MessageMapping("/message.send")
+    @MessageMapping("/chat/send")
     public void sendMessage(@Payload ChatRequest.SendMessageDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) {
         chatService.sendMessage(requestDTO, userDetails.getUser().getId(), userDetails.getUsername());
     }
@@ -41,7 +42,7 @@ public class ChatController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @MessageMapping("/message.read")
+    @MessageMapping("/chat/read")
     public void readMessage(@Payload ChatRequest.ReadMessageDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) {
         chatService.readMessage(requestDTO, userDetails.getUser().getId());
     }
