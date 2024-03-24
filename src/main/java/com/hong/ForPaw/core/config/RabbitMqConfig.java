@@ -88,4 +88,10 @@ public class RabbitMqConfig implements RabbitListenerConfigurer {
     Queue alarmQueue() {
         return new Queue("alarm.queue", true);
     }
+
+    // 주입을 통한 alarmQueue와 alarmExchange의 바인딩
+    @Bean
+    Binding alarmBinding(Queue alarmQueue, DirectExchange alarmExchange) {
+        return BindingBuilder.bind(alarmQueue).to(alarmExchange).with("alarm.*");
+    }
 }

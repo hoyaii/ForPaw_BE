@@ -127,10 +127,6 @@ public class ChatService {
         chatUser.updateLastMessage(requestDTO.messageId(), chatUser.getLastMessageIdx() + 1);
     }
 
-    private Pageable createPageable(int page, int size, String sortProperty) {
-        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
-    }
-
     private ChatUser checkChatAuthority(Long userId, Long chatRoomId){
         // 채팅방에 들어와있는지 여부 체크
         Optional<ChatUser> chatUserOP = chatUserRepository.findByUserIdAndChatRoomId(userId, chatRoomId);
