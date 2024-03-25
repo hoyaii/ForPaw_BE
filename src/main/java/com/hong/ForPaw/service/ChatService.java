@@ -33,7 +33,6 @@ public class ChatService {
     private final MessageRepository messageRepository;
     private final ChatUserRepository chatUserRepository;
     private final BrokerService brokerService;
-    private final RabbitTemplate rabbitTemplate;
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional

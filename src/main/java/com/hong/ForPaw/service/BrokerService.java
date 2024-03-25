@@ -2,9 +2,13 @@ package com.hong.ForPaw.service;
 
 import com.hong.ForPaw.controller.DTO.ChatRequest;
 import com.hong.ForPaw.domain.Alarm.Alarm;
+import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Chat.Message;
+import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
+import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.MessageRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -16,18 +20,22 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class BrokerService {
 
     private final MessageRepository messageRepository;
     private final AlarmRepository alarmRepository;
+    private final ChatRoomRepository chatRoomRepository;
     private final RabbitListenerEndpointRegistry rabbitListenerEndpointRegistry;
     private final RabbitListenerContainerFactory<?> rabbitListenerContainerFactory;
     private final RabbitTemplate rabbitTemplate;
     private final AmqpAdmin amqpAdmin;
     private final AlarmService alarmService;
     private final MessageConverter converter;
+    private final EntityManager entityManager;
 
     public void registerDirectExchange(String exchangeName){
         DirectExchange fanoutExchange = new DirectExchange(exchangeName);
@@ -51,9 +59,26 @@ public class BrokerService {
         endpoint.setQueueNames(queueName);
         endpoint.setMessageListener(m -> {
             Message message = (Message) converter.fromMessage(m);
-
             // 메시지 저장
             messageRepository.save(message);
+
+            // 알람 전송
+            chatRoomRepository.findUsersByChatRoomId(message.getChatRoomId()).stream()
+                    .map(user -> {
+                        User receiver = entityManager.getReference(User.class, user.getId());
+                        String content = "새로문 메시지: " + message.getContent();
+                        String redirectURL = "chatRooms/" + message.getChatRoomId();
+
+                        Alarm alarm = Alarm.builder()
+                                .receiver(receiver)
+                                .alarmType(AlarmType.chatting)
+                                .content(content)
+                                .redirectURL(redirectURL)
+                                .build();
+
+                        produceAlarm(message.getSenderId(), alarm);
+                        return null;
+                    });
         });
 
         rabbitListenerEndpointRegistry.registerListenerContainer(endpoint, rabbitListenerContainerFactory, true);

@@ -126,10 +126,6 @@ public class AlarmService {
                 .forEach(entry -> sendNotification(emitter, entry.getKey(), emitterId, entry.getValue()));
     }
 
-    private boolean hasUnreceivedAlarm(String lastEventId) {
-        return !lastEventId.isEmpty();
-    }
-
     private String generateIdByTime(String userId) {
         return userId + "_" + System.currentTimeMillis();
     }
