@@ -113,8 +113,7 @@ public class PostService {
                 .redirectURL(redirectURL)
                 .build();
 
-        String routingKey = "user." + parentPost.getUser().getId();
-        brokerService.produceAlarm(routingKey, alarm);
+        brokerService.produceAlarm(parentPost.getUser().getId(), alarm);
 
         return new PostResponse.CreateAnswerDTO(post.getId());
     }
@@ -409,8 +408,7 @@ public class PostService {
                 .redirectURL(redirectURL)
                 .build();
 
-        String routingKey = "user." + postWriterId;
-        brokerService.produceAlarm(routingKey, alarm);
+        brokerService.produceAlarm(postWriterId, alarm);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
     }
@@ -450,8 +448,7 @@ public class PostService {
                 .redirectURL(redirectURL)
                 .build();
 
-        String routingKey = "user." + parentComment.getUser().getId();
-        brokerService.produceAlarm(routingKey, alarm);
+        brokerService.produceAlarm(parentComment.getUser().getId(), alarm);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
     }

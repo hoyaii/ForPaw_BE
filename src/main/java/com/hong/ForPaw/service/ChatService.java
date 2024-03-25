@@ -32,7 +32,7 @@ public class ChatService {
 
     private final MessageRepository messageRepository;
     private final ChatUserRepository chatUserRepository;
-    private final ChatRoomRepository chatRoomRepository;
+    private final BrokerService brokerService;
     private final RabbitTemplate rabbitTemplate;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -57,9 +57,7 @@ public class ChatService {
         messagingTemplate.convertAndSend(destination, message);
 
         // 메시지 브로커에 전송
-        String exchangeName = "chat.exchange";
-        String routingKey = "room." + requestDTO.chatRoomId(); // 라우팅 키는 큐 이름과 동일함
-        rabbitTemplate.convertAndSend(exchangeName, routingKey, message);
+        brokerService.produceChat(requestDTO.chatRoomId(), message);
     }
 
     @Transactional

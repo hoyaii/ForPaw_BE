@@ -348,8 +348,7 @@ public class GroupService {
                 .redirectURL(redirectURL)
                 .build();
 
-        String routingKey = "user." + applicantId;
-        brokerService.produceAlarm(routingKey, alarm);
+        brokerService.produceAlarm(applicantId, alarm);
 
         // 그룹 채팅방에 참여
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
@@ -388,8 +387,7 @@ public class GroupService {
                 .redirectURL(redirectURL)
                 .build();
 
-        String routingKey = "user." + applicantId;
-        brokerService.produceAlarm(routingKey, alarm);
+        brokerService.produceAlarm(applicantId, alarm);
     }
 
     @Transactional
@@ -427,8 +425,7 @@ public class GroupService {
                     .redirectURL(redirectURL)
                     .build();
 
-            String routingKey = "user." + user.getId();
-            brokerService.produceAlarm(routingKey, alarm);
+            brokerService.produceAlarm(user.getId(), alarm);
         }
 
         return new GroupResponse.CreateNoticeDTO(notice.getId());
@@ -596,8 +593,7 @@ public class GroupService {
                     .redirectURL(redirectURL)
                     .build();
 
-            String routingKey = "alarm." + user.getId();
-            brokerService.produceAlarm(routingKey, alarm);
+            brokerService.produceAlarm(user.getId(), alarm);
         }
         
         return new GroupResponse.CreateMeetingDTO(meeting.getId());

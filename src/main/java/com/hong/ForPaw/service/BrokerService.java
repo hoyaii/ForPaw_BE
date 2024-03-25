@@ -74,7 +74,17 @@ public class BrokerService {
         rabbitListenerEndpointRegistry.registerListenerContainer(endpoint, rabbitListenerContainerFactory, true);
     }
 
-    public void produceAlarm(String routingKey, Alarm alarm) {
-        rabbitTemplate.convertAndSend("alarm.exchange", routingKey, alarm);
+    public void produceChat(Long chatRoomId, Message message){
+        String exchangeName = "chat.exchange";
+        String routingKey = "room." + chatRoomId;
+
+        rabbitTemplate.convertAndSend(exchangeName, routingKey, message);
+    }
+
+    public void produceAlarm(Long userId, Alarm alarm) {
+        String exchangeName = "alarm.exchange";
+        String routingKey = "user." + userId;
+
+        rabbitTemplate.convertAndSend(exchangeName, routingKey, alarm);
     }
 }
