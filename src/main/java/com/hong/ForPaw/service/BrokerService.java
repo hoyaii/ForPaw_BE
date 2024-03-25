@@ -12,6 +12,7 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
@@ -30,7 +31,7 @@ public class BrokerService {
     private final AlarmRepository alarmRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final RabbitListenerEndpointRegistry rabbitListenerEndpointRegistry;
-    private final RabbitListenerContainerFactory<?> rabbitListenerContainerFactory;
+    private final SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory;
     private final RabbitTemplate rabbitTemplate;
     private final AmqpAdmin amqpAdmin;
     private final AlarmService alarmService;
