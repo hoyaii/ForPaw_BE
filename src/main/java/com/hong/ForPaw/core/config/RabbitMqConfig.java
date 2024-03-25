@@ -80,18 +80,5 @@ public class RabbitMqConfig implements RabbitListenerConfigurer {
 
     // 알람을 위한 Exchange
     @Bean
-    DirectExchange alarmExchange() {
-        return new DirectExchange("alarm.exchange");
-    }
-
-    @Bean
-    Queue alarmQueue() {
-        return new Queue("alarm.queue", true);
-    }
-
-    // 주입을 통한 alarmQueue와 alarmExchange의 바인딩
-    @Bean
-    Binding alarmBinding(Queue alarmQueue, DirectExchange alarmExchange) {
-        return BindingBuilder.bind(alarmQueue).to(alarmExchange).with("alarm.*");
-    }
+    DirectExchange alarmExchange() { return new DirectExchange("alarm.exchange");}
 }

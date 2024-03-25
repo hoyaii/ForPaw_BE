@@ -43,16 +43,23 @@ public class ChatService {
 
         // 전송을 위한 메시지 DTO
         LocalDateTime date = LocalDateTime.now();
-        ChatRequest.MessageDTO messageDTO = new ChatRequest.MessageDTO(requestDTO.chatRoomId(), senderId, senderName, requestDTO.content(), date);
+
+        Message message = Message.builder()
+                .chatRoomId(requestDTO.chatRoomId())
+                .senderId(senderId)
+                .senderName(senderName)
+                .content(requestDTO.content())
+                .date(date)
+                .build();
 
         // STOMP 프로토콜을 통한 실시간 메시지 전송
-        String destination = "/room/" + messageDTO.chatRoomId();
-        messagingTemplate.convertAndSend(destination, messageDTO);
+        String destination = "/room/" + requestDTO.chatRoomId();
+        messagingTemplate.convertAndSend(destination, message);
 
         // 메시지 브로커에 전송
         String exchangeName = "chat.exchange";
-        String routingKey = "chat." + requestDTO.chatRoomId();
-        rabbitTemplate.convertAndSend(exchangeName, routingKey, messageDTO);
+        String routingKey = "room." + requestDTO.chatRoomId(); // 라우팅 키는 큐 이름과 동일함
+        rabbitTemplate.convertAndSend(exchangeName, routingKey, message);
     }
 
     @Transactional

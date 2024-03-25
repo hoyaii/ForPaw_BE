@@ -3,6 +3,7 @@ package com.hong.ForPaw.service;
 import com.hong.ForPaw.controller.DTO.ChatRequest;
 import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Chat.Message;
+import com.hong.ForPaw.repository.Alarm.AlarmRepository;
 import com.hong.ForPaw.repository.Chat.MessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.core.*;
@@ -20,7 +21,7 @@ import org.springframework.stereotype.Service;
 public class BrokerService {
 
     private final MessageRepository messageRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final AlarmRepository alarmRepository;
     private final RabbitListenerEndpointRegistry rabbitListenerEndpointRegistry;
     private final RabbitListenerContainerFactory<?> rabbitListenerContainerFactory;
     private final RabbitTemplate rabbitTemplate;
@@ -33,13 +34,13 @@ public class BrokerService {
         amqpAdmin.declareExchange(fanoutExchange);
     }
 
-    public void registerChatQueue(String exchangeName, String queueName){
+    public void registerDirectExQueue(String exchangeName, String queueName){
         DirectExchange directExchange = new DirectExchange(exchangeName);
 
         Queue queue = new Queue(queueName, true);
         amqpAdmin.declareQueue(queue);
 
-        // 해당 그룹 채팅방의 Fanout Exchange와 큐를 바인딩
+        // routingKey는 큐 이름과 동일
         Binding binding = BindingBuilder.bind(queue).to(directExchange).with(queueName);
         amqpAdmin.declareBinding(binding);
     }
@@ -49,17 +50,25 @@ public class BrokerService {
         endpoint.setId(listenerId);
         endpoint.setQueueNames(queueName);
         endpoint.setMessageListener(m -> {
-            ChatRequest.MessageDTO messageDTO = (ChatRequest.MessageDTO) converter.fromMessage(m);
+            Message message = (Message) converter.fromMessage(m);
 
             // 메시지 저장
-            Message message = Message.builder()
-                    .chatRoomId(messageDTO.chatRoomId())
-                    .senderId(messageDTO.senderId())
-                    .senderName(messageDTO.senderName())
-                    .content(messageDTO.content())
-                    .date(messageDTO.date())
-                    .build();
             messageRepository.save(message);
+        });
+
+        rabbitListenerEndpointRegistry.registerListenerContainer(endpoint, rabbitListenerContainerFactory, true);
+    }
+
+    public void registerAlarmListener(String listenerId, String queueName){
+        SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
+        endpoint.setId(listenerId);
+        endpoint.setQueueNames(queueName);
+        endpoint.setMessageListener(m -> {
+            Alarm alarm = (Alarm) converter.fromMessage(m);
+
+            // 알람 실시간 전송 후 저장
+            alarmService.send(alarm);
+            alarmRepository.save(alarm);
         });
 
         rabbitListenerEndpointRegistry.registerListenerContainer(endpoint, rabbitListenerContainerFactory, true);
@@ -67,10 +76,5 @@ public class BrokerService {
 
     public void produceAlarm(String routingKey, Alarm alarm) {
         rabbitTemplate.convertAndSend("alarm.exchange", routingKey, alarm);
-    }
-
-    @RabbitListener(queues = "alarm.queue")
-    public void consumeAlarm(Alarm alarm) {
-        alarmService.send(alarm);
     }
 }

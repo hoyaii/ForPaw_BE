@@ -98,10 +98,10 @@ public class GroupService {
 
         // 그룹 채팅방의 exchange 등록 후 그룹장에 대한 큐와 리스너 등록
         String exchangeName = "chat.exchange";
-        String queueName = "chat." + chatRoom.getId();
-        String listenerId = "chat." + chatRoom.getId();
+        String queueName = "room." + chatRoom.getId();
+        String listenerId = "room." + chatRoom.getId();
 
-        brokerService.registerChatQueue(exchangeName, queueName);
+        brokerService.registerDirectExQueue(exchangeName, queueName);
         brokerService.registerChatListener(listenerId, queueName);
 
         return new GroupResponse.CreateGroupDTO(group.getId());
@@ -596,7 +596,7 @@ public class GroupService {
                     .redirectURL(redirectURL)
                     .build();
 
-            String routingKey = "user." + user.getId();
+            String routingKey = "alarm." + user.getId();
             brokerService.produceAlarm(routingKey, alarm);
         }
         

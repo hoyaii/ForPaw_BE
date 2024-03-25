@@ -101,9 +101,6 @@ public class AlarmService {
                     sendNotification(emitter, eventId, key, alarmDTO);
                 }
         );
-
-        // 알람 저장
-        alarmRepository.save(alarm);
     }
 
     private void sendNotification(SseEmitter emitter, String eventId, String emitterId, Object data) {

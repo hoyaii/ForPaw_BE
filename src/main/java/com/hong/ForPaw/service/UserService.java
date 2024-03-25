@@ -46,6 +46,7 @@ public class UserService {
     private final RedisService redisService;
     private final JavaMailSender mailSender;
     private final WebClient webClient;
+    private final BrokerService brokerService;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
@@ -151,6 +152,9 @@ public class UserService {
                 .subRegion(requestDTO.subRegion())
                 .build();
 
+        // 알람 사용을 위한 설정
+        setAlarm(user);
+
         userRepository.save(user);
     }
 
@@ -165,6 +169,8 @@ public class UserService {
                 .region(requestDTO.region())
                 .subRegion(requestDTO.subRegion())
                 .build();
+
+        setAlarm(user);
 
         userRepository.save(user);
     }
@@ -366,14 +372,14 @@ public class UserService {
     }
 
     // 중복 로그인 체크 => 만약 이미 로그인된 상태라면 기존 세션은 삭제
-    public void checkDuplicateLogin(User user){
+    private void checkDuplicateLogin(User user){
         String accessToken = redisService.getDataInStr("accessToken", String.valueOf(user.getId()));
         if(accessToken != null){
             redisService.removeData("accessToken", String.valueOf(user.getId()));
         }
     }
 
-    public Map<String, String> createToken(User user){
+    private Map<String, String> createToken(User user){
         String accessToken = JWTProvider.createAccessToken(user);
         String refreshToken = JWTProvider.createRefreshToken(user);
 
@@ -392,7 +398,7 @@ public class UserService {
         return tokens;
     }
 
-    public KakaoDTO.TokenDTO getKakaoToken(String code) {
+    private KakaoDTO.TokenDTO getKakaoToken(String code) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("grant_type", "authorization_code");
         formData.add("client_id", kakaoAPIKey);
@@ -409,7 +415,7 @@ public class UserService {
         return response.block();
     }
 
-    public KakaoDTO.UserInfoDTO getKakaoUserInfo(String token) {
+    private KakaoDTO.UserInfoDTO getKakaoUserInfo(String token) {
         Flux<KakaoDTO.UserInfoDTO> response = webClient.get()
                 .uri(kakaoUserInfoURI)
                 .header("Authorization", "Bearer " + token)
@@ -419,7 +425,7 @@ public class UserService {
         return response.blockFirst();
     }
 
-    public GoogleDTO.TokenDTO getGoogleToken(String code) {
+    private GoogleDTO.TokenDTO getGoogleToken(String code) {
         String decode = URLDecoder.decode(code, StandardCharsets.UTF_8);
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
@@ -439,7 +445,7 @@ public class UserService {
         return response.block();
     }
 
-    public GoogleDTO.UserInfoDTO getGoogleUserInfo(String token) {
+    private GoogleDTO.UserInfoDTO getGoogleUserInfo(String token) {
         Flux<GoogleDTO.UserInfoDTO> response = webClient.get()
                 .uri(googleUserInfoURI)
                 .header("Authorization", "Bearer " + token)
@@ -451,5 +457,15 @@ public class UserService {
 
     private boolean isNotMember(String email){
         return userRepository.findByEmail(email).isEmpty();
+    }
+
+    private void setAlarm(User user) {
+        // 알람 전송을 위한 큐 등록
+        String exchangeName = "alarm.exchange";
+        String queueName = "user." + user.getId();
+        String listenerId = "user." + user.getId();
+
+        brokerService.registerDirectExQueue(exchangeName, queueName);
+        brokerService.registerAlarmListener(listenerId, queueName);
     }
 }
