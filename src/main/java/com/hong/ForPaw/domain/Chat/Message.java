@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 public class Message implements Serializable {
 
     @Id
-    private Long id;
+    private String id;
 
     private Long chatRoomId;
 
@@ -32,10 +32,6 @@ public class Message implements Serializable {
 
     private String content;
 
-    @JsonProperty("date")
-    @JsonSerialize(using = LocalDateTimeSerializer.class)
-    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS")
     private LocalDateTime date;
 
     @Builder

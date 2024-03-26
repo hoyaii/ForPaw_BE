@@ -42,21 +42,19 @@ public class ChatService {
 
         // 전송을 위한 메시지 DTO
         LocalDateTime date = LocalDateTime.now();
-
-        Message message = Message.builder()
-                .chatRoomId(requestDTO.chatRoomId())
-                .senderId(senderId)
-                .senderName(senderName)
-                .content(requestDTO.content())
-                .date(date)
-                .build();
+        ChatRequest.MessageDTO messageDTO = new ChatRequest.MessageDTO(
+                requestDTO.chatRoomId(),
+                senderId,
+                senderName,
+                requestDTO.content(),
+                date);
 
         // STOMP 프로토콜을 통한 실시간 메시지 전송
         String destination = "/room/" + requestDTO.chatRoomId();
-        messagingTemplate.convertAndSend(destination, message);
+        messagingTemplate.convertAndSend(destination, messageDTO);
 
         // 메시지 브로커에 전송
-        brokerService.produceChat(requestDTO.chatRoomId(), message);
+        brokerService.produceChat(requestDTO.chatRoomId(), messageDTO);
     }
 
     @Transactional
@@ -118,7 +116,7 @@ public class ChatService {
             ChatResponse.MessageDTD lastMessageDTO = messageDTOs.get(messageDTOs.size() - 1);
             long chatNum = messageRepository.countByChatRoomId(chatRoomId);
 
-            chatUser.updateLastMessage(lastMessageDTO.messageId(), chatNum - 1);
+            chatUser.updateLastMessage(Long.valueOf(lastMessageDTO.messageId()), chatNum - 1);
         }
 
         return new ChatResponse.FindMessageListInRoomDTO(chatUser.getLastMessageId(), messageDTOs);

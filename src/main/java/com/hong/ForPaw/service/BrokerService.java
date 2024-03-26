@@ -1,5 +1,6 @@
 package com.hong.ForPaw.service;
 
+import com.hong.ForPaw.controller.DTO.ChatRequest;
 import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Chat.Message;
@@ -55,16 +56,24 @@ public class BrokerService {
         endpoint.setId(listenerId);
         endpoint.setQueueNames(queueName);
         endpoint.setMessageListener(m -> {
-            Message message = (Message) converter.fromMessage(m);
+            ChatRequest.MessageDTO messageDTO = (ChatRequest.MessageDTO) converter.fromMessage(m);
+
             // 메시지 저장
+            Message message = Message.builder()
+                    .chatRoomId(messageDTO.chatRoomId())
+                    .senderId(messageDTO.senderId())
+                    .senderName(messageDTO.senderName())
+                    .content(messageDTO.content())
+                    .date(messageDTO.date())
+                    .build();
             messageRepository.save(message);
 
             // 알람 전송
-            chatRoomRepository.findUsersByChatRoomId(message.getChatRoomId()).stream()
+            chatRoomRepository.findUsersByChatRoomId(messageDTO.chatRoomId()).stream()
                     .map(user -> {
                         User receiver = entityManager.getReference(User.class, user.getId());
-                        String content = "새로문 메시지: " + message.getContent();
-                        String redirectURL = "chatRooms/" + message.getChatRoomId();
+                        String content = "새로문 메시지: " + messageDTO.content();
+                        String redirectURL = "chatRooms/" + messageDTO.chatRoomId();
 
                         Alarm alarm = Alarm.builder()
                                 .receiver(receiver)
@@ -73,7 +82,7 @@ public class BrokerService {
                                 .redirectURL(redirectURL)
                                 .build();
 
-                        produceAlarm(message.getSenderId(), alarm);
+                        produceAlarm(messageDTO.senderId(), alarm);
                         return null;
                     });
         });
@@ -96,7 +105,7 @@ public class BrokerService {
         rabbitListenerEndpointRegistry.registerListenerContainer(endpoint, rabbitListenerContainerFactory, true);
     }
 
-    public void produceChat(Long chatRoomId, Message message){
+    public void produceChat(Long chatRoomId, ChatRequest.MessageDTO message){
         String exchangeName = "chat.exchange";
         String routingKey = "room." + chatRoomId;
 

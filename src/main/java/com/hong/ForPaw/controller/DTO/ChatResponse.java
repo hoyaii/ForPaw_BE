@@ -7,7 +7,7 @@ public class ChatResponse {
 
     public record FindMessageListInRoomDTO(Long lastMessageId, List<ChatResponse.MessageDTD> messages) {}
 
-    public record MessageDTD(Long messageId,
+    public record MessageDTD(String messageId,
                              String senderName,
                              String content,
                              LocalDateTime date,

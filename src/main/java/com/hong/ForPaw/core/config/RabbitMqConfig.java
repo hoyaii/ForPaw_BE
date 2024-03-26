@@ -49,7 +49,7 @@ public class RabbitMqConfig implements RabbitListenerConfigurer {
         factory.setConnectionFactory(connectionFactory);
         factory.setMismatchedQueuesFatal(true); // 큐 이름이 일치하지 않을 경우, 애플리케이션을 종료
         factory.setMessageConverter(producerJackson2MessageConverter());
-        // factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);  // 메시지를 성공적으로 처리했음을 RabbitMQ 서버에 명시적으로 알려주어야 함
+        factory.setAcknowledgeMode(AcknowledgeMode.AUTO);  // 메시지를 성공적으로 처리했음을 RabbitMQ 서버에 명시적으로 알려주어야 함
         return factory;
     }
     @Bean
