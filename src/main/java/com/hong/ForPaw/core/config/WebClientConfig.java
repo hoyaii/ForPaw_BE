@@ -39,7 +39,7 @@ public class WebClientConfig {
         ExchangeStrategies exchangeStrategies = exchangeStrategiesBuilder.build();
 
         Function<HttpClient, HttpClient> mapper = client -> HttpClient.create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 100000)
                 .doOnConnected(connection ->
                         connection.addHandlerLast(new ReadTimeoutHandler(60))
                                 .addHandlerLast(new WriteTimeoutHandler(60)))

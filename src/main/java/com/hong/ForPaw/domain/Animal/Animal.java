@@ -17,7 +17,7 @@ import java.time.LocalDate;
 public class Animal extends TimeStamp {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "gender_id")
+    @JoinColumn(name = "shelter_id")
     private Shelter shelter;
 
     @Id

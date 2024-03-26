@@ -75,6 +75,7 @@ public class AnimalService {
                 .flatMap(shelter -> {
                     Long careRegNo = shelter.getId();
                     URI uri = buildURI(baseUrl, serviceKey, careRegNo);
+                    final boolean[] isShelterUpdate = {false};
 
                     return webClient.get()
                             .uri(uri)
@@ -87,6 +88,10 @@ public class AnimalService {
                                                     .map(AnimalDTO.ItemsDTO::item)
                                                     .orElse(Collections.emptyList()))
                                             .map(itemDTO -> {
+                                                if (!isShelterUpdate[0]) {
+                                                    shelterRepository.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), Long.valueOf(json.response().body().totalCount()), shelter.getId());
+                                                    isShelterUpdate[0] = true;
+                                                }
                                                 Animal animal = Animal.builder()
                                                         .id(Long.valueOf(itemDTO.desertionNo()))
                                                         .name(createAnimalName())

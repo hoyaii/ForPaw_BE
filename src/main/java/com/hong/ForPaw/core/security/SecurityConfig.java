@@ -70,7 +70,7 @@ public class SecurityConfig {
 
                 // 인증 요구사항 및 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/email/**", "/api/join", "/api/login", "/api/password/**", "/api/auth/**").permitAll()
+                        .requestMatchers("/api/email/**", "/api/accounts", "/api/login", "/api/password/**", "/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/refresh").permitAll()
                         .anyRequest().authenticated()
                 )

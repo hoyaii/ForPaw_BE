@@ -152,10 +152,10 @@ public class UserService {
                 .subRegion(requestDTO.subRegion())
                 .build();
 
+        userRepository.save(user);
+
         // 알람 사용을 위한 설정
         setAlarm(user);
-
-        userRepository.save(user);
     }
 
     @Transactional
@@ -170,9 +170,9 @@ public class UserService {
                 .subRegion(requestDTO.subRegion())
                 .build();
 
-        setAlarm(user);
-
         userRepository.save(user);
+
+        setAlarm(user);
     }
 
     // 중복 여부 확인 => 만약 사용 가능한 메일이면, 코드 전송
