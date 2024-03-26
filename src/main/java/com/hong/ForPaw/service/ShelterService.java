@@ -73,28 +73,11 @@ public class ShelterService {
                             .uri(uri)
                             .retrieve()
                             .bodyToMono(String.class)
-                            .flatMapMany(response -> {
-                                try {
-                                    ShelterDTO json = mapper.readValue(response, ShelterDTO.class);
-                                    List<ShelterDTO.itemDTO> itemDTOS = Optional.ofNullable(json.response().body().items())
-                                            .map(ShelterDTO.ItemsDTO::item)
-                                            .orElse(Collections.emptyList());
-
-                                    return Flux.fromIterable(itemDTOS)
-                                            .map(itemDTO -> Shelter.builder()
-                                                    .regionCode(regionCode)
-                                                    .id(itemDTO.careRegNo())
-                                                    .name(itemDTO.careNm())
-                                                    .build());
-                                } catch (Exception e) {
-                                    return Flux.empty();
-                                }
-                            });
+                            .flatMapMany(response -> processShelterData(response, regionCode));
                 })
                 .collectList()
                 .subscribe(shelterRepository::saveAll);
     }
-
     @Transactional
     public ShelterResponse.FindShelterListDTO findShelterList(Pageable pageable){
 
@@ -153,8 +136,26 @@ public class ShelterService {
         shelterRepository.deleteZeroShelter();
     }
 
-    private Pageable createPageable(int page, int size, String sortProperty) {
-        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
+    private Flux<Shelter> processShelterData(String response, RegionCode regionCode){
+        try {
+            ShelterDTO json = mapper.readValue(response, ShelterDTO.class);
+            List<ShelterDTO.itemDTO> itemDTOS = Optional.ofNullable(json.response().body().items())
+                    .map(ShelterDTO.ItemsDTO::item)
+                    .orElse(Collections.emptyList());
+
+            return Flux.fromIterable(itemDTOS)
+                    .map(itemDTO -> createShelter(regionCode, itemDTO.careRegNo(), itemDTO.careNm()));
+        } catch (Exception e) {
+            return Flux.empty();
+        }
+    }
+
+    private Shelter createShelter(RegionCode regionCode, Long careRegNo, String careNm){
+        return Shelter.builder()
+                .regionCode(regionCode)
+                .id(careRegNo)
+                .name(careNm)
+                .build();
     }
 
     private URI buildURI(String baseUrl, String serviceKey, Integer uprCd, Integer orgCd) {
@@ -164,5 +165,9 @@ public class ShelterService {
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Pageable createPageable(int page, int size, String sortProperty) {
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 }
