@@ -68,55 +68,18 @@ public class AnimalService {
     @Scheduled(cron = "0 0 0,12 * * *") // 매일 자정과 정오에 실행
     public void loadAnimalData() {
         List<Shelter> shelters = shelterRepository.findAllWithRegionCode();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
 
         Flux.fromIterable(shelters)
                 .delayElements(Duration.ofMillis(50)) // 각 요청 사이에 0.05초 지연
                 .flatMap(shelter -> {
                     Long careRegNo = shelter.getId();
                     URI uri = buildURI(baseUrl, serviceKey, careRegNo);
-                    final boolean[] isShelterUpdate = {false};
 
                     return webClient.get()
                             .uri(uri)
                             .retrieve()
                             .bodyToMono(String.class)
-                            .flatMapMany(response -> {
-                                try {
-                                    AnimalDTO json = mapper.readValue(response, AnimalDTO.class);
-                                    return Flux.fromIterable(Optional.ofNullable(json.response().body().items())
-                                                    .map(AnimalDTO.ItemsDTO::item)
-                                                    .orElse(Collections.emptyList()))
-                                            .map(itemDTO -> {
-                                                if (!isShelterUpdate[0]) {
-                                                    shelterRepository.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), Long.valueOf(json.response().body().totalCount()), shelter.getId());
-                                                    isShelterUpdate[0] = true;
-                                                }
-                                                Animal animal = Animal.builder()
-                                                        .id(Long.valueOf(itemDTO.desertionNo()))
-                                                        .name(createAnimalName())
-                                                        .shelter(shelter)
-                                                        .happenDt(LocalDate.parse(itemDTO.happenDt(), formatter))
-                                                        .happenPlace(itemDTO.happenPlace())
-                                                        .kind(itemDTO.kindCd())
-                                                        .color(itemDTO.colorCd())
-                                                        .age(itemDTO.age())
-                                                        .weight(itemDTO.weight())
-                                                        .noticeSdt(LocalDate.parse(itemDTO.noticeSdt(), formatter))
-                                                        .noticeEdt(LocalDate.parse(itemDTO.noticeEdt(), formatter))
-                                                        .profileURL(itemDTO.popfile())
-                                                        .processState(itemDTO.processState())
-                                                        .gender(itemDTO.sexCd())
-                                                        .neuter(itemDTO.neuterYn())
-                                                        .specialMark(itemDTO.specialMark())
-                                                        .region(shelter.getRegionCode().getUprName() + " " + shelter.getRegionCode().getOrgName())
-                                                        .build();
-                                                return animal;
-                                            });
-                                } catch (Exception e) {
-                                    return Flux.empty();
-                                }
-                            })
+                            .flatMapMany(response -> processAnimalData(response, shelter))
                             .collectList()
                             .doOnNext(animalRepository::saveAll);
                 })
@@ -329,8 +292,47 @@ public class AnimalService {
         applyRepository.deleteById(applyId);
     }
 
-    private Pageable createPageable(int page, int size, String sortProperty) {
-        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
+    private Flux<Animal> processAnimalData(String response, Shelter shelter) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        final boolean[] isShelterUpdate = {false};
+
+        try {
+            AnimalDTO json = mapper.readValue(response, AnimalDTO.class);
+            return Flux.fromIterable(Optional.ofNullable(json.response().body().items())
+                            .map(AnimalDTO.ItemsDTO::item)
+                            .orElse(Collections.emptyList()))
+                    .map(itemDTO -> {
+                        if (!isShelterUpdate[0]) {
+                            shelterRepository.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), Long.valueOf(json.response().body().totalCount()), shelter.getId());
+                            isShelterUpdate[0] = true;
+                        }
+                        return createAnimal(itemDTO, shelter, formatter);
+                    });
+        } catch (Exception e) {
+            return Flux.empty();
+        }
+    }
+
+    private Animal createAnimal(AnimalDTO.ItemDTO itemDTO, Shelter shelter, DateTimeFormatter formatter) {
+        return Animal.builder()
+                .id(Long.valueOf(itemDTO.desertionNo()))
+                .name(createAnimalName())
+                .shelter(shelter)
+                .happenDt(LocalDate.parse(itemDTO.happenDt(), formatter))
+                .happenPlace(itemDTO.happenPlace())
+                .kind(itemDTO.kindCd())
+                .color(itemDTO.colorCd())
+                .age(itemDTO.age())
+                .weight(itemDTO.weight())
+                .noticeSdt(LocalDate.parse(itemDTO.noticeSdt(), formatter))
+                .noticeEdt(LocalDate.parse(itemDTO.noticeEdt(), formatter))
+                .profileURL(itemDTO.popfile())
+                .processState(itemDTO.processState())
+                .gender(itemDTO.sexCd())
+                .neuter(itemDTO.neuterYn())
+                .specialMark(itemDTO.specialMark())
+                .region(shelter.getRegionCode().getUprName() + " " + shelter.getRegionCode().getOrgName())
+                .build();
     }
 
     // 동물 이름 지어주는 메서드
@@ -347,5 +349,9 @@ public class AnimalService {
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Pageable createPageable(int page, int size, String sortProperty) {
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 }
