@@ -312,10 +312,9 @@ public class GroupService {
         redisService.decrementCnt("groupParticipantNum", groupId.toString(), 1L);
 
         // 그룹 채팅방에서 탈퇴
-        User userRef = entityManager.getReference(User.class, userId);
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
 
-        ChatUser chatUser = chatUserRepository.findByUserAndChatRoom(userRef, chatRoom).get();
+        ChatUser chatUser = chatUserRepository.findByUserIdAndChatRoom(userId, chatRoom).get();
         chatUserRepository.delete(chatUser);
     }
 
@@ -510,9 +509,12 @@ public class GroupService {
         groupRepository.deleteById(groupId);
 
         // 그룹 채팅방 삭제
-        User userRef = entityManager.getReference(User.class, userId);
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
-        ChatUser chatUser = chatUserRepository.findByUserAndChatRoom(userRef, chatRoom).get();
+        ChatUser chatUser = chatUserRepository.findByUserIdAndChatRoom(userId, chatRoom).get();
+
+        // 채팅방 큐 삭제
+        String queueName = "room." + chatRoom.getId();
+        brokerService.deleteQueue(queueName);
 
         chatUserRepository.delete(chatUser);
         chatRoomRepository.delete(chatRoom);

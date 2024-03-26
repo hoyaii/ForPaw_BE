@@ -71,6 +71,10 @@ public class BrokerService {
         amqpAdmin.declareBinding(binding);
     }
 
+    public void deleteQueue(String queueName){
+        amqpAdmin.deleteQueue(queueName);
+    }
+
     public void registerChatListener(String listenerId, String queueName) {
         SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
         endpoint.setId(listenerId);

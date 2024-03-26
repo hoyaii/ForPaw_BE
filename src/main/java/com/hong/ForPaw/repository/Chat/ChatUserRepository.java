@@ -2,7 +2,6 @@ package com.hong.ForPaw.repository.Chat;
 
 import com.hong.ForPaw.domain.Chat.ChatRoom;
 import com.hong.ForPaw.domain.Chat.ChatUser;
-import com.hong.ForPaw.domain.User.User;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,7 +14,7 @@ import java.util.Optional;
 @Repository
 public interface ChatUserRepository extends JpaRepository<ChatUser, Long> {
 
-    Optional<ChatUser> findByUserAndChatRoom(User user, ChatRoom chatRoom);
+    Optional<ChatUser> findByUserIdAndChatRoom(Long userId, ChatRoom chatRoom);
 
     Optional<ChatUser> findByUserIdAndChatRoomId(Long userId, Long chatRoomId);
 
