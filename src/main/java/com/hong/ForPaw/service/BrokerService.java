@@ -8,6 +8,7 @@ import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.MessageRepository;
+import com.hong.ForPaw.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.core.*;
@@ -26,6 +27,7 @@ public class BrokerService {
     private final MessageRepository messageRepository;
     private final AlarmRepository alarmRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final UserRepository userRepository;
     private final RabbitListenerEndpointRegistry rabbitListenerEndpointRegistry;
     private final SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory;
     private final RabbitTemplate rabbitTemplate;
@@ -35,13 +37,25 @@ public class BrokerService {
     private final EntityManager entityManager;
 
     @Transactional
-    public void initChatLister(){
+    public void initChatListener(){
         chatRoomRepository.findAll().stream()
                 .map(chatRoom -> {
                     String queueName = "room." + chatRoom.getId();
                     String listenerId = "room." + chatRoom.getId();
 
                     registerChatListener(listenerId, queueName);
+                    return null;
+                });
+    }
+
+    @Transactional
+    public void initAlarmListener(){
+        userRepository.findAll().stream()
+                .map(user -> {
+                    String queueName = "user." + user.getId();
+                    String listenerId = "user." + user.getId();
+
+                    registerAlarmListener(listenerId, queueName);
                     return null;
                 });
     }
