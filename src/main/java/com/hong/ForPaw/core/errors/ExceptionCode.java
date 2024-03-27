@@ -18,6 +18,7 @@ public enum ExceptionCode {
     USER_UPDATE_FORBIDDEN(HttpStatus.FORBIDDEN, "사용자 정보를 수정할 권한이 없습니다."),
     USER_FORBIDDEN(HttpStatus.FORBIDDEN, "권한이 없습니다."),
     USER_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 되지 않았습니다."),
+    USER_ALREADY_EXIT(HttpStatus.NOT_FOUND, "이미 탈퇴한 회원입니다."),
 
     // 이메일 코드 관련 에러
     CODE_EXPIRED(HttpStatus.BAD_REQUEST, "유효기간이 만료되었습니다."),

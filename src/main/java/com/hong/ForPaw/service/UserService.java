@@ -153,6 +153,13 @@ public class UserService {
         if (!requestDTO.password().equals(requestDTO.passwordConfirm()))
             throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
 
+        // 비정상 경로를 통한 요청을 대비해, 이메일/닉네임 다시 체크
+        if(userRepository.findByEmail(requestDTO.email()).isPresent())
+            throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
+
+        if(userRepository.findByNickName(requestDTO.nickName()).isPresent())
+            throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
+
         User user = User.builder()
                 .name(requestDTO.name())
                 .nickName(requestDTO.nickName())
@@ -321,6 +328,15 @@ public class UserService {
     // 게시글, 댓글, 좋아요은 남겨둔다. (정책에 따라 변경 가능)
     @Transactional
     public void withdrawMember(Long userId){
+        // 이미 탈퇴한 회원이면 예외
+        userRepository.findById(userId)
+                .map(user -> {
+                    if(user.getRemovedAt() != null){
+                        throw new CustomException(ExceptionCode.USER_ALREADY_EXIT);
+                    }
+                    return null;
+                });
+
         // 알람 삭제
         alarmRepository.deleteAllByUserId(userId);
 
