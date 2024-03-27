@@ -15,7 +15,7 @@ import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Group.*;
-import com.hong.ForPaw.repository.Post.PostRepository;
+import com.hong.ForPaw.repository.Post.*;
 import com.hong.ForPaw.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +42,10 @@ public class GroupService {
     private final MeetingRepository meetingRepository;
     private final MeetingUserRepository meetingUserRepository;
     private final PostRepository postRepository;
+    private final PostLikeRepository postLikeRepository;
+    private final PostReadStatusRepository postReadStatusRepository;
+    private final CommentRepository commentRepository;
+    private final CommentLikeRepository commentLikeRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatUserRepository chatUserRepository;
     private final UserRepository userRepository;
@@ -501,23 +505,27 @@ public class GroupService {
 
         redisService.removeData("groupParticipantNum", groupId.toString());
 
-        // 관련 데이터 삭제
+        // 그룹, 미팅 연관 데이터 삭제
+        meetingUserRepository.deleteAllByGroupId(groupId);
+        meetingRepository.deleteAllByGroupId(groupId);
         favoriteGroupRepository.deleteAllByGroupId(groupId);
         groupUserRepository.deleteAllByGroupId(groupId);
+
+        // 그룹과 관련된 게시글, 댓글 관련 데이터 삭제
+        postLikeRepository.deleteAllByGroupId(groupId);
+        postReadStatusRepository.deleteAllByGroupId(groupId);
+        commentLikeRepository.deleteAllByGroupId(groupId);
+        commentRepository.deleteAllByGroupId(groupId);
         postRepository.deleteAllByGroupId(groupId);
-        meetingRepository.deleteAllByGroupId(groupId);
-        groupRepository.deleteById(groupId);
 
         // 그룹 채팅방 삭제
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
-        ChatUser chatUser = chatUserRepository.findByUserIdAndChatRoom(userId, chatRoom).get();
-
-        // 채팅방 큐 삭제
         String queueName = "room." + chatRoom.getId();
-        brokerService.deleteQueue(queueName);
-
-        chatUserRepository.delete(chatUser);
         chatRoomRepository.delete(chatRoom);
+        brokerService.deleteQueue(queueName); // 채팅방 큐 삭제
+        chatUserRepository.deleteAllByGroupId(groupId);
+
+        groupRepository.deleteById(groupId);
     }
 
     @Transactional

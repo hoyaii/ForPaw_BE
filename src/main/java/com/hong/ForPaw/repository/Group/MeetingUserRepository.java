@@ -13,6 +13,9 @@ import java.util.List;
 @Repository
 public interface MeetingUserRepository extends JpaRepository<MeetingUser, Long> {
 
+    @Query("SELECT mu.user FROM MeetingUser mu WHERE mu.meeting.id = :meetingId")
+    List<User> findUsersByMeetingId(@Param("meetingId") Long meetingId);
+
     @Query("SELECT COUNT(m) > 0 FROM MeetingUser m WHERE m.meeting.id = :meetingId AND m.user.id = :userId")
     boolean existsByMeetingIdAndUserId(@Param("meetingId") Long meetingId, @Param("userId") Long userId);
 
@@ -20,6 +23,7 @@ public interface MeetingUserRepository extends JpaRepository<MeetingUser, Long> 
 
     void deleteAllByMeetingId(Long meetingId);
 
-    @Query("SELECT mu.user FROM MeetingUser mu WHERE mu.meeting.id = :meetingId")
-    List<User> findUsersByMeetingId(@Param("meetingId") Long meetingId);
+    @Modifying
+    @Query("DELETE FROM MeetingUser mu WHERE mu.meeting.id IN (SELECT m.id FROM Meeting m WHERE m.group.id = :groupId)")
+    void deleteAllByGroupId(@Param("groupId") Long groupId);
 }

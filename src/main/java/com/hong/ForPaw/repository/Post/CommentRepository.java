@@ -3,6 +3,7 @@ package com.hong.ForPaw.repository.Post;
 import com.hong.ForPaw.domain.Post.Comment;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -28,4 +29,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     boolean existsById(Long id);
 
     void deleteAllByPostId(Long postId);
+
+    @Modifying
+    @Query("DELETE FROM Comment c WHERE c.post.id IN (SELECT p.id FROM Post p WHERE p.group.id = :groupId)")
+    void deleteAllByGroupId(@Param("groupId") Long groupId);
 }

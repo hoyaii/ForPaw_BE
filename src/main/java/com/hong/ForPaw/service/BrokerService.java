@@ -93,7 +93,7 @@ public class BrokerService {
             messageRepository.save(message);
 
             // 알람 전송
-            chatRoomRepository.findUsersByChatRoomId(messageDTO.chatRoomId()).stream()
+            chatRoomRepository.findAllUserByChatRoomId(messageDTO.chatRoomId()).stream()
                     .map(user -> {
                         User receiver = entityManager.getReference(User.class, user.getId());
                         String content = "새로문 메시지: " + messageDTO.content();
