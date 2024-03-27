@@ -96,6 +96,12 @@ public class UserController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
+    @PostMapping("/accounts/check/nick")
+    public ResponseEntity<?> checkNick(@RequestBody UserRequest.CheckNickDTO requestDTO, Errors errors){
+        userService.checkNick(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
     @PostMapping("/accounts/check/email/verify")
     public ResponseEntity<?> verifyRegisterCode(@RequestBody UserRequest.VerifyCodeDTO requestDTO, Errors errors){
         userService.verifyCode(requestDTO);
