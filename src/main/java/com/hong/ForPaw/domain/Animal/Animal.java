@@ -7,11 +7,15 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
 
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "animal_tb")
+@SQLDelete(sql = "UPDATE animal_tb SET removed_at = NOW() WHERE id=?")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Animal extends TimeStamp {
@@ -70,6 +74,9 @@ public class Animal extends TimeStamp {
 
     @Column
     private String name;
+
+    @Column(name = "removed_at")
+    private LocalDateTime removedAt;
 
     @Builder
     public Animal(Long id, Shelter shelter, LocalDate happenDt, String happenPlace, String kind, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark, String name, String region) {
