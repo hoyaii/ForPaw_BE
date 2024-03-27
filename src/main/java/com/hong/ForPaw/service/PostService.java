@@ -307,9 +307,9 @@ public class PostService {
 
         postLikeRepository.deleteAllByPostId(postId);
         postReadStatusRepository.deleteAllByPostId(postId);
-        commentRepository.deleteAllByPostId(postId);
         commentLikeRepository.deleteAllByPostId(postId);
-        postRepository.deleteById(postId);
+        commentRepository.deleteAllByPostId(postId); // soft-delete
+        postRepository.deleteById(postId); // soft-delete
 
         // 레디스에 저장된 댓글 수, 답변 수 삭제
         redisService.removeData("answerNum", postId.toString());
@@ -363,7 +363,7 @@ public class PostService {
 
     @Transactional
     public Page<Long> processLikesBatch(Pageable pageable) {
-        Page<Long> postIdsPage = postRepository.findPostIds(pageable);
+        Page<Long> postIdsPage = postRepository.findAllPostId(pageable);
         List<Long> postIds = postIdsPage.getContent();
 
         for (Long postId : postIds) {

@@ -17,37 +17,39 @@ import java.util.Optional;
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-    boolean existsById(Long id);
-
-    @Query("SELECT p.user.id FROM Post p WHERE p.id = :postId")
+    @Query("SELECT p.user.id FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
     Optional<Long> findUserIdByPostId(@Param("postId") Long postId);
 
-    void deleteAllByGroupId(Long groupId);
-
     @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT p FROM Post p WHERE p.group.id = :groupId AND p.removedAt IS NULL")
     Page<Post> findByGroupId(Long groupId, Pageable pageable);
 
+    @Query("SELECT p FROM Post p WHERE p.title LIKE %:title% AND p.removedAt IS NULL")
     Page<Post> findByTitleContaining(@Param("title") String title, Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT p FROM Post p WHERE p.postType = :postType")
+    @Query("SELECT p FROM Post p WHERE p.postType = :postType AND p.removedAt IS NULL")
     Page<Post> findByPostTypeWithUser(@Param("postType") PostType postType, Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT p FROM Post p WHERE p.parent.id = :parentId")
+    @Query("SELECT p FROM Post p WHERE p.parent.id = :parentId AND p.removedAt IS NULL")
     List<Post> findByParentIdWithUser(@Param("parentId") Long parentId);
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT p FROM Post p WHERE p.id = :postId")
+    @Query("SELECT p FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
     Optional<Post> findByIdWithUser(@Param("postId") Long postId);
 
     @Query("SELECT prs.post.id FROM PostReadStatus prs WHERE prs.user.id = :userId")
-    List<Long> findPostIdsByUserId(@Param("userId") Long userId);
+    List<Long> findAllPostIdByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT p.id FROM Post p WHERE p.removedAt IS NULL")
+    Page<Long> findAllPostId(Pageable pageable);
+
+    boolean existsById(Long id);
 
     @Modifying
-    @Query("UPDATE Post p SET p.likeNum = :likeNum WHERE p.id = :postId")
+    @Query("UPDATE Post p SET p.likeNum = :likeNum WHERE p.id = :postId AND p.removedAt IS NULL")
     void updateLikeNum(@Param("likeNum") Long likeNum, @Param("postId") Long postId);
 
-    @Query("SELECT p.id FROM Post p")
-    Page<Long> findPostIds(Pageable pageable);
+    void deleteAllByGroupId(Long groupId);
 }

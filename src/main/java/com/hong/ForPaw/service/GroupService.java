@@ -857,7 +857,7 @@ public class GroupService {
         // user를 패치조인 해서 조회
         Page<Post> notices = postRepository.findByGroupId(groupId, pageable);
         // 해당 유저가 읽은 post의 id 목록
-        List<Long> postIds = postRepository.findPostIdsByUserId(userId);
+        List<Long> postIds = postRepository.findAllPostIdByUserId(userId);
 
         List<GroupResponse.NoticeDTO> noticeDTOS = notices.getContent().stream()
                 .map(notice -> new GroupResponse.NoticeDTO(
