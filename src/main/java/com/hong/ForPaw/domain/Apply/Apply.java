@@ -8,8 +8,13 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
+
+import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "apply_tb")
+@SQLDelete(sql = "UPDATE apply_tb SET removed_at = NOW() WHERE id=?")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Apply extends TimeStamp {
@@ -38,6 +43,9 @@ public class Apply extends TimeStamp {
 
     @Column
     private String residence;
+
+    @Column(name = "removed_at")
+    private LocalDateTime removedAt;
 
     @Builder
     public Apply(User user, Animal animal, Status status, String name, String tel, String residence) {
