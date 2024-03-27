@@ -150,4 +150,10 @@ public class UserController {
         userService.updateRole(requestDTO, userDetails.getUser().getId(), userDetails.getUser().getRole());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
+
+    @DeleteMapping("/accounts")
+    public ResponseEntity<?> withdrawMember(@AuthenticationPrincipal CustomUserDetails userDetails){
+        userService.withdrawMember(userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
 }
