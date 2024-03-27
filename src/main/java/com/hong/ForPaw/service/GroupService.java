@@ -775,7 +775,7 @@ public class GroupService {
     }
 
     private List<GroupResponse.MyGroupDTO> getMyGroupDTOS(Long userId, Pageable pageable){
-        List<Group> joinedGroups = groupUserRepository.findGroupsByUserId(userId, pageable).getContent();
+        List<Group> joinedGroups = groupUserRepository.findAllGroupByUserId(userId, pageable).getContent();
 
         List<GroupResponse.MyGroupDTO> myGroupDTOS = joinedGroups.stream()
                 .map(group -> {
@@ -799,7 +799,7 @@ public class GroupService {
     }
 
     private Set<Long> getGroupIds(Long userId){
-        List<Group> groups = groupUserRepository.findGroupsByUserId(userId);
+        List<Group> groups = groupUserRepository.findAllGroupByUserId(userId);
 
         Set<Long> groupIds = groups.stream()
                 .map(Group::getId)

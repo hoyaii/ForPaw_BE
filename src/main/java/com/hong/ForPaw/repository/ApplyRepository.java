@@ -21,4 +21,6 @@ public interface ApplyRepository extends JpaRepository<Apply, Long> {
 
     @Query("SELECT a.animal.id FROM Apply a WHERE a.id = :applyId")
     Long findAnimalIdById(@Param("applyId") Long applyId);
+
+    void deleteAllByUserId(Long userId);
 }

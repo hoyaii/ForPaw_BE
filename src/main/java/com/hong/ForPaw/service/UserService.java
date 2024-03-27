@@ -9,6 +9,11 @@ import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.User.Role;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
+import com.hong.ForPaw.repository.ApplyRepository;
+import com.hong.ForPaw.repository.Chat.ChatUserRepository;
+import com.hong.ForPaw.repository.Group.GroupUserRepository;
+import com.hong.ForPaw.repository.Group.MeetingUserRepository;
+import com.hong.ForPaw.repository.Post.PostReadStatusRepository;
 import com.hong.ForPaw.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,6 +50,11 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final AlarmRepository alarmRepository;
+    private final ApplyRepository applyRepository;
+    private final GroupUserRepository groupUserRepository;
+    private final MeetingUserRepository meetingUserRepository;
+    private final PostReadStatusRepository postReadStatusRepository;
+    private final ChatUserRepository chatUserRepository;
     private final RedisService redisService;
     private final JavaMailSender mailSender;
     private final WebClient webClient;
@@ -300,6 +310,37 @@ public class UserService {
 
         User user = userRepository.findById(userId).get();
         user.updateRole(requestDTO.role());
+    }
+
+    // 게시글, 댓글, 좋아요은 남겨둔다. (정책에 따라 변경 가능)
+    @Transactional
+    public void withdrawMember(Long userId){
+        // 알람 삭제
+        alarmRepository.deleteAllByUserId(userId);
+
+        // 지원서 삭제
+        applyRepository.deleteAllByUserId(userId);
+
+        // 유저와 연관 데이터 삭제
+        postReadStatusRepository.deleteAllByUserId(userId);
+        chatUserRepository.deleteAllByUserId(userId);
+
+        groupUserRepository.findAllByUserIdWithGroup(userId).forEach(
+                groupUser -> {
+                    redisService.decrementCnt("groupParticipantNum", groupUser.getGroup().getId().toString(), 1L);
+                    groupUserRepository.delete(groupUser);
+                }
+        );
+
+        meetingUserRepository.findAllByUserIdWithMeeting(userId).forEach(
+                meetingUser -> {
+                    redisService.decrementCnt("meetingParticipantNum", meetingUser.getMeeting().getId().toString(), 1L);
+                    meetingUserRepository.delete(meetingUser);
+                }
+        );
+
+        // 유저 삭제 (soft delete 처리)
+        userRepository.deleteById(userId);
     }
 
     private String sendCodeByMail(String toEmail){
