@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import static jakarta.persistence.FetchType.LAZY;
 
 @Entity
+@Table(name = "chatRoom_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class ChatRoom extends TimeStamp {

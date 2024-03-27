@@ -10,9 +10,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-
-
 @Entity
+@Table(name = "alarm_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Alarm extends TimeStamp {

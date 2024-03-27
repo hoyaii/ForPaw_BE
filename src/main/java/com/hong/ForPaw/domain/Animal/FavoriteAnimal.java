@@ -9,10 +9,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-
-
 @Entity
-@Table(name = "favorite_animal", uniqueConstraints = {
+@Table(name = "favoriteAnimal_tb", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"user_id", "animal_id"})
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

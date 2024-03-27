@@ -7,6 +7,7 @@ import lombok.*;
 
 
 @Entity
+@Table(name = "regionCode_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class RegionCode {

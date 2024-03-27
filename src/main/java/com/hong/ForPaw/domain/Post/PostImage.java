@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 
 @Entity
+@Table(name = "postImage_tb")
 @NoArgsConstructor(access =  AccessLevel.PROTECTED)
 @Getter
 public class PostImage extends TimeStamp {

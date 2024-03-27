@@ -11,6 +11,7 @@ import org.hibernate.annotations.BatchSize;
 
 
 @Entity
+@Table(name = "meetingUser_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class MeetingUser extends TimeStamp {

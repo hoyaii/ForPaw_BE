@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name = "meeting_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Meeting extends TimeStamp {

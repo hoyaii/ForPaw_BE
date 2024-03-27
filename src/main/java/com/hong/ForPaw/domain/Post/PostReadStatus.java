@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 
 @Entity
+@Table(name = "postReadStatus_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class PostReadStatus extends TimeStamp {

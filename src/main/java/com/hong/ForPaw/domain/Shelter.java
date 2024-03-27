@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 
 @Entity
+@Table(name = "shelter_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Shelter {

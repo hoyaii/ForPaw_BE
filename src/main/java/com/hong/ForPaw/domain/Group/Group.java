@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "groups_table")
+@Table(name = "groups_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Group extends TimeStamp {

@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 
 
 @Entity
+@Table(name = "groupUser_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class GroupUser extends TimeStamp {

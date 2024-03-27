@@ -90,13 +90,13 @@ public class UserController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, null));
     }
 
-    @PostMapping("/accounts/check")
-    public ResponseEntity<?> checkAndSendCode(@RequestBody UserRequest.EmailDTO requestDTO, Errors errors){
-        userService.checkAndSendCode(requestDTO);
+    @PostMapping("/accounts/check/email")
+    public ResponseEntity<?> checkEmailAndSendCode(@RequestBody UserRequest.EmailDTO requestDTO, Errors errors){
+        userService.checkEmailAndSendCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
-    @PostMapping("/accounts/check/verify")
+    @PostMapping("/accounts/check/email/verify")
     public ResponseEntity<?> verifyRegisterCode(@RequestBody UserRequest.VerifyCodeDTO requestDTO, Errors errors){
         userService.verifyCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));

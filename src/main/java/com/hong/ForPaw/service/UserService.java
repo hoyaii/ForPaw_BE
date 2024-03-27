@@ -189,7 +189,7 @@ public class UserService {
 
     // 중복 여부 확인 => 만약 사용 가능한 메일이면, 코드 전송
     @Transactional
-    public void checkAndSendCode(UserRequest.EmailDTO requestDTO){
+    public void checkEmailAndSendCode(UserRequest.EmailDTO requestDTO){
         // 가입한 이메일이 존재 한다면
         if(userRepository.findByEmail(requestDTO.email()).isPresent())
             throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
@@ -205,6 +205,12 @@ public class UserService {
         if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
             throw new CustomException(ExceptionCode.CODE_WRONG);
         redisService.removeData("emailCode", requestDTO.email()); // 검증 후 토큰 삭제
+    }
+
+    @Transactional
+    public void checkNick(UserRequest.CheckNickDTO requestDTO){
+        if(userRepository.findByNickName(requestDTO.nickName()).isPresent())
+            throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
     }
 
     @Transactional

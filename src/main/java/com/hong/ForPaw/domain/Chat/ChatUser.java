@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "chatUser_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class ChatUser extends TimeStamp {

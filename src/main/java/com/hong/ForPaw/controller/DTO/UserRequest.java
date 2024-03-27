@@ -22,6 +22,10 @@ public class UserRequest {
             @Pattern(regexp = "^[\\w._%+-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$", message = "올바른 이메일 형식을 입력해주세요.")
             String email){}
 
+    public record CheckNickDTO(
+            @NotBlank(message = "닉네임을 입력해주세요.")
+            String nickName){}
+
     public record VerifyCodeDTO(
             @NotBlank
             String email,
