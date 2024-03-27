@@ -8,11 +8,15 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.SQLDelete;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name = "comment_tb")
+@SQLDelete(sql = "UPDATE comment_tb SET removed_at = NOW() WHERE id=?")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Comment extends TimeStamp {
@@ -39,6 +43,9 @@ public class Comment extends TimeStamp {
 
     @Column
     private String content;
+
+    @Column(name = "removed_at")
+    private LocalDateTime removedAt;
 
     // 연관 관계 메서드
     public void addChildComment(Comment child) {
