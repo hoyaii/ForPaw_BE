@@ -9,11 +9,15 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.SQLDelete;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name = "post_tb")
+@SQLDelete(sql = "UPDATE post_tb SET removed_at = NOW() WHERE id=?")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Post extends TimeStamp {
@@ -54,6 +58,9 @@ public class Post extends TimeStamp {
 
     @Column
     private Long likeNum = 0L;
+
+    @Column(name = "removed_at")
+    private LocalDateTime removedAt;
 
     @Builder
     public Post(User user, Group group, PostType postType, String title, String content) {
