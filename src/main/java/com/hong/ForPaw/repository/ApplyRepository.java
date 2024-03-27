@@ -11,15 +11,16 @@ import java.util.List;
 @Repository
 public interface ApplyRepository extends JpaRepository<Apply, Long> {
 
-    List<Apply> findByUserId(Long userId);
+    @Query("SELECT a FROM Apply a WHERE a.user.id = :userId AND a.removedAt IS NULL")
+    List<Apply> findAllByUserId(Long userId);
 
-    @Query("SELECT COUNT(a) > 0 FROM Apply a WHERE a.id = :applyId AND a.user.id = :userId")
+    @Query("SELECT COUNT(a) > 0 FROM Apply a WHERE a.id = :applyId AND a.user.id = :userId AND a.removedAt IS NULL")
     boolean existsByApplyIdAndUserId(@Param("applyId") Long applyId, @Param("userId") Long userId);
 
-    @Query("SELECT COUNT(a) > 0 FROM Apply a WHERE a.user.id = :userId AND a.animal.id = :animalId")
+    @Query("SELECT COUNT(a) > 0 FROM Apply a WHERE a.user.id = :userId AND a.animal.id = :animalId AND a.removedAt IS NULL")
     boolean existsByUserIdAndAnimalId(@Param("userId") Long userId, @Param("animalId") Long animalId);
 
-    @Query("SELECT a.animal.id FROM Apply a WHERE a.id = :applyId")
+    @Query("SELECT a.animal.id FROM Apply a WHERE a.id = :applyId AND a.removedAt IS NULL")
     Long findAnimalIdById(@Param("applyId") Long applyId);
 
     void deleteAllByUserId(Long userId);

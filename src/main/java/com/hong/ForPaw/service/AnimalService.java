@@ -240,7 +240,7 @@ public class AnimalService {
 
     @Transactional
     public AnimalResponse.FindApplyListDTO findApplyList(Long userId){
-        List<Apply> applies = applyRepository.findByUserId(userId);
+        List<Apply> applies = applyRepository.findAllByUserId(userId);
 
         // 지원서가 존재하지 않음
         if(applies.isEmpty()){

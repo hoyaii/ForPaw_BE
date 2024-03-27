@@ -17,6 +17,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.nickName = :nickName AND u.removedAt IS NULL")
     Optional<User> findByNickName(String nickName);
 
-    @Query("SELECT u.profileURL FROM User u WHERE u.id = :userId")
+    @Query("SELECT u.profileURL FROM User u WHERE u.id = :userId AND u.removedAt IS NULL")
     Optional<String> findProfileById(@Param("userId") Long userId);
 }
