@@ -6,9 +6,15 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
+
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 
 @Entity
+@Table(name = "user_tb")
+@SQLDelete(sql = "UPDATE user_tb SET removed_at = NOW() WHERE id=?")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class User extends TimeStamp {
@@ -43,6 +49,9 @@ public class User extends TimeStamp {
     // 활동 지역 - 군/구
     @Column
     private String subRegion;
+
+    @Column(name = "removed_at")
+    private LocalDateTime removedAt;
 
     @Builder
     public User(Long id, String name, String nickName, String email, String password, Role role, String profileURL, String region, String subRegion) {

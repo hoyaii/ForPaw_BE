@@ -8,6 +8,7 @@ import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.User.Role;
 import com.hong.ForPaw.domain.User.User;
+import com.hong.ForPaw.repository.Alarm.AlarmRepository;
 import com.hong.ForPaw.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +44,7 @@ public class UserService {
 
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
+    private final AlarmRepository alarmRepository;
     private final RedisService redisService;
     private final JavaMailSender mailSender;
     private final WebClient webClient;

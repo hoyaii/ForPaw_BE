@@ -84,5 +84,5 @@ public class UserRequest {
 
     public record UpdateAccessTokenDTO(String refreshToken) {}
 
-    public record UpdateRoleDTO(@NotBlank  Role role) {}
+    public record UpdateRoleDTO(@NotBlank Role role) {}
 }

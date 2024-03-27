@@ -23,7 +23,7 @@ public class Alarm extends TimeStamp {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
-    @OnDelete(action = OnDeleteAction.CASCADE)
+    //@OnDelete(action = OnDeleteAction.CASCADE)
     private User receiver;
 
     @Column
