@@ -17,12 +17,18 @@ import java.util.Optional;
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
 
+    @Query("SELECT p FROM Post p WHERE p.removedAt IS NULL")
+    List<Post> findAll();
+
+    @Query("SELECT p FROM Post p WHERE p.id = :id AND p.removedAt IS NULL")
+    Optional<Post> findById(@Param("id") Long id);
+
     @Query("SELECT p.user.id FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
     Optional<Long> findUserIdByPostId(@Param("postId") Long postId);
 
     @EntityGraph(attributePaths = {"user"})
     @Query("SELECT p FROM Post p WHERE p.group.id = :groupId AND p.removedAt IS NULL")
-    Page<Post> findByGroupId(Long groupId, Pageable pageable);
+    Page<Post> findByGroupId(@Param("groupId") Long groupId, Pageable pageable);
 
     @Query("SELECT p FROM Post p WHERE p.title LIKE %:title% AND p.removedAt IS NULL")
     Page<Post> findByTitleContaining(@Param("title") String title, Pageable pageable);

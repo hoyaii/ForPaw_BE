@@ -18,6 +18,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +36,7 @@ public class BrokerService {
     private final MessageConverter converter;
     private final EntityManager entityManager;
 
+    @Transactional
     public void initChatListener(){
         chatRoomRepository.findAll()
                 .forEach(chatRoom -> {
@@ -45,6 +47,7 @@ public class BrokerService {
                 });
     }
 
+    @Transactional
     public void initAlarmListener(){
         userRepository.findAll()
                 .forEach(user -> {

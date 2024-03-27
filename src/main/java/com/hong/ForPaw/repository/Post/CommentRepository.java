@@ -14,6 +14,12 @@ import java.util.Optional;
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long> {
 
+    @Query("SELECT c FROM Comment c WHERE c.removedAt IS NULL")
+    List<Comment> findAll();
+
+    @Query("SELECT c FROM Comment c WHERE c.id = :id AND c.removedAt IS NULL")
+    Optional<Comment> findById(@Param("id") Long id);
+
     @Query("SELECT c FROM Comment c WHERE c.id = :commentId AND c.removedAt IS NULL")
     @EntityGraph(attributePaths = {"user"})
     Optional<Comment> findByIdWithUser(@Param("commentId") Long commentId);

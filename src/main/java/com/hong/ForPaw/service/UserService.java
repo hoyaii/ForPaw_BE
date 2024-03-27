@@ -93,7 +93,7 @@ public class UserService {
 
     @Transactional
     public Map<String, String> login(UserRequest.LoginDTO requestDTO){
-        User user = userRepository.findByEmail(requestDTO.email()).orElseThrow(
+        User user = userRepository.findByEmailWithRemoved(requestDTO.email()).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
         );
 
@@ -122,7 +122,7 @@ public class UserService {
             return response;
         }
 
-        User user = userRepository.findByEmail(email).get();
+        User user = userRepository.findByEmailWithRemoved(email).get();
         checkDuplicateLogin(user);
 
         return createToken(user);
@@ -142,7 +142,7 @@ public class UserService {
             return response;
         }
 
-        User user = userRepository.findByEmail(email).get();
+        User user = userRepository.findByEmailWithRemoved(email).get();
         checkDuplicateLogin(user);
 
         return createToken(user);
@@ -154,10 +154,10 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
 
         // 비정상 경로를 통한 요청을 대비해, 이메일/닉네임 다시 체크
-        if(userRepository.findByEmail(requestDTO.email()).isPresent())
+        if(userRepository.findByEmailWithRemoved(requestDTO.email()).isPresent())
             throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
 
-        if(userRepository.findByNickName(requestDTO.nickName()).isPresent())
+        if(userRepository.findByNickNameWithRemoved(requestDTO.nickName()).isPresent())
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
 
         User user = User.builder()
@@ -198,7 +198,7 @@ public class UserService {
     @Transactional
     public void checkEmailAndSendCode(UserRequest.EmailDTO requestDTO){
         // 가입한 이메일이 존재 한다면
-        if(userRepository.findByEmail(requestDTO.email()).isPresent())
+        if(userRepository.findByEmailWithRemoved(requestDTO.email()).isPresent())
             throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
 
         // 인증 코드 전송 및 레디스에 저장
@@ -216,14 +216,14 @@ public class UserService {
 
     @Transactional
     public void checkNick(UserRequest.CheckNickDTO requestDTO){
-        if(userRepository.findByNickName(requestDTO.nickName()).isPresent())
+        if(userRepository.findByNickNameWithRemoved(requestDTO.nickName()).isPresent())
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
     }
 
     @Transactional
     public void sendRecoveryCode(UserRequest.EmailDTO requestDTO){
         // 가입된 계정이 아니라면
-        if(userRepository.findByEmail(requestDTO.email()).isEmpty())
+        if(userRepository.findByEmailWithRemoved(requestDTO.email()).isEmpty())
             throw new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND);
 
         // 요청 횟수 3회 넘아가면 10분 동안 요청 불가
@@ -249,7 +249,7 @@ public class UserService {
 
         // 임시 비밀번호 생성 후 업데이트
         String password = generatePassword();
-        User user = userRepository.findByEmail(requestDTO.email()).get(); // 이미 앞에서 계정 존재 여부를 확인 했으니 바로 가져옴
+        User user = userRepository.findByEmailWithRemoved(requestDTO.email()).get(); // 이미 앞에서 계정 존재 여부를 확인 했으니 바로 가져옴
         user.updatePassword(passwordEncoder.encode(password));
 
         sendPasswordByMail(requestDTO.email(), password);
@@ -521,7 +521,7 @@ public class UserService {
     }
 
     private boolean isNotMember(String email){
-        return userRepository.findByEmail(email).isEmpty();
+        return userRepository.findByEmailWithRemoved(email).isEmpty();
     }
 
     private void setAlarm(User user) {
