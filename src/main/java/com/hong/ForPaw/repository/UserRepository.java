@@ -11,10 +11,10 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    @Query("SELECT u FROM User u WHERE u.email = :email AND u.removedAt IS NULL")
+    @Query("SELECT u FROM User u WHERE u.email = :email")
     Optional<User> findByEmail(String email);
 
-    @Query("SELECT u FROM User u WHERE u.nickName = :nickName AND u.removedAt IS NULL")
+    @Query("SELECT u FROM User u WHERE u.nickName = :nickName")
     Optional<User> findByNickName(String nickName);
 
     @Query("SELECT u.profileURL FROM User u WHERE u.id = :userId AND u.removedAt IS NULL")
