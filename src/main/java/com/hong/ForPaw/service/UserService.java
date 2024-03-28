@@ -345,6 +345,13 @@ public class UserService {
                     return null;
                 });
 
+        // 그룹장 상태에서는 탈퇴 불가능
+        groupUserRepository.findAllByUserId(userId)
+                .forEach(groupUser -> {
+                    groupUser.getRole().equals(com.hong.ForPaw.domain.Group.Role.CREATOR);
+                    throw new CustomException(ExceptionCode.CREATOR_CANT_EXIT);
+                });
+
         // 알람 삭제
         alarmRepository.deleteAllByUserId(userId);
 
@@ -354,7 +361,6 @@ public class UserService {
         // 유저와 연관 데이터 삭제
         postReadStatusRepository.deleteAllByUserId(userId);
         chatUserRepository.deleteAllByUserId(userId);
-
         groupUserRepository.findAllByUserIdWithGroup(userId).forEach(
                 groupUser -> {
                     redisService.decrementCnt("groupParticipantNum", groupUser.getGroup().getId().toString(), 1L);

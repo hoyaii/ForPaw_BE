@@ -22,6 +22,8 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
 
     Optional<GroupUser> findByGroupIdAndUserId(Long groupId, Long userId);
 
+    List<GroupUser> findAllByUserId(Long userId);
+
     @EntityGraph(attributePaths = {"group"})
     @Query("SELECT gu FROM GroupUser gu WHERE gu.user.id = :userId")
     List<GroupUser> findAllByUserIdWithGroup(Long userId);
