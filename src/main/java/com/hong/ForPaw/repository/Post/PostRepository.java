@@ -55,6 +55,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p.id FROM Post p WHERE p.removedAt IS NULL")
     Page<Long> findAllPostId(Pageable pageable);
 
+    @Query("SELECT COUNT(p) > 0 FROM Post p WHERE p.id = :id AND p.removedAt IS NULL")
     boolean existsById(Long id);
 
     @Modifying

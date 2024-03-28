@@ -525,9 +525,9 @@ public class GroupService {
         // 그룹 채팅방 삭제
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
         String queueName = "room." + chatRoom.getId();
+        chatUserRepository.deleteAllByGroupId(groupId);
         chatRoomRepository.delete(chatRoom);
         brokerService.deleteQueue(queueName); // 채팅방 큐 삭제
-        chatUserRepository.deleteAllByGroupId(groupId);
 
         groupRepository.deleteById(groupId);
     }

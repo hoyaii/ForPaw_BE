@@ -17,18 +17,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
     Optional<User> findById(@Param("id") Long id);
 
-    @Query("SELECT u FROM User u WHERE u.email = :email")
-    Optional<User> findByEmailWithRemoved(@Param("email") String email);
+    @Query("SELECT u FROM User u WHERE u.id = :id")
+    Optional<User> findByIdWithRemoved(@Param("id") Long id);
 
-    @Query("SELECT u FROM User u WHERE u.nickName = :nickName")
-    Optional<User> findByNickNameWithRemoved(@Param("nickName") String nickName);
+    @Query("SELECT u FROM User u WHERE u.email = :email AND u.removedAt IS NULL")
+    Optional<User> findByEmail(@Param("email") String email);
 
     @Query("SELECT u.profileURL FROM User u WHERE u.id = :userId AND u.removedAt IS NULL")
     Optional<String> findProfileById(@Param("userId") Long userId);
 
-    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email AND u.removedAt IS NULL")
-    boolean existsByEmail(@Param("email") String email);
+    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email")
+    boolean existsByEmailWithRemoved(@Param("email") String email);
 
-    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.nickName = :nickName AND u.removedAt IS NULL")
-    boolean existsByNick(@Param("nickName") String nickName);
+    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.nickName = :nickName")
+    boolean existsByNickWithRemoved(@Param("nickName") String nickName);
 }
