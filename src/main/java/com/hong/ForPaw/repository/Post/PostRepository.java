@@ -2,6 +2,7 @@ package com.hong.ForPaw.repository.Post;
 
 import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Post.PostType;
+import com.hong.ForPaw.domain.User.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -22,6 +23,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT p FROM Post p WHERE p.id = :id AND p.removedAt IS NULL")
     Optional<Post> findById(@Param("id") Long id);
+
+    @Query("SELECT p.user FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
+    Optional<User> findUserByPostId(@Param("postId") Long postId);
 
     @Query("SELECT p.user.id FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
     Optional<Long> findUserIdByPostId(@Param("postId") Long postId);

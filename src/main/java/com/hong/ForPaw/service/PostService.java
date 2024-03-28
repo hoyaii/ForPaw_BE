@@ -1,10 +1,10 @@
 package com.hong.ForPaw.service;
 
+import com.hong.ForPaw.controller.DTO.AlarmRequest;
 import com.hong.ForPaw.controller.DTO.PostRequest;
 import com.hong.ForPaw.controller.DTO.PostResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
-import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Post.*;
 import com.hong.ForPaw.domain.User.Role;
@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -105,15 +106,16 @@ public class PostService {
         // 알림 생성
         String content = "새로운 답변: " + requestDTO.content();
         String redirectURL = "post/"+parentPostId+"/entire";
+        LocalDateTime date = LocalDateTime.now();
 
-        Alarm alarm = Alarm.builder()
-                .receiver(parentPost.getUser())
-                .alarmType(AlarmType.answer)
-                .content(content)
-                .redirectURL(redirectURL)
-                .build();
+        AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
+                parentPost.getUser().getId(),
+                content,
+                redirectURL,
+                date,
+                AlarmType.answer);
 
-        brokerService.produceAlarm(parentPost.getUser().getId(), alarm);
+        brokerService.produceAlarm(parentPost.getUser().getId(), alarmDTO);
 
         return new PostResponse.CreateAnswerDTO(post.getId());
     }
@@ -378,7 +380,7 @@ public class PostService {
     @Transactional
     public PostResponse.CreateCommentDTO createComment(PostRequest.CreateCommentDTO requestDTO, Long userId, Long postId){
         // 존재하지 않는 글이면 에러
-        Long postWriterId = postRepository.findUserIdByPostId(postId).orElseThrow(
+        Long writerId = postRepository.findUserIdByPostId(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
@@ -397,18 +399,18 @@ public class PostService {
         redisService.incrementCnt("commentNum", postId.toString(), 1L);
 
         // 알람 생성
-        User postUserRef = entityManager.getReference(User.class, postWriterId);
         String content = "새로운 댓글: " + requestDTO.content();
         String redirectURL = "post/"+postId;
+        LocalDateTime date = LocalDateTime.now();
 
-        Alarm alarm = Alarm.builder()
-                .receiver(postUserRef)
-                .alarmType(AlarmType.comment)
-                .content(content)
-                .redirectURL(redirectURL)
-                .build();
+        AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
+                writerId,
+                content,
+                redirectURL,
+                date,
+                AlarmType.comment);
 
-        brokerService.produceAlarm(postWriterId, alarm);
+        brokerService.produceAlarm(writerId, alarmDTO);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
     }
@@ -437,18 +439,18 @@ public class PostService {
         redisService.incrementCnt("commentNum", postId.toString(), 1L);
 
         // 알람 생성
-        User parentCommentUser = parentComment.getUser(); // 작성자
         String content = "새로운 대댓글: " + requestDTO.content();
         String redirectURL = "posts/"+postId;
+        LocalDateTime date = LocalDateTime.now();
 
-        Alarm alarm = Alarm.builder()
-                .receiver(parentCommentUser)
-                .alarmType(AlarmType.comment)
-                .content(content)
-                .redirectURL(redirectURL)
-                .build();
+        AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
+                parentComment.getUser().getId(),
+                content,
+                redirectURL,
+                date,
+                AlarmType.comment);
 
-        brokerService.produceAlarm(parentComment.getUser().getId(), alarm);
+        brokerService.produceAlarm(parentComment.getUser().getId(), alarmDTO);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
     }

@@ -1,5 +1,6 @@
 package com.hong.ForPaw.service;
 
+import com.hong.ForPaw.controller.DTO.AlarmRequest;
 import com.hong.ForPaw.controller.DTO.ChatRequest;
 import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
@@ -19,6 +20,8 @@ import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -96,21 +99,20 @@ public class BrokerService {
             messageRepository.save(message);
 
             // 알람 전송
-            chatRoomRepository.findAllUserByChatRoomId(messageDTO.chatRoomId()).stream()
-                    .map(user -> {
-                        User receiver = entityManager.getReference(User.class, user.getId());
+            chatRoomRepository.findAllUserByChatRoomId(messageDTO.chatRoomId())
+                    .forEach(user -> {
                         String content = "새로문 메시지: " + messageDTO.content();
                         String redirectURL = "chatRooms/" + messageDTO.chatRoomId();
+                        LocalDateTime date = LocalDateTime.now();
 
-                        Alarm alarm = Alarm.builder()
-                                .receiver(receiver)
-                                .alarmType(AlarmType.chatting)
-                                .content(content)
-                                .redirectURL(redirectURL)
-                                .build();
+                        AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
+                                user.getId(),
+                                content,
+                                redirectURL,
+                                date,
+                                AlarmType.chatting);
 
-                        produceAlarm(messageDTO.senderId(), alarm);
-                        return null;
+                        produceAlarm(messageDTO.senderId(), alarmDTO);
                     });
         });
 
@@ -122,7 +124,15 @@ public class BrokerService {
         endpoint.setId(listenerId);
         endpoint.setQueueNames(queueName);
         endpoint.setMessageListener(m -> {
-            Alarm alarm = (Alarm) converter.fromMessage(m);
+            AlarmRequest.AlarmDTO alarmDTO = (AlarmRequest.AlarmDTO) converter.fromMessage(m);
+
+            User receiver = entityManager.getReference(User.class, alarmDTO.receiverId());
+            Alarm alarm = Alarm.builder()
+                    .receiver(receiver)
+                    .content(alarmDTO.content())
+                    .redirectURL(alarmDTO.redirectURL())
+                    .alarmType(alarmDTO.alarmType())
+                    .build();
 
             // 알람 실시간 전송 후 저장
             alarmService.send(alarm);
@@ -139,7 +149,7 @@ public class BrokerService {
         rabbitTemplate.convertAndSend(exchangeName, routingKey, message);
     }
 
-    public void produceAlarm(Long userId, Alarm alarm) {
+    public void produceAlarm(Long userId, AlarmRequest.AlarmDTO alarm) {
         String exchangeName = "alarm.exchange";
         String routingKey = "user." + userId;
 

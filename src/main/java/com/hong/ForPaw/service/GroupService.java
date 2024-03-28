@@ -1,5 +1,6 @@
 package com.hong.ForPaw.service;
 
+import com.hong.ForPaw.controller.DTO.AlarmRequest;
 import com.hong.ForPaw.controller.DTO.GroupRequest;
 import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.core.errors.CustomException;
@@ -24,6 +25,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 import org.springframework.data.domain.PageRequest;
@@ -343,15 +345,16 @@ public class GroupService {
         User applicant = entityManager.getReference(User.class, applicantId);
         String content = "가입이 승인 되었습니다!";
         String redirectURL = "groups/" + groupId + "/detail";
+        LocalDateTime date = LocalDateTime.now();
 
-        Alarm alarm = Alarm.builder()
-                .receiver(applicant)
-                .alarmType(AlarmType.join)
-                .content(content)
-                .redirectURL(redirectURL)
-                .build();
+        AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
+                applicantId,
+                content,
+                redirectURL,
+                date,
+                AlarmType.join);
 
-        brokerService.produceAlarm(applicantId, alarm);
+        brokerService.produceAlarm(applicantId, alarmDTO);
 
         // 그룹 채팅방에 참여
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
@@ -379,18 +382,18 @@ public class GroupService {
         groupUserRepository.delete(groupUserOP.get());
 
         // 알람 생성
-        User applicant = entityManager.getReference(User.class, applicantId);
         String content = "가입이 거절 되었습니다.";
         String redirectURL = "groups/" + groupId + "/detail";
+        LocalDateTime date = LocalDateTime.now();
 
-        Alarm alarm = Alarm.builder()
-                .receiver(applicant)
-                .alarmType(AlarmType.join)
-                .content(content)
-                .redirectURL(redirectURL)
-                .build();
+        AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
+                applicantId,
+                content,
+                redirectURL,
+                date,
+                AlarmType.join);
 
-        brokerService.produceAlarm(applicantId, alarm);
+        brokerService.produceAlarm(applicantId, alarmDTO);
     }
 
     @Transactional
@@ -420,15 +423,16 @@ public class GroupService {
         for(User user : users){
             String content = "공지: " + requestDTO.title();
             String redirectURL = "posts/" + notice.getId() + "/entire";
+            LocalDateTime date = LocalDateTime.now();
 
-            Alarm alarm = Alarm.builder()
-                    .receiver(user)
-                    .alarmType(AlarmType.notice)
-                    .content(content)
-                    .redirectURL(redirectURL)
-                    .build();
+            AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
+                    user.getId(),
+                    content,
+                    redirectURL,
+                    date,
+                    AlarmType.notice);
 
-            brokerService.produceAlarm(user.getId(), alarm);
+            brokerService.produceAlarm(user.getId(), alarmDTO);
         }
 
         return new GroupResponse.CreateNoticeDTO(notice.getId());
@@ -595,15 +599,16 @@ public class GroupService {
         for(User user : users){
             String content = "새로운 정기 모임: " + requestDTO.name();
             String redirectURL = "groups/" + groupId + "/meetings/"+meeting.getId();
+            LocalDateTime date = LocalDateTime.now();
 
-            Alarm alarm = Alarm.builder()
-                    .receiver(user)
-                    .alarmType(AlarmType.newMeeting)
-                    .content(content)
-                    .redirectURL(redirectURL)
-                    .build();
+            AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
+                    user.getId(),
+                    content,
+                    redirectURL,
+                    date,
+                    AlarmType.newMeeting);
 
-            brokerService.produceAlarm(user.getId(), alarm);
+            brokerService.produceAlarm(user.getId(), alarmDTO);
         }
         
         return new GroupResponse.CreateMeetingDTO(meeting.getId());
