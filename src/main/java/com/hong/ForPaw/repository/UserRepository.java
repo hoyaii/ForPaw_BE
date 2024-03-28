@@ -25,4 +25,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u.profileURL FROM User u WHERE u.id = :userId AND u.removedAt IS NULL")
     Optional<String> findProfileById(@Param("userId") Long userId);
+
+    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email AND u.removedAt IS NULL")
+    boolean existsByEmail(@Param("email") String email);
+
+    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.nickName = :nickName AND u.removedAt IS NULL")
+    boolean existsByNick(@Param("nickName") String nickName);
 }

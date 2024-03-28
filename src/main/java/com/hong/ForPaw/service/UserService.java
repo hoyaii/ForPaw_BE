@@ -154,10 +154,10 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
 
         // 비정상 경로를 통한 요청을 대비해, 이메일/닉네임 다시 체크
-        if(userRepository.findByEmailWithRemoved(requestDTO.email()).isPresent())
+        if(userRepository.existsByEmail(requestDTO.email()))
             throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
 
-        if(userRepository.findByNickNameWithRemoved(requestDTO.nickName()).isPresent())
+        if(userRepository.existsByNick(requestDTO.nickName()))
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
 
         User user = User.builder()
@@ -179,10 +179,18 @@ public class UserService {
 
     @Transactional
     public void socialJoin(UserRequest.SocialJoinDTO requestDTO){
+        // 비정상 경로를 통한 요청을 대비해, 이메일/닉네임 다시 체크
+        if(userRepository.existsByEmail(requestDTO.email()))
+            throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
+
+        if(userRepository.existsByNick(requestDTO.nickName()))
+            throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
+
         User user = User.builder()
                 .name(requestDTO.name())
                 .nickName(requestDTO.nickName())
                 .email(requestDTO.email())
+                .password(passwordEncoder.encode(generatePassword())) // 임의의 비밀번호로 생성
                 .role(Role.USER)
                 .profileURL(requestDTO.profileURL())
                 .region(requestDTO.region())
