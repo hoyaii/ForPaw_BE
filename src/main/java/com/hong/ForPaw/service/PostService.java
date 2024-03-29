@@ -22,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -41,6 +43,7 @@ public class PostService {
     private final UserRepository userRepository;
     private final BrokerService brokerService;
     private final EntityManager entityManager;
+    public static final Long POST_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
 
     @Transactional
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId){
@@ -63,6 +66,9 @@ public class PostService {
         postImages.forEach(post::addImage);
 
         postRepository.save(post);
+
+        // 3개월 동안만 좋아요를 할 수 있다
+        redisService.storeDate("postLikeNum", post.getId().toString(), "0", POST_EXP);
 
         return new PostResponse.CreatePostDTO(post.getId());
     }
@@ -334,6 +340,8 @@ public class PostService {
 
         // 이미 좋아요를 눌렀다면, 취소하는 액션이니 게시글의 좋아요 수를 감소시키고 하고, postLike 엔티티 삭제
         if(postLikeOP.isPresent()){
+            checkLikeExpired(postLikeOP.get().getCreatedDate());
+
             postLikeRepository.delete(postLikeOP.get());
             redisService.decrementCnt("postLikeNum", postId.toString(), 1L);
         }
@@ -350,9 +358,9 @@ public class PostService {
 
     @Scheduled(cron = "0 0 * * * *")
     public void syncLikes() {
-        // 업데이트는 50개씩 진행
+        // 업데이트는 100개씩 진행
         int page = 0;
-        int batchSize = 50;
+        int batchSize = 100;
 
         Pageable pageable = PageRequest.of(page, batchSize);
         Page<Long> postIdsPage;
@@ -398,6 +406,9 @@ public class PostService {
         // 게시글의 댓글 수 증가
         redisService.incrementCnt("commentNum", postId.toString(), 1L);
 
+        // 3개월 동안만 좋아요를 할 수 있다
+        redisService.storeDate("commentLikeNum", comment.getId().toString(), "0", POST_EXP);
+
         // 알람 생성
         String content = "새로운 댓글: " + requestDTO.content();
         String redirectURL = "post/"+postId;
@@ -437,6 +448,9 @@ public class PostService {
 
         // 게시글의 댓글 수 증가
         redisService.incrementCnt("commentNum", postId.toString(), 1L);
+
+        // 3개월 동안만 좋아요를 할 수 있다
+        redisService.storeDate("commentLikeNum", comment.getId().toString(), "0", POST_EXP);
 
         // 알람 생성
         String content = "새로운 대댓글: " + requestDTO.content();
@@ -505,6 +519,8 @@ public class PostService {
 
         // 이미 좋아요를 눌렀다면, 취소하는 액션이니 게시글의 좋아요 수를 감소시키고 하고, postLike 엔티티 삭제
         if(commentLikeOP.isPresent()){
+            checkLikeExpired(commentLikeOP.get().getCreatedDate());
+
             commentLikeRepository.delete(commentLikeOP.get());
             redisService.decrementCnt("commentLikeNum", commentId.toString(), 1L);
         }
@@ -587,6 +603,17 @@ public class PostService {
 
         if(!writerId.equals(accessor.getId())){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
+    }
+
+    private void checkLikeExpired(LocalDateTime date){
+        LocalDate likeDate =  date.toLocalDate();
+        LocalDate now = LocalDate.now();
+        Period period = Period.between(likeDate, now);
+
+        // 기간이 3개월 이상이면 좋아요를 할 수 없다
+        if (period.getMonths() >= 3 || period.getYears() > 0) {
+            throw new CustomException(ExceptionCode.POST_LIKE_EXPIRED);
         }
     }
 }
