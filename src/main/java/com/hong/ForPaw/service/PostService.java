@@ -224,7 +224,11 @@ public class PostService {
         });
 
         // 좋아요 수
-        Long likeNum = redisService.getDataInLong("postLikeNum", postId.toString());
+        Long likeNum = redisService.getDataInLongWithNull("postLikeNum", postId.toString());
+
+        if(likeNum == null){
+            likeNum = post.getLikeNum();
+        }
 
         // 댓글 수
         Long commentNum = redisService.getDataInLong("commentNum", postId.toString());
@@ -542,7 +546,12 @@ public class PostService {
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post ->  {
                     Long commentNum = redisService.getDataInLong("commentNum", post.getId().toString());
-                    Long likeNum = redisService.getDataInLong("postLikeNum", post.getId().toString());
+                    Long likeNum = redisService.getDataInLongWithNull("postLikeNum", post.getId().toString());
+
+                    // 캐싱 기간이 지나 캐싱이 불가능하면, DB에서 조회
+                    if(likeNum == null){
+                        likeNum = post.getLikeNum();
+                    }
 
                     return new PostResponse.PostDTO(
                         post.getId(),

@@ -47,9 +47,16 @@ public class RedisService {
     // 데이터 반환 - Long 반환
     public Long getDataInLong(String type, String id){
         String value = redisTemplate.opsForValue().get(buildKey(type, id));
-        if(value == null) return 0L;
 
+        if(value == null) return 0L;
         return Long.valueOf(value);
+    }
+
+    public Long getDataInLongWithNull(String type, String id){
+        String value = redisTemplate.opsForValue().get(buildKey(type, id));
+
+        if(value != null) return Long.valueOf(value);
+        else { return null;}
     }
 
     // 데이터 반환 - String 반환

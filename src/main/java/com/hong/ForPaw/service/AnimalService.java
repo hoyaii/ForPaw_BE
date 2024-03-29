@@ -232,8 +232,7 @@ public class AnimalService {
         applyRepository.save(apply);
 
         // 동물의 문의 횟수 증가
-        Long inquiryNum = redisService.getDataInLong("inquiryNum", animalId.toString());
-        redisService.storeDate("inquiryNum", animalId.toString(), Long.toString(inquiryNum + 1L));
+        redisService.incrementCnt("inquiryNum", animalId.toString(), 1L);
 
         return new AnimalResponse.CreateApplyDTO(apply.getId());
     }
