@@ -88,8 +88,8 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.FindAnimalListDTO findAnimalList(Integer page, Integer size, String sort, Long userId){
-        Pageable pageable =createPageable(page, size, sort);
+    public AnimalResponse.FindAnimalListDTO findAnimalList(Integer page, String sort, Long userId){
+        Pageable pageable =createPageable(page, 5, sort);
         Page<Animal> animalPage = animalRepository.findAll(pageable);
 
         if(animalPage.isEmpty()){
@@ -122,8 +122,8 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.FindLikeAnimalListDTO findLikeAnimalList(Integer page, Integer size, Long userId){
-        Pageable pageable =createPageable(page, size, "id");
+    public AnimalResponse.FindLikeAnimalListDTO findLikeAnimalList(Integer page, Long userId){
+        Pageable pageable =createPageable(page, 5, "id");
         Page<Animal> animalPage = favoriteAnimalRepository.findAnimalByUserId(userId, pageable);
 
         if(animalPage.isEmpty()){

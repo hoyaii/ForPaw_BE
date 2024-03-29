@@ -27,14 +27,14 @@ public class AnimalController {
     }
 
     @GetMapping("/animals")
-    public ResponseEntity<?> findAnimalList(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @RequestParam("sort") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
-        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(page, size, sort, userDetails.getUser().getId());
+    public ResponseEntity<?> findAnimalList(@RequestParam("page") Integer page, @RequestParam("sort") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
+        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(page, sort, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/animals/like")
-    public ResponseEntity<?> findLikeAnimalList(@RequestParam("page") Integer page, @RequestParam("size") Integer size, @AuthenticationPrincipal CustomUserDetails userDetails){
-        AnimalResponse.FindLikeAnimalListDTO responseDTO = animalService.findLikeAnimalList(page, size, userDetails.getUser().getId());
+    public ResponseEntity<?> findLikeAnimalList(@RequestParam("page") Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
+        AnimalResponse.FindLikeAnimalListDTO responseDTO = animalService.findLikeAnimalList(page, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
