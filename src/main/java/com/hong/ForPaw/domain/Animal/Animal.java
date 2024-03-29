@@ -45,7 +45,7 @@ public class Animal extends TimeStamp {
     @Column
     private String weight;
 
-    // 공고 시작일
+    // 공고 시작일/종료일
     @Column
     private LocalDate noticeSdt;
 

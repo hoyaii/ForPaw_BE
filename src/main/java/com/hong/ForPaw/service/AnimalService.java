@@ -79,6 +79,7 @@ public class AnimalService {
                             .uri(uri)
                             .retrieve()
                             .bodyToMono(String.class)
+                            .retry(3)
                             .flatMapMany(response -> processAnimalData(response, shelter))
                             .collectList()
                             .doOnNext(animalRepository::saveAll);
@@ -288,6 +289,20 @@ public class AnimalService {
         applyRepository.deleteById(applyId);
     }
 
+    // 공가가 종료된 것은 주기적으로 삭제
+    @Transactional
+    @Scheduled(cron = "0 0 3 * * *") // 매일 새벽 3시에 실행
+    public void deleteEndAdoptAnimal(){
+        List<Animal> animals = animalRepository.findAllNoticeEnded();
+
+        // 캐싱한 '좋아요 수' 삭제
+        animals.forEach(
+                animal -> redisService.removeData("animalLikeNum", animal.getId().toString())
+        );
+
+        animalRepository.deleteAll(animals);
+    }
+
     private Flux<Animal> processAnimalData(String response, Shelter shelter) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         final boolean[] isShelterUpdate = {false};
@@ -297,6 +312,7 @@ public class AnimalService {
             return Flux.fromIterable(Optional.ofNullable(json.response().body().items())
                             .map(AnimalDTO.ItemsDTO::item)
                             .orElse(Collections.emptyList()))
+                    .filter(itemDTO -> LocalDate.parse(itemDTO.noticeEdt(), formatter).isAfter(LocalDate.now())) // 공고 종료가 된 것은 필터링
                     .map(itemDTO -> {
                         if (!isShelterUpdate[0]) {
                             shelterRepository.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), Long.valueOf(json.response().body().totalCount()), shelter.getId());

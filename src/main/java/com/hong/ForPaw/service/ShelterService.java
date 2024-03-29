@@ -73,6 +73,7 @@ public class ShelterService {
                             .uri(uri)
                             .retrieve()
                             .bodyToMono(String.class)
+                            .retry(3)
                             .flatMapMany(response -> processShelterData(response, regionCode));
                 })
                 .collectList()
