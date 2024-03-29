@@ -67,19 +67,19 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Modifying
     @Query("UPDATE Post p SET p.answerNum = p.answerNum + 1 WHERE p.id = :postId")
-    void incrementAnswerNumById(@Param("postId") Long postId);
+    void incrementAnswerNum(@Param("postId") Long postId);
 
     @Modifying
     @Query("UPDATE Post p SET p.answerNum = p.answerNum - 1 WHERE p.id = :postId AND p.answerNum > 0")
-    void decrementAnswerNumById(@Param("postId") Long postId);
+    void decrementAnswerNum(@Param("postId") Long postId);
 
     @Modifying
     @Query("UPDATE Post p SET p.commentNum = p.commentNum + 1 WHERE p.id = :postId")
-    void incrementCommentNumById(@Param("postId") Long postId);
+    void incrementCommentNum(@Param("postId") Long postId);
 
     @Modifying
     @Query("UPDATE Post p SET p.commentNum = p.commentNum - :decrementNum WHERE p.id = :postId AND p.commentNum > 0")
-    void decrementCommentNumById(@Param("postId") Long postId, @Param("decrementNum") Long decrementNum);
+    void decrementCommentNum(@Param("postId") Long postId, @Param("decrementNum") Long decrementNum);
 
     void deleteAllByGroupId(Long groupId);
 }

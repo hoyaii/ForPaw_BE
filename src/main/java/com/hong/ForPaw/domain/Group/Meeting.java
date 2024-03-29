@@ -57,6 +57,9 @@ public class Meeting extends TimeStamp {
     @Column
     private String profileURL;
 
+    @Column
+    private Long participantNum = 0L;
+
     @Builder
     public Meeting(Group group, User creator, String name, LocalDateTime date, String location, Long cost, Integer maxNum, String description, String profileURL) {
         this.group = group;

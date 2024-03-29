@@ -22,6 +22,11 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
     Page<Meeting> findByGroupId(Long groupId, Pageable pageable);
 
-    @Query("SELECT m.id FROM Meeting m WHERE m.group.id = :groupId")
-    List<String> findMeetingIdsByGroupId(@Param("groupId") Long groupId);
+    @Modifying
+    @Query("UPDATE Meeting m SET m.participantNum = m.participantNum + 1 WHERE m.id = :meetingId")
+    void incrementParticipantNum(@Param("meetingId") Long meetingId);
+
+    @Modifying
+    @Query("UPDATE Meeting m SET m.participantNum = m.participantNum - 1 WHERE m.id = :groupId AND m.participantNum > 0")
+    void decrementParticipantNum(@Param("meetingId") Long meetingId);
 }

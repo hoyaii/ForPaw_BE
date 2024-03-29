@@ -83,8 +83,8 @@ public class GroupService {
 
         groupUserRepository.save(groupUser);
 
-        // 그룹 참여자 수 1로 레디스에 저장
-        redisService.storeDate("groupParticipantNum", group.getId().toString(), Long.toString(1L));
+        // 그룹 참여자 수 증가 (그룹장 참여)
+        groupRepository.incrementParticipantNum(group.getId());
 
         // 그룹 채팅방 생성
         ChatRoom chatRoom = ChatRoom.builder()
@@ -270,9 +270,7 @@ public class GroupService {
                 .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL()))
                 .toList();
 
-        Long participantNum = redisService.getDataInLong("meetingParticipantNum", meeting.getId().toString());
-
-        return new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getDate(), meeting.getLocation(), meeting.getCost(), participantNum, meeting.getMaxNum(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
+        return new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
     }
 
     @Transactional
@@ -315,7 +313,7 @@ public class GroupService {
         groupUserRepository.deleteByGroupIdAndUserId(groupId, userId);
 
         // 그룹 참가자 수 감소
-        redisService.decrementCnt("groupParticipantNum", groupId.toString(), 1L);
+        groupRepository.decrementParticipantNum(groupId);
 
         // 그룹 채팅방에서 탈퇴
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
@@ -339,7 +337,7 @@ public class GroupService {
         groupApplicantOP.get().updateRole(Role.USER);
 
         // 그룹 참가자 수 증가
-        redisService.incrementCnt("groupParticipantNum", groupId.toString(), 1L);
+        groupRepository.incrementParticipantNum(groupId);
 
         // 알람 생성
         User applicant = entityManager.getReference(User.class, applicantId);
@@ -501,14 +499,6 @@ public class GroupService {
         // 권한체크 (그룹장만 삭제 가능)
         checkCreatorAuthority(groupId, userId);
 
-        // redis에 저장된 meetingParticipantNum, groupParticipantNum 데이터 삭제
-        List<String> meetingIds = meetingRepository.findMeetingIdsByGroupId(groupId);
-        meetingIds.forEach(meetingId ->
-                redisService.removeData("meetingParticipantNum", meetingId.toString())
-        );
-
-        redisService.removeData("groupParticipantNum", groupId.toString());
-
         // 그룹, 미팅 연관 데이터 삭제
         meetingUserRepository.deleteAllByGroupId(groupId);
         meetingRepository.deleteAllByGroupId(groupId);
@@ -590,8 +580,8 @@ public class GroupService {
         meeting.addMeetingUser(meetingUser);
         meetingRepository.save(meeting);
 
-        // 정기 모임 참여자수 1로 저장
-        redisService.storeDate("meetingParticipantNum", meeting.getId().toString(), Long.toString(1L));
+        // 미팅 참여자 수 증가 (미팅 생성자 참여)
+        meetingRepository.incrementParticipantNum(meeting.getId());
 
         // 알람 생성
         List<User> users = groupUserRepository.findAllUsersByGroupIdWithoutMe(groupId, userId);
@@ -656,8 +646,8 @@ public class GroupService {
         meeting.addMeetingUser(meetingUser);
         meetingUserRepository.save(meetingUser);
 
-        // 그룹 참가자 수 증가
-        redisService.incrementCnt("meetingParticipantNum", meetingId.toString(), 1L);
+        // 미팅 참가자 수 증가
+        meetingRepository.incrementParticipantNum(meetingId);
     }
 
     @Transactional
@@ -676,7 +666,7 @@ public class GroupService {
         meetingUserRepository.deleteByMeetingIdAndUserId(meetingId, userId);
 
         // 참가자 수 감소
-        redisService.decrementCnt("meetingParticipantNum", meetingId.toString(), 1L);
+        meetingRepository.decrementParticipantNum(meetingId);
     }
 
     @Transactional
@@ -686,9 +676,6 @@ public class GroupService {
 
         // 권한 체크 (메니저급만 삭제 가능)
         checkAdminAuthority(groupId, userId);
-
-        // redis에 저장된 참가자 수 삭제
-        redisService.removeData("meetingParticipantNum", meetingId.toString());
 
         meetingUserRepository.deleteAllByMeetingId(meetingId);
         meetingRepository.deleteById(meetingId);
@@ -706,14 +693,13 @@ public class GroupService {
         List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = recommendGroups.getContent().stream()
                 .filter(group -> !joinedGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> {
-                    Long participantNum = redisService.getDataInLong("groupParticipantNum", group.getId().toString());
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
 
                     return new GroupResponse.RecommendGroupDTO(
                         group.getId(),
                         group.getName(),
                         group.getDescription(),
-                        participantNum,
+                        group.getParticipantNum(),
                         group.getCategory(),
                         group.getRegion(),
                         group.getSubRegion(),
@@ -740,14 +726,13 @@ public class GroupService {
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroups.getContent().stream()
                 .filter(group -> !joinedGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> {
-                    Long participantNum = redisService.getDataInLong("groupParticipantNum", group.getId().toString());
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
 
                     return new GroupResponse.LocalGroupDTO(
                         group.getId(),
                         group.getName(),
                         group.getDescription(),
-                        participantNum,
+                        group.getParticipantNum(),
                         group.getCategory(),
                         group.getRegion(),
                         group.getSubRegion(),
@@ -784,14 +769,13 @@ public class GroupService {
 
         List<GroupResponse.MyGroupDTO> myGroupDTOS = joinedGroups.stream()
                 .map(group -> {
-                    Long participantNum = redisService.getDataInLong("groupParticipantNum", group.getId().toString());
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
 
                     return new GroupResponse.MyGroupDTO(
                         group.getId(),
                         group.getName(),
                         group.getDescription(),
-                        participantNum,
+                        group.getParticipantNum(),
                         group.getCategory(),
                         group.getRegion(),
                         group.getSubRegion(),
@@ -885,15 +869,13 @@ public class GroupService {
                             .map(meetingUser -> new GroupResponse.ParticipantDTO(meetingUser.getProfileURL()))
                             .toList();
 
-                    Long participantNum = redisService.getDataInLong("meetingParticipantNum", meeting.getId().toString());
-
                     return new GroupResponse.MeetingDTO(
                             meeting.getId(),
                             meeting.getName(),
                             meeting.getDate(),
                             meeting.getLocation(),
                             meeting.getCost(),
-                            participantNum,
+                            meeting.getParticipantNum(),
                             meeting.getMaxNum(),
                             meeting.getProfileURL(),
                             meeting.getDescription(),

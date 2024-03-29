@@ -26,4 +26,12 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
     @Query("SELECT g.id FROM Group g")
     Page<Long> findGroupIds(Pageable pageable);
+
+    @Modifying
+    @Query("UPDATE Group g SET g.participantNum = g.participantNum + 1 WHERE g.id = :groupId")
+    void incrementParticipantNum(@Param("groupId") Long groupId);
+
+    @Modifying
+    @Query("UPDATE Group g SET g.participantNum = g.participantNum - 1 WHERE g.id = :groupId AND g.participantNum > 0")
+    void decrementParticipantNum(@Param("groupId") Long groupId);
 }

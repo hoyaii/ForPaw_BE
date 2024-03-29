@@ -107,7 +107,7 @@ public class PostService {
         postRepository.save(post);
 
         // 답변수 증가
-        postRepository.incrementAnswerNumById(post.getId());
+        postRepository.incrementAnswerNum(post.getId());
 
         // 알림 생성
         String content = "새로운 답변: " + requestDTO.content();
@@ -312,7 +312,7 @@ public class PostService {
 
         // 답변글이라서 부모(질문글)이 존재한다면, 답변 수 감소
         Optional<Post> parentOP = postRepository.findParentByPostId(postId);
-        parentOP.ifPresent(post -> postRepository.decrementAnswerNumById(post.getId()));
+        parentOP.ifPresent(post -> postRepository.decrementAnswerNum(post.getId()));
 
         // 수정 권한 체크
         checkPostAuthority(writerId, user);
@@ -404,7 +404,7 @@ public class PostService {
         commentRepository.save(comment);
 
         // 게시글의 댓글 수 증가
-        postRepository.incrementCommentNumById(postId);
+        postRepository.incrementCommentNum(postId);
 
         // 3개월 동안만 좋아요를 할 수 있다
         redisService.storeDate("commentLikeNum", comment.getId().toString(), "0", POST_EXP);
@@ -447,7 +447,7 @@ public class PostService {
         commentRepository.save(comment);
 
         // 게시글의 댓글 수 증가
-        postRepository.incrementCommentNumById(postId);
+        postRepository.incrementCommentNum(postId);
 
         // 3개월 동안만 좋아요를 할 수 있다
         redisService.storeDate("commentLikeNum", comment.getId().toString(), "0", POST_EXP);
@@ -500,7 +500,7 @@ public class PostService {
         commentLikeRepository.deleteAllByCommentId(commentId);
 
         // 게시글의 댓글 수 감소
-        postRepository.decrementCommentNumById(postId, 1L + childNum);
+        postRepository.decrementCommentNum(postId, 1L + childNum);
     }
 
     @Transactional
