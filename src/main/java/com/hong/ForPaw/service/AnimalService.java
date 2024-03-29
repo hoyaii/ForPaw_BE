@@ -101,8 +101,7 @@ public class AnimalService {
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
-                    Long inquiryNum = redisService.getDataInLong("inquiryNum", animal.getId().toString());
-                    Long likeNum = redisService.getDataInLong("postLikeNum", animal.getId().toString());
+                    Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
 
                     return new AnimalResponse.AnimalDTO(
                         animal.getId(),
@@ -111,7 +110,7 @@ public class AnimalService {
                         animal.getGender(),
                         animal.getSpecialMark(),
                         animal.getRegion(),
-                        inquiryNum,
+                        animal.getInquiryNum(),
                         likeNum,
                         likedAnimalIds.contains(animal.getId()),
                         animal.getProfileURL());
@@ -132,8 +131,7 @@ public class AnimalService {
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
-                    Long inquiryNum = redisService.getDataInLong("inquiryNum", animal.getId().toString());
-                    Long likeNum = redisService.getDataInLong("postLikeNum", animal.getId().toString());
+                    Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
 
                     return new AnimalResponse.AnimalDTO(
                         animal.getId(),
@@ -142,7 +140,7 @@ public class AnimalService {
                         animal.getGender(),
                         animal.getSpecialMark(),
                         animal.getRegion(),
-                        inquiryNum,
+                        animal.getInquiryNum(),
                         likeNum,
                         true,
                         animal.getProfileURL());
@@ -232,7 +230,7 @@ public class AnimalService {
         applyRepository.save(apply);
 
         // 동물의 문의 횟수 증가
-        redisService.incrementCnt("inquiryNum", animalId.toString(), 1L);
+        animalRepository.incrementInquiryNumById(animalId);
 
         return new AnimalResponse.CreateApplyDTO(apply.getId());
     }
@@ -285,8 +283,7 @@ public class AnimalService {
 
         // 동물의 문의 횟수 감소
         Long animalId = applyRepository.findAnimalIdById(applyId);
-        Long inquiryNum = redisService.getDataInLong("inquiryNum", animalId.toString());
-        redisService.storeDate("inquiryNum", animalId.toString(), Long.toString(inquiryNum - 1L));
+        animalRepository.decrementInquiryNumById(animalId);
 
         applyRepository.deleteById(applyId);
     }

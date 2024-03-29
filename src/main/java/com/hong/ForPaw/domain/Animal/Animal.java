@@ -75,6 +75,9 @@ public class Animal extends TimeStamp {
     @Column
     private String name;
 
+    @Column
+    private Long inquiryNum = 0L;
+
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
 
