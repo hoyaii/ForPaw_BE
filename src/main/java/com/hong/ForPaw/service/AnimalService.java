@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -83,6 +84,29 @@ public class AnimalService {
                             .flatMapMany(response -> processAnimalData(response, shelter))
                             .collectList()
                             .doOnNext(animalRepository::saveAll);
+                })
+                .then()
+                .subscribe();
+    }
+
+    // 동물 조회 API에 보호소 세부 정보가 일부 있어서, 동물 조회 API를 활용하여 보호소 정보 업데이트 로직을 수행
+    @Transactional
+    @Scheduled(cron = "0 10 6 * * MON") // 매주 월요일 새벽 6시 10분에 실행
+    public void updateShelterInfo() {
+        List<Shelter> shelters = shelterRepository.findAllWithRegionCode();
+
+        Flux.fromIterable(shelters)
+                .delayElements(Duration.ofMillis(50)) // 각 요청 사이에 0.05초 지연
+                .flatMap(shelter -> {
+                    Long careRegNo = shelter.getId();
+                    URI uri = buildURI(baseUrl, serviceKey, careRegNo);
+
+                    return webClient.get()
+                            .uri(uri)
+                            .retrieve()
+                            .bodyToMono(String.class)
+                            .retry(3)
+                            .flatMapMany(response -> processShelterUpdate(response, shelter).thenMany(Flux.empty()));
                 })
                 .then()
                 .subscribe();
@@ -305,24 +329,28 @@ public class AnimalService {
 
     private Flux<Animal> processAnimalData(String response, Shelter shelter) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-        final boolean[] isShelterUpdate = {false};
-
         try {
             AnimalDTO json = mapper.readValue(response, AnimalDTO.class);
             return Flux.fromIterable(Optional.ofNullable(json.response().body().items())
                             .map(AnimalDTO.ItemsDTO::item)
                             .orElse(Collections.emptyList()))
                     .filter(itemDTO -> LocalDate.parse(itemDTO.noticeEdt(), formatter).isAfter(LocalDate.now())) // 공고 종료가 된 것은 필터링
-                    .map(itemDTO -> {
-                        if (!isShelterUpdate[0]) {
-                            shelterRepository.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), Long.valueOf(json.response().body().totalCount()), shelter.getId());
-                            isShelterUpdate[0] = true;
-                        }
-                        return createAnimal(itemDTO, shelter, formatter);
-                    });
+                    .map(itemDTO -> createAnimal(itemDTO, shelter, formatter));
         } catch (Exception e) {
             return Flux.empty();
         }
+    }
+
+    private Mono<Void> processShelterUpdate(String response, Shelter shelter) {
+        return Mono.fromCallable(() -> {
+                AnimalDTO json = mapper.readValue(response, AnimalDTO.class);
+                Optional.ofNullable(json)
+                        .map(j -> j.response().body().items().item())
+                        .filter(items -> !items.isEmpty())
+                        .map(items -> items.get(0))
+                        .ifPresent(itemDTO -> shelter.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), Long.valueOf(json.response().body().totalCount())));
+            return null;
+        }).then();
     }
 
     private Animal createAnimal(AnimalDTO.ItemDTO itemDTO, Shelter shelter, DateTimeFormatter formatter) {
