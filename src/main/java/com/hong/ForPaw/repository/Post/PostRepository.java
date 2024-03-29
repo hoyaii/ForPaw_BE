@@ -27,6 +27,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p.user FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
     Optional<User> findUserByPostId(@Param("postId") Long postId);
 
+    @Query("SELECT p.parent FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
+    Optional<Post> findParentByPostId(@Param("postId") Long postId);
+
     @Query("SELECT p.user.id FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
     Optional<Long> findUserIdByPostId(@Param("postId") Long postId);
 
@@ -61,6 +64,22 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Modifying
     @Query("UPDATE Post p SET p.likeNum = :likeNum WHERE p.id = :postId AND p.removedAt IS NULL")
     void updateLikeNum(@Param("likeNum") Long likeNum, @Param("postId") Long postId);
+
+    @Modifying
+    @Query("UPDATE Post p SET p.answerNum = p.answerNum + 1 WHERE p.id = :postId")
+    void incrementAnswerNumById(@Param("postId") Long postId);
+
+    @Modifying
+    @Query("UPDATE Post p SET p.answerNum = p.answerNum - 1 WHERE p.id = :postId AND p.answerNum > 0")
+    void decrementAnswerNumById(@Param("postId") Long postId);
+
+    @Modifying
+    @Query("UPDATE Post p SET p.commentNum = p.commentNum + 1 WHERE p.id = :postId")
+    void incrementCommentNumById(@Param("postId") Long postId);
+
+    @Modifying
+    @Query("UPDATE Post p SET p.commentNum = p.commentNum - :decrementNum WHERE p.id = :postId AND p.commentNum > 0")
+    void decrementCommentNumById(@Param("postId") Long postId, @Param("decrementNum") Long decrementNum);
 
     void deleteAllByGroupId(Long groupId);
 }

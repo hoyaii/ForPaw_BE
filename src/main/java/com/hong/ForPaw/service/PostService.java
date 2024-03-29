@@ -106,8 +106,8 @@ public class PostService {
 
         postRepository.save(post);
 
-        // 게시글의 답변 수 레디스에 저장
-        redisService.incrementCnt("answerNum", parentPostId.toString(), 1L);
+        // 답변수 증가
+        postRepository.incrementAnswerNumById(post.getId());
 
         // 알림 생성
         String content = "새로운 답변: " + requestDTO.content();
@@ -225,13 +225,9 @@ public class PostService {
 
         // 좋아요 수
         Long likeNum = redisService.getDataInLongWithNull("postLikeNum", postId.toString());
-
         if(likeNum == null){
             likeNum = post.getLikeNum();
         }
-
-        // 댓글 수
-        Long commentNum = redisService.getDataInLong("commentNum", postId.toString());
 
         // 게시글 읽음 처리
         User userRef = entityManager.getReference(User.class, userId);
@@ -242,7 +238,7 @@ public class PostService {
 
         postReadStatusRepository.save(postReadStatus);
 
-        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), commentNum, likeNum, postImageDTOS, commentDTOS);
+        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, postImageDTOS, commentDTOS);
     }
 
     @Transactional
@@ -314,6 +310,10 @@ public class PostService {
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
+        // 답변글이라서 부모(질문글)이 존재한다면, 답변 수 감소
+        Optional<Post> parentOP = postRepository.findParentByPostId(postId);
+        parentOP.ifPresent(post -> postRepository.decrementAnswerNumById(post.getId()));
+
         // 수정 권한 체크
         checkPostAuthority(writerId, user);
 
@@ -322,10 +322,6 @@ public class PostService {
         commentLikeRepository.deleteAllByPostId(postId);
         commentRepository.deleteAllByPostId(postId); // soft-delete
         postRepository.deleteById(postId); // soft-delete
-
-        // 레디스에 저장된 댓글 수, 답변 수 삭제
-        redisService.removeData("answerNum", postId.toString());
-        redisService.removeData("commentNum", postId.toString());
     }
 
     @Transactional
@@ -408,7 +404,7 @@ public class PostService {
         commentRepository.save(comment);
 
         // 게시글의 댓글 수 증가
-        redisService.incrementCnt("commentNum", postId.toString(), 1L);
+        postRepository.incrementCommentNumById(postId);
 
         // 3개월 동안만 좋아요를 할 수 있다
         redisService.storeDate("commentLikeNum", comment.getId().toString(), "0", POST_EXP);
@@ -451,7 +447,7 @@ public class PostService {
         commentRepository.save(comment);
 
         // 게시글의 댓글 수 증가
-        redisService.incrementCnt("commentNum", postId.toString(), 1L);
+        postRepository.incrementCommentNumById(postId);
 
         // 3개월 동안만 좋아요를 할 수 있다
         redisService.storeDate("commentLikeNum", comment.getId().toString(), "0", POST_EXP);
@@ -504,7 +500,7 @@ public class PostService {
         commentLikeRepository.deleteAllByCommentId(commentId);
 
         // 게시글의 댓글 수 감소
-        redisService.decrementCnt("commentNum", postId.toString(), 1L + childNum);
+        postRepository.decrementCommentNumById(postId, 1L + childNum);
     }
 
     @Transactional
@@ -545,23 +541,21 @@ public class PostService {
 
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post ->  {
-                    Long commentNum = redisService.getDataInLong("commentNum", post.getId().toString());
-                    Long likeNum = redisService.getDataInLongWithNull("postLikeNum", post.getId().toString());
-
                     // 캐싱 기간이 지나 캐싱이 불가능하면, DB에서 조회
+                    Long likeNum = redisService.getDataInLongWithNull("postLikeNum", post.getId().toString());
                     if(likeNum == null){
                         likeNum = post.getLikeNum();
                     }
 
                     return new PostResponse.PostDTO(
-                        post.getId(),
-                        post.getUser().getNickName(),
-                        post.getTitle(),
-                        post.getContent(),
-                        post.getCreatedDate(),
-                        commentNum,
-                        likeNum,
-                        post.getPostImages().get(0).getImageURL());
+                            post.getId(),
+                            post.getUser().getNickName(),
+                            post.getTitle(),
+                            post.getContent(),
+                            post.getCreatedDate(),
+                            post.getCommentNum(),
+                            likeNum,
+                            post.getPostImages().get(0).getImageURL());
                 })
                 .collect(Collectors.toList());
 
@@ -573,17 +567,13 @@ public class PostService {
         Page<Post> postPage = postRepository.findByPostTypeWithUser(PostType.question, pageable);
 
         List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
-                .map(post -> {
-                    Long answerNum = redisService.getDataInLong("answerNum", post.getId().toString());
-
-                    return new PostResponse.QnaDTO(
-                        post.getId(),
-                        post.getUser().getNickName(),
-                        post.getTitle(),
-                        post.getContent(),
-                        post.getCreatedDate(),
-                        answerNum);
-                })
+                .map(post -> new PostResponse.QnaDTO(
+                            post.getId(),
+                            post.getUser().getNickName(),
+                            post.getTitle(),
+                            post.getContent(),
+                            post.getCreatedDate(),
+                            post.getAnswerNum()))
                 .collect(Collectors.toList());
 
         return qnaDTOS;

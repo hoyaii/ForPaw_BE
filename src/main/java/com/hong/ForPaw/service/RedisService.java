@@ -30,6 +30,10 @@ public class RedisService {
         redisTemplate.opsForValue().decrement(buildKey(type, id), cnt);
     }
 
+    public void setExpireDate(String type, String id, Long expirationTime){
+        redisTemplate.expire(buildKey(type, id), expirationTime, TimeUnit.MILLISECONDS);
+    }
+
     // 데이터 존재 여부
     public boolean isDateExist(String type, String id) {
         return Boolean.TRUE.equals(redisTemplate.hasKey(buildKey(type, id)));

@@ -59,6 +59,12 @@ public class Post extends TimeStamp {
     @Column
     private Long likeNum = 0L;
 
+    @Column
+    private Long answerNum = 0L;
+
+    @Column
+    private Long commentNum = 0L;
+
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
 
