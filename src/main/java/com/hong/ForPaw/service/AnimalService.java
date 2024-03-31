@@ -84,7 +84,7 @@ public class AnimalService {
                 .delayElements(Duration.ofMillis(50)) // 각 요청 사이에 0.05초 지연
                 .flatMap(shelter -> {
                     Long careRegNo = shelter.getId();
-                    URI uri = buildAnimalURI(animalURI, serviceKey, careRegNo);
+                    URI uri = buildAnimalURI(serviceKey, careRegNo);
 
                     return webClient.get()
                             .uri(uri)
@@ -109,7 +109,7 @@ public class AnimalService {
                 .delayElements(Duration.ofMillis(50)) // 각 요청 사이에 0.05초 지연
                 .flatMap(shelter -> {
                     Long careRegNo = shelter.getId();
-                    URI uri = buildAnimalURI(animalURI, serviceKey, careRegNo);
+                    URI uri = buildAnimalURI(serviceKey, careRegNo);
 
                     return webClient.get()
                             .uri(uri)
@@ -432,8 +432,8 @@ public class AnimalService {
         return animalNames[index];
     }
 
-    private URI buildAnimalURI(String baseUrl, String serviceKey, Long careRegNo) {
-        String url = baseUrl + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
+    private URI buildAnimalURI(String serviceKey, Long careRegNo) {
+        String url = animalURI + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
 
         try {
             return new URI(url);
