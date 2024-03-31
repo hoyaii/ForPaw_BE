@@ -33,6 +33,12 @@ public class AnimalController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
+    //@PostMapping("/address")
+    //public ResponseEntity<?> updateAddress(){
+    //    animalService.updateAddressByGoogle();
+    //    return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    //}
+
     @GetMapping("/animals")
     public ResponseEntity<?> findAnimalList(@RequestParam("page") Integer page, @RequestParam("sort") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
         AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(page, sort, userDetails.getUser().getId());

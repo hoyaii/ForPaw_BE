@@ -1,15 +1,13 @@
 package com.hong.ForPaw.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hong.ForPaw.controller.DTO.AnimalRequest;
-import com.hong.ForPaw.controller.DTO.AnimalResponse;
+import com.hong.ForPaw.controller.DTO.*;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Apply.Apply;
 import com.hong.ForPaw.domain.Apply.Status;
 import com.hong.ForPaw.domain.Animal.FavoriteAnimal;
 import com.hong.ForPaw.domain.User.User;
-import com.hong.ForPaw.controller.DTO.AnimalDTO;
 import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Shelter;
 import com.hong.ForPaw.repository.*;
@@ -27,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -59,11 +58,23 @@ public class AnimalService {
     @Value("${openAPI.service-key2}")
     private String serviceKey;
 
-    @Value("${openAPI.animalURL}")
-    private String baseUrl;
+    @Value("${openAPI.animal.uri}")
+    private String animalURI;
 
     @Value("${animal.names}")
     private String[] animalNames;
+
+    @Value("${kakao.key}")
+    private String kakaoAPIKey;
+
+    @Value("${kakao.map.geocoding.uri}")
+    private String kakaoGeoCodingURI;
+
+    @Value("${google.map.geocoding.uri}")
+    private String googleGeoCodingURI;
+
+    @Value("${google.api.key}")
+    private String googleAPIKey;
 
     @Transactional
     @Scheduled(cron = "0 0 0,12 * * *") // 매일 자정과 정오에 실행
@@ -74,7 +85,7 @@ public class AnimalService {
                 .delayElements(Duration.ofMillis(50)) // 각 요청 사이에 0.05초 지연
                 .flatMap(shelter -> {
                     Long careRegNo = shelter.getId();
-                    URI uri = buildURI(baseUrl, serviceKey, careRegNo);
+                    URI uri = buildAnimalURI(animalURI, serviceKey, careRegNo);
 
                     return webClient.get()
                             .uri(uri)
@@ -99,7 +110,7 @@ public class AnimalService {
                 .delayElements(Duration.ofMillis(50)) // 각 요청 사이에 0.05초 지연
                 .flatMap(shelter -> {
                     Long careRegNo = shelter.getId();
-                    URI uri = buildURI(baseUrl, serviceKey, careRegNo);
+                    URI uri = buildAnimalURI(animalURI, serviceKey, careRegNo);
 
                     return webClient.get()
                             .uri(uri)
@@ -109,6 +120,47 @@ public class AnimalService {
                             .flatMapMany(response -> processShelterUpdate(response, shelter).thenMany(Flux.empty()));
                 })
                 .then()
+                .block();
+
+        updateAddressByGoogle();
+    }
+
+    public void updateAddressByKakao(){
+        List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
+
+        Flux.fromIterable(shelters)
+                .delayElements(Duration.ofMillis(50))
+                .flatMap(shelter -> {
+                    URI uri = buildKakaoGeocodingURI(shelter.getCareAddr());
+                    return webClient.get()
+                            .uri(uri)
+                            .header("Authorization", "KakaoAK " + kakaoAPIKey)
+                            .retrieve()
+                            .bodyToMono(KakaoMapDTO.MapDTO.class)
+                            .flatMap(mapDTO -> Mono.justOrEmpty(mapDTO.documents().stream().findFirst()))
+                            .doOnNext(document -> {
+                                shelterRepository.updateAddressInfo(Double.valueOf(document.y()), Double.valueOf(document.x()), shelter.getId());
+                            });
+                })
+                .subscribe();
+    }
+
+    public void updateAddressByGoogle(){
+        List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
+
+        Flux.fromIterable(shelters)
+                .delayElements(Duration.ofMillis(50))
+                .flatMap(shelter -> {
+                    URI uri = buildGoogleGeocodingURI(shelter.getCareAddr());
+                    return webClient.get()
+                            .uri(uri)
+                            .retrieve()
+                            .bodyToMono(GoogleMapDTO.MapDTO.class)
+                            .flatMap(mapDTO -> Mono.justOrEmpty(mapDTO.results().stream().findFirst()))
+                            .doOnNext(resultDTO -> {
+                                shelterRepository.updateAddressInfo(resultDTO.geometry().location().lat(), resultDTO.geometry().location().lng(), shelter.getId());
+                            });
+                })
                 .subscribe();
     }
 
@@ -381,7 +433,7 @@ public class AnimalService {
         return animalNames[index];
     }
 
-    private URI buildURI(String baseUrl, String serviceKey, Long careRegNo) {
+    private URI buildAnimalURI(String baseUrl, String serviceKey, Long careRegNo) {
         String url = baseUrl + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
 
         try {
@@ -389,6 +441,25 @@ public class AnimalService {
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public URI buildKakaoGeocodingURI(String address) {
+        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(kakaoGeoCodingURI);
+        uriBuilder.queryParam("query", address);
+
+        URI uri = uriBuilder.build().encode().toUri();
+
+        return uri;
+    }
+
+    public URI buildGoogleGeocodingURI(String address) {
+        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(googleGeoCodingURI);
+        uriBuilder.queryParam("address", address);
+        uriBuilder.queryParam("key", googleAPIKey);
+
+        URI uri = uriBuilder.build().encode().toUri();
+
+        return uri;
     }
 
     private Pageable createPageable(int page, int size, String sortProperty) {

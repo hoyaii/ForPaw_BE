@@ -1,6 +1,6 @@
 package com.hong.ForPaw.service;
 
-import com.hong.ForPaw.controller.DTO.GoogleDTO;
+import com.hong.ForPaw.controller.DTO.GoogleOauthDTO;
 import com.hong.ForPaw.controller.DTO.KakaoOauthDTO;
 import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
@@ -66,28 +66,28 @@ public class UserService {
     @Value("${kakao.key}")
     private String kakaoAPIKey;
 
-    @Value("${kakao.token.uri}")
+    @Value("${kakao.oauth.token.uri}")
     private String kakaoTokenURI;
 
-    @Value("${kakao.userInfo.uri}")
+    @Value("${kakao.oauth.userInfo.uri}")
     private String kakaoUserInfoURI;
 
-    @Value("${kakao.redirect.uri}")
+    @Value("${kakao.oauth.redirect.uri}")
     private String kakaoRedirectURI;
 
     @Value("${google.client.id}")
     private String googleClientId;
 
-    @Value("${google.token.uri}")
+    @Value("${google.oauth.token.uri}")
     private String googleTokenURI;
 
     @Value("${google.client.passowrd}")
     private String googleClientSecret;
 
-    @Value("${google.redirect.uri}")
+    @Value("${google.oauth.redirect.uri}")
     private String googleRedirectURI;
 
-    @Value("${google.userInfo.uri}")
+    @Value("${google.oauth.userInfo.uri}")
     private  String googleUserInfoURI;
 
 
@@ -131,8 +131,8 @@ public class UserService {
     @Transactional
     public Map<String, String> googleLogin(String code){
         // 구글 엑세스 토큰 획득
-        GoogleDTO.TokenDTO token = getGoogleToken(code);
-        GoogleDTO.UserInfoDTO userInfoDTO = getGoogleUserInfo(token.access_token());
+        GoogleOauthDTO.TokenDTO token = getGoogleToken(code);
+        GoogleOauthDTO.UserInfoDTO userInfoDTO = getGoogleUserInfo(token.access_token());
 
         String email = userInfoDTO.email();
 
@@ -509,7 +509,7 @@ public class UserService {
         return response.blockFirst();
     }
 
-    private GoogleDTO.TokenDTO getGoogleToken(String code) {
+    private GoogleOauthDTO.TokenDTO getGoogleToken(String code) {
         String decode = URLDecoder.decode(code, StandardCharsets.UTF_8);
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
@@ -519,22 +519,22 @@ public class UserService {
         formData.add("redirect_uri", googleRedirectURI);
         formData.add("grant_type", "authorization_code");
 
-        Mono<GoogleDTO.TokenDTO> response = webClient.post()
+        Mono<GoogleOauthDTO.TokenDTO> response = webClient.post()
                 .uri(googleTokenURI)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(formData))
                 .retrieve()
-                .bodyToMono(GoogleDTO.TokenDTO.class);
+                .bodyToMono(GoogleOauthDTO.TokenDTO.class);
 
         return response.block();
     }
 
-    private GoogleDTO.UserInfoDTO getGoogleUserInfo(String token) {
-        Flux<GoogleDTO.UserInfoDTO> response = webClient.get()
+    private GoogleOauthDTO.UserInfoDTO getGoogleUserInfo(String token) {
+        Flux<GoogleOauthDTO.UserInfoDTO> response = webClient.get()
                 .uri(googleUserInfoURI)
                 .header("Authorization", "Bearer " + token)
                 .retrieve()
-                .bodyToFlux(GoogleDTO.UserInfoDTO.class);
+                .bodyToFlux(GoogleOauthDTO.UserInfoDTO.class);
 
         return response.blockFirst();
     }

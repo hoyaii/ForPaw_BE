@@ -35,4 +35,9 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
     @Transactional
     @Query("UPDATE Shelter s SET s.careTel = :careTel, s.careAddr = :careAddr, s.animalCnt = :animalCnt WHERE s.id = :shelterId")
     void updateShelterInfo(@Param("careTel") String careTel, @Param("careAddr") String careAddr, @Param("animalCnt") Long animalCnt, @Param("shelterId") Long shelterId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Shelter s SET s.latitude = :latitude, s.longitude = :longitude WHERE s.id = :shelterId")
+    void updateAddressInfo(@Param("latitude") Double latitude, @Param("longitude") Double longitude, @Param("shelterId") Long shelterId);
 }

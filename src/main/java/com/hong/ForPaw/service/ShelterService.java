@@ -18,19 +18,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -53,7 +50,7 @@ public class ShelterService {
     @Value("${openAPI.service-key2}")
     private String serviceKey;
 
-    @Value("${openAPI.careURL}")
+    @Value("${openAPI.shelter.uri}")
     private String baseUrl;
 
     @Transactional
@@ -67,7 +64,7 @@ public class ShelterService {
                     Integer uprCd = regionCode.getUprCd();
                     Integer orgCd = regionCode.getOrgCd();
 
-                    URI uri = buildURI(baseUrl, serviceKey, uprCd, orgCd);
+                    URI uri = buildShelterURI(baseUrl, serviceKey, uprCd, orgCd);
 
                     return webClient.get()
                             .uri(uri)
@@ -159,7 +156,7 @@ public class ShelterService {
                 .build();
     }
 
-    private URI buildURI(String baseUrl, String serviceKey, Integer uprCd, Integer orgCd) {
+    private URI buildShelterURI(String baseUrl, String serviceKey, Integer uprCd, Integer orgCd) {
         String url = baseUrl + "?serviceKey=" + serviceKey + "&upr_cd=" + uprCd + "&org_cd=" + orgCd + "&_type=json";
         try {
             return new URI(url);
