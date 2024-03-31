@@ -348,7 +348,7 @@ public class AnimalService {
                         .map(j -> j.response().body().items().item())
                         .filter(items -> !items.isEmpty())
                         .map(items -> items.get(0))
-                        .ifPresent(itemDTO -> shelter.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), Long.valueOf(json.response().body().totalCount())));
+                        .ifPresent(itemDTO -> shelterRepository.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), Long.valueOf(json.response().body().totalCount()), shelter.getId()));
             return null;
         }).then();
     }

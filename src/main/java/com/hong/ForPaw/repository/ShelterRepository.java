@@ -23,6 +23,8 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
 
     Page<Shelter> findByAnimalCntGreaterThan(Long animalCnt, Pageable pageable);
 
+    List<Shelter> findByAnimalCntGreaterThan(Long animalCnt);
+
     Page<Shelter> findByNameContaining(@Param("name") String name, Pageable pageable);
 
     @EntityGraph(attributePaths = {"regionCode"})

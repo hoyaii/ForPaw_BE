@@ -1,7 +1,7 @@
 package com.hong.ForPaw.service;
 
 import com.hong.ForPaw.controller.DTO.GoogleDTO;
-import com.hong.ForPaw.controller.DTO.KakaoDTO;
+import com.hong.ForPaw.controller.DTO.KakaoOauthDTO;
 import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
@@ -109,8 +109,8 @@ public class UserService {
     @Transactional
     public Map<String, String> kakaoLogin(String code) {
         // 카카오 엑세스 토큰 획득 => 유저 정보 획득
-        KakaoDTO.TokenDTO token = getKakaoToken(code);
-        KakaoDTO.UserInfoDTO userInfo = getKakaoUserInfo(token.access_token());
+        KakaoOauthDTO.TokenDTO token = getKakaoToken(code);
+        KakaoOauthDTO.UserInfoDTO userInfo = getKakaoUserInfo(token.access_token());
 
         // 카카오 계정으로 가입한 계정의 이메일은 {카카오 id}@kakao.com로 구성
         String email = userInfo.id().toString() + "@kakao.com";
@@ -482,29 +482,29 @@ public class UserService {
         return tokens;
     }
 
-    private KakaoDTO.TokenDTO getKakaoToken(String code) {
+    private KakaoOauthDTO.TokenDTO getKakaoToken(String code) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("grant_type", "authorization_code");
         formData.add("client_id", kakaoAPIKey);
         formData.add("redirect_uri", kakaoRedirectURI);
         formData.add("code", code);
 
-        Mono<KakaoDTO.TokenDTO> response = webClient.post()
+        Mono<KakaoOauthDTO.TokenDTO> response = webClient.post()
                 .uri(kakaoTokenURI)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(formData))
                 .retrieve()
-                .bodyToMono(KakaoDTO.TokenDTO.class);
+                .bodyToMono(KakaoOauthDTO.TokenDTO.class);
 
         return response.block();
     }
 
-    private KakaoDTO.UserInfoDTO getKakaoUserInfo(String token) {
-        Flux<KakaoDTO.UserInfoDTO> response = webClient.get()
+    private KakaoOauthDTO.UserInfoDTO getKakaoUserInfo(String token) {
+        Flux<KakaoOauthDTO.UserInfoDTO> response = webClient.get()
                 .uri(kakaoUserInfoURI)
                 .header("Authorization", "Bearer " + token)
                 .retrieve()
-                .bodyToFlux(KakaoDTO.UserInfoDTO.class);
+                .bodyToFlux(KakaoOauthDTO.UserInfoDTO.class);
 
         return response.blockFirst();
     }

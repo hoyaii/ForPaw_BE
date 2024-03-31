@@ -31,6 +31,12 @@ public class Shelter {
     private String careAddr;
 
     @Column
+    private Double latitude;
+
+    @Column
+    private Double longitude;
+
+    @Column
     private Long animalCnt = 0L;
 
     @Builder

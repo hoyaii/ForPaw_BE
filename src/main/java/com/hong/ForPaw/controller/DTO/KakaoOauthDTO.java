@@ -1,6 +1,6 @@
 package com.hong.ForPaw.controller.DTO;
 
-public class KakaoDTO {
+public class KakaoOauthDTO {
     public record TokenDTO(String token_type,
                            String access_token,
                            Integer expires_in,

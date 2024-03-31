@@ -31,7 +31,7 @@ public class SecurityConfig {
 
     public static class CustomSecurityFilterConfigurer extends SecurityConfigurerAdapter<DefaultSecurityFilterChain, HttpSecurity> {
         @Override
-        public void configure(HttpSecurity http) throws Exception {
+        public void configure(HttpSecurity http) {
             AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
             http.addFilter(new JwtAuthenticationFilter(authenticationManager));
         }
@@ -70,8 +70,7 @@ public class SecurityConfig {
 
                 // 인증 요구사항 및 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/email/**", "/api/accounts", "/api/login", "/api/password/**", "/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/refresh").permitAll()
+                        .requestMatchers("/api/email/**", "/api/accounts/**",  "/api/password/**", "/api/auth/**").permitAll()
                         .anyRequest().authenticated()
                 )
 
