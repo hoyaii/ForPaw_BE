@@ -47,10 +47,4 @@ public class Shelter {
         this.careTel = careTel;
         this.careAddr = careAddr;
     }
-
-    public void updateShelterInfo(String careTel, String careAddr, Long animalCnt){
-        this.careTel = careTel;
-        this.careAddr = careAddr;
-        this.animalCnt = animalCnt;
-    }
 }

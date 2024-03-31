@@ -53,7 +53,6 @@ public class AnimalService {
     private final EntityManager entityManager;
     private final ObjectMapper mapper;
     private final WebClient webClient;
-    private final RestTemplate restTemplate;
 
     @Value("${openAPI.service-key2}")
     private String serviceKey;

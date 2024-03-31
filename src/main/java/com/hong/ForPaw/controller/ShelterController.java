@@ -1,12 +1,10 @@
 package com.hong.ForPaw.controller;
 
-import com.hong.ForPaw.controller.DTO.AnimalResponse;
 import com.hong.ForPaw.controller.DTO.ShelterResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.ShelterService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,8 +24,8 @@ public class ShelterController {
     }
 
     @GetMapping("/shelters")
-    public ResponseEntity<?> findShelterList(Pageable pageable){
-        ShelterResponse.FindShelterListDTO responseDTO = shelterService.findShelterList(pageable);
+    public ResponseEntity<?> findShelterList(@RequestParam("lat") Double lat, @RequestParam("lng") Double lng){
+        ShelterResponse.FindShelterListDTO responseDTO = shelterService.findShelterList(lat, lng);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, responseDTO));
     }
 

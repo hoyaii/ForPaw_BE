@@ -4,7 +4,7 @@ import java.util.List;
 
 public class ShelterResponse {
 
-    public record FindShelterListDTO(List<ShelterDTO> shelterDTOS){}
+    public record FindShelterListDTO(List<ShelterDTO> shelters){}
 
     public record FindShelterByIdDTO(String careAddr,
                                      String careTel,
@@ -22,5 +22,8 @@ public class ShelterResponse {
                             String profileURL
     ){};
 
-    public record ShelterDTO(Long id, String name) {}
+    public record ShelterDTO(Long id,
+                             String name,
+                             Double lat,
+                             Double lng) {}
 }

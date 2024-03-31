@@ -44,7 +44,6 @@ public class ShelterService {
     private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final RedisService redisService;
     private final ObjectMapper mapper;
-    private final RestTemplate restTemplate;
     private final WebClient webClient;
 
     @Value("${openAPI.service-key2}")
@@ -77,12 +76,12 @@ public class ShelterService {
                 .subscribe(shelterRepository::saveAll);
     }
     @Transactional
-    public ShelterResponse.FindShelterListDTO findShelterList(Pageable pageable){
+    public ShelterResponse.FindShelterListDTO findShelterList(Double lat, Double lng){
+        // 가장 가까운 순으로 보호소 가져옴
+        List<Shelter> shelterPage = shelterRepository.findNearestShelters(lat, lng);
 
-        Page<Shelter> shelterPage = shelterRepository.findByAnimalCntGreaterThan(0L, pageable);
-
-        List<ShelterResponse.ShelterDTO> shelterDTOS = shelterPage.getContent().stream()
-                .map(shelter -> new ShelterResponse.ShelterDTO(shelter.getId(), shelter.getName()))
+        List<ShelterResponse.ShelterDTO> shelterDTOS = shelterPage.stream()
+                .map(shelter -> new ShelterResponse.ShelterDTO(shelter.getId(), shelter.getName(), shelter.getLatitude(), shelter.getLongitude()))
                 .collect(Collectors.toList());
 
         return new ShelterResponse.FindShelterListDTO(shelterDTOS);
