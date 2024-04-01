@@ -46,4 +46,15 @@ public class S3Service {
 
         return userId + "/" + formattedDateTime + "-" + uuid;
     }
+
+    // S3에서 이미지를 삭제하는 메소드를 추가합니다.
+    public void deleteImage(String objectKey) {
+        amazonS3.deleteObject(bucketName, objectKey);
+    }
+
+    // URI에서 도메인 이름을 제거하고 오브젝트 키 부분만 추출
+    public String extractObjectKeyFromUri(String s3Uri) {
+        int startIndex = s3Uri.indexOf(bucketName) + bucketName.length() + 1;
+        return s3Uri.substring(startIndex);
+    }
 }
