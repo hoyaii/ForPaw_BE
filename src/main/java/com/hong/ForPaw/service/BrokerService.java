@@ -4,9 +4,12 @@ import com.hong.ForPaw.controller.DTO.AlarmRequest;
 import com.hong.ForPaw.controller.DTO.ChatRequest;
 import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
+import com.hong.ForPaw.domain.Chat.ChatImage;
+import com.hong.ForPaw.domain.Chat.ChatRoom;
 import com.hong.ForPaw.domain.Chat.Message;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
+import com.hong.ForPaw.repository.Chat.ChatImageRepository;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.MessageRepository;
 import com.hong.ForPaw.repository.UserRepository;
@@ -31,6 +34,7 @@ public class BrokerService {
     private final AlarmRepository alarmRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
+    private final ChatImageRepository chatImageRepository;
     private final RabbitListenerEndpointRegistry rabbitListenerEndpointRegistry;
     private final SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory;
     private final RabbitTemplate rabbitTemplate;
@@ -98,6 +102,14 @@ public class BrokerService {
                     .date(messageDTO.date())
                     .build();
             messageRepository.save(message);
+
+            // 이미지 저장
+            ChatRoom chatRoomRef = entityManager.getReference(ChatRoom.class, messageDTO.chatRoomId());
+            ChatImage chatImage = ChatImage.builder()
+                    .chatRoom(chatRoomRef)
+                    .imageURL(messageDTO.imageURL())
+                    .build();
+            chatImageRepository.save(chatImage);
 
             // 알람 전송
             chatRoomRepository.findAllUserByChatRoomId(messageDTO.chatRoomId())
