@@ -6,11 +6,11 @@ import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Chat.ChatUser;
 import com.hong.ForPaw.domain.Chat.Message;
+import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Chat.MessageRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +32,7 @@ public class ChatService {
 
     private final MessageRepository messageRepository;
     private final ChatUserRepository chatUserRepository;
+    private final ChatRoomRepository chatRoomRepository;
     private final BrokerService brokerService;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -47,7 +48,7 @@ public class ChatService {
                 senderId,
                 senderName,
                 requestDTO.content(),
-                requestDTO.imageURL(),
+                requestDTO.imageURL(), // 프론트에서는 presignedURI를 통해 S3에 업로드 후, 이미지 URI를 서버로 넘겨준다
                 date
         );
 

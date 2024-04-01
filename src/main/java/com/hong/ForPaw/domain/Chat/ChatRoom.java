@@ -7,6 +7,10 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static jakarta.persistence.FetchType.LAZY;
 
@@ -27,9 +31,18 @@ public class ChatRoom extends TimeStamp {
     @Column
     private String name;
 
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 10)
+    private List<ChatImage> chatImages = new ArrayList<>();
+
     @Builder
     public ChatRoom(Group group, String name) {
         this.group = group;
         this.name = name;
+    }
+
+    public void addImage(ChatImage chatImage) {
+        chatImages.add(chatImage);
+        chatImage.updateChatRoom(this);
     }
 }

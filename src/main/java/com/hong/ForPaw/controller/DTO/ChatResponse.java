@@ -13,6 +13,12 @@ public class ChatResponse {
                              LocalDateTime date,
                              boolean isMine) {}
 
+    public record FindChatRoomDrawerDTO(List<ChatImageDTO> images, List<ChatUserDTO> users) {}
+
+    public record ChatImageDTO(String imageURL) {}
+
+    public record ChatUserDTO(String userName) {}
+
     public record FindChatRoomListDTO(List<ChatResponse.RoomDTO> rooms) {}
 
     public record RoomDTO(Long chatRoomId,

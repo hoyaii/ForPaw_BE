@@ -15,7 +15,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
     ChatRoom findByGroupId(Long groupId);
 
-    @Query("SELECT gu.user FROM GroupUser gu WHERE gu.group.id = (SELECT cr.group.id FROM ChatRoom cr WHERE cr.id = :chatRoomId)")
+    @Query("SELECT gu.user FROM GroupUser gu WHERE gu.group.id = (SELECT cr.group.id FROM ChatRoom cr WHERE cr.id = :chatRoomId) AND gu.role <> 'TEMP'")
     List<User> findAllUserByChatRoomId(@Param("chatRoomId") Long chatRoomId);
 
     @Modifying
