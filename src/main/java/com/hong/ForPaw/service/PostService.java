@@ -285,12 +285,21 @@ public class PostService {
         // 제목, 본문 업데이트
         post.updatePost(requestDTO.title(), requestDTO.content());
 
-        // 유지할 이미지를 제외한 모든 이미지 삭제
+        // 유지할 이미지를 제외한 모든 이미지 DB와 S3에서 삭제
+        List<PostImage> postImages = post.getPostImages();
+
         if (requestDTO.retainedImageIds() != null && !requestDTO.retainedImageIds().isEmpty()) {
             postImageRepository.deleteByPostIdAndIdNotIn(postId, requestDTO.retainedImageIds());
         } else {
             postImageRepository.deleteByPostId(postId);
         }
+
+        postImages.stream()
+                .filter(postImage -> !requestDTO.retainedImageIds().contains(postImage.getId()))
+                .forEach(postImage -> {
+                    String objectKey = s3Service.extractObjectKeyFromUri(postImage.getImageURL());
+                    s3Service.deleteImage(objectKey);
+                });
 
         // 새 이미지 추가
         List<PostImage> newImages = requestDTO.newImages().stream()
