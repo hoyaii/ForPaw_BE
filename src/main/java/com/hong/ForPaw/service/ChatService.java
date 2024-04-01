@@ -47,7 +47,9 @@ public class ChatService {
                 senderId,
                 senderName,
                 requestDTO.content(),
-                date);
+                requestDTO.imageURL(),
+                date
+        );
 
         // STOMP 프로토콜을 통한 실시간 메시지 전송
         String destination = "/room/" + requestDTO.chatRoomId();

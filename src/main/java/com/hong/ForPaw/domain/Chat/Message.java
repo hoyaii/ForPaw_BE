@@ -32,14 +32,17 @@ public class Message implements Serializable {
 
     private String content;
 
+    private String imageURL;
+
     private LocalDateTime date;
 
     @Builder
-    public Message(Long chatRoomId, Long senderId, String senderName, String content, LocalDateTime date) {
+    public Message(Long chatRoomId, Long senderId, String senderName, String content, String imageURL,LocalDateTime date) {
         this.chatRoomId = chatRoomId;
         this.senderId = senderId;
         this.senderName = senderName;
         this.content = content;
+        this.imageURL = imageURL;
         this.date = date;
     }
 }

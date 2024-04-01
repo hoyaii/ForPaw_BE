@@ -94,6 +94,7 @@ public class BrokerService {
                     .senderId(messageDTO.senderId())
                     .senderName(messageDTO.senderName())
                     .content(messageDTO.content())
+                    .imageURL(messageDTO.imageURL())
                     .date(messageDTO.date())
                     .build();
             messageRepository.save(message);

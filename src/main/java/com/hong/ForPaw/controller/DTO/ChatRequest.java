@@ -11,12 +11,15 @@ import java.time.LocalDateTime;
 
 public class ChatRequest {
 
-    public record SendMessageDTO(Long chatRoomId, String content) {}
+    public record SendMessageDTO(Long chatRoomId,
+                                 String content,
+                                 String imageURL) {}
 
     public record MessageDTO(Long chatRoomId,
                              Long senderId,
                              String senderName,
                              String content,
+                             String imageURL,
                              @JsonProperty("date")
                              @JsonSerialize(using = LocalDateTimeSerializer.class)
                              @JsonDeserialize(using = LocalDateTimeDeserializer.class)
