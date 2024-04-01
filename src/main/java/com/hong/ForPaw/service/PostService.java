@@ -40,7 +40,7 @@ public class PostService {
     private final CommentRepository commentRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final RedisService redisService;
-    private final UserRepository userRepository;
+    private final S3Service s3Service;
     private final BrokerService brokerService;
     private final EntityManager entityManager;
     public static final Long POST_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
@@ -306,16 +306,26 @@ public class PostService {
     @Transactional
     public void deletePost(Long postId, User user){
         // 존재하지 않은 포스트면 에러
-        Long writerId = postRepository.findUserIdByPostId(postId).orElseThrow(
+        Post post = postRepository.findByIdWithUserAndParent(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
-        // 답변글이라서 부모(질문글)이 존재한다면, 답변 수 감소
-        Optional<Post> parentOP = postRepository.findParentByPostId(postId);
-        parentOP.ifPresent(post -> postRepository.decrementAnswerNum(post.getId()));
-
         // 수정 권한 체크
-        checkPostAuthority(writerId, user);
+        checkPostAuthority(post.getUser().getId(), user);
+
+        // 답변글이라서 부모(질문글)이 존재한다면, 답변 수 감소
+        Post parent = post.getParent();
+        if(parent != null){
+            postRepository.decrementAnswerNum(parent.getId());
+        }
+
+        // S3에 저장된 이미지 삭제
+        post.getPostImages().forEach(
+                postImage -> {
+                    String objectKey = s3Service.extractObjectKeyFromUri(postImage.getImageURL());
+                    s3Service.deleteImage(objectKey);
+                }
+        );
 
         postLikeRepository.deleteAllByPostId(postId);
         postReadStatusRepository.deleteAllByPostId(postId);
