@@ -4,9 +4,11 @@ import com.hong.ForPaw.controller.DTO.ChatRequest;
 import com.hong.ForPaw.controller.DTO.ChatResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Chat.ChatImage;
 import com.hong.ForPaw.domain.Chat.ChatUser;
 import com.hong.ForPaw.domain.Chat.Message;
 import com.hong.ForPaw.domain.User.User;
+import com.hong.ForPaw.repository.Chat.ChatImageRepository;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Chat.MessageRepository;
@@ -33,6 +35,7 @@ public class ChatService {
     private final MessageRepository messageRepository;
     private final ChatUserRepository chatUserRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatImageRepository chatImageRepository;
     private final BrokerService brokerService;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -126,6 +129,25 @@ public class ChatService {
     }
 
     @Transactional
+    public ChatResponse.FindChatRoomDrawerDTO findChatRoomDrawer(Long chatRoomId, Long userId){
+        // 권한 체크
+        checkChatAuthority(userId, chatRoomId);
+
+        // 채팅방에 참여한 유저
+        List<ChatResponse.ChatUserDTO> chatUsers = chatRoomRepository.findAllUserByChatRoomId(chatRoomId).stream()
+                .map(user -> new ChatResponse.ChatUserDTO(user.getName()))
+                .toList();
+
+        // 채팅방의 이미지
+        Pageable pageable = createPageable(0, 6, "id");
+        List<ChatResponse.ChatImageDTO> chatImages = chatImageRepository.findByChatRoomId(chatRoomId, pageable).getContent().stream()
+                .map(chatImage -> new ChatResponse.ChatImageDTO(chatImage.getImageURL()))
+                .toList();
+
+        return new ChatResponse.FindChatRoomDrawerDTO(chatImages, chatUsers);
+    }
+
+    @Transactional
     public void readMessage(ChatRequest.ReadMessageDTO requestDTO, Long userId){
         // 권한 체크
         ChatUser chatUser = checkChatAuthority(userId, requestDTO.chatRoomId());
@@ -140,5 +162,9 @@ public class ChatService {
         }
 
         return chatUserOP.get();
+    }
+
+    private Pageable createPageable(int page, int size, String sortProperty) {
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 }
