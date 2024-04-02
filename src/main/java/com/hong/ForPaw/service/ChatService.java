@@ -96,7 +96,7 @@ public class ChatService {
         // 권한 체크
         ChatUser chatUser = checkChatAuthority(userId, chatRoomId);
 
-        List<ChatResponse.MessageDTD> messageDTOs = new ArrayList<>();
+        List<ChatResponse.MessageDTD> messageDTOS = new ArrayList<>();
         boolean isLast = false;
         int currentPage = startPage;
 
@@ -105,7 +105,7 @@ public class ChatService {
             Page<Message> messages = messageRepository.findByChatRoomId(chatRoomId, pageable);
             isLast = messages.isLast(); // 현재 페이지가 마지막 페이지인지 확인
 
-            List<ChatResponse.MessageDTD> currentMessages = messages.getContent().stream()
+            List<ChatResponse.MessageDTD> currentMessageDTOS = messages.getContent().stream()
                     .map(message -> new ChatResponse.MessageDTD(message.getId(),
                             message.getSenderName(),
                             message.getContent(),
@@ -113,19 +113,19 @@ public class ChatService {
                             message.getSenderId().equals(userId)))
                     .toList();
 
-            messageDTOs.addAll(currentMessages); // 현재 페이지의 데이터를 추가
+            messageDTOS.addAll(currentMessageDTOS); // 현재 페이지의 데이터를 추가
             currentPage++; // 다음 페이지로 이동
         }
 
         // 마지막으로 읽은 메시지의 id와 index 업데이트
-        if (!messageDTOs.isEmpty()) {
-            ChatResponse.MessageDTD lastMessageDTO = messageDTOs.get(messageDTOs.size() - 1);
+        if (!messageDTOS.isEmpty()) {
+            ChatResponse.MessageDTD lastMessageDTO = messageDTOS.get(messageDTOS.size() - 1);
             long chatNum = messageRepository.countByChatRoomId(chatRoomId);
 
             chatUser.updateLastMessage(Long.valueOf(lastMessageDTO.messageId()), chatNum - 1);
         }
 
-        return new ChatResponse.FindMessageListInRoomDTO(chatUser.getLastMessageId(), messageDTOs);
+        return new ChatResponse.FindMessageListInRoomDTO(chatUser.getLastMessageId(), messageDTOS);
     }
 
     @Transactional
@@ -134,17 +134,31 @@ public class ChatService {
         checkChatAuthority(userId, chatRoomId);
 
         // 채팅방에 참여한 유저
-        List<ChatResponse.ChatUserDTO> chatUsers = chatRoomRepository.findAllUserByChatRoomId(chatRoomId).stream()
+        List<ChatResponse.ChatUserDTO> chatUserDTOS = chatRoomRepository.findAllUserByChatRoomId(chatRoomId).stream()
                 .map(user -> new ChatResponse.ChatUserDTO(user.getName()))
                 .toList();
 
         // 채팅방의 이미지
         Pageable pageable = createPageable(0, 6, "id");
-        List<ChatResponse.ChatImageDTO> chatImages = chatImageRepository.findByChatRoomId(chatRoomId, pageable).getContent().stream()
+        List<ChatResponse.ChatImageDTO> chatImageDTOS = chatImageRepository.findByChatRoomId(chatRoomId, pageable).getContent().stream()
                 .map(chatImage -> new ChatResponse.ChatImageDTO(chatImage.getImageURL()))
                 .toList();
 
-        return new ChatResponse.FindChatRoomDrawerDTO(chatImages, chatUsers);
+        return new ChatResponse.FindChatRoomDrawerDTO(chatImageDTOS, chatUserDTOS);
+    }
+
+    @Transactional
+    public ChatResponse.FindChatRoomImagesDTO findChatRoomImages(Long chatRoomId, Long userId, Integer page){
+        // 권한 체크
+        checkChatAuthority(userId, chatRoomId);
+
+        // 채팅방의 이미지
+        Pageable pageable = createPageable(page, 6, "id");
+        List<ChatResponse.ChatImageDTO> chatImageDTOS = chatImageRepository.findByChatRoomId(chatRoomId, pageable).getContent().stream()
+                .map(chatImage -> new ChatResponse.ChatImageDTO(chatImage.getImageURL()))
+                .toList();
+
+        return new ChatResponse.FindChatRoomImagesDTO(chatImageDTOS);
     }
 
     @Transactional

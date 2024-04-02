@@ -27,4 +27,5 @@ public class ChatResponse {
                           LocalDateTime lastMessageTime,
                           Long offset) {}
 
+    public record FindChatRoomImagesDTO(List<ChatImageDTO> images) {}
 }
