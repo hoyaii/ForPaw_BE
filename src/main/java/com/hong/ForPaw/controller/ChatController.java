@@ -38,6 +38,12 @@ public class ChatController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
+    @GetMapping("/chatRooms/{chatRoomId}/drawer")
+    public ResponseEntity<?> findChatRoomDrawer(@PathVariable Long chatRoomId, @AuthenticationPrincipal CustomUserDetails userDetails){
+        ChatResponse.FindChatRoomDrawerDTO responseDTO = chatService.findChatRoomDrawer(chatRoomId, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
     @MessageMapping("/chat/read")
     public void readMessage(@Payload ChatRequest.ReadMessageDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) {
         chatService.readMessage(requestDTO, userDetails.getUser().getId());
