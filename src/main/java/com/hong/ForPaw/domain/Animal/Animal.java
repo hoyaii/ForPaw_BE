@@ -37,6 +37,9 @@ public class Animal extends TimeStamp {
     private String kind;
 
     @Column
+    private AnimalType category;
+
+    @Column
     private String color;
 
     @Column
@@ -82,12 +85,13 @@ public class Animal extends TimeStamp {
     private LocalDateTime removedAt;
 
     @Builder
-    public Animal(Long id, Shelter shelter, LocalDate happenDt, String happenPlace, String kind, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark, String name, String region) {
+    public Animal(Long id, Shelter shelter, LocalDate happenDt, String happenPlace, String kind, AnimalType category, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark, String name, String region) {
         this.id = id;
         this.shelter = shelter;
         this.happenDt = happenDt;
         this.happenPlace = happenPlace;
         this.kind = kind;
+        this.category = category;
         this.color = color;
         this.age = age;
         this.weight = weight;

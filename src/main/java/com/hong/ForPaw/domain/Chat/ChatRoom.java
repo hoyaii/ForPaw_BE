@@ -31,7 +31,7 @@ public class ChatRoom extends TimeStamp {
     @Column
     private String name;
 
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 10)
     private List<ChatImage> chatImages = new ArrayList<>();
 

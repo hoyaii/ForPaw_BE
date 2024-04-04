@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.*;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Animal.AnimalType;
 import com.hong.ForPaw.domain.Apply.Apply;
 import com.hong.ForPaw.domain.Apply.Status;
 import com.hong.ForPaw.domain.Animal.FavoriteAnimal;
@@ -412,6 +413,7 @@ public class AnimalService {
                 .happenDt(LocalDate.parse(itemDTO.happenDt(), formatter))
                 .happenPlace(itemDTO.happenPlace())
                 .kind(itemDTO.kindCd())
+                .category(parseAnimalType(itemDTO.kindCd()))
                 .color(itemDTO.colorCd())
                 .age(itemDTO.age())
                 .weight(itemDTO.weight())
@@ -424,6 +426,16 @@ public class AnimalService {
                 .specialMark(itemDTO.specialMark())
                 .region(shelter.getRegionCode().getUprName() + " " + shelter.getRegionCode().getOrgName())
                 .build();
+    }
+
+    public AnimalType parseAnimalType(String input) {
+        if (input.startsWith("[개]")) {
+            return AnimalType.dog;
+        } else if (input.startsWith("[고양이]")) {
+            return AnimalType.cat;
+        } else {
+            return AnimalType.other;
+        }
     }
 
     // 동물 이름 지어주는 메서드
