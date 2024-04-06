@@ -2,6 +2,7 @@ package com.hong.ForPaw.controller.DTO;
 
 import com.hong.ForPaw.domain.Group.Role;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,6 +11,7 @@ public class GroupRequest {
 
     public record CreateGroupDTO(
             @NotBlank(message = "그룹의 이름을 입력해주세요.")
+            @Pattern(regexp = "^[a-zA-Z0-9가-힣]+$", message = "그룹 이름에는 띄어쓰기를 사용할 수 없습니다.")
             String name,
             @NotBlank(message = "활동 지역을 입력해주세요.")
             String region,
@@ -22,6 +24,7 @@ public class GroupRequest {
 
     public record UpdateGroupDTO(
             @NotBlank(message = "그룹의 이름을 입력해주세요.")
+            @Pattern(regexp = "^[a-zA-Z0-9가-힣]+$", message = "그룹 이름에는 띄어쓰기를 사용할 수 없습니다.")
             String name,
             @NotBlank(message = "활동 지역을 입력해주세요.")
             String region,
@@ -42,6 +45,7 @@ public class GroupRequest {
 
     public record CreateMeetingDTO(
             @NotBlank(message = "정기모임의 이름을 입력해주세요.")
+            @Pattern(regexp = "^[a-zA-Z0-9가-힣]+$", message = "모임 이름에는 띄어쓰기를 사용할 수 없습니다.")
             String name,
             @NotBlank(message = "모임 날짜를 입력해주세요.")
             LocalDateTime date,
@@ -58,6 +62,7 @@ public class GroupRequest {
 
     public record UpdateMeetingDTO(
             @NotBlank(message = "정기모임의 이름을 입력해주세요.")
+            @Pattern(regexp = "^[a-zA-Z0-9가-힣]+$", message = "모임 이름에는 띄어쓰기를 사용할 수 없습니다.")
             String name,
             @NotBlank(message = "모임 날짜를 입력해주세요.")
             LocalDateTime date,

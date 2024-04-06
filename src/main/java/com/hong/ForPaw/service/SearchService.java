@@ -1,6 +1,8 @@
 package com.hong.ForPaw.service;
 
 import com.hong.ForPaw.controller.DTO.SearchResponse;
+import com.hong.ForPaw.core.errors.CustomException;
+import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Group.Group;
 import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Shelter;
@@ -30,8 +32,7 @@ public class SearchService {
 
     @Transactional
     public SearchResponse.SearchAllDTO searchAll(String keyword){
-        // 전체 검색 시 일단 0페이지의 데이터 5개만 보내준다.
-        Pageable pageable = createPageable(0, 5, "id");
+        checkKeyword(keyword);
 
         // 보호소 검색
         List<SearchResponse.ShelterDTO> shelterDTOS = getShelterDTOsByKeyword(keyword);
@@ -47,6 +48,7 @@ public class SearchService {
 
     @Transactional
     public SearchResponse.SearchShelterListDTO searchShelterList(String keyword){
+        checkKeyword(keyword);
         List<SearchResponse.ShelterDTO> shelterDTOS = getShelterDTOsByKeyword(keyword);
 
         return new SearchResponse.SearchShelterListDTO(shelterDTOS);
@@ -54,6 +56,7 @@ public class SearchService {
 
     @Transactional
     public SearchResponse.SearchPostListDTO searchPostList(String keyword){
+        checkKeyword(keyword);
         List<SearchResponse.PostDTO> postDTOS = getPostDTOsByKeyword(keyword);
 
         return new SearchResponse.SearchPostListDTO(postDTOS);
@@ -61,6 +64,8 @@ public class SearchService {
 
     @Transactional
     public SearchResponse.SearchGroupListDTO searchGroupList(String keyword){
+        checkKeyword(keyword);
+
         List<SearchResponse.GroupDTO> groupDTOS = getGroupDTOsByKeyword(keyword);
 
         return new SearchResponse.SearchGroupListDTO(groupDTOS);
@@ -126,6 +131,12 @@ public class SearchService {
                 .collect(Collectors.toList());
 
         return groupDTOS;
+    }
+
+    private void checkKeyword(String keyword){
+        if (keyword == null || keyword.trim().isEmpty()) {
+            throw new CustomException(ExceptionCode.BAD_APPROACH, "키워드는 비어 있을 수 없습니다.");
+        }
     }
 
     private Pageable createPageable(int page, int size, String sortProperty) {
