@@ -485,7 +485,7 @@ public class GroupService {
         for (Long groupId : groupIds) {
             Long likeNum = redisService.getDataInLong("groupLikeNum", groupId.toString());
             if (likeNum != null) {
-                postRepository.updateLikeNum(likeNum, groupId);
+                groupRepository.updateLikeNum(likeNum, groupId);
             }
         }
         return groupIdsPage;

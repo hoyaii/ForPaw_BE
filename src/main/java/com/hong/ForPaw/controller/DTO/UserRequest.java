@@ -66,6 +66,7 @@ public class UserRequest {
             String state,
             String district,
             String subDistrict,
+            @NotBlank(message = "프로필을 입력해주세요.")
             String profileURL) {}
 
     public record CurPasswordDTO(@NotBlank String password) {}
@@ -87,6 +88,7 @@ public class UserRequest {
             String state,
             String district,
             String subDistrict,
+            @NotBlank(message = "프로필을 입력해주세요.")
             String profileURL) {}
 
     public record UpdateAccessTokenDTO(String refreshToken) {}
