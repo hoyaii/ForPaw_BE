@@ -23,8 +23,8 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
 
     List<Shelter> findByAnimalCntGreaterThan(Long animalCnt);
 
-    @Query("SELECT s FROM Shelter s WHERE s.name LIKE %:keyword% OR s.careAddr LIKE %:keyword%")
-    Page<Shelter> findByKeywordContaining(String keyword, Pageable pageable);
+    @Query(value = "SELECT * FROM shelter_tb WHERE MATCH(name, care_addr) AGAINST(:keyword IN BOOLEAN MODE)", nativeQuery = true)
+    List<Shelter> findByKeywordContaining(@Param("keyword") String keyword);
 
     @EntityGraph(attributePaths = {"regionCode"})
     @Query("SELECT s FROM Shelter s")

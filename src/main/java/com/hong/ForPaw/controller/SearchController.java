@@ -25,20 +25,20 @@ public class SearchController {
     }
 
     @GetMapping("/search/shelters")
-    public ResponseEntity<?> searchShelterList(@RequestParam String keyword, @RequestParam Integer page){
-        SearchResponse.SearchShelterListDTO responseDTO = searchService.searchShelterList(keyword, page);
+    public ResponseEntity<?> searchShelterList(@RequestParam String keyword){
+        SearchResponse.SearchShelterListDTO responseDTO = searchService.searchShelterList(keyword);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/search/posts")
-    public ResponseEntity<?> searchPostList(@RequestParam String keyword, @RequestParam Integer page){
-        SearchResponse.SearchPostListDTO responseDTO = searchService.searchPostList(keyword, page);
+    public ResponseEntity<?> searchPostList(@RequestParam String keyword){
+        SearchResponse.SearchPostListDTO responseDTO = searchService.searchPostList(keyword);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/search/groups")
-    public ResponseEntity<?> searchGroupList(@RequestParam String keyword, @RequestParam Integer page){
-        SearchResponse.SearchGroupListDTO responseDTO = searchService.searchGroupList(keyword, page);
+    public ResponseEntity<?> searchGroupList(@RequestParam String keyword){
+        SearchResponse.SearchGroupListDTO responseDTO = searchService.searchGroupList(keyword);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }

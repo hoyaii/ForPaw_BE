@@ -34,45 +34,42 @@ public class SearchService {
         Pageable pageable = createPageable(0, 5, "id");
 
         // 보호소 검색
-        List<SearchResponse.ShelterDTO> shelterDTOS = getShelterDTOsByKeyword(keyword, pageable);
+        List<SearchResponse.ShelterDTO> shelterDTOS = getShelterDTOsByKeyword(keyword);
 
         // 게시글 검색
-        List<SearchResponse.PostDTO> postDTOS = getPostDTOsByKeyword(keyword, pageable);
+        List<SearchResponse.PostDTO> postDTOS = getPostDTOsByKeyword(keyword);
 
         // 그룹 검색
-        List<SearchResponse.GroupDTO> groupDTOS = getGroupDTOsByKeyword(keyword, pageable);
+        List<SearchResponse.GroupDTO> groupDTOS = getGroupDTOsByKeyword(keyword);
 
         return new SearchResponse.SearchAllDTO(shelterDTOS, postDTOS, groupDTOS);
     }
 
     @Transactional
-    public SearchResponse.SearchShelterListDTO searchShelterList(String keyword, Integer page){
-        Pageable pageable = createPageable(page, 5, "id");
-        List<SearchResponse.ShelterDTO> shelterDTOS = getShelterDTOsByKeyword(keyword, pageable);
+    public SearchResponse.SearchShelterListDTO searchShelterList(String keyword){
+        List<SearchResponse.ShelterDTO> shelterDTOS = getShelterDTOsByKeyword(keyword);
 
         return new SearchResponse.SearchShelterListDTO(shelterDTOS);
     }
 
     @Transactional
-    public SearchResponse.SearchPostListDTO searchPostList(String keyword, Integer page){
-        Pageable pageable =createPageable(page, 5, "id");
-        List<SearchResponse.PostDTO> postDTOS = getPostDTOsByKeyword(keyword, pageable);
+    public SearchResponse.SearchPostListDTO searchPostList(String keyword){
+        List<SearchResponse.PostDTO> postDTOS = getPostDTOsByKeyword(keyword);
 
         return new SearchResponse.SearchPostListDTO(postDTOS);
     }
 
     @Transactional
-    public SearchResponse.SearchGroupListDTO searchGroupList(String keyword, Integer page){
-        Pageable pageable =createPageable(page, 5, "id");
-        List<SearchResponse.GroupDTO> groupDTOS = getGroupDTOsByKeyword(keyword, pageable);
+    public SearchResponse.SearchGroupListDTO searchGroupList(String keyword){
+        List<SearchResponse.GroupDTO> groupDTOS = getGroupDTOsByKeyword(keyword);
 
         return new SearchResponse.SearchGroupListDTO(groupDTOS);
     }
 
-    private List<SearchResponse.ShelterDTO> getShelterDTOsByKeyword(String keyword, Pageable pageable){
-        Page<Shelter> shelterPage = shelterRepository.findByKeywordContaining(keyword, pageable);
+    private List<SearchResponse.ShelterDTO> getShelterDTOsByKeyword(String keyword){
+        List<Shelter> shelters = shelterRepository.findByKeywordContaining("*" + keyword + "*");
 
-        List<SearchResponse.ShelterDTO> shelterDTOS = shelterPage.getContent().stream()
+        List<SearchResponse.ShelterDTO> shelterDTOS = shelters.stream()
                 .filter(shelter -> shelter.getAnimalCnt() > 0)
                 .map(shelter -> new SearchResponse.ShelterDTO(shelter.getId(), shelter.getName()))
                 .collect(Collectors.toList());
@@ -80,11 +77,11 @@ public class SearchService {
         return shelterDTOS;
     }
 
-    private List<SearchResponse.PostDTO> getPostDTOsByKeyword(String keyword, Pageable pageable){
+    private List<SearchResponse.PostDTO> getPostDTOsByKeyword(String keyword){
         // PostImages는 배치로 가져온다
-        Page<Post> postPage = postRepository.findByTitleContaining(keyword, pageable);
+        List<Post> posts = postRepository.findByTitleContaining("*" + keyword + "*");
 
-        List<SearchResponse.PostDTO> postDTOS = postPage.getContent().stream()
+        List<SearchResponse.PostDTO> postDTOS = posts.stream()
                 .map(post -> {
                     List<SearchResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
                             .map(postImage -> new SearchResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
@@ -107,10 +104,10 @@ public class SearchService {
         return postDTOS;
     }
 
-    private List<SearchResponse.GroupDTO> getGroupDTOsByKeyword(String keyword, Pageable pageable){
-        Page<Group> groupPage = groupRepository.findByNameContaining(keyword, pageable);
+    private List<SearchResponse.GroupDTO> getGroupDTOsByKeyword(String keyword){
+        List<Group> groups = groupRepository.findByNameContaining("*" + keyword + "*");
 
-        List<SearchResponse.GroupDTO> groupDTOS = groupPage.getContent().stream()
+        List<SearchResponse.GroupDTO> groupDTOS = groups.stream()
                 .map(group -> {
                     Long participantNum = redisService.getDataInLong("participantNum", group.getId().toString());
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());

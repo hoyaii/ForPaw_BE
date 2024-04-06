@@ -37,8 +37,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE p.group.id = :groupId AND p.removedAt IS NULL")
     Page<Post> findByGroupId(@Param("groupId") Long groupId, Pageable pageable);
 
-    @Query("SELECT p FROM Post p WHERE p.title LIKE %:title% AND p.removedAt IS NULL")
-    Page<Post> findByTitleContaining(@Param("title") String title, Pageable pageable);
+    @Query(value = "SELECT * FROM post_tb WHERE MATCH(title) AGAINST(:title IN BOOLEAN MODE) AND removed_at IS NULL", nativeQuery = true)
+    List<Post> findByTitleContaining(@Param("title") String title);
 
     @EntityGraph(attributePaths = {"user"})
     @Query("SELECT p FROM Post p WHERE p.postType = :postType AND p.removedAt IS NULL")

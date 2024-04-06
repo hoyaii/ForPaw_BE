@@ -22,7 +22,8 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
     boolean existsById(Long id);
 
-    Page<Group> findByNameContaining(@Param("name") String name, Pageable pageable);
+    @Query(value = "SELECT * FROM groups_tb WHERE MATCH(name) AGAINST(:name IN BOOLEAN MODE)", nativeQuery = true)
+    List<Group> findByNameContaining(@Param("name") String name);
 
     @Query("SELECT g.id FROM Group g")
     Page<Long> findGroupIds(Pageable pageable);
