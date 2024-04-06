@@ -1,6 +1,7 @@
 package com.hong.ForPaw.repository.Animal;
 
 import com.hong.ForPaw.domain.Animal.Animal;
+import com.hong.ForPaw.domain.Animal.AnimalType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,6 +18,9 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
 
     @Query("SELECT a FROM Animal a WHERE a.removedAt IS NULL")
     Page<Animal> findAll(Pageable pageable);
+
+    @Query("SELECT a FROM Animal a WHERE (:category IS NULL OR a.category = :category) AND a.removedAt IS NULL")
+    Page<Animal> findAllByCategory(@Param("category") AnimalType category, Pageable pageable);
 
     @Query("SELECT a FROM Animal a WHERE a.id = :id AND a.removedAt IS NULL")
     Optional<Animal> findById(@Param("id") Long id);

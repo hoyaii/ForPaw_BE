@@ -24,7 +24,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
@@ -35,9 +34,7 @@ import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -166,8 +163,20 @@ public class AnimalService {
 
     @Transactional
     public AnimalResponse.FindAnimalListDTO findAnimalList(Integer page, String sort, Long userId){
-        Pageable pageable =createPageable(page, 5, sort);
-        Page<Animal> animalPage = animalRepository.findAll(pageable);
+        // animalType 매핑을 해주는 맵
+        Map<String, AnimalType> animalTypeMap = Map.of(
+                "dog", AnimalType.dog,
+                "cat", AnimalType.cat,
+                "other", AnimalType.other
+        );
+
+        AnimalType category = Optional.ofNullable(sort)
+                .filter(s -> !s.equals("date")) // date가 들어오면 모든 동물이 최신순으로 정렬되서 나감
+                .flatMap(s -> Optional.ofNullable(animalTypeMap.get(s)))
+                .orElseThrow(() -> new CustomException(ExceptionCode.BAD_APPROACH));
+
+        Pageable pageable =createPageable(page, 5, "id");
+        Page<Animal>  animalPage = animalRepository.findAllByCategory(category, pageable);
 
         if(animalPage.isEmpty()){
             throw new CustomException(ExceptionCode.ANIMAL_NOT_EXIST);
