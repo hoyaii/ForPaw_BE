@@ -12,7 +12,8 @@ public class UserResponse {
 
     public record ProfileDTO(String name,
                              String nickName,
-                             String region,
-                             String subRegion,
+                             String state,
+                             String district,
+                             String subDistrict,
                              String profileURL) {}
 }

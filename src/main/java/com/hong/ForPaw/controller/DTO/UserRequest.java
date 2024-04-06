@@ -42,8 +42,9 @@ public class UserRequest {
             @Size(min=2, max=20, message = "닉네임은 2자에서 20자 이내여야 합니다.")
             String nickName,
             @NotBlank(message = "활동 지역을 입력해주세요.")
-            String region,
-            String subRegion,
+            String state,
+            String district,
+            String subDistrict,
             @NotBlank(message = "비밀번호를 입력해주세요.")
             @Size(min=8, max=20, message = "비밀번호는 8자에서 20자 이내여야 합니다.")
             @Pattern(regexp = "^(?=.*[a-zA-Z])(?=.*\\d)(?=.*[@#$%^&+=!~`<>,./?;:'\"\\[\\]{}\\\\()|_-])\\S*$", message = "올바른 비밀번호 형식을 입력해주세요.")
@@ -62,8 +63,9 @@ public class UserRequest {
             @Size(min=2, max=20, message = "닉네임은 2자에서 20자 이내여야 합니다.")
             String nickName,
             @NotBlank(message = "활동 지역을 입력해주세요.")
-            String region,
-            String subRegion,
+            String state,
+            String district,
+            String subDistrict,
             String profileURL) {}
 
     public record CurPasswordDTO(@NotBlank String password) {}
@@ -82,8 +84,9 @@ public class UserRequest {
             @NotBlank(message="닉네을 입력해주세요.")
             String nickName,
             @NotBlank(message = "활동 지역을 입력해주세요.")
-            String region,
-            String subRegion,
+            String state,
+            String district,
+            String subDistrict,
             String profileURL) {}
 
     public record UpdateAccessTokenDTO(String refreshToken) {}

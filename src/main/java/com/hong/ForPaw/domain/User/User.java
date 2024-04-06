@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 
@@ -42,19 +41,23 @@ public class User extends TimeStamp {
     @Column
     private String profileURL;
 
-    // 활동 지역 - 시/도/군
+    // 활동 지역 - 시/도
     @Column
-    private String region;
+    private String state;
 
-    // 활동 지역 - 군/구
+    // 활동 지역 - 군/구/시
     @Column
-    private String subRegion;
+    private String district;
+
+    // 활동 지역 - 동/읍/면
+    @Column
+    private String subDistrict;
 
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
 
     @Builder
-    public User(Long id, String name, String nickName, String email, String password, Role role, String profileURL, String region, String subRegion) {
+    public User(Long id, String name, String nickName, String email, String password, Role role, String profileURL, String state, String district, String subDistrict) {
         this.id = id;
         this.name = name;
         this.nickName = nickName;
@@ -62,18 +65,20 @@ public class User extends TimeStamp {
         this.password = password;
         this.role = role;
         this.profileURL = profileURL;
-        this.region = region;
-        this.subRegion = subRegion;
+        this.state = state;
+        this.district = district;
+        this.subDistrict = subDistrict;
     }
 
     public void updatePassword (String password) {
         this.password  = password;
     }
 
-    public void updateProfile(String nickName, String region, String subRegion, String profileURL){
+    public void updateProfile(String nickName, String province, String district, String subDistrict,String profileURL){
         this.nickName = nickName;
-        this.region = region;
-        this.subRegion = subRegion;
+        this.state = province;
+        this.district = district;
+        this.subDistrict = subDistrict;
         this.profileURL = profileURL;
     }
 

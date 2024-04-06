@@ -167,8 +167,9 @@ public class UserService {
                 .password(passwordEncoder.encode(requestDTO.password()))
                 .role(Role.USER)
                 .profileURL(requestDTO.profileURL())
-                .region(requestDTO.region())
-                .subRegion(requestDTO.subRegion())
+                .state(requestDTO.state())
+                .district(requestDTO.district())
+                .subDistrict(requestDTO.subDistrict())
                 .build();
 
         userRepository.save(user);
@@ -193,8 +194,9 @@ public class UserService {
                 .password(passwordEncoder.encode(generatePassword())) // 임의의 비밀번호로 생성
                 .role(Role.USER)
                 .profileURL(requestDTO.profileURL())
-                .region(requestDTO.region())
-                .subRegion(requestDTO.subRegion())
+                .state(requestDTO.state())
+                .district(requestDTO.district())
+                .subDistrict(requestDTO.subDistrict())
                 .build();
 
         userRepository.save(user);
@@ -291,7 +293,7 @@ public class UserService {
     @Transactional
     public UserResponse.ProfileDTO findProfile(Long userId){
         User user = userRepository.findById(userId).get();
-        return new UserResponse.ProfileDTO(user.getName(), user.getNickName(), user.getRegion(), user.getSubRegion(), user.getProfileURL());
+        return new UserResponse.ProfileDTO(user.getName(), user.getNickName(), user.getState(), user.getDistrict(), user.getSubDistrict(), user.getProfileURL());
     }
 
     @Transactional
@@ -302,7 +304,7 @@ public class UserService {
         if(userRepository.existsByNickWithRemoved(user.getNickName()))
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
 
-        user.updateProfile(requestDTO.nickName(),requestDTO.region(), requestDTO.subRegion(), requestDTO.profileURL());
+        user.updateProfile(requestDTO.nickName(), requestDTO.state(), requestDTO.district(), requestDTO.subDistrict(), requestDTO.profileURL());
     }
 
     @Transactional
