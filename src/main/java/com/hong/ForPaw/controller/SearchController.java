@@ -25,20 +25,20 @@ public class SearchController {
     }
 
     @GetMapping("/search/shelters")
-    public ResponseEntity<?> searchShelterList(@RequestParam String keyword, @RequestParam Integer page, @RequestParam Integer size){
-        SearchResponse.SearchShelterListDTO responseDTO = searchService.searchShelterList(keyword, page, size);
+    public ResponseEntity<?> searchShelterList(@RequestParam String keyword, @RequestParam Integer page){
+        SearchResponse.SearchShelterListDTO responseDTO = searchService.searchShelterList(keyword, page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/search/posts")
-    public ResponseEntity<?> searchPostList(@RequestParam String keyword, @RequestParam Integer page, @RequestParam Integer size){
-        SearchResponse.SearchPostListDTO responseDTO = searchService.searchPostList(keyword, page, size);
+    public ResponseEntity<?> searchPostList(@RequestParam String keyword, @RequestParam Integer page){
+        SearchResponse.SearchPostListDTO responseDTO = searchService.searchPostList(keyword, page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/search/groups")
-    public ResponseEntity<?> searchGroupList(@RequestParam String keyword, @RequestParam Integer page, @RequestParam Integer size){
-        SearchResponse.SearchGroupListDTO responseDTO = searchService.searchGroupList(keyword, page, size);
+    public ResponseEntity<?> searchGroupList(@RequestParam String keyword, @RequestParam Integer page){
+        SearchResponse.SearchGroupListDTO responseDTO = searchService.searchGroupList(keyword, page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }

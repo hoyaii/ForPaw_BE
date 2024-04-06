@@ -46,31 +46,31 @@ public class SearchService {
     }
 
     @Transactional
-    public SearchResponse.SearchShelterListDTO searchShelterList(String keyword, Integer page, Integer size){
-        Pageable pageable = createPageable(page, size, "id");
+    public SearchResponse.SearchShelterListDTO searchShelterList(String keyword, Integer page){
+        Pageable pageable = createPageable(page, 5, "id");
         List<SearchResponse.ShelterDTO> shelterDTOS = getShelterDTOsByKeyword(keyword, pageable);
 
         return new SearchResponse.SearchShelterListDTO(shelterDTOS);
     }
 
     @Transactional
-    public SearchResponse.SearchPostListDTO searchPostList(String keyword, Integer page, Integer size){
-        Pageable pageable =createPageable(page, size, "id");
+    public SearchResponse.SearchPostListDTO searchPostList(String keyword, Integer page){
+        Pageable pageable =createPageable(page, 5, "id");
         List<SearchResponse.PostDTO> postDTOS = getPostDTOsByKeyword(keyword, pageable);
 
         return new SearchResponse.SearchPostListDTO(postDTOS);
     }
 
     @Transactional
-    public SearchResponse.SearchGroupListDTO searchGroupList(String keyword, Integer page, Integer size){
-        Pageable pageable =createPageable(page, size, "id");
+    public SearchResponse.SearchGroupListDTO searchGroupList(String keyword, Integer page){
+        Pageable pageable =createPageable(page, 5, "id");
         List<SearchResponse.GroupDTO> groupDTOS = getGroupDTOsByKeyword(keyword, pageable);
 
         return new SearchResponse.SearchGroupListDTO(groupDTOS);
     }
 
     private List<SearchResponse.ShelterDTO> getShelterDTOsByKeyword(String keyword, Pageable pageable){
-        Page<Shelter> shelterPage = shelterRepository.findByNameContaining(keyword, pageable);
+        Page<Shelter> shelterPage = shelterRepository.findByKeywordContaining(keyword, pageable);
 
         List<SearchResponse.ShelterDTO> shelterDTOS = shelterPage.getContent().stream()
                 .filter(shelter -> shelter.getAnimalCnt() > 0)

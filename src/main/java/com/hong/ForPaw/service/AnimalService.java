@@ -122,6 +122,7 @@ public class AnimalService {
         updateAddressByGoogle();
     }
 
+    @Transactional
     public void updateAddressByKakao(){
         List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
 
@@ -142,6 +143,7 @@ public class AnimalService {
                 .subscribe();
     }
 
+    @Transactional
     public void updateAddressByGoogle(){
         List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
 
