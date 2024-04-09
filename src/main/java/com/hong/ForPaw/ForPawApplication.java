@@ -33,7 +33,7 @@ public class ForPawApplication {
 		};
 	}
 
-	private User newUser(String email, String name, String nickName, PasswordEncoder passwordEncoder, Role role, String profileURL, String state, String district, String subDistrict, String subRegin) {
+	private User newUser(String email, String name, String nickName, PasswordEncoder passwordEncoder, Role role, String profileURL, String province, String district, String subDistrict, String subRegin) {
 		return User.builder()
 				.email(email)
 				.name(name)
@@ -41,7 +41,7 @@ public class ForPawApplication {
 				.password(passwordEncoder.encode("hong1234"))
 				.role(role)
 				.profileURL(profileURL)
-				.state(state)
+				.province(province)
 				.district(district)
 				.subDistrict(subDistrict)
 				.build();

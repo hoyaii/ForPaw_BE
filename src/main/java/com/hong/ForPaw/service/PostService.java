@@ -203,7 +203,7 @@ public class PostService {
                         comment.getUser().getNickName(),
                         comment.getContent(),
                         comment.getCreatedDate(),
-                        comment.getUser().getState(),
+                        comment.getUser().getProvince(),
                         new ArrayList<>());
 
                 commentDTOS.add(commentDTO);
@@ -215,7 +215,7 @@ public class PostService {
                         comment.getUser().getNickName(),
                         comment.getContent(),
                         comment.getCreatedDate(),
-                        comment.getUser().getState());
+                        comment.getUser().getProvince());
 
                 Long parentId = comment.getParent().getId();
                 commentMap.get(parentId).replies().add(replyDTO);

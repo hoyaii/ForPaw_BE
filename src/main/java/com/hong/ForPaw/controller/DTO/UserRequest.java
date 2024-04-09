@@ -42,7 +42,7 @@ public class UserRequest {
             @Size(min=2, max=20, message = "닉네임은 2자에서 20자 이내여야 합니다.")
             String nickName,
             @NotBlank(message = "활동 지역을 입력해주세요.")
-            String state,
+            String province,
             String district,
             String subDistrict,
             @NotBlank(message = "비밀번호를 입력해주세요.")
@@ -63,7 +63,7 @@ public class UserRequest {
             @Size(min=2, max=20, message = "닉네임은 2자에서 20자 이내여야 합니다.")
             String nickName,
             @NotBlank(message = "활동 지역을 입력해주세요.")
-            String state,
+            String province,
             String district,
             String subDistrict,
             @NotBlank(message = "프로필을 입력해주세요.")
@@ -85,7 +85,7 @@ public class UserRequest {
             @NotBlank(message="닉네을 입력해주세요.")
             String nickName,
             @NotBlank(message = "활동 지역을 입력해주세요.")
-            String state,
+            String province,
             String district,
             String subDistrict,
             @NotBlank(message = "프로필을 입력해주세요.")

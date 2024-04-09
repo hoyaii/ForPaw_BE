@@ -30,8 +30,8 @@ public class ShelterController {
     }
 
     @GetMapping("/shelters/{shelterId}")
-    public ResponseEntity<?> findShelterById(@PathVariable Long shelterId, @RequestParam("page") Integer page, @RequestParam("size") Integer size, @RequestParam("sort") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
-        ShelterResponse.FindShelterByIdDTO responseDTO = shelterService.findShelterById(shelterId, userDetails.getUser().getId(), page, size, sort);
+    public ResponseEntity<?> findShelterById(@PathVariable Long shelterId, @RequestParam("page") Integer page, @RequestParam(value = "sort", defaultValue = "noticeSdt") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
+        ShelterResponse.FindShelterByIdDTO responseDTO = shelterService.findShelterById(shelterId, userDetails.getUser().getId(), page, sort);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

@@ -37,6 +37,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     void decrementParticipantNum(@Param("groupId") Long groupId);
 
     @Modifying
-    @Query("UPDATE Group g SET g.likeNum = :likeNum WHERE g.id = :postId")
+    @Query("UPDATE Group g SET g.likeNum = :likeNum WHERE g.id = :groupId")
     void updateLikeNum(@Param("likeNum") Long likeNum, @Param("groupId") Long groupId);
 }

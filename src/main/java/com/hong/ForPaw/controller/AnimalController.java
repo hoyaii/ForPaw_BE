@@ -5,6 +5,7 @@ import com.hong.ForPaw.controller.DTO.AnimalResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.AnimalService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -64,7 +65,7 @@ public class AnimalController {
     }
 
     @PostMapping("/animals/{animalId}/apply")
-    public ResponseEntity<?> applyAdoption(@RequestBody AnimalRequest.ApplyAdoptionDTO requestDTO, Errors errors, @PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> applyAdoption(@RequestBody @Valid AnimalRequest.ApplyAdoptionDTO requestDTO, @PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails){
         AnimalResponse.CreateApplyDTO responseDTO = animalService.applyAdoption(requestDTO, userDetails.getUser().getId(), animalId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, requestDTO));
     }
@@ -76,7 +77,7 @@ public class AnimalController {
     }
 
     @PatchMapping("/applies/{applyId}")
-    public ResponseEntity<?> updateApply(@RequestBody AnimalRequest.UpdateApplyDTO requestDTO, Errors errors, @PathVariable Long applyId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> updateApply(@RequestBody @Valid AnimalRequest.UpdateApplyDTO requestDTO, @PathVariable Long applyId, @AuthenticationPrincipal CustomUserDetails userDetails){
         animalService.updateApply(requestDTO, applyId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }

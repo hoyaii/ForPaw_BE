@@ -167,7 +167,7 @@ public class UserService {
                 .password(passwordEncoder.encode(requestDTO.password()))
                 .role(Role.USER)
                 .profileURL(requestDTO.profileURL())
-                .state(requestDTO.state())
+                .province(requestDTO.province())
                 .district(requestDTO.district())
                 .subDistrict(requestDTO.subDistrict())
                 .build();
@@ -194,7 +194,7 @@ public class UserService {
                 .password(passwordEncoder.encode(generatePassword())) // 임의의 비밀번호로 생성
                 .role(Role.USER)
                 .profileURL(requestDTO.profileURL())
-                .state(requestDTO.state())
+                .province(requestDTO.province())
                 .district(requestDTO.district())
                 .subDistrict(requestDTO.subDistrict())
                 .build();
@@ -293,7 +293,7 @@ public class UserService {
     @Transactional
     public UserResponse.ProfileDTO findProfile(Long userId){
         User user = userRepository.findById(userId).get();
-        return new UserResponse.ProfileDTO(user.getName(), user.getNickName(), user.getState(), user.getDistrict(), user.getSubDistrict(), user.getProfileURL());
+        return new UserResponse.ProfileDTO(user.getName(), user.getNickName(), user.getProvince(), user.getDistrict(), user.getSubDistrict(), user.getProfileURL());
     }
 
     @Transactional
@@ -304,7 +304,7 @@ public class UserService {
         if(userRepository.existsByNickWithRemoved(user.getNickName()))
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
 
-        user.updateProfile(requestDTO.nickName(), requestDTO.state(), requestDTO.district(), requestDTO.subDistrict(), requestDTO.profileURL());
+        user.updateProfile(requestDTO.nickName(), requestDTO.province(), requestDTO.district(), requestDTO.subDistrict(), requestDTO.profileURL());
     }
 
     @Transactional

@@ -6,6 +6,7 @@ import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.security.JWTProvider;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -25,7 +26,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/auth/login")
-    public ResponseEntity<?> login(@RequestBody UserRequest.LoginDTO requestDTO, Errors errors) {
+    public ResponseEntity<?> login(@RequestBody @Valid UserRequest.LoginDTO requestDTO) {
         Map<String, String> tokens = userService.login(requestDTO);
 
         return ResponseEntity.ok()
@@ -79,56 +80,56 @@ public class UserController {
     }
 
     @PostMapping("/accounts")
-    public ResponseEntity<?> join(@RequestBody UserRequest.JoinDTO requestDTO, Errors errors){
+    public ResponseEntity<?> join(@RequestBody @Valid UserRequest.JoinDTO requestDTO){
         userService.join(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, null));
     }
 
     @PostMapping("/accounts/social")
-    public ResponseEntity<?> socialJoin(@RequestBody UserRequest.SocialJoinDTO requestDTO, Errors errors){
+    public ResponseEntity<?> socialJoin(@RequestBody @Valid UserRequest.SocialJoinDTO requestDTO){
         userService.socialJoin(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, null));
     }
 
     @PostMapping("/accounts/check/email")
-    public ResponseEntity<?> checkEmailAndSendCode(@RequestBody UserRequest.EmailDTO requestDTO, Errors errors){
+    public ResponseEntity<?> checkEmailAndSendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO){
         userService.checkEmailAndSendCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/check/nick")
-    public ResponseEntity<?> checkNick(@RequestBody UserRequest.CheckNickDTO requestDTO, Errors errors){
+    public ResponseEntity<?> checkNick(@RequestBody @Valid UserRequest.CheckNickDTO requestDTO){
         userService.checkNick(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/check/email/verify")
-    public ResponseEntity<?> verifyRegisterCode(@RequestBody UserRequest.VerifyCodeDTO requestDTO, Errors errors){
+    public ResponseEntity<?> verifyRegisterCode(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO){
         userService.verifyCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/recovery")
-    public ResponseEntity<?> sendRecoveryCode(@RequestBody UserRequest.EmailDTO requestDTO, Errors errors){
+    public ResponseEntity<?> sendRecoveryCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO){
         userService.sendRecoveryCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/recovery/verify")
-    public ResponseEntity<?> verifyAndSendPassword(@RequestBody UserRequest.VerifyCodeDTO requestDTO, Errors errors){
+    public ResponseEntity<?> verifyAndSendPassword(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO){
         userService.verifyAndSendPassword(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/password/verify")
-    public ResponseEntity<?> verifyPassword(@RequestBody UserRequest.CurPasswordDTO requestDTO, Errors errors, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> verifyPassword(@RequestBody @Valid UserRequest.CurPasswordDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
         userService.verifyPassword(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
 
     @PatchMapping("/accounts/password")
-    public ResponseEntity<?> updatePassword(@RequestBody UserRequest.UpdatePasswordDTO requestDTO, Errors errors, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> updatePassword(@RequestBody @Valid UserRequest.UpdatePasswordDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
         userService.updatePassword(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
@@ -140,19 +141,19 @@ public class UserController {
     }
 
     @PatchMapping("/accounts/profile")
-    public ResponseEntity<?> updateProfile(@RequestBody UserRequest.UpdateProfileDTO requestDTO, Errors errors, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> updateProfile(@RequestBody @Valid UserRequest.UpdateProfileDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
         userService.updateProfile(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PatchMapping("/auth/access")
-    public ResponseEntity<?> updateAccessToken(@RequestBody UserRequest.UpdateAccessTokenDTO requestDTO, Errors errors){
+    public ResponseEntity<?> updateAccessToken(@RequestBody @Valid UserRequest.UpdateAccessTokenDTO requestDTO){
         UserResponse.AccessTokenDTO responseDTO = userService.updateAccessToken(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PatchMapping("/accounts/role")
-    public ResponseEntity<?> updateRole(@RequestBody UserRequest.UpdateRoleDTO requestDTO, Errors errors, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> updateRole(@RequestBody @Valid UserRequest.UpdateRoleDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
         userService.updateRole(requestDTO, userDetails.getUser().getId(), userDetails.getUser().getRole());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }

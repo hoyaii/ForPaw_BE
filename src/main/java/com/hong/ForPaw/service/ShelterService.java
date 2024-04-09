@@ -88,13 +88,13 @@ public class ShelterService {
     }
 
     @Transactional
-    public ShelterResponse.FindShelterByIdDTO findShelterById(Long shelterId, Long userId, Integer page, Integer size, String sort){
+    public ShelterResponse.FindShelterByIdDTO findShelterById(Long shelterId, Long userId, Integer page, String sort){
         // 보호소가 존재하지 않으면 에러
         Shelter shelter = shelterRepository.findById(shelterId).orElseThrow(
                 () -> new CustomException(ExceptionCode.SHELTER_NOT_FOUND)
         );
 
-        Pageable pageable = createPageable(page, size, sort);
+        Pageable pageable = createPageable(page, 5, sort);
         Page<Animal> animalPage = animalRepository.findByShelterId(shelterId, pageable);
 
         // 사용자가 '좋아요' 표시한 Animal의 ID 목록

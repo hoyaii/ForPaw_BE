@@ -5,6 +5,7 @@ import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.GroupService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +22,7 @@ public class GroupController {
     private final GroupService groupService;
 
     @PostMapping("/groups")
-    public ResponseEntity<?> createGroup(@RequestBody GroupRequest.CreateGroupDTO requestDTO, Errors errors, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> createGroup(@RequestBody @Valid GroupRequest.CreateGroupDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
         GroupResponse.CreateGroupDTO responseDTO = groupService.createGroup(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
@@ -33,7 +34,7 @@ public class GroupController {
     }
 
     @PatchMapping("/groups/{groupId}")
-    public ResponseEntity<?> updateGroup(@RequestBody GroupRequest.UpdateGroupDTO requestDTO, Errors errors, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> updateGroup(@RequestBody @Valid GroupRequest.UpdateGroupDTO requestDTO, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
         groupService.updateGroup(requestDTO, groupId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
@@ -87,7 +88,7 @@ public class GroupController {
     }
 
     @PostMapping("/groups/{groupId}/join")
-    public ResponseEntity<?> joinGroup(@RequestBody GroupRequest.JoinGroupDTO requestDTO, Errors errors, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> joinGroup(@RequestBody @Valid GroupRequest.JoinGroupDTO requestDTO, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
         groupService.joinGroup(requestDTO, userDetails.getUser().getId(), groupId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
@@ -99,19 +100,19 @@ public class GroupController {
     }
 
     @PostMapping("/groups/{groupID}/join/approve")
-    public ResponseEntity<?> approveJoin(@RequestBody GroupRequest.ApproveJoinDTO requestDTO, Errors errors, @PathVariable Long groupID, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> approveJoin(@RequestBody @Valid GroupRequest.ApproveJoinDTO requestDTO, @PathVariable Long groupID, @AuthenticationPrincipal CustomUserDetails userDetails){
         groupService.approveJoin(userDetails.getUser().getId(), requestDTO.id(), groupID);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/groups/{groupID}/join/reject")
-    public ResponseEntity<?> rejectJoin(@RequestBody GroupRequest.RejectJoinDTO requestDTO, Errors errors, @PathVariable Long groupID, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> rejectJoin(@RequestBody @Valid GroupRequest.RejectJoinDTO requestDTO, @PathVariable Long groupID, @AuthenticationPrincipal CustomUserDetails userDetails){
         groupService.rejectJoin(userDetails.getUser().getId(), requestDTO.id(), groupID);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/groups/{groupId}/notices")
-    public ResponseEntity<?> createNotice(@RequestBody GroupRequest.CreateNoticeDTO requestDTO, Errors errors, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> createNotice(@RequestBody @Valid GroupRequest.CreateNoticeDTO requestDTO, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
         GroupResponse.CreateNoticeDTO responseDTO = groupService.createNotice(requestDTO, userDetails.getUser().getId(), groupId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
@@ -129,19 +130,19 @@ public class GroupController {
     }
 
     @PatchMapping("/groups/{groupId}/role")
-    public ResponseEntity<?> updateUserRole(@RequestBody GroupRequest.UpdateUserRoleDTO requestDTO, Errors errors, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> updateUserRole(@RequestBody @Valid GroupRequest.UpdateUserRoleDTO requestDTO, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
         groupService.updateUserRole(requestDTO, groupId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/groups/{groupId}/meetings")
-    public ResponseEntity<?> createMeeting(@RequestBody GroupRequest.CreateMeetingDTO requestDTO, Errors errors, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> createMeeting(@RequestBody @Valid GroupRequest.CreateMeetingDTO requestDTO, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
         GroupResponse.CreateMeetingDTO responseDTO = groupService.createMeeting(requestDTO, groupId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PatchMapping("/groups/{groupId}/meetings/{meetingId}")
-    public ResponseEntity<?> updateMeeting(@RequestBody GroupRequest.UpdateMeetingDTO requestDTO, Errors errors, @PathVariable Long groupId, @PathVariable Long meetingId, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> updateMeeting(@RequestBody @Valid GroupRequest.UpdateMeetingDTO requestDTO, @PathVariable Long groupId, @PathVariable Long meetingId, @AuthenticationPrincipal CustomUserDetails userDetails){
         groupService.updateMeeting(requestDTO, groupId, meetingId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }

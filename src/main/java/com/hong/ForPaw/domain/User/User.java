@@ -43,7 +43,7 @@ public class User extends TimeStamp {
 
     // 활동 지역 - 시/도
     @Column
-    private String state;
+    private String province;
 
     // 활동 지역 - 군/구/시
     @Column
@@ -57,7 +57,7 @@ public class User extends TimeStamp {
     private LocalDateTime removedAt;
 
     @Builder
-    public User(Long id, String name, String nickName, String email, String password, Role role, String profileURL, String state, String district, String subDistrict) {
+    public User(Long id, String name, String nickName, String email, String password, Role role, String profileURL, String province, String district, String subDistrict) {
         this.id = id;
         this.name = name;
         this.nickName = nickName;
@@ -65,7 +65,7 @@ public class User extends TimeStamp {
         this.password = password;
         this.role = role;
         this.profileURL = profileURL;
-        this.state = state;
+        this.province = province;
         this.district = district;
         this.subDistrict = subDistrict;
     }
@@ -76,7 +76,7 @@ public class User extends TimeStamp {
 
     public void updateProfile(String nickName, String province, String district, String subDistrict,String profileURL){
         this.nickName = nickName;
-        this.state = province;
+        this.province = province;
         this.district = district;
         this.subDistrict = subDistrict;
         this.profileURL = profileURL;
