@@ -165,8 +165,8 @@ public class GroupService {
 
     // 지역 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindLocalGroupListDTO findLocalGroupList(Long userId, String region, Integer page, Integer size){
-        Pageable pageable = createPageable(page, size, "id");
+    public GroupResponse.FindLocalGroupListDTO findLocalGroupList(Long userId, String region, Integer page){
+        Pageable pageable = createPageable(page, 5, "id");
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, region, pageable);
 
         if(localGroupDTOS.isEmpty()){
@@ -178,8 +178,8 @@ public class GroupService {
 
     // 새 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindNewGroupListDTO findNewGroupList(Long userId, Integer page, Integer size){
-        Pageable pageable = createPageable(page, size, "id");
+    public GroupResponse.FindNewGroupListDTO findNewGroupList(Long userId, Integer page){
+        Pageable pageable = createPageable(page, 5, "id");
         List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, pageable);
 
         if(newGroupDTOS.isEmpty()){
@@ -191,8 +191,8 @@ public class GroupService {
 
     // 내 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindMyGroupListDTO findMyGroupList(Long userId, Integer page, Integer size){
-        Pageable pageable = createPageable(page, size, "id");
+    public GroupResponse.FindMyGroupListDTO findMyGroupList(Long userId, Integer page){
+        Pageable pageable = createPageable(page, 5, "id");
         List<GroupResponse.MyGroupDTO> myGroupDTOS = getMyGroupDTOS(userId, pageable);
 
         if(myGroupDTOS.isEmpty()){
@@ -226,14 +226,14 @@ public class GroupService {
 
     // 공지사항 추가조회
     @Transactional
-    public GroupResponse.FindNoticeListDTO findNoticeList(Long userId, Long groupId, Integer page, Integer size){
+    public GroupResponse.FindNoticeListDTO findNoticeList(Long userId, Long groupId, Integer page){
         // 그룹 존재 여부 체크
         checkGroupExist(groupId);
 
         // 맴버인지 체크
         checkIsMember(groupId, userId);
 
-        Pageable pageable = createPageable(page, size, "id");
+        Pageable pageable = createPageable(page, 5, "id");
         List<GroupResponse.NoticeDTO> noticeDTOS = getNoticeDTOS(userId, groupId, pageable);
 
         return new GroupResponse.FindNoticeListDTO(noticeDTOS);
@@ -241,14 +241,14 @@ public class GroupService {
 
     // 정기모임 추가조회
     @Transactional
-    public GroupResponse.FindMeetingListDTO findMeetingList(Long userId, Long groupId, Integer page, Integer size){
+    public GroupResponse.FindMeetingListDTO findMeetingList(Long userId, Long groupId, Integer page){
         // 그룹 존재 여부 체크
         checkGroupExist(groupId);
 
         // 맴버인지 체크
         checkIsMember(groupId, userId);
 
-        Pageable pageable = createPageable(page, size, "id");
+        Pageable pageable = createPageable(page, 5, "id");
         List<GroupResponse.MeetingDTO> meetingsDTOS = getMeetingDTOS(groupId, pageable);
 
         return new GroupResponse.FindMeetingListDTO(meetingsDTOS);
