@@ -375,6 +375,7 @@ public class PostService {
     }
 
     @Scheduled(cron = "0 0 * * * *")
+    @Transactional
     public void syncLikes() {
         // 업데이트는 100개씩 진행
         int page = 0;
@@ -389,7 +390,6 @@ public class PostService {
         } while (postIdsPage != null && postIdsPage.hasNext());
     }
 
-    @Transactional
     public Page<Long> processLikesBatch(Pageable pageable) {
         Page<Long> postIdsPage = postRepository.findAllPostId(pageable);
         List<Long> postIds = postIdsPage.getContent();

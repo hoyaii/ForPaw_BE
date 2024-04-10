@@ -29,7 +29,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     // 모든 댓글과 대댓글을 한 번에 가져오기
     @Query("SELECT c FROM Comment c WHERE c.post.id = :postId")
-    @EntityGraph(attributePaths = {"user, parent"})
+    @EntityGraph(attributePaths = {"user", "parent"})
     List<Comment> findAllByPostIdWithUserAndParent(@Param("postId") Long postId);
 
     @Query("SELECT COUNT(c) > 0 FROM Comment c WHERE c.id = :id AND c.removedAt IS NULL")

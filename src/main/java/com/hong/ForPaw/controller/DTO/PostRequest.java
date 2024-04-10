@@ -11,7 +11,6 @@ public class PostRequest {
     public record CreatePostDTO(
             @NotBlank(message = "제목을 입력해주세요.")
             String title,
-            @NotBlank
             PostType type,
             @NotBlank(message = "본문을 입력해주세요.")
             String content,

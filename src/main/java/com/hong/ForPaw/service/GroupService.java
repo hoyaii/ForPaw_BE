@@ -131,14 +131,14 @@ public class GroupService {
         // 수정 권한 체크
         checkAdminAuthority(groupId, userId);
 
-        // 이름 중복 체크
-        if(groupRepository.existsByName(requestDTO.name())){
-            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
-        }
-
         Group group = groupRepository.findById(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
+
+        // 이름 중복 체크 (현재 사용하는 이름은 제외하고 체크)
+        if(groupRepository.existsByNameExcludingId(requestDTO.name(), groupId)){
+            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
+        }
 
         group.updateInfo(requestDTO.name(), requestDTO.region(), requestDTO.subRegion(), requestDTO.description(), requestDTO.category(), requestDTO.profileURL());
     }
@@ -463,6 +463,7 @@ public class GroupService {
     }
 
     @Scheduled(cron = "0 15 * * * *")
+    @Transactional
     public void syncLikes() {
         // 업데이트는 50개씩 진행
         int page = 0;
@@ -477,7 +478,6 @@ public class GroupService {
         } while (groupIdsPage != null && groupIdsPage.hasNext());
     }
 
-    @Transactional
     public Page<Long> processLikesBatch(Pageable pageable) {
         Page<Long> groupIdsPage = groupRepository.findGroupIds(pageable);
         List<Long> groupIds = groupIdsPage.getContent();
