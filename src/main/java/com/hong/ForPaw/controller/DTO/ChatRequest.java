@@ -7,13 +7,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
 public class ChatRequest {
 
     public record SendMessageDTO(
-            @NotBlank(message = "채팅방 ID를 입력해주세요.")
+            @NotNull(message = "채팅방 ID를 입력해주세요.")
             Long chatRoomId,
             @NotBlank(message = "내용을 입력해주세요.")
             String content,
@@ -31,8 +32,8 @@ public class ChatRequest {
                              LocalDateTime date) {}
 
     public record ReadMessageDTO(
-            @NotBlank(message = "채팅방 ID를 입력해주세요.")
+            @NotNull(message = "채팅방 ID를 입력해주세요.")
             Long chatRoomId,
-            @NotBlank(message = "메시지 ID를 입력해주세요.")
+            @NotNull(message = "메시지 ID를 입력해주세요.")
             Long messageId) {}
 }

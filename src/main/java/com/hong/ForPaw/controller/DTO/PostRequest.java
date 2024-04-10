@@ -3,6 +3,7 @@ package com.hong.ForPaw.controller.DTO;
 
 import com.hong.ForPaw.domain.Post.PostType;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
@@ -11,6 +12,7 @@ public class PostRequest {
     public record CreatePostDTO(
             @NotBlank(message = "제목을 입력해주세요.")
             String title,
+            @NotNull(message = "글의 종류를 선택해주세요")
             PostType type,
             @NotBlank(message = "본문을 입력해주세요.")
             String content,
