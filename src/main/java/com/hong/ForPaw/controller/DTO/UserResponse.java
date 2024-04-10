@@ -12,7 +12,7 @@ public class UserResponse {
 
     public record ProfileDTO(String name,
                              String nickName,
-                             String state,
+                             String province,
                              String district,
                              String subDistrict,
                              String profileURL) {}

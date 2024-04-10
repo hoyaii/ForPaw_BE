@@ -281,7 +281,7 @@ public class UserService {
 
         // verifyPassword()로 일치 여부를 확인하지만, 해당 단계를 거치지 않고 인위적으로 요청을 보낼 수 있어서 한 번더 검증
         if(!passwordEncoder.matches(requestDTO.curPassword(), user.getPassword())){
-            throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
+            throw new CustomException(ExceptionCode.USER_PASSWORD_MATCH_WRONG);
         }
 
         if (!requestDTO.newPassword().equals(requestDTO.newPasswordConfirm()))
@@ -300,8 +300,8 @@ public class UserService {
     public void updateProfile(UserRequest.UpdateProfileDTO requestDTO, Long userId){
         User user = userRepository.findById(userId).get();
 
-        // 닉네임 중복 체크
-        if(userRepository.existsByNickWithRemoved(user.getNickName()))
+        // 닉네임 중복 체크 (현재 닉네임은 통과)
+        if(!user.getNickName().equals(requestDTO.nickName()) && userRepository.existsByNickWithRemoved(requestDTO.nickName()))
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
 
         user.updateProfile(requestDTO.nickName(), requestDTO.province(), requestDTO.district(), requestDTO.subDistrict(), requestDTO.profileURL());

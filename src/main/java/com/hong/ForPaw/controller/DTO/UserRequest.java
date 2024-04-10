@@ -28,6 +28,7 @@ public class UserRequest {
 
     public record VerifyCodeDTO(
             @NotBlank
+            @Pattern(regexp = "^[\\w._%+-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$", message = "올바른 이메일 형식을 입력해주세요.")
             String email,
             @NotBlank(message = "코드를 입력해주세요.")
             String code){}
@@ -82,7 +83,7 @@ public class UserRequest {
             String curPassword) {}
 
     public record UpdateProfileDTO(
-            @NotBlank(message="닉네을 입력해주세요.")
+            @NotBlank(message="닉네임을 입력해주세요.")
             String nickName,
             @NotBlank(message = "활동 지역을 입력해주세요.")
             String province,
@@ -91,7 +92,7 @@ public class UserRequest {
             @NotBlank(message = "프로필을 입력해주세요.")
             String profileURL) {}
 
-    public record UpdateAccessTokenDTO(String refreshToken) {}
+    public record UpdateAccessTokenDTO(@NotBlank(message="토큰이 존재하지 않습니다.") String refreshToken) {}
 
-    public record UpdateRoleDTO(@NotBlank Role role) {}
+    public record UpdateRoleDTO(Role role) {}
 }

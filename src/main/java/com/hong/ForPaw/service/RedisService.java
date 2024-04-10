@@ -1,5 +1,7 @@
 package com.hong.ForPaw.service;
 
+import com.hong.ForPaw.core.errors.CustomException;
+import com.hong.ForPaw.core.errors.ExceptionCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -42,6 +44,10 @@ public class RedisService {
     // 저장된 데이터와 일치여부 비교
     public boolean validateData(String type, String id, String value){
         String storedData = redisTemplate.opsForValue().get(buildKey(type, id));
+
+        if(storedData == null){
+            return false;
+        }
         return storedData.equals(value);
     }
 

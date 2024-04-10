@@ -127,7 +127,6 @@ public class UserController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
-
     @PatchMapping("/accounts/password")
     public ResponseEntity<?> updatePassword(@RequestBody @Valid UserRequest.UpdatePasswordDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
         userService.updatePassword(requestDTO, userDetails.getUser().getId());
@@ -152,13 +151,14 @@ public class UserController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
+    // 관리자 페이지용
     @PatchMapping("/accounts/role")
     public ResponseEntity<?> updateRole(@RequestBody @Valid UserRequest.UpdateRoleDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
         userService.updateRole(requestDTO, userDetails.getUser().getId(), userDetails.getUser().getRole());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
-    @DeleteMapping("/accounts")
+    @DeleteMapping("/accounts/withdraw")
     public ResponseEntity<?> withdrawMember(@AuthenticationPrincipal CustomUserDetails userDetails){
         userService.withdrawMember(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
