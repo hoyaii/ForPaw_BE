@@ -14,8 +14,8 @@ public class GroupRequest {
             @Pattern(regexp = "^[a-zA-Z0-9가-힣]+$", message = "그룹 이름에는 띄어쓰기를 사용할 수 없습니다.")
             String name,
             @NotBlank(message = "활동 지역을 입력해주세요.")
-            String region,
-            String subRegion,
+            String district,
+            String subDistrict,
             @NotBlank(message = "그룹의 설명을 입력해주세요.")
             String description,
             String category,
@@ -27,8 +27,8 @@ public class GroupRequest {
             @Pattern(regexp = "^[a-zA-Z0-9가-힣]+$", message = "그룹 이름에는 띄어쓰기를 사용할 수 없습니다.")
             String name,
             @NotBlank(message = "활동 지역을 입력해주세요.")
-            String region,
-            String subRegion,
+            String district,
+            String subDistrict,
             @NotBlank(message = "그룹의 설명을 입력해주세요.")
             String description,
             String category,

@@ -10,7 +10,6 @@ import com.hong.ForPaw.repository.Group.GroupRepository;
 import com.hong.ForPaw.repository.Post.PostRepository;
 import com.hong.ForPaw.repository.ShelterRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -123,8 +122,8 @@ public class SearchService {
                         group.getDescription(),
                         participantNum,
                         group.getCategory(),
-                        group.getRegion(),
-                        group.getSubRegion(),
+                        group.getDistrict(),
+                        group.getSubDistrict(),
                         group.getProfileURL(),
                         likeNum);
                 })

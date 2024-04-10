@@ -5,7 +5,6 @@ import com.hong.ForPaw.controller.DTO.GroupRequest;
 import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
-import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Chat.ChatRoom;
 import com.hong.ForPaw.domain.Chat.ChatUser;
@@ -64,8 +63,8 @@ public class GroupService {
 
         Group group = Group.builder()
                 .name(requestDTO.name())
-                .region(requestDTO.region())
-                .subRegion(requestDTO.subRegion())
+                .district(requestDTO.district())
+                .subDistrict(requestDTO.subDistrict())
                 .description(requestDTO.description())
                 .category(requestDTO.category())
                 .profileURL(requestDTO.profileURL())
@@ -123,7 +122,7 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
 
-        return new GroupResponse.FindGroupByIdDTO(group.getName(), group.getRegion(), group.getSubRegion(), group.getDescription(), group.getCategory(), group.getProfileURL());
+        return new GroupResponse.FindGroupByIdDTO(group.getName(), group.getDistrict(), group.getSubDistrict(), group.getDescription(), group.getCategory(), group.getProfileURL());
     }
 
     @Transactional
@@ -140,22 +139,26 @@ public class GroupService {
             throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
         }
 
-        group.updateInfo(requestDTO.name(), requestDTO.region(), requestDTO.subRegion(), requestDTO.description(), requestDTO.category(), requestDTO.profileURL());
+        group.updateInfo(requestDTO.name(), requestDTO.district(), requestDTO.subDistrict(), requestDTO.description(), requestDTO.category(), requestDTO.profileURL());
     }
 
     @Transactional
-    public GroupResponse.FindAllGroupListDTO findGroupList(Long userId, String region){
+    public GroupResponse.FindAllGroupListDTO findGroupList(Long userId){
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+
         // 이 API의 페이지네이션은 0페이지인 5개만 보내줄 것이다.
         Pageable pageable = createPageable(0, 5, "id");
 
         // 추천 그룹 찾기
-        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = getRecommendGroupDTOS(userId, region);
+        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = getRecommendGroupDTOS(userId, user.getDistrict());
 
         // 지역 그룹 찾기
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, region, pageable);
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, user.getDistrict(), user.getSubDistrict(), pageable);
 
         // 새 그룹 찾기
-        List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, pageable);
+        List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, user.getDistrict(), pageable);
 
         // 내 그룹 찾기
         List<GroupResponse.MyGroupDTO> myGroupDTOS = getMyGroupDTOS(userId, pageable);
@@ -165,9 +168,9 @@ public class GroupService {
 
     // 지역 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindLocalGroupListDTO findLocalGroupList(Long userId, String region, Integer page){
-        Pageable pageable = createPageable(page, 5, "id");
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, region, pageable);
+    public GroupResponse.FindLocalGroupListDTO findLocalGroupList(Long userId, String district, String subDistrict, Integer page){
+        Pageable pageable = createPageable(page, 5, "participantNum");
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, district, subDistrict, pageable);
 
         if(localGroupDTOS.isEmpty()){
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
@@ -178,9 +181,14 @@ public class GroupService {
 
     // 새 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindNewGroupListDTO findNewGroupList(Long userId, Integer page){
+    public GroupResponse.FindNewGroupListDTO findNewGroupList(Long userId, String district, Integer page){
+        // 디폴트 값은 유저가 입력한 district 값
+        district = Optional.ofNullable(district)
+                .filter(d -> !d.isEmpty())
+                .orElseGet(() -> userRepository.findDistrictById(userId).orElse("수성구"));
+
         Pageable pageable = createPageable(page, 5, "id");
-        List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, pageable);
+        List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, district, pageable);
 
         if(newGroupDTOS.isEmpty()){
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
@@ -681,15 +689,15 @@ public class GroupService {
         meetingRepository.deleteById(meetingId);
     }
 
-    private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String region){
+    private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String district){
         // 내가 가입한 그룹
         Set<Long> joinedGroupIds = getGroupIds(userId);
 
         // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순
         Sort sort = Sort.by(Sort.Order.desc("likeNum"), Sort.Order.desc("participantNum"));
-        Pageable pageableForRecommend = PageRequest.of(0, 30, sort);
+        Pageable pageable = PageRequest.of(0, 30, sort);
 
-        Page<Group> recommendGroups = groupRepository.findByRegion(region, pageableForRecommend);
+        Page<Group> recommendGroups = groupRepository.findByDistrict(district, pageable);
         List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = recommendGroups.getContent().stream()
                 .filter(group -> !joinedGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> {
@@ -701,8 +709,8 @@ public class GroupService {
                         group.getDescription(),
                         group.getParticipantNum(),
                         group.getCategory(),
-                        group.getRegion(),
-                        group.getSubRegion(),
+                        group.getDistrict(),
+                        group.getSubDistrict(),
                         group.getProfileURL(),
                         likeNum);
                 })
@@ -717,11 +725,11 @@ public class GroupService {
         return recommendGroupDTOS;
     }
 
-    private List<GroupResponse.LocalGroupDTO> getLocalGroupDTOS(Long userId, String region, Pageable pageable){
+    private List<GroupResponse.LocalGroupDTO> getLocalGroupDTOS(Long userId, String district, String subDistrict, Pageable pageable){
         // 내가 가입한 그룹
         Set<Long> joinedGroupIds = getGroupIds(userId);
 
-        Page<Group> localGroups = groupRepository.findByRegion(region, pageable);
+        Page<Group> localGroups = groupRepository.findByDistrictAndSubDistrict(district, subDistrict, pageable);
 
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroups.getContent().stream()
                 .filter(group -> !joinedGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
@@ -734,8 +742,8 @@ public class GroupService {
                         group.getDescription(),
                         group.getParticipantNum(),
                         group.getCategory(),
-                        group.getRegion(),
-                        group.getSubRegion(),
+                        group.getDistrict(),
+                        group.getSubDistrict(),
                         group.getProfileURL(),
                         likeNum);
                 })
@@ -744,11 +752,11 @@ public class GroupService {
         return localGroupDTOS;
     }
 
-    private List<GroupResponse.NewGroupDTO> getNewGroupDTOS(Long userId, Pageable pageable){
+    private List<GroupResponse.NewGroupDTO> getNewGroupDTOS(Long userId, String district, Pageable pageable){
         // 내가 가입한 그룹
         Set<Long> joinedGroupIds = getGroupIds(userId);
 
-        Page<Group> newGroups = groupRepository.findAll(pageable);
+        Page<Group> newGroups = groupRepository.findByDistrict(district, pageable);
 
         List<GroupResponse.NewGroupDTO> newGroupDTOS = newGroups.getContent().stream()
                 .filter(group -> !joinedGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
@@ -756,8 +764,8 @@ public class GroupService {
                         group.getId(),
                         group.getName(),
                         group.getCategory(),
-                        group.getRegion(),
-                        group.getSubRegion(),
+                        group.getDistrict(),
+                        group.getSubDistrict(),
                         group.getProfileURL()))
                 .collect(Collectors.toList());
 
@@ -777,8 +785,8 @@ public class GroupService {
                         group.getDescription(),
                         group.getParticipantNum(),
                         group.getCategory(),
-                        group.getRegion(),
-                        group.getSubRegion(),
+                        group.getDistrict(),
+                        group.getSubDistrict(),
                         group.getProfileURL(),
                         likeNum);
                 })

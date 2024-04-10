@@ -11,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
-import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
@@ -40,20 +39,20 @@ public class GroupController {
     }
 
     @GetMapping("/groups")
-    public ResponseEntity<?> findGroupList(@RequestParam("region") String region, @AuthenticationPrincipal CustomUserDetails userDetails){
-        GroupResponse.FindAllGroupListDTO responseDTO = groupService.findGroupList(userDetails.getUser().getId(), region);
+    public ResponseEntity<?> findGroupList(@AuthenticationPrincipal CustomUserDetails userDetails){
+        GroupResponse.FindAllGroupListDTO responseDTO = groupService.findGroupList(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/groups/local")
-    public ResponseEntity<?> findLocalGroupList(@RequestParam("region") String region, @RequestParam("page") Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
-        GroupResponse.FindLocalGroupListDTO responseDTO = groupService.findLocalGroupList(userDetails.getUser().getId(), region, page);
+    public ResponseEntity<?> findLocalGroupList(@RequestParam("district") String district, @RequestParam("subDistrict") String subDistrict ,@RequestParam("page") Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
+        GroupResponse.FindLocalGroupListDTO responseDTO = groupService.findLocalGroupList(userDetails.getUser().getId(), district, subDistrict, page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/groups/new")
-    public ResponseEntity<?> findNewGroupList(@RequestParam("page") Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
-        GroupResponse.FindNewGroupListDTO responseDTO = groupService.findNewGroupList(userDetails.getUser().getId(), page);
+    public ResponseEntity<?> findNewGroupList(@RequestParam(value = "district", required = false) String district, @RequestParam("page") Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
+        GroupResponse.FindNewGroupListDTO responseDTO = groupService.findNewGroupList(userDetails.getUser().getId(), district, page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

@@ -8,8 +8,8 @@ import java.util.List;
 public class GroupResponse {
 
     public record FindGroupByIdDTO(String name,
-                                   String region,
-                                   String subRegion,
+                                   String district,
+                                   String subDistrict,
                                    String description,
                                    String category,
                                    String profileURL) {}
@@ -30,16 +30,16 @@ public class GroupResponse {
                                     String description,
                                     Long participationNum,
                                     String category,
-                                    String region,
-                                    String subRegion,
+                                    String district,
+                                    String subDistrict,
                                     String profileURL,
                                     Long likeNum) {}
 
     public record NewGroupDTO(Long id,
                               String name,
                               String category,
-                              String region,
-                              String subRegion,
+                              String district,
+                              String subDistrict,
                               String profileURL) {}
 
     public record LocalGroupDTO(Long id,
@@ -47,8 +47,8 @@ public class GroupResponse {
                                 String description,
                                 Long participationNum,
                                 String category,
-                                String region,
-                                String subRegion,
+                                String district,
+                                String subDistrict,
                                 String profileURL,
                                 Long likeNum) {}
 
@@ -57,8 +57,8 @@ public class GroupResponse {
                              String description,
                              Long participationNum,
                              String category,
-                             String region,
-                             String subRegion,
+                             String district,
+                             String subDistrict,
                              String profileURL,
                              Long likeNum) {}
 

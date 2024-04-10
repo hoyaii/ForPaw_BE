@@ -21,10 +21,10 @@ public class Group extends TimeStamp {
     private String name;
 
     @Column
-    private String region;
+    private String district;
 
     @Column
-    private String subRegion;
+    private String subDistrict;
 
     @Column
     private String description;
@@ -42,19 +42,19 @@ public class Group extends TimeStamp {
     private Long likeNum = 0L;
 
     @Builder
-    public Group(String name, String region, String subRegion, String description, String category, String profileURL) {
+    public Group(String name, String district, String subDistrict, String description, String category, String profileURL) {
         this.name = name;
-        this.region = region;
-        this.subRegion = subRegion;
+        this.district = district;
+        this.subDistrict = subDistrict;
         this.description = description;
         this.category = category;
         this.profileURL = profileURL;
     }
 
-    public void updateInfo(String name, String region, String subRegion, String description, String category, String profileURL){
+    public void updateInfo(String name, String district, String subDistrict, String description, String category, String profileURL){
         this.name = name;
-        this.region = region;
-        this.subRegion = subRegion;
+        this.district = district;
+        this.subDistrict = subDistrict;
         this.description = description;
         this.category = category;
         this.profileURL = profileURL;

@@ -17,6 +17,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
     Optional<User> findById(@Param("id") Long id);
 
+    @Query("SELECT u.district FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
+    Optional<String> findDistrictById(@Param("id") Long id);
+
     @Query("SELECT u FROM User u WHERE u.id = :id")
     Optional<User> findByIdWithRemoved(@Param("id") Long id);
 
