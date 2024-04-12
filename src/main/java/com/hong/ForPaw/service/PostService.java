@@ -106,7 +106,7 @@ public class PostService {
         postRepository.save(post);
 
         // 답변수 증가
-        postRepository.incrementAnswerNum(post.getId());
+        postRepository.incrementAnswerNum(parentPostId);
 
         // 알림 생성
         String content = "새로운 답변: " + requestDTO.content();
@@ -466,9 +466,7 @@ public class PostService {
         );
 
         // 해당 글의 댓글이 아니면 에러
-        if(parentComment.getPost().getId().equals(postId)){
-            throw new CustomException(ExceptionCode.COMMENT_NOT_FOUND);
-        }
+        checkPostOwnComment(parentComment, postId);
 
         // 작성자
         User userRef = entityManager.getReference(User.class, userId);
@@ -507,11 +505,14 @@ public class PostService {
     }
 
     @Transactional
-    public void updateComment(PostRequest.UpdateCommentDTO requestDTO, Long commentId, User user){
+    public void updateComment(PostRequest.UpdateCommentDTO requestDTO, Long postId, Long commentId, User user){
         // 존재하지 않는 댓글이면 에러
         Comment comment = commentRepository.findByIdWithUser(commentId).orElseThrow(
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
+
+        // 해당 글의 댓글이 아니면 에러
+        checkPostOwnComment(comment, postId);
 
         // 수정 권한 체크
         checkCommentAuthority(comment.getUser().getId(), user);
@@ -526,6 +527,9 @@ public class PostService {
         Comment comment = commentRepository.findByIdWithUser(commentId).orElseThrow(
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
+
+        // 해당 글의 댓글이 아니면 에러
+        checkPostOwnComment(comment, postId);
 
         // 수정 권한 체크
         checkCommentAuthority(comment.getUser().getId(), user);
@@ -650,6 +654,14 @@ public class PostService {
         // 기간이 3개월 이상이면 좋아요를 할 수 없다
         if (period.getMonths() >= 3 || period.getYears() > 0) {
             throw new CustomException(ExceptionCode.POST_LIKE_EXPIRED);
+        }
+    }
+
+    private void checkPostOwnComment(Comment comment, Long postId){
+        Long commentPostId = comment.getPost().getId();
+
+        if(!commentPostId.equals(postId)){
+            throw new CustomException(ExceptionCode.NOT_POSTS_COMMENT);
         }
     }
 }
