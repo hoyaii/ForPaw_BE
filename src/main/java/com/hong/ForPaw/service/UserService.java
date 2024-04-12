@@ -88,9 +88,8 @@ public class UserService {
     private String googleRedirectURI;
 
     @Value("${google.oauth.userInfo.uri}")
-    private  String googleUserInfoURI;
-
-
+    private String googleUserInfoURI;
+    
     @Transactional
     public Map<String, String> login(UserRequest.LoginDTO requestDTO){
         User user = userRepository.findByEmail(requestDTO.email()).orElseThrow(

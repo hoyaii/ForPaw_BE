@@ -54,6 +54,9 @@ public class GroupService {
     private final EntityManager entityManager;
     private final BrokerService brokerService;
 
+    private static final String DEFAULT_DISTRICT = "수성구";
+    private static final String DEFAULT_SUBDISTRICT = "두산동";
+
     @Transactional
     public GroupResponse.CreateGroupDTO createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId){
         // 이름 중복 체크
@@ -144,24 +147,31 @@ public class GroupService {
 
     @Transactional
     public GroupResponse.FindAllGroupListDTO findGroupList(Long userId){
-        User user = userRepository.findById(userId).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
-        );
+        String district = DEFAULT_DISTRICT;
+        String subDistrict = DEFAULT_SUBDISTRICT;
+
+        // 로그인이 되어 있으면, 가입 시 기재한 주소를 바탕으로 그룹 조회
+        if (userId != null) {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new CustomException(ExceptionCode.USER_NOT_FOUND));
+            district = user.getDistrict();
+            subDistrict = user.getSubDistrict();
+        }
 
         // 이 API의 페이지네이션은 0페이지인 5개만 보내줄 것이다.
         Pageable pageable = createPageable(0, 5, "id");
 
         // 추천 그룹 찾기
-        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = getRecommendGroupDTOS(userId, user.getDistrict());
+        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = getRecommendGroupDTOS(userId, district);
 
         // 지역 그룹 찾기
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, user.getDistrict(), user.getSubDistrict(), pageable);
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, district, subDistrict, pageable);
 
         // 새 그룹 찾기
-        List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, user.getDistrict(), pageable);
+        List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, district, pageable);
 
-        // 내 그룹 찾기
-        List<GroupResponse.MyGroupDTO> myGroupDTOS = getMyGroupDTOS(userId, pageable);
+        // 내 그룹 찾기, 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
+        List<GroupResponse.MyGroupDTO> myGroupDTOS = userId != null ? getMyGroupDTOS(userId, pageable) : new ArrayList<>();
 
         return new GroupResponse.FindAllGroupListDTO(recommendGroupDTOS, newGroupDTOS, localGroupDTOS, myGroupDTOS);
     }
@@ -691,7 +701,8 @@ public class GroupService {
 
     private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String district){
         // 내가 가입한 그룹
-        Set<Long> joinedGroupIds = getGroupIds(userId);
+        // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
+        Set<Long> joinedGroupIds = userId != null ? getGroupIds(userId) : Collections.emptySet();
 
         // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순
         Sort sort = Sort.by(Sort.Order.desc("likeNum"), Sort.Order.desc("participantNum"));
@@ -727,7 +738,8 @@ public class GroupService {
 
     private List<GroupResponse.LocalGroupDTO> getLocalGroupDTOS(Long userId, String district, String subDistrict, Pageable pageable){
         // 내가 가입한 그룹
-        Set<Long> joinedGroupIds = getGroupIds(userId);
+        // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
+        Set<Long> joinedGroupIds = userId != null ? getGroupIds(userId) : Collections.emptySet();
 
         Page<Group> localGroups = groupRepository.findByDistrictAndSubDistrict(district, subDistrict, pageable);
 
@@ -754,7 +766,8 @@ public class GroupService {
 
     private List<GroupResponse.NewGroupDTO> getNewGroupDTOS(Long userId, String district, Pageable pageable){
         // 내가 가입한 그룹
-        Set<Long> joinedGroupIds = getGroupIds(userId);
+        // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
+        Set<Long> joinedGroupIds = userId != null ? getGroupIds(userId) : Collections.emptySet();
 
         Page<Group> newGroups = groupRepository.findByDistrict(district, pageable);
 

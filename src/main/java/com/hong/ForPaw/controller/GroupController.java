@@ -4,6 +4,7 @@ import com.hong.ForPaw.controller.DTO.GroupRequest;
 import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
+import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.service.GroupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @Controller
 @RequiredArgsConstructor
@@ -40,7 +43,12 @@ public class GroupController {
 
     @GetMapping("/groups")
     public ResponseEntity<?> findGroupList(@AuthenticationPrincipal CustomUserDetails userDetails){
-        GroupResponse.FindAllGroupListDTO responseDTO = groupService.findGroupList(userDetails.getUser().getId());
+        Long userId = Optional.ofNullable(userDetails)
+                .map(CustomUserDetails::getUser)
+                .map(User::getId)
+                .orElse(null);
+
+        GroupResponse.FindAllGroupListDTO responseDTO = groupService.findGroupList(userId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
