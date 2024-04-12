@@ -4,6 +4,7 @@ import com.hong.ForPaw.controller.DTO.AnimalRequest;
 import com.hong.ForPaw.controller.DTO.AnimalResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
+import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.service.AnimalService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @Controller
 @RequiredArgsConstructor
@@ -42,7 +45,12 @@ public class AnimalController {
 
     @GetMapping("/animals")
     public ResponseEntity<?> findAnimalList(@RequestParam("page") Integer page, @RequestParam("sort") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
-        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(page, sort, userDetails.getUser().getId());
+        Long userId = Optional.ofNullable(userDetails)
+                .map(CustomUserDetails::getUser)
+                .map(User::getId)
+                .orElse(null);
+
+        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(page, sort, userId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

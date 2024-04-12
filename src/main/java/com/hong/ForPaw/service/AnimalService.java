@@ -185,7 +185,8 @@ public class AnimalService {
         }
 
         // 사용자가 '좋아요' 표시한 Animal의 ID 목록
-        List<Long> likedAnimalIds = favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId);
+        // 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
+        List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
