@@ -460,6 +460,11 @@ public class PostService {
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
 
+        // 해당 글의 댓글이 아니면 에러
+        if(parentComment.getPost().getId().equals(postId)){
+            throw new CustomException(ExceptionCode.COMMENT_NOT_FOUND);
+        }
+
         // 작성자
         User userRef = entityManager.getReference(User.class, userId);
         Post postRef = entityManager.getReference(Post.class, postId);
