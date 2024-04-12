@@ -419,6 +419,11 @@ public class PostService {
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
+        // 질문글에는 댓글을 달 수 없다 (댓글 대신 답변이 달리니)
+        if(postRepository.findPostTypeByPostId(postId).get().equals(PostType.question)){
+            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
+        }
+
         User userRef = entityManager.getReference(User.class, userId);
         Post postRef = entityManager.getReference(Post.class, postId);
 

@@ -27,8 +27,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p.user FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
     Optional<User> findUserByPostId(@Param("postId") Long postId);
 
-    @Query("SELECT p.parent FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
-    Optional<Post> findParentByPostId(@Param("postId") Long postId);
+    @Query("SELECT p.postType FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
+    Optional<PostType> findPostTypeByPostId(@Param("postId") Long postId);
 
     @Query("SELECT p.user.id FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
     Optional<Long> findUserIdByPostId(@Param("postId") Long postId);
