@@ -3,12 +3,15 @@ package com.hong.ForPaw.controller;
 import com.hong.ForPaw.controller.DTO.ShelterResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
+import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.service.ShelterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,13 +34,12 @@ public class ShelterController {
 
     @GetMapping("/shelters/{shelterId}")
     public ResponseEntity<?> findShelterById(@PathVariable Long shelterId, @RequestParam("page") Integer page, @RequestParam(value = "sort", defaultValue = "noticeSdt") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
-        ShelterResponse.FindShelterByIdDTO responseDTO = shelterService.findShelterById(shelterId, userDetails.getUser().getId(), page, sort);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
-    }
+        Long userId = Optional.ofNullable(userDetails)
+                .map(CustomUserDetails::getUser)
+                .map(User::getId)
+                .orElse(null);
 
-    @DeleteMapping("/shelters")
-    public ResponseEntity<?> deleteZeroShelter(@AuthenticationPrincipal CustomUserDetails userDetails){
-        shelterService.deleteZeroShelter(userDetails.getUser().getRole());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+        ShelterResponse.FindShelterByIdDTO responseDTO = shelterService.findShelterById(shelterId, userId, page, sort);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }

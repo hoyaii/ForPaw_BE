@@ -28,6 +28,7 @@ import reactor.core.publisher.Flux;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -98,7 +99,8 @@ public class ShelterService {
         Page<Animal> animalPage = animalRepository.findByShelterId(shelterId, pageable);
 
         // 사용자가 '좋아요' 표시한 Animal의 ID 목록
-        List<Long> likedAnimalIds = favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId);
+        // 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
+        List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
 
         List<ShelterResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
@@ -120,17 +122,6 @@ public class ShelterService {
                 .collect(Collectors.toList());
 
         return new ShelterResponse.FindShelterByIdDTO(shelter.getCareAddr(), shelter.getCareTel(), animalDTOS);
-    }
-
-    // 데이터 정합성 문제로 인해 사용 '보류' => 조회 단계에서 animalCnt가 1이상인 것만 조회하도록 수정
-    @Transactional
-    public void deleteZeroShelter(Role role){
-        // 관리자만 사용 가능 (테스트 상황에선 주석 처리)
-        if(role.equals(Role.ADMIN)){
-            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        }
-
-        shelterRepository.deleteZeroShelter();
     }
 
     private Flux<Shelter> processShelterData(String response, RegionCode regionCode){

@@ -70,8 +70,8 @@ public class SecurityConfig {
 
                 // 인증 요구사항 및 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/accounts/profile", "/api/accounts/password/**", "/api/accounts/role", "/api/accounts/withdraw").authenticated()
-                        .requestMatchers("/api/auth/**", "/api/accounts/**", "/api/animals/**").permitAll()
+                        .requestMatchers("/api/accounts/profile", "/api/accounts/password/**", "/api/accounts/role", "/api/accounts/withdraw", "/api/shelters/import").authenticated()
+                        .requestMatchers("/api/auth/**", "/api/accounts/**", "/api/animals", "/api/shelters/**").permitAll()
                         .anyRequest().authenticated()
                 )
 
