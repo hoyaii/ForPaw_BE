@@ -185,6 +185,10 @@ public class PostService {
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
+        if(post.getPostType().equals(PostType.question)){
+            throw new CustomException(ExceptionCode.IS_QUESTION_TYPE);
+        }
+
         // 게시글 이미지 DTO
         List<PostResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
                 .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
@@ -246,6 +250,11 @@ public class PostService {
         Post post = postRepository.findById(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
+
+        // 질문 게시글에 대해서만 조회 가능
+        if(!post.getPostType().equals(PostType.question)){
+            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
+        }
 
         // 게시글 이미지 DTO
         List<PostResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
