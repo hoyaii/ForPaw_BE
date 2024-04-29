@@ -329,13 +329,13 @@ public class UserService {
 
     // 관지라 API
     @Transactional
-    public void updateRole(UserRequest.UpdateRoleDTO requestDTO, Long userId, Role role){
+    public void updateRole(UserRequest.UpdateRoleDTO requestDTO, Role role){
         // 관리자만 사용 가능 (테스트 상황에선 주석 처리)
         //if(role.equals(Role.ADMIN)){
         //    throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         //}
 
-        User user = userRepository.findById(userId).get();
+        User user = userRepository.findById(requestDTO.userId()).get();
         user.updateRole(requestDTO.role());
     }
 

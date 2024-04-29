@@ -6,6 +6,9 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public enum Status {
-    PROCESSING,
-    FINISHED
+    PROCESSING("진행중"),
+    REJECTED("반려됨"),
+    FINISHED("완료됨");
+
+    private String value;
 }
