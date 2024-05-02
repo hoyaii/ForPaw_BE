@@ -16,4 +16,6 @@ public class UserResponse {
                              String district,
                              String subDistrict,
                              String profileURL) {}
+
+    public record SubmitInquiry(Long id) {}
 }

@@ -6,6 +6,7 @@ import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Inquiry.CustomerInquiry;
 import com.hong.ForPaw.domain.User.Role;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
@@ -13,8 +14,10 @@ import com.hong.ForPaw.repository.ApplyRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Group.GroupUserRepository;
 import com.hong.ForPaw.repository.Group.MeetingUserRepository;
+import com.hong.ForPaw.repository.Inquiry.CustomerInquiryRepository;
 import com.hong.ForPaw.repository.Post.PostReadStatusRepository;
 import com.hong.ForPaw.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -55,10 +58,12 @@ public class UserService {
     private final MeetingUserRepository meetingUserRepository;
     private final PostReadStatusRepository postReadStatusRepository;
     private final ChatUserRepository chatUserRepository;
+    private final CustomerInquiryRepository customerInquiryRepository;
     private final RedisService redisService;
     private final JavaMailSender mailSender;
     private final WebClient webClient;
     private final BrokerService brokerService;
+    private final EntityManager entityManager;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
@@ -383,6 +388,23 @@ public class UserService {
 
         // 유저 삭제 (soft delete 처리)
         userRepository.deleteById(userId);
+    }
+
+    @Transactional
+    public UserResponse.SubmitInquiry submitInquiry(UserRequest.SubmitInquiry requestDTO, Long userId){
+        // 프록시 객체
+        User user = entityManager.getReference(User.class, userId);
+
+        CustomerInquiry customerInquiry = CustomerInquiry.builder()
+                .user(user)
+                .title(requestDTO.title())
+                .description(requestDTO.description())
+                .contactMail(requestDTO.contactMail())
+                .build();
+
+        customerInquiryRepository.save(customerInquiry);
+
+        return new UserResponse.SubmitInquiry(customerInquiry.getId());
     }
 
     private String sendCodeByMail(String toEmail){

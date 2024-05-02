@@ -96,4 +96,9 @@ public class UserRequest {
     public record UpdateAccessTokenDTO(@NotBlank(message="토큰이 존재하지 않습니다.") String refreshToken) {}
 
     public record UpdateRoleDTO(Long userId, @NotNull(message = "역할을 선택해주세요.") Role role) {}
+
+    public record SubmitInquiry(
+            String title,
+            String description,
+            String contactMail) {}
 }

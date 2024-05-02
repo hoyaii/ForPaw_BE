@@ -3,11 +3,14 @@ package com.hong.ForPaw.domain.Inquiry;
 import com.hong.ForPaw.domain.User.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "inquiry_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class CustomerInquiry {
 
     @Id
@@ -27,6 +30,7 @@ public class CustomerInquiry {
     @Column
     private String contactMail;
 
+    @Builder
     public CustomerInquiry(User user, String title, String description, String contactMail) {
         this.user = user;
         this.title = title;
