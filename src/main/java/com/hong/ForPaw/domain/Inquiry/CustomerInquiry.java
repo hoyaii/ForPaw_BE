@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "inquiry_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UserInquiry {
+public class CustomerInquiry {
 
     @Id
     @GeneratedValue
@@ -27,7 +27,7 @@ public class UserInquiry {
     @Column
     private String contactMail;
 
-    public UserInquiry(User user, String title, String description, String contactMail) {
+    public CustomerInquiry(User user, String title, String description, String contactMail) {
         this.user = user;
         this.title = title;
         this.description = description;
