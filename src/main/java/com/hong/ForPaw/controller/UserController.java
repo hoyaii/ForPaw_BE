@@ -163,4 +163,10 @@ public class UserController {
         userService.withdrawMember(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
+
+    @PostMapping("/supports")
+    public ResponseEntity<?> submitInquiry(@RequestBody @Valid UserRequest.SubmitInquiry requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+        UserResponse.SubmitInquiry responseDTO = userService.submitInquiry(requestDTO, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
 }
