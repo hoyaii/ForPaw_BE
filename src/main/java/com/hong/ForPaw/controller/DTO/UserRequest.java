@@ -98,7 +98,19 @@ public class UserRequest {
     public record UpdateRoleDTO(Long userId, @NotNull(message = "역할을 선택해주세요.") Role role) {}
 
     public record SubmitInquiry(
+            @NotBlank(message = "제목을 입력해주세요.")
             String title,
+            @NotBlank(message = "문의 내용을 입력해주세요.")
             String description,
+            @NotBlank(message = "답변을 받을 이메일 입력해주세요.")
             String contactMail) {}
+
+    public record UpdateInquiry(
+            @NotBlank(message = "제목을 입력해주세요.")
+            String title,
+            @NotBlank(message = "문의 내용을 입력해주세요.")
+            String description,
+            @NotBlank(message = "답변을 받을 이메일 입력해주세요.")
+            String contactMail) {}
+
 }

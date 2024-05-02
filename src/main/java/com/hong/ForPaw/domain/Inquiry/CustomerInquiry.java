@@ -37,4 +37,10 @@ public class CustomerInquiry {
         this.description = description;
         this.contactMail = contactMail;
     }
+
+    public void updateCustomerInquiry(String title, String description, String contactMail){
+        this.title = title;
+        this.description = description;
+        this.contactMail = contactMail;
+    }
 }

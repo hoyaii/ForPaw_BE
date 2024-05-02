@@ -407,6 +407,18 @@ public class UserService {
         return new UserResponse.SubmitInquiry(customerInquiry.getId());
     }
 
+    @Transactional
+    public void updateInquiry(UserRequest.UpdateInquiry requestDTO, Long inquiryId, Long userId){
+        // 존재하지 않는 문의면 에러
+        CustomerInquiry customerInquiry = customerInquiryRepository.findById(inquiryId).orElseThrow(
+                () -> new CustomException(ExceptionCode.INQUIRY_NOT_FOUND)
+        );
+
+        checkInquiryAuthority(userId, customerInquiry.getUser());
+
+        customerInquiry.updateCustomerInquiry(requestDTO.title(), requestDTO.description(), requestDTO.contactMail());
+    }
+
     private String sendCodeByMail(String toEmail){
         String verificationCode = generateVerificationCode();
         String subject = "[ForPaw] 이메일 인증 코드입니다.";
@@ -574,5 +586,11 @@ public class UserService {
 
         brokerService.registerDirectExQueue(exchangeName, queueName);
         brokerService.registerAlarmListener(listenerId, queueName);
+    }
+
+    private void checkInquiryAuthority(Long accessorId, User writer){
+        if(!accessorId.equals(writer.getId())){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
     }
 }
