@@ -169,4 +169,10 @@ public class UserController {
         UserResponse.SubmitInquiry responseDTO = userService.submitInquiry(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
+
+    @PatchMapping("/supports/{inquiryId}")
+    public ResponseEntity<?> updateInquiry(@RequestBody @Valid UserRequest.UpdateInquiry requestDTO, @PathVariable Long inquiryId, @AuthenticationPrincipal CustomUserDetails userDetails){
+        userService.updateInquiry(requestDTO, inquiryId, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
 }

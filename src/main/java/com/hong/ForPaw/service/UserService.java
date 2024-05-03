@@ -414,6 +414,7 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.INQUIRY_NOT_FOUND)
         );
 
+        // 권한 체크
         checkInquiryAuthority(userId, customerInquiry.getUser());
 
         customerInquiry.updateCustomerInquiry(requestDTO.title(), requestDTO.description(), requestDTO.contactMail());
