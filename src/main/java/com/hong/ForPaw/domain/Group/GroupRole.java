@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public enum Role {
+public enum GroupRole {
 
     TEMP("임시"),
     USER("유저"),

@@ -3,7 +3,7 @@ package com.hong.ForPaw.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.GroupRequest;
 import com.hong.ForPaw.controller.DTO.PostRequest;
-import com.hong.ForPaw.domain.Group.Role;
+import com.hong.ForPaw.domain.Group.GroupRole;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -533,7 +533,7 @@ class GroupControllerTest {
     public void 유저_역할_변경_성공() throws Exception {
         // given
         Long groupId = 22L;
-        GroupRequest.UpdateUserRoleDTO requestDTO = new GroupRequest.UpdateUserRoleDTO(1L, Role.ADMIN);
+        GroupRequest.UpdateUserRoleDTO requestDTO = new GroupRequest.UpdateUserRoleDTO(1L, GroupRole.ADMIN);
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -554,7 +554,7 @@ class GroupControllerTest {
     public void 유저_역할_변경_실패_가입하지_않은_회원() throws Exception {
         // given
         Long groupId = 22L;
-        GroupRequest.UpdateUserRoleDTO requestDTO = new GroupRequest.UpdateUserRoleDTO(4L, Role.ADMIN);
+        GroupRequest.UpdateUserRoleDTO requestDTO = new GroupRequest.UpdateUserRoleDTO(4L, GroupRole.ADMIN);
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -575,7 +575,7 @@ class GroupControllerTest {
     public void 유저_역할_변경_실패_권한_없음() throws Exception {
         // given
         Long groupId = 22L;
-        GroupRequest.UpdateUserRoleDTO requestDTO = new GroupRequest.UpdateUserRoleDTO(1L, Role.ADMIN);
+        GroupRequest.UpdateUserRoleDTO requestDTO = new GroupRequest.UpdateUserRoleDTO(1L, GroupRole.ADMIN);
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -596,7 +596,7 @@ class GroupControllerTest {
     public void 유저_역할_변경_실패_그룹장으로_변경시도() throws Exception {
         // given
         Long groupId = 22L;
-        GroupRequest.UpdateUserRoleDTO requestDTO = new GroupRequest.UpdateUserRoleDTO(1L, Role.CREATOR);
+        GroupRequest.UpdateUserRoleDTO requestDTO = new GroupRequest.UpdateUserRoleDTO(1L, GroupRole.CREATOR);
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -617,7 +617,7 @@ class GroupControllerTest {
     public void 유저_역할_변경_실패_그룹장_자신의_역할_변경불가() throws Exception {
         // given
         Long groupId = 22L;
-        GroupRequest.UpdateUserRoleDTO requestDTO = new GroupRequest.UpdateUserRoleDTO(2L, Role.ADMIN);
+        GroupRequest.UpdateUserRoleDTO requestDTO = new GroupRequest.UpdateUserRoleDTO(2L, GroupRole.ADMIN);
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when

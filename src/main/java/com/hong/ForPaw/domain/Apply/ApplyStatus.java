@@ -1,14 +1,15 @@
-package com.hong.ForPaw.domain.Inquiry;
+package com.hong.ForPaw.domain.Apply;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public enum Status {
+public enum ApplyStatus {
 
     PROCESSING("진행중"),
-    PROCESSED("처리됨");
+    REJECTED("반려됨"),
+    FINISHED("완료됨");
 
     private String value;
 }

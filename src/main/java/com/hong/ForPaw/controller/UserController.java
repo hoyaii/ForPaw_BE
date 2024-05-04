@@ -153,7 +153,7 @@ public class UserController {
     // 관리자 페이지용
     @PatchMapping("/accounts/role")
     public ResponseEntity<?> updateRole(@RequestBody @Valid UserRequest.UpdateRoleDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
-        userService.updateRole(requestDTO, userDetails.getUser().getRole());
+        userService.updateRole(requestDTO, userDetails.getUser().getUserRole());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 

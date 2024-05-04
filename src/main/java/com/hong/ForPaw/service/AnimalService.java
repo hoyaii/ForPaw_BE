@@ -6,7 +6,7 @@ import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Animal.AnimalType;
 import com.hong.ForPaw.domain.Apply.Apply;
-import com.hong.ForPaw.domain.Apply.Status;
+import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Animal.FavoriteAnimal;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.Animal.Animal;
@@ -310,7 +310,7 @@ public class AnimalService {
         Apply apply = Apply.builder()
                 .user(userRef)
                 .animal(animalRef)
-                .status(Status.PROCESSING)
+                .applyStatus(ApplyStatus.PROCESSING)
                 .name(requestDTO.name())
                 .tel(requestDTO.tel())
                 .residence(requestDTO.residence())
@@ -343,7 +343,7 @@ public class AnimalService {
                         apply.getName(),
                         apply.getTel(),
                         apply.getResidence(),
-                        apply.getStatus()))
+                        apply.getApplyStatus()))
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindApplyListDTO(applyDTOS);

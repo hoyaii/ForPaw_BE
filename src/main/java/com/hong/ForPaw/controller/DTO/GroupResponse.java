@@ -1,6 +1,6 @@
 package com.hong.ForPaw.controller.DTO;
 
-import com.hong.ForPaw.domain.Group.Role;
+import com.hong.ForPaw.domain.Group.GroupRole;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -92,7 +92,7 @@ public class GroupResponse {
 
     public record ParticipantDTO(String profileURL) {}
 
-    public record MemberDTO(Long id, String name, Role role, String profileURL) {}
+    public record MemberDTO(Long id, String name, GroupRole groupRole, String profileURL) {}
 
     public record CreateGroupDTO(Long id) {}
 

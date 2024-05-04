@@ -7,7 +7,7 @@ import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Post.*;
-import com.hong.ForPaw.domain.User.Role;
+import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Post.*;
 import jakarta.persistence.EntityManager;
@@ -626,7 +626,7 @@ public class PostService {
 
     private void checkPostAuthority(Long writerId, User accessor){
         // 관리자면 수정 가능
-        if(accessor.getRole().equals(Role.ADMIN)){
+        if(accessor.getUserRole().equals(UserRole.ADMIN)){
             return;
         }
 
@@ -637,7 +637,7 @@ public class PostService {
 
     private void checkCommentAuthority(Long writerId, User accessor) {
         // 관리자면 수정 가능
-        if(accessor.getRole().equals(Role.ADMIN)){
+        if(accessor.getUserRole().equals(UserRole.ADMIN)){
             return;
         }
 

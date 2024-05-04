@@ -3,7 +3,7 @@ package com.hong.ForPaw.core.security;
 import com.auth0.jwt.exceptions.SignatureVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.hong.ForPaw.domain.User.Role;
+import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.User;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -39,9 +39,9 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
             DecodedJWT decodedJWT = JWTProvider.verify(jwt);
 
             Long id = decodedJWT.getClaim("id").asLong();
-            Role role = decodedJWT.getClaim("role").as(Role.class);
+            UserRole userRole = decodedJWT.getClaim("role").as(UserRole.class);
             String nickName = decodedJWT.getClaim("nickName").asString();
-            User user = User.builder().id(id).role(role).nickName(nickName).build();
+            User user = User.builder().id(id).userRole(userRole).nickName(nickName).build();
 
             CustomUserDetails myUserDetails = new CustomUserDetails(user);
             Authentication authentication =

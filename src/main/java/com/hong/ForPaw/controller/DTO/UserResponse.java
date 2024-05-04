@@ -1,7 +1,7 @@
 package com.hong.ForPaw.controller.DTO;
 
 
-import com.hong.ForPaw.domain.Inquiry.Status;
+import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,6 +28,6 @@ public class UserResponse {
 
     public record InquiryDTO(Long id,
                              String title,
-                             Status status,
+                             InquiryStatus inquiryStatus,
                              LocalDateTime createdDate) {}
 }

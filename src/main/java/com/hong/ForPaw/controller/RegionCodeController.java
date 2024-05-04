@@ -22,7 +22,7 @@ public class RegionCodeController {
 
     @GetMapping("/regionCodes/import")
     public ResponseEntity<?> loadRegionCode(@AuthenticationPrincipal CustomUserDetails userDetails) throws IOException {
-        regionCodeService.loadRegionCodeData(userDetails.getUser().getRole());
+        regionCodeService.loadRegionCodeData(userDetails.getUser().getUserRole());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }

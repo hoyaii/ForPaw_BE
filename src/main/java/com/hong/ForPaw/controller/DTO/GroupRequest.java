@@ -1,6 +1,6 @@
 package com.hong.ForPaw.controller.DTO;
 
-import com.hong.ForPaw.domain.Group.Role;
+import com.hong.ForPaw.domain.Group.GroupRole;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -42,7 +42,7 @@ public class GroupRequest {
 
     public record JoinGroupDTO(@NotBlank(message = "가입 인사말을 입력해주세요.") String greeting) {}
 
-    public record UpdateUserRoleDTO(@NotNull(message = "id를 입력해주세요.") Long id, Role role) {}
+    public record UpdateUserRoleDTO(@NotNull(message = "id를 입력해주세요.") Long id, GroupRole groupRole) {}
 
     public record CreateMeetingDTO(
             @NotBlank(message = "정기모임의 이름을 입력해주세요.")

@@ -33,15 +33,15 @@ public class CustomerInquiry extends TimeStamp {
 
     @Column
     @Enumerated(EnumType.STRING)
-    private Status status;
+    private InquiryStatus inquiryStatus;
 
     @Builder
-    public CustomerInquiry(User user, String title, String description, String contactMail, Status status) {
+    public CustomerInquiry(User user, String title, String description, String contactMail, InquiryStatus inquiryStatus) {
         this.user = user;
         this.title = title;
         this.description = description;
         this.contactMail = contactMail;
-        this.status = status;
+        this.inquiryStatus = inquiryStatus;
     }
 
     public void updateCustomerInquiry(String title, String description, String contactMail){

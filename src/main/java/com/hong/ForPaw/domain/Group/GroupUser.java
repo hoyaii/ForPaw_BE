@@ -29,20 +29,20 @@ public class GroupUser extends TimeStamp {
     private User user;
 
     @Column
-    private Role role;
+    private GroupRole groupRole;
 
     @Column
     private String greeting;
 
     @Builder
-    public GroupUser(Group group, User user, Role role, String greeting) {
+    public GroupUser(Group group, User user, GroupRole groupRole, String greeting) {
         this.group = group;
         this.user = user;
-        this.role = role;
+        this.groupRole = groupRole;
         this.greeting = greeting;
     }
 
-    public void updateRole(Role role){
-        this.role = role;
+    public void updateRole(GroupRole groupRole){
+        this.groupRole = groupRole;
     }
 }

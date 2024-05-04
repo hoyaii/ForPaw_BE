@@ -1,8 +1,8 @@
 package com.hong.ForPaw.repository.Group;
 
 import com.hong.ForPaw.domain.Group.Group;
+import com.hong.ForPaw.domain.Group.GroupRole;
 import com.hong.ForPaw.domain.Group.GroupUser;
-import com.hong.ForPaw.domain.Group.Role;
 import com.hong.ForPaw.domain.User.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -45,8 +45,8 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
     boolean existsByGroupIdAndUserId(@Param("groupId") Long groupId, @Param("userId") Long userId);
 
     @Modifying
-    @Query("UPDATE GroupUser gu SET gu.role = :role WHERE gu.group.id = :groupId AND gu.user.id = :userId")
-    void updateRole(@Param("role") Role role, @Param("groupId") Long groupId, @Param("userId") Long userId);
+    @Query("UPDATE GroupUser gu SET gu.groupRole = :groupRole WHERE gu.group.id = :groupId AND gu.user.id = :userId")
+    void updateRole(@Param("groupRole") GroupRole groupRole, @Param("groupId") Long groupId, @Param("userId") Long userId);
 
     void deleteByGroupIdAndUserId(Long groupId, Long userId);
 

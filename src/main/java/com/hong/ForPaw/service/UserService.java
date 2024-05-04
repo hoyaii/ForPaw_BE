@@ -6,10 +6,11 @@ import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
-import com.hong.ForPaw.domain.Group.Role;
+import com.hong.ForPaw.domain.Group.GroupRole;
 import com.hong.ForPaw.domain.Inquiry.CustomerInquiry;
-import com.hong.ForPaw.domain.Inquiry.Status;
+import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
 import com.hong.ForPaw.domain.User.User;
+import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
 import com.hong.ForPaw.repository.ApplyRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
@@ -167,7 +168,7 @@ public class UserService {
                 .nickName(requestDTO.nickName())
                 .email(requestDTO.email())
                 .password(passwordEncoder.encode(requestDTO.password()))
-                .role(com.hong.ForPaw.domain.User.Role.USER)
+                .userRole(UserRole.USER)
                 .profileURL(requestDTO.profileURL())
                 .province(requestDTO.province())
                 .district(requestDTO.district())
@@ -194,7 +195,7 @@ public class UserService {
                 .nickName(requestDTO.nickName())
                 .email(requestDTO.email())
                 .password(passwordEncoder.encode(generatePassword())) // 임의의 비밀번호로 생성
-                .role(com.hong.ForPaw.domain.User.Role.USER)
+                .userRole(UserRole.USER)
                 .profileURL(requestDTO.profileURL())
                 .province(requestDTO.province())
                 .district(requestDTO.district())
@@ -332,14 +333,14 @@ public class UserService {
 
     // 관지라 API
     @Transactional
-    public void updateRole(UserRequest.UpdateRoleDTO requestDTO, com.hong.ForPaw.domain.User.Role role){
+    public void updateRole(UserRequest.UpdateRoleDTO requestDTO, UserRole userRole){
         // 관리자만 사용 가능 (테스트 상황에선 주석 처리)
         //if(role.equals(Role.ADMIN)){
         //    throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         //}
 
         User user = userRepository.findById(requestDTO.userId()).get();
-        user.updateRole(requestDTO.role());
+        user.updateRole(requestDTO.userRole());
     }
 
     // 게시글, 댓글, 좋아요은 남겨둔다. (정책에 따라 변경 가능)
@@ -357,7 +358,7 @@ public class UserService {
         // 그룹장 상태에서는 탈퇴 불가능
         groupUserRepository.findAllByUserId(userId)
                 .forEach(groupUser -> {
-                    groupUser.getRole().equals(Role.CREATOR);
+                    groupUser.getGroupRole().equals(GroupRole.CREATOR);
                     throw new CustomException(ExceptionCode.CREATOR_CANT_EXIT);
                 });
 
@@ -398,7 +399,7 @@ public class UserService {
                 .title(requestDTO.title())
                 .description(requestDTO.description())
                 .contactMail(requestDTO.contactMail())
-                .status(Status.PROCESSING)
+                .inquiryStatus(InquiryStatus.PROCESSING)
                 .build();
 
         customerInquiryRepository.save(customerInquiry);
@@ -427,7 +428,7 @@ public class UserService {
                 .map(customerInquiry -> new UserResponse.InquiryDTO(
                         customerInquiry.getId(),
                         customerInquiry.getTitle(),
-                        customerInquiry.getStatus(),
+                        customerInquiry.getInquiryStatus(),
                         customerInquiry.getCreatedDate()))
                 .toList();
 

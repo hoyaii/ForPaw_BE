@@ -1,6 +1,6 @@
 package com.hong.ForPaw.controller.DTO;
 
-import com.hong.ForPaw.domain.Apply.Status;
+import com.hong.ForPaw.domain.Apply.ApplyStatus;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -51,5 +51,5 @@ public class AnimalResponse {
                            String userName,
                            String tel,
                            String residence,
-                           Status status){ }
+                           ApplyStatus applyStatus){ }
 }

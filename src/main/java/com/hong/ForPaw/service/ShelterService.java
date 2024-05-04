@@ -8,7 +8,6 @@ import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.RegionCode;
 import com.hong.ForPaw.controller.DTO.ShelterDTO;
 import com.hong.ForPaw.domain.Shelter;
-import com.hong.ForPaw.domain.User.Role;
 import com.hong.ForPaw.repository.*;
 import com.hong.ForPaw.repository.Animal.AnimalRepository;
 import com.hong.ForPaw.repository.Animal.FavoriteAnimalRepository;
@@ -21,7 +20,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 

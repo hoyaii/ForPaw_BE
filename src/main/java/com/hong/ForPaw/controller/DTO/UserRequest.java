@@ -1,6 +1,6 @@
 package com.hong.ForPaw.controller.DTO;
 
-import com.hong.ForPaw.domain.User.Role;
+import com.hong.ForPaw.domain.User.UserRole;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -95,7 +95,7 @@ public class UserRequest {
 
     public record UpdateAccessTokenDTO(@NotBlank(message="토큰이 존재하지 않습니다.") String refreshToken) {}
 
-    public record UpdateRoleDTO(Long userId, @NotNull(message = "역할을 선택해주세요.") Role role) {}
+    public record UpdateRoleDTO(Long userId, @NotNull(message = "역할을 선택해주세요.") UserRole userRole) {}
 
     public record SubmitInquiry(
             @NotBlank(message = "제목을 입력해주세요.")

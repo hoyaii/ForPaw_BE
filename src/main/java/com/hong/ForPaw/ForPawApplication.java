@@ -1,6 +1,6 @@
 package com.hong.ForPaw;
 
-import com.hong.ForPaw.domain.User.Role;
+import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -11,8 +11,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.util.Arrays;
 
 @SpringBootApplication
 @EnableJpaAuditing
@@ -33,13 +31,13 @@ public class ForPawApplication {
 		};
 	}
 
-	private User newUser(String email, String name, String nickName, PasswordEncoder passwordEncoder, Role role, String profileURL, String province, String district, String subDistrict, String subRegin) {
+	private User newUser(String email, String name, String nickName, PasswordEncoder passwordEncoder, UserRole userRole, String profileURL, String province, String district, String subDistrict, String subRegin) {
 		return User.builder()
 				.email(email)
 				.name(name)
 				.nickName(nickName)
 				.password(passwordEncoder.encode("hong1234"))
-				.role(role)
+				.userRole(userRole)
 				.profileURL(profileURL)
 				.province(province)
 				.district(district)
