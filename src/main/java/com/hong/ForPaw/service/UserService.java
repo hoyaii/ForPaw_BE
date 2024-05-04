@@ -108,11 +108,10 @@ public class UserService {
         }
 
         // 정지 상태 체크
-        if(!user.getStatus().isActive()){
-            throw new CustomException(ExceptionCode.USER_SUSPENDED);
-        }
+        checkAccountSuspension(user);
 
-        checkDuplicateLogin(user);
+        // 기존에 로그인 된 세션 삭제
+        invalidateDuplicateSession(user);
 
         return createToken(user);
     }
@@ -124,6 +123,7 @@ public class UserService {
         KakaoOauthDTO.UserInfoDTO userInfo = getKakaoUserInfo(token.access_token());
 
         // 카카오 계정으로 가입한 계정의 이메일은 {카카오 id}@kakao.com로 구성
+        // 카카오의 경우 비즈니스 계정이어야 이메일을 제공해줘서, 직접 카카오 아이디를 바탕으로 이메일을 구성
         String email = userInfo.id().toString() + "@kakao.com";
 
         // 가입되지 않음 => email을 넘겨서 추가 정보를 입력하도록 함
@@ -133,8 +133,7 @@ public class UserService {
             return response;
         }
 
-        User user = userRepository.findByEmail(email).get();
-        checkDuplicateLogin(user);
+        User user = processLogin(email);
 
         return createToken(user);
     }
@@ -145,6 +144,7 @@ public class UserService {
         GoogleOauthDTO.TokenDTO token = getGoogleToken(code);
         GoogleOauthDTO.UserInfoDTO userInfoDTO = getGoogleUserInfo(token.access_token());
 
+        // 구글의 경우 메일을 제공해줌
         String email = userInfoDTO.email();
 
         if(isNotMember(email)){
@@ -153,8 +153,7 @@ public class UserService {
             return response;
         }
 
-        User user = userRepository.findByEmail(email).get();
-        checkDuplicateLogin(user);
+        User user = processLogin(email);
 
         return createToken(user);
     }
@@ -541,8 +540,9 @@ public class UserService {
     }
 
     // 중복 로그인 체크 => 만약 이미 로그인된 상태라면 기존 세션은 삭제
-    private void checkDuplicateLogin(User user){
+    private void invalidateDuplicateSession(User user){
         String accessToken = redisService.getDataInStr("accessToken", String.valueOf(user.getId()));
+
         if(accessToken != null){
             redisService.removeData("accessToken", String.valueOf(user.getId()));
         }
@@ -642,5 +642,22 @@ public class UserService {
         if(!accessorId.equals(writer.getId())){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
+    }
+
+    private void checkAccountSuspension(User user){
+        if(!user.getStatus().isActive()){
+            throw new CustomException(ExceptionCode.USER_SUSPENDED);
+        }
+    }
+
+    private User processLogin(String email){
+        User user = userRepository.findByEmailWithUserStatus(email).get();
+
+        // 정지 상태 체크
+        checkAccountSuspension(user);
+        // 기존에 로그인 된 세션 삭제
+        invalidateDuplicateSession(user);
+
+        return user;
     }
 }
