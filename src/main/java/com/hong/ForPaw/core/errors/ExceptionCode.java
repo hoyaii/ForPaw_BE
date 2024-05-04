@@ -20,6 +20,7 @@ public enum ExceptionCode {
     USER_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 되지 않았습니다."),
     USER_ALREADY_EXIT(HttpStatus.NOT_FOUND, "이미 탈퇴한 회원입니다."),
     CREATOR_CANT_EXIT(HttpStatus.BAD_REQUEST, "그룹장은 권한 양도 후 탈퇴 가능합니다."),
+    USER_SUSPENDED(HttpStatus.FORBIDDEN, "계정이 비활성화 상태입니다."),
 
     // 고객 문의 관련 에러
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, "문의 내역이 존재하지 않습니다"),

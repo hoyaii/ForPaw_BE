@@ -99,7 +99,7 @@ public class UserService {
     
     @Transactional
     public Map<String, String> login(UserRequest.LoginDTO requestDTO){
-        User user = userRepository.findByEmail(requestDTO.email()).orElseThrow(
+        User user = userRepository.findByEmailWithUserStatus(requestDTO.email()).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
         );
 
@@ -107,7 +107,10 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
         }
 
-        if(user.)
+        // 정지 상태 체크
+        if(!user.getStatus().isActive()){
+            throw new CustomException(ExceptionCode.USER_SUSPENDED);
+        }
 
         checkDuplicateLogin(user);
 
