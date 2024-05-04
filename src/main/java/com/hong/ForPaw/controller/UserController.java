@@ -153,7 +153,7 @@ public class UserController {
     // 관리자 페이지용
     @PatchMapping("/accounts/role")
     public ResponseEntity<?> updateRole(@RequestBody @Valid UserRequest.UpdateRoleDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
-        userService.updateRole(requestDTO, userDetails.getUser().getUserRole());
+        userService.updateRole(requestDTO, userDetails.getUser().getRole());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
@@ -178,6 +178,12 @@ public class UserController {
     @GetMapping("/supports")
     public ResponseEntity<?> findInquiryList(@AuthenticationPrincipal CustomUserDetails userDetails){
         UserResponse.FindInquiryListDTO responseDTO = userService.findInquiryList(userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
+    @GetMapping("/supports/{inquiryId}")
+    public ResponseEntity<?> findInquiryById(@PathVariable Long inquiryId, @AuthenticationPrincipal CustomUserDetails userDetails){
+        UserResponse.FindInquiryByIdDTO responseDTO = userService.findInquiryById(userDetails.getUser().getId(), inquiryId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }

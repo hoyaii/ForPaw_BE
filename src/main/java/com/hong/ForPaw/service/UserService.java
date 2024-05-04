@@ -171,7 +171,7 @@ public class UserService {
                 .nickName(requestDTO.nickName())
                 .email(requestDTO.email())
                 .password(passwordEncoder.encode(requestDTO.password()))
-                .userRole(UserRole.USER)
+                .role(UserRole.USER)
                 .profileURL(requestDTO.profileURL())
                 .province(requestDTO.province())
                 .district(requestDTO.district())
@@ -198,7 +198,7 @@ public class UserService {
                 .nickName(requestDTO.nickName())
                 .email(requestDTO.email())
                 .password(passwordEncoder.encode(generatePassword())) // 임의의 비밀번호로 생성
-                .userRole(UserRole.USER)
+                .role(UserRole.USER)
                 .profileURL(requestDTO.profileURL())
                 .province(requestDTO.province())
                 .district(requestDTO.district())

@@ -626,7 +626,7 @@ public class PostService {
 
     private void checkPostAuthority(Long writerId, User accessor){
         // 관리자면 수정 가능
-        if(accessor.getUserRole().equals(UserRole.ADMIN)){
+        if(accessor.getRole().equals(UserRole.ADMIN)){
             return;
         }
 
@@ -637,7 +637,7 @@ public class PostService {
 
     private void checkCommentAuthority(Long writerId, User accessor) {
         // 관리자면 수정 가능
-        if(accessor.getUserRole().equals(UserRole.ADMIN)){
+        if(accessor.getRole().equals(UserRole.ADMIN)){
             return;
         }
 

@@ -36,7 +36,7 @@ public class User extends TimeStamp {
 
     @Column
     @Enumerated(EnumType.STRING)
-    private UserRole userRole;
+    private UserRole role;
 
     @Column
     private String profileURL;
@@ -57,13 +57,13 @@ public class User extends TimeStamp {
     private LocalDateTime removedAt;
 
     @Builder
-    public User(Long id, String name, String nickName, String email, String password, UserRole userRole, String profileURL, String province, String district, String subDistrict) {
+    public User(Long id, String name, String nickName, String email, String password, UserRole role, String profileURL, String province, String district, String subDistrict) {
         this.id = id;
         this.name = name;
         this.nickName = nickName;
         this.email = email;
         this.password = password;
-        this.userRole = userRole;
+        this.role = role;
         this.profileURL = profileURL;
         this.province = province;
         this.district = district;
@@ -82,5 +82,5 @@ public class User extends TimeStamp {
         this.profileURL = profileURL;
     }
 
-    public void updateRole(UserRole userRole){ this.userRole = userRole; }
+    public void updateRole(UserRole role){ this.role = role; }
 }

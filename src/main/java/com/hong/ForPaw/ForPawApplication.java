@@ -37,7 +37,7 @@ public class ForPawApplication {
 				.name(name)
 				.nickName(nickName)
 				.password(passwordEncoder.encode("hong1234"))
-				.userRole(userRole)
+				.role(userRole)
 				.profileURL(profileURL)
 				.province(province)
 				.district(district)
