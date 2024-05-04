@@ -7,7 +7,7 @@ import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Group.GroupRole;
-import com.hong.ForPaw.domain.Inquiry.CustomerInquiry;
+import com.hong.ForPaw.domain.Inquiry.Inquiry;
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.User.UserRole;
@@ -394,7 +394,7 @@ public class UserService {
         // 프록시 객체
         User user = entityManager.getReference(User.class, userId);
 
-        CustomerInquiry customerInquiry = CustomerInquiry.builder()
+        Inquiry inquiry = Inquiry.builder()
                 .user(user)
                 .title(requestDTO.title())
                 .description(requestDTO.description())
@@ -402,34 +402,34 @@ public class UserService {
                 .inquiryStatus(InquiryStatus.PROCESSING)
                 .build();
 
-        customerInquiryRepository.save(customerInquiry);
+        customerInquiryRepository.save(inquiry);
 
-        return new UserResponse.SubmitInquiryDTO(customerInquiry.getId());
+        return new UserResponse.SubmitInquiryDTO(inquiry.getId());
     }
 
     @Transactional
     public void updateInquiry(UserRequest.UpdateInquiry requestDTO, Long inquiryId, Long userId){
         // 존재하지 않는 문의면 에러
-        CustomerInquiry customerInquiry = customerInquiryRepository.findById(inquiryId).orElseThrow(
+        Inquiry inquiry = customerInquiryRepository.findById(inquiryId).orElseThrow(
                 () -> new CustomException(ExceptionCode.INQUIRY_NOT_FOUND)
         );
 
         // 권한 체크
-        checkInquiryAuthority(userId, customerInquiry.getUser());
+        checkInquiryAuthority(userId, inquiry.getUser());
 
-        customerInquiry.updateCustomerInquiry(requestDTO.title(), requestDTO.description(), requestDTO.contactMail());
+        inquiry.updateCustomerInquiry(requestDTO.title(), requestDTO.description(), requestDTO.contactMail());
     }
 
     @Transactional
     public UserResponse.FindInquiryListDTO findInquiryList(Long userId){
-        List<CustomerInquiry> customerInquiries = customerInquiryRepository.findAllByUserId(userId);
+        List<Inquiry> customerInquiries = customerInquiryRepository.findAllByUserId(userId);
 
         List<UserResponse.InquiryDTO> inquiryDTOS = customerInquiries.stream()
-                .map(customerInquiry -> new UserResponse.InquiryDTO(
-                        customerInquiry.getId(),
-                        customerInquiry.getTitle(),
-                        customerInquiry.getInquiryStatus(),
-                        customerInquiry.getCreatedDate()))
+                .map(inquiry -> new UserResponse.InquiryDTO(
+                        inquiry.getId(),
+                        inquiry.getTitle(),
+                        inquiry.getInquiryStatus(),
+                        inquiry.getCreatedDate()))
                 .toList();
 
         if(inquiryDTOS.isEmpty()){
@@ -438,6 +438,7 @@ public class UserService {
 
         return new UserResponse.FindInquiryListDTO(inquiryDTOS);
     }
+
 
 
     private String sendCodeByMail(String toEmail){

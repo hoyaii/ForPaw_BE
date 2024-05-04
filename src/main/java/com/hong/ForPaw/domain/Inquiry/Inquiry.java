@@ -12,10 +12,10 @@ import lombok.NoArgsConstructor;
 @Table(name = "inquiry_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class CustomerInquiry extends TimeStamp {
+public class Inquiry extends TimeStamp {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -36,7 +36,7 @@ public class CustomerInquiry extends TimeStamp {
     private InquiryStatus inquiryStatus;
 
     @Builder
-    public CustomerInquiry(User user, String title, String description, String contactMail, InquiryStatus inquiryStatus) {
+    public Inquiry(User user, String title, String description, String contactMail, InquiryStatus inquiryStatus) {
         this.user = user;
         this.title = title;
         this.description = description;

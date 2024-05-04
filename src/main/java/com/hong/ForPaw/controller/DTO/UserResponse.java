@@ -30,4 +30,6 @@ public class UserResponse {
                              String title,
                              InquiryStatus inquiryStatus,
                              LocalDateTime createdDate) {}
+
+    public record FindInquiryByIdDTO(){}
 }

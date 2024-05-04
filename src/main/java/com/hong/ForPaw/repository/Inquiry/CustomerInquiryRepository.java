@@ -1,13 +1,13 @@
 package com.hong.ForPaw.repository.Inquiry;
 
-import com.hong.ForPaw.domain.Inquiry.CustomerInquiry;
+import com.hong.ForPaw.domain.Inquiry.Inquiry;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
-public interface CustomerInquiryRepository extends JpaRepository<CustomerInquiry, Long> {
+public interface CustomerInquiryRepository extends JpaRepository<Inquiry, Long> {
 
-    List<CustomerInquiry> findAllByUserId(Long userId);
+    List<Inquiry> findAllByUserId(Long userId);
 }
