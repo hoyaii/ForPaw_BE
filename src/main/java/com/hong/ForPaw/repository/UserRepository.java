@@ -27,7 +27,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.email = :email AND u.removedAt IS NULL")
     Optional<User> findByEmail(@Param("email") String email);
 
-    @EntityGraph(attributePaths = {"userStatus"})
+    @EntityGraph(attributePaths = {"status"})
     @Query("SELECT u FROM User u WHERE u.email = :email AND u.removedAt IS NULL")
     Optional<User> findByEmailWithUserStatus(@Param("email") String email);
 

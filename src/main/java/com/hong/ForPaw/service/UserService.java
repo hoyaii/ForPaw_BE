@@ -103,7 +103,16 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
         );
 
+        // 로그이 실패 횟수가 3회 이상이면, 5분동안 로그인 불가
+        Long loginFailNum = redisService.getDataInLong("loginFail", user.getId().toString());
+        if(loginFailNum.equals(3L)) {
+            throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
+        }
+
         if(!passwordEncoder.matches(requestDTO.password(), user.getPassword())){
+            loginFailNum++;
+            redisService.storeDate("loginFail", user.getId().toString(), loginFailNum.toString(), 300000L);
+
             throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
         }
 
