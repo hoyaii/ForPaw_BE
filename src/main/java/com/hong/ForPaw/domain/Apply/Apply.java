@@ -33,7 +33,7 @@ public class Apply extends TimeStamp {
 
     @Column
     @Enumerated(EnumType.STRING)
-    private ApplyStatus applyStatus;
+    private ApplyStatus status;
 
     @Column
     private String name;
@@ -48,10 +48,10 @@ public class Apply extends TimeStamp {
     private LocalDateTime removedAt;
 
     @Builder
-    public Apply(User user, Animal animal, ApplyStatus applyStatus, String name, String tel, String residence) {
+    public Apply(User user, Animal animal, ApplyStatus status, String name, String tel, String residence) {
         this.user = user;
         this.animal = animal;
-        this.applyStatus = applyStatus;
+        this.status = status;
         this.name = name;
         this.tel = tel;
         this.residence = residence;

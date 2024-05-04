@@ -559,11 +559,11 @@ public class GroupService {
         }
 
         // 그룹장으로의 변경은 불가능
-        if(requestDTO.groupRole().equals(GroupRole.CREATOR)){
+        if(requestDTO.role().equals(GroupRole.CREATOR)){
             throw new CustomException(ExceptionCode.ROLE_CANT_UPDATE);
         }
 
-        groupUserRepository.updateRole(requestDTO.groupRole(), groupId, requestDTO.id());
+        groupUserRepository.updateRole(requestDTO.role(), groupId, requestDTO.id());
     }
 
     @Transactional

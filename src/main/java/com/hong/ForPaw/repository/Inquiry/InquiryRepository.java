@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface CustomerInquiryRepository extends JpaRepository<Inquiry, Long> {
+public interface InquiryRepository extends JpaRepository<Inquiry, Long> {
 
     List<Inquiry> findAllByUserId(Long userId);
 }

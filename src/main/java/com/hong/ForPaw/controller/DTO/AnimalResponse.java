@@ -51,5 +51,5 @@ public class AnimalResponse {
                            String userName,
                            String tel,
                            String residence,
-                           ApplyStatus applyStatus){ }
+                           ApplyStatus status){ }
 }

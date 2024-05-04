@@ -310,7 +310,7 @@ public class AnimalService {
         Apply apply = Apply.builder()
                 .user(userRef)
                 .animal(animalRef)
-                .applyStatus(ApplyStatus.PROCESSING)
+                .status(ApplyStatus.PROCESSING)
                 .name(requestDTO.name())
                 .tel(requestDTO.tel())
                 .residence(requestDTO.residence())
@@ -343,7 +343,7 @@ public class AnimalService {
                         apply.getName(),
                         apply.getTel(),
                         apply.getResidence(),
-                        apply.getApplyStatus()))
+                        apply.getStatus()))
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindApplyListDTO(applyDTOS);

@@ -28,8 +28,17 @@ public class UserResponse {
 
     public record InquiryDTO(Long id,
                              String title,
-                             InquiryStatus inquiryStatus,
+                             InquiryStatus status,
                              LocalDateTime createdDate) {}
 
-    public record FindInquiryByIdDTO(){}
+    public record FindInquiryByIdDTO(String title,
+                                     String description,
+                                     InquiryStatus status,
+                                     LocalDateTime createdDate,
+                                     List<AnswerDTO> answers){}
+
+    public record AnswerDTO(Long id,
+                            String content,
+                            LocalDateTime answeredDate,
+                            String answeredBy){}
 }

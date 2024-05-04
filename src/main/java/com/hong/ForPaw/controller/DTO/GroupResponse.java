@@ -92,7 +92,7 @@ public class GroupResponse {
 
     public record ParticipantDTO(String profileURL) {}
 
-    public record MemberDTO(Long id, String name, GroupRole groupRole, String profileURL) {}
+    public record MemberDTO(Long id, String name, GroupRole role, String profileURL) {}
 
     public record CreateGroupDTO(Long id) {}
 

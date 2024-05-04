@@ -7,6 +7,7 @@ import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Group.GroupRole;
+import com.hong.ForPaw.domain.Inquiry.Answer;
 import com.hong.ForPaw.domain.Inquiry.Inquiry;
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
 import com.hong.ForPaw.domain.User.User;
@@ -16,7 +17,8 @@ import com.hong.ForPaw.repository.ApplyRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Group.GroupUserRepository;
 import com.hong.ForPaw.repository.Group.MeetingUserRepository;
-import com.hong.ForPaw.repository.Inquiry.CustomerInquiryRepository;
+import com.hong.ForPaw.repository.Inquiry.AnswerRepository;
+import com.hong.ForPaw.repository.Inquiry.InquiryRepository;
 import com.hong.ForPaw.repository.Post.PostReadStatusRepository;
 import com.hong.ForPaw.repository.UserRepository;
 import jakarta.persistence.EntityManager;
@@ -57,7 +59,8 @@ public class UserService {
     private final MeetingUserRepository meetingUserRepository;
     private final PostReadStatusRepository postReadStatusRepository;
     private final ChatUserRepository chatUserRepository;
-    private final CustomerInquiryRepository customerInquiryRepository;
+    private final InquiryRepository inquiryRepository;
+    private final AnswerRepository answerRepository;
     private final RedisService redisService;
     private final JavaMailSender mailSender;
     private final WebClient webClient;
@@ -340,7 +343,7 @@ public class UserService {
         //}
 
         User user = userRepository.findById(requestDTO.userId()).get();
-        user.updateRole(requestDTO.userRole());
+        user.updateRole(requestDTO.role());
     }
 
     // 게시글, 댓글, 좋아요은 남겨둔다. (정책에 따라 변경 가능)
@@ -399,10 +402,10 @@ public class UserService {
                 .title(requestDTO.title())
                 .description(requestDTO.description())
                 .contactMail(requestDTO.contactMail())
-                .inquiryStatus(InquiryStatus.PROCESSING)
+                .status(InquiryStatus.PROCESSING)
                 .build();
 
-        customerInquiryRepository.save(inquiry);
+        inquiryRepository.save(inquiry);
 
         return new UserResponse.SubmitInquiryDTO(inquiry.getId());
     }
@@ -410,7 +413,7 @@ public class UserService {
     @Transactional
     public void updateInquiry(UserRequest.UpdateInquiry requestDTO, Long inquiryId, Long userId){
         // 존재하지 않는 문의면 에러
-        Inquiry inquiry = customerInquiryRepository.findById(inquiryId).orElseThrow(
+        Inquiry inquiry = inquiryRepository.findById(inquiryId).orElseThrow(
                 () -> new CustomException(ExceptionCode.INQUIRY_NOT_FOUND)
         );
 
@@ -422,13 +425,13 @@ public class UserService {
 
     @Transactional
     public UserResponse.FindInquiryListDTO findInquiryList(Long userId){
-        List<Inquiry> customerInquiries = customerInquiryRepository.findAllByUserId(userId);
+        List<Inquiry> customerInquiries = inquiryRepository.findAllByUserId(userId);
 
         List<UserResponse.InquiryDTO> inquiryDTOS = customerInquiries.stream()
                 .map(inquiry -> new UserResponse.InquiryDTO(
                         inquiry.getId(),
                         inquiry.getTitle(),
-                        inquiry.getInquiryStatus(),
+                        inquiry.getStatus(),
                         inquiry.getCreatedDate()))
                 .toList();
 
@@ -439,7 +442,27 @@ public class UserService {
         return new UserResponse.FindInquiryListDTO(inquiryDTOS);
     }
 
+    @Transactional
+    public UserResponse.FindInquiryByIdDTO findInquiryById(Long userId, Long inquiryId){
+        Inquiry inquiry = inquiryRepository.findById(inquiryId).orElseThrow(
+                () -> new CustomException(ExceptionCode.INQUIRY_NOT_FOUND)
+        );
 
+        // 권한 체크
+        checkInquiryAuthority(userId, inquiry.getUser());
+
+        // 답변
+        List<Answer> answers = answerRepository.findAllByInquiryId(inquiryId);
+        List<UserResponse.AnswerDTO> answerDTOS = answers.stream()
+                .map(answer -> new UserResponse.AnswerDTO(
+                        answer.getId(),
+                        answer.getContent(),
+                        answer.getCreatedDate(),
+                        answer.getUser().getName()))
+                .toList();
+
+        return new UserResponse.FindInquiryByIdDTO(inquiry.getTitle(), inquiry.getDescription(), inquiry.getStatus(), inquiry.getCreatedDate(), answerDTOS);
+    }
 
     private String sendCodeByMail(String toEmail){
         String verificationCode = generateVerificationCode();
