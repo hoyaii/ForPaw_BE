@@ -1,5 +1,6 @@
 package com.hong.ForPaw.domain.Authentication;
 
+import com.hong.ForPaw.domain.TimeStamp;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "login_attempt_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class LoginAttempt {
+public class LoginAttempt extends TimeStamp {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
