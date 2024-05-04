@@ -22,6 +22,7 @@ public enum ExceptionCode {
     CREATOR_CANT_EXIT(HttpStatus.BAD_REQUEST, "그룹장은 권한 양도 후 탈퇴 가능합니다."),
     USER_SUSPENDED(HttpStatus.FORBIDDEN, "계정이 비활성화 상태입니다."),
     LOGIN_ATTEMPT_EXCEEDED(HttpStatus.FORBIDDEN, "로그인 횟수를 초과했습니다."),
+    ACCOUNT_LOCKED(HttpStatus.FORBIDDEN, "로그인 횟수를 초과하여 계정이 비활성화 되었습니다."),
 
     // 고객 문의 관련 에러
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, "문의 내역이 존재하지 않습니다"),
