@@ -11,7 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "shelter_tb")
+@Table(name = "report_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Report extends TimeStamp {

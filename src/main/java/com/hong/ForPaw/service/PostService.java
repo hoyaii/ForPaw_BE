@@ -587,11 +587,6 @@ public class PostService {
         // 프록시 객체
         User reporter = entityManager.getReference(User.class, userId);
 
-        // postId와 commentId 모두 null인 경우
-        if (requestDTO.postId() == null && requestDTO.commentId() == null) {
-            throw new CustomException(ExceptionCode.REPORT_TARGET_MISSING);
-        }
-
         Post post = null;
         Comment comment = null;
 
@@ -613,6 +608,9 @@ public class PostService {
                 throw new CustomException(ExceptionCode.ALREADY_REPORTED);
             else if(userId.equals(comment.getUser().getId()))
                 throw new CustomException(ExceptionCode.CANNOT_REPORT_OWN_CONTENT);
+        }
+        else{ // postId와 commentId 모두 null인 경우
+            throw new CustomException(ExceptionCode.REPORT_TARGET_MISSING);
         }
 
         Report report = Report.builder()
