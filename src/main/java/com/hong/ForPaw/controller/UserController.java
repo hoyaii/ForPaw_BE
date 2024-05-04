@@ -174,4 +174,10 @@ public class UserController {
         userService.updateInquiry(requestDTO, inquiryId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
+
+    @GetMapping("/supports")
+    public ResponseEntity<?> findInquiryList(@AuthenticationPrincipal CustomUserDetails userDetails){
+        UserResponse.FindInquiryListDTO responseDTO = userService.findInquiryList(userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
 }
