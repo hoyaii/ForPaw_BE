@@ -103,7 +103,7 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
         );
 
-        // 하루 동안 5분 잠금이 세 번을 초과하면, 24시간 동안 로그인이 불가능하다.
+        // 하루 동안 5분 잠금이 세 번을 초과하면, 24시간 동안 로그인이 불가
         Long loginFailNumDaily = redisService.getDataInLong("loginFailDaily", user.getId().toString());
         if (loginFailNumDaily >= 3L) {
             throw new CustomException(ExceptionCode.ACCOUNT_LOCKED);
