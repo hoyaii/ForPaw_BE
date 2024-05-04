@@ -24,6 +24,10 @@ public enum ExceptionCode {
     // 고객 문의 관련 에러
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, "문의 내역이 존재하지 않습니다"),
 
+    // 신고 관련 에러
+    REPORT_TARGET_MISSING(HttpStatus.BAD_REQUEST, "게시글 혹 댓글의 정보를 입력해주세요."),
+    ALREADY_REPORTED(HttpStatus.BAD_REQUEST, "이미 신고하셨습니다."),
+    CANNOT_REPORT_OWN_CONTENT(HttpStatus.BAD_REQUEST, "자신의 컨텐츠에는 신고할 수 없습니다"),
 
     // 이메일 코드 관련 에러
     CODE_EXPIRED(HttpStatus.BAD_REQUEST, "유효기간이 만료되었습니다."),

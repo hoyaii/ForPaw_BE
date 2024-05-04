@@ -22,7 +22,7 @@ public class Report extends TimeStamp {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    private User user;
+    private User reporter;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
@@ -38,16 +38,21 @@ public class Report extends TimeStamp {
 
     @Column
     @Enumerated(EnumType.STRING)
+    private ReportTargetType targetType;
+
+    @Column
+    @Enumerated(EnumType.STRING)
     private RepostStatus status;
 
     @Column
     private String reason;
 
     @Builder
-    public Report(User user, Post post, Comment comment, ReportType type, RepostStatus status, String reason) {
-        this.user = user;
+    public Report(User reporter, Post post, Comment comment, ReportTargetType targetType, ReportType type, RepostStatus status, String reason) {
+        this.reporter = reporter;
         this.post = post;
         this.comment = comment;
+        this.targetType = targetType;
         this.type = type;
         this.status = status;
         this.reason = reason;

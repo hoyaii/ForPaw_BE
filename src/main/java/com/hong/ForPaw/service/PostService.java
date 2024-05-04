@@ -7,9 +7,13 @@ import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Post.*;
+import com.hong.ForPaw.domain.Report.Report;
+import com.hong.ForPaw.domain.Report.ReportTargetType;
+import com.hong.ForPaw.domain.Report.RepostStatus;
 import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Post.*;
+import com.hong.ForPaw.repository.ReportRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,6 +23,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestBody;
 
 
 import java.time.LocalDate;
@@ -38,6 +43,7 @@ public class PostService {
     private final PostReadStatusRepository postReadStatusRepository;
     private final CommentRepository commentRepository;
     private final CommentLikeRepository commentLikeRepository;
+    private final ReportRepository reportRepository;
     private final RedisService redisService;
     private final S3Service s3Service;
     private final BrokerService brokerService;
@@ -576,7 +582,51 @@ public class PostService {
         }
     }
 
+    @Transactional
+    public void submitReport(@RequestBody PostRequest.SubmitReport requestDTO, Long userId){
+        // 프록시 객체
+        User reporter = entityManager.getReference(User.class, userId);
 
+        // postId와 commentId 모두 null인 경우
+        if (requestDTO.postId() == null && requestDTO.commentId() == null) {
+            throw new CustomException(ExceptionCode.REPORT_TARGET_MISSING);
+        }
+
+        Post post = null;
+        Comment comment = null;
+
+        if (requestDTO.targetType() == ReportTargetType.POST && requestDTO.postId() != null) {
+            post = postRepository.findById(requestDTO.postId())
+                    .orElseThrow(() -> new CustomException(ExceptionCode.POST_NOT_FOUND));
+
+            // 이미 신고했거나 자신의 컨텐츠에 대해 신고하려고 하면 에러 발생
+            if(reportRepository.existsByUserIdAndPostId(userId, requestDTO.postId()))
+                throw new CustomException(ExceptionCode.ALREADY_REPORTED);
+            else if(userId.equals(post.getUser().getId()))
+                throw new CustomException(ExceptionCode.CANNOT_REPORT_OWN_CONTENT);
+
+        } else if (requestDTO.targetType() == ReportTargetType.COMMENT && requestDTO.commentId() != null) {
+            comment = commentRepository.findById(requestDTO.commentId())
+                    .orElseThrow(() -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND));
+
+            if(reportRepository.existsByUserIdAndCommentId(userId, requestDTO.commentId()))
+                throw new CustomException(ExceptionCode.ALREADY_REPORTED);
+            else if(userId.equals(comment.getUser().getId()))
+                throw new CustomException(ExceptionCode.CANNOT_REPORT_OWN_CONTENT);
+        }
+
+        Report report = Report.builder()
+                .reporter(reporter)
+                .post(post)
+                .comment(comment)
+                .type(requestDTO.type())
+                .targetType(requestDTO.targetType())
+                .status(RepostStatus.PROCESSING)
+                .reason(requestDTO.reason())
+                .build();
+
+        reportRepository.save(report);
+    }
 
     public List<PostResponse.PostDTO> getPostDTOsByType(PostType postType, Pageable pageable){
         // 유저를 패치조인하여 조회
