@@ -1,14 +1,13 @@
-package com.hong.ForPaw.domain.Apply;
+package com.hong.ForPaw.domain.Report;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public enum ApplyStatus {
+public enum RepostStatus {
 
     PROCESSING("진행중"),
-    REJECTED("반려됨"),
     PROCESSED("완료됨");
 
     private String value;

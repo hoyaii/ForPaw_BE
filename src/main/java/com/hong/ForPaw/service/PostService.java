@@ -576,6 +576,8 @@ public class PostService {
         }
     }
 
+
+
     public List<PostResponse.PostDTO> getPostDTOsByType(PostType postType, Pageable pageable){
         // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findByPostTypeWithUser(postType, pageable);
