@@ -6,14 +6,17 @@ import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Authentication.LoginAttempt;
 import com.hong.ForPaw.domain.Group.GroupRole;
 import com.hong.ForPaw.domain.Inquiry.Answer;
 import com.hong.ForPaw.domain.Inquiry.Inquiry;
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.User.UserRole;
+import com.hong.ForPaw.domain.User.UserStatus;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
 import com.hong.ForPaw.repository.ApplyRepository;
+import com.hong.ForPaw.repository.Authentication.LoginAttemptRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Group.GroupUserRepository;
 import com.hong.ForPaw.repository.Group.MeetingUserRepository;
@@ -21,7 +24,9 @@ import com.hong.ForPaw.repository.Inquiry.AnswerRepository;
 import com.hong.ForPaw.repository.Inquiry.InquiryRepository;
 import com.hong.ForPaw.repository.Post.PostReadStatusRepository;
 import com.hong.ForPaw.repository.UserRepository;
+import com.hong.ForPaw.repository.UserStatusRepository;
 import jakarta.persistence.EntityManager;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -61,6 +66,8 @@ public class UserService {
     private final ChatUserRepository chatUserRepository;
     private final InquiryRepository inquiryRepository;
     private final AnswerRepository answerRepository;
+    private final LoginAttemptRepository loginAttemptRepository;
+    private final UserStatusRepository userStatusRepository;
     private final RedisService redisService;
     private final JavaMailSender mailSender;
     private final WebClient webClient;
@@ -98,7 +105,7 @@ public class UserService {
     private String googleUserInfoURI;
     
     @Transactional
-    public Map<String, String> login(UserRequest.LoginDTO requestDTO){
+    public Map<String, String> login(UserRequest.LoginDTO requestDTO, HttpServletRequest request){
         User user = userRepository.findByEmailWithUserStatus(requestDTO.email()).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
         );
@@ -129,6 +136,11 @@ public class UserService {
 
             throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
         }
+
+        // 로그인 IP 로깅
+        String clientIp = getClientIP(request);
+        String userAgent = request.getHeader("User-Agent");
+        recordLoginAttempt(user, clientIp, userAgent);
 
         // 정지 상태 체크
         checkAccountSuspension(user);
@@ -206,6 +218,14 @@ public class UserService {
                 .build();
 
         userRepository.save(user);
+
+        UserStatus status = UserStatus.builder()
+                .user(user)
+                .isActive(true)
+                .build();
+
+        userStatusRepository.save(status);
+        user.updateStatus(status);
 
         // 알람 사용을 위한 설정
         setAlarm(user);
@@ -688,5 +708,23 @@ public class UserService {
         invalidateDuplicateSession(user);
 
         return user;
+    }
+
+    public void recordLoginAttempt(User user, String ip, String userAgent) {
+        LoginAttempt attempt = LoginAttempt.builder()
+                .user(user)
+                .clientIp(ip)
+                .userAgent(userAgent)
+                .build();
+
+        loginAttemptRepository.save(attempt);
+    }
+
+    private String getClientIP(HttpServletRequest request) {
+        String xfHeader = request.getHeader("X-Forwarded-For");
+        if (xfHeader == null) {
+            return request.getRemoteAddr();
+        }
+        return xfHeader.split(",")[0]; // X-Forwarded-For 헤더에서 첫 번째 IP를 사용
     }
 }

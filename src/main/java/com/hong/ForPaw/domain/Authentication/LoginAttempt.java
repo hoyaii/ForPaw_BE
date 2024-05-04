@@ -1,6 +1,7 @@
 package com.hong.ForPaw.domain.Authentication;
 
 import com.hong.ForPaw.domain.TimeStamp;
+import com.hong.ForPaw.domain.User.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -17,8 +18,9 @@ public class LoginAttempt extends TimeStamp {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @Column
     private String clientIp;
@@ -27,8 +29,8 @@ public class LoginAttempt extends TimeStamp {
     private String userAgent;
 
     @Builder
-    public LoginAttempt(Long userId, String clientIp, String userAgent) {
-        this.userId = userId;
+    public LoginAttempt(User user, String clientIp, String userAgent) {
+        this.user = user;
         this.clientIp = clientIp;
         this.userAgent = userAgent;
     }
