@@ -107,6 +107,8 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
         }
 
+        if(user.)
+
         checkDuplicateLogin(user);
 
         return createToken(user);
