@@ -110,7 +110,8 @@ public class UserRequest {
             String title,
             @NotBlank(message = "문의 내용을 입력해주세요.")
             String description,
-            @NotBlank(message = "답변을 받을 이메일 입력해주세요.")
+            @NotBlank(message = "이메일을 입력해주세요.")
+            @Pattern(regexp = "^[\\w._%+-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$", message = "올바른 이메일 형식을 입력해주세요.")
             String contactMail) {}
 
 }

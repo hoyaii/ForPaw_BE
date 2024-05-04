@@ -6,8 +6,9 @@ import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Group.Role;
 import com.hong.ForPaw.domain.Inquiry.CustomerInquiry;
-import com.hong.ForPaw.domain.User.Role;
+import com.hong.ForPaw.domain.Inquiry.Status;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
 import com.hong.ForPaw.repository.ApplyRepository;
@@ -37,10 +38,7 @@ import reactor.core.publisher.Mono;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -169,7 +167,7 @@ public class UserService {
                 .nickName(requestDTO.nickName())
                 .email(requestDTO.email())
                 .password(passwordEncoder.encode(requestDTO.password()))
-                .role(Role.USER)
+                .role(com.hong.ForPaw.domain.User.Role.USER)
                 .profileURL(requestDTO.profileURL())
                 .province(requestDTO.province())
                 .district(requestDTO.district())
@@ -196,7 +194,7 @@ public class UserService {
                 .nickName(requestDTO.nickName())
                 .email(requestDTO.email())
                 .password(passwordEncoder.encode(generatePassword())) // 임의의 비밀번호로 생성
-                .role(Role.USER)
+                .role(com.hong.ForPaw.domain.User.Role.USER)
                 .profileURL(requestDTO.profileURL())
                 .province(requestDTO.province())
                 .district(requestDTO.district())
@@ -334,7 +332,7 @@ public class UserService {
 
     // 관지라 API
     @Transactional
-    public void updateRole(UserRequest.UpdateRoleDTO requestDTO, Role role){
+    public void updateRole(UserRequest.UpdateRoleDTO requestDTO, com.hong.ForPaw.domain.User.Role role){
         // 관리자만 사용 가능 (테스트 상황에선 주석 처리)
         //if(role.equals(Role.ADMIN)){
         //    throw new CustomException(ExceptionCode.USER_FORBIDDEN);
@@ -359,7 +357,7 @@ public class UserService {
         // 그룹장 상태에서는 탈퇴 불가능
         groupUserRepository.findAllByUserId(userId)
                 .forEach(groupUser -> {
-                    groupUser.getRole().equals(com.hong.ForPaw.domain.Group.Role.CREATOR);
+                    groupUser.getRole().equals(Role.CREATOR);
                     throw new CustomException(ExceptionCode.CREATOR_CANT_EXIT);
                 });
 
@@ -391,7 +389,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse.SubmitInquiry submitInquiry(UserRequest.SubmitInquiry requestDTO, Long userId){
+    public UserResponse.SubmitInquiryDTO submitInquiry(UserRequest.SubmitInquiry requestDTO, Long userId){
         // 프록시 객체
         User user = entityManager.getReference(User.class, userId);
 
@@ -400,11 +398,12 @@ public class UserService {
                 .title(requestDTO.title())
                 .description(requestDTO.description())
                 .contactMail(requestDTO.contactMail())
+                .status(Status.PROCESSING)
                 .build();
 
         customerInquiryRepository.save(customerInquiry);
 
-        return new UserResponse.SubmitInquiry(customerInquiry.getId());
+        return new UserResponse.SubmitInquiryDTO(customerInquiry.getId());
     }
 
     @Transactional
@@ -419,6 +418,26 @@ public class UserService {
 
         customerInquiry.updateCustomerInquiry(requestDTO.title(), requestDTO.description(), requestDTO.contactMail());
     }
+
+    @Transactional
+    public UserResponse.FindInquiryListDTO findInquiryList(Long userId){
+        List<CustomerInquiry> customerInquiries = customerInquiryRepository.findAllByUserId(userId);
+
+        List<UserResponse.InquiryDTO> inquiryDTOS = customerInquiries.stream()
+                .map(customerInquiry -> new UserResponse.InquiryDTO(
+                        customerInquiry.getId(),
+                        customerInquiry.getTitle(),
+                        customerInquiry.getStatus(),
+                        customerInquiry.getCreatedDate()))
+                .toList();
+
+        if(inquiryDTOS.isEmpty()){
+            throw new CustomException(ExceptionCode.INQUIRY_NOT_FOUND);
+        }
+
+        return new UserResponse.FindInquiryListDTO(inquiryDTOS);
+    }
+
 
     private String sendCodeByMail(String toEmail){
         String verificationCode = generateVerificationCode();

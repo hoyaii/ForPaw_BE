@@ -13,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -36,7 +35,7 @@ public class UserController {
                         .sameSite("None")
                         .maxAge(JWTProvider.REFRESH_EXP)
                         .build().toString())
-                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.loginDTO(tokens.get("accessToken"))));
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokens.get("accessToken"))));
     }
 
     @GetMapping("/auth/login/kakao")
@@ -45,7 +44,7 @@ public class UserController {
 
         // 가입된 계정이 아님
         if(tokenOrEmail.get("email") != null){
-            return ResponseEntity.ok().body((ApiUtils.success(HttpStatus.OK, new UserResponse.kakaoLoginDTO("", tokenOrEmail.get("email")))));
+            return ResponseEntity.ok().body((ApiUtils.success(HttpStatus.OK, new UserResponse.KakaoLoginDTO("", tokenOrEmail.get("email")))));
         }
 
         // 가입된 계정이면, jwt 토큰 반환
@@ -56,7 +55,7 @@ public class UserController {
                         .sameSite("None")
                         .maxAge(JWTProvider.REFRESH_EXP)
                         .build().toString())
-                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.kakaoLoginDTO(tokenOrEmail.get("accessToken"), "")));
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.KakaoLoginDTO(tokenOrEmail.get("accessToken"), "")));
     }
 
     @GetMapping("/auth/login/google")
@@ -65,7 +64,7 @@ public class UserController {
 
         // 가입된 계정이 아님
         if(tokenOrEmail.get("email") != null){
-            return ResponseEntity.ok().body((ApiUtils.success(HttpStatus.OK, new UserResponse.googleLoginDTO("", tokenOrEmail.get("email")))));
+            return ResponseEntity.ok().body((ApiUtils.success(HttpStatus.OK, new UserResponse.GoogleLoginDTO("", tokenOrEmail.get("email")))));
         }
 
         // 가입된 계정이면, jwt 토큰 반환
@@ -76,7 +75,7 @@ public class UserController {
                         .sameSite("None")
                         .maxAge(JWTProvider.REFRESH_EXP)
                         .build().toString())
-                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.googleLoginDTO(tokenOrEmail.get("accessToken"), "")));
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.GoogleLoginDTO(tokenOrEmail.get("accessToken"), "")));
     }
 
     @PostMapping("/accounts")
@@ -166,7 +165,7 @@ public class UserController {
 
     @PostMapping("/supports")
     public ResponseEntity<?> submitInquiry(@RequestBody @Valid UserRequest.SubmitInquiry requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
-        UserResponse.SubmitInquiry responseDTO = userService.submitInquiry(requestDTO, userDetails.getUser().getId());
+        UserResponse.SubmitInquiryDTO responseDTO = userService.submitInquiry(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

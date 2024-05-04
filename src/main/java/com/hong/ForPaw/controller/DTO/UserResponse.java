@@ -1,12 +1,17 @@
 package com.hong.ForPaw.controller.DTO;
 
 
+import com.hong.ForPaw.domain.Inquiry.Status;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
 public class UserResponse {
-    public record loginDTO(String accessToken) {}
+    public record LoginDTO(String accessToken) {}
 
-    public record kakaoLoginDTO(String accessToken, String email) {}
+    public record KakaoLoginDTO(String accessToken, String email) {}
 
-    public record googleLoginDTO(String accessToken, String email) {}
+    public record GoogleLoginDTO(String accessToken, String email) {}
 
     public record AccessTokenDTO(String accessToken) {}
 
@@ -17,5 +22,12 @@ public class UserResponse {
                              String subDistrict,
                              String profileURL) {}
 
-    public record SubmitInquiry(Long id) {}
+    public record SubmitInquiryDTO(Long id) {}
+
+    public record FindInquiryListDTO(List<InquiryDTO> inquiries){}
+
+    public record InquiryDTO(Long id,
+                             String title,
+                             Status status,
+                             LocalDateTime createdDate) {}
 }

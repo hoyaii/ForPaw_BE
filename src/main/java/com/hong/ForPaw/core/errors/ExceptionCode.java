@@ -24,6 +24,7 @@ public enum ExceptionCode {
     // 고객 문의 관련 에러
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, "문의 내역이 존재하지 않습니다"),
 
+
     // 이메일 코드 관련 에러
     CODE_EXPIRED(HttpStatus.BAD_REQUEST, "유효기간이 만료되었습니다."),
     CODE_WRONG(HttpStatus.BAD_REQUEST, "잘못된 인증코드입니다."),
