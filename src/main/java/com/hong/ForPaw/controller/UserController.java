@@ -40,8 +40,8 @@ public class UserController {
     }
 
     @GetMapping("/auth/login/kakao")
-    public ResponseEntity<?> kakaoLogin(@RequestParam String code) {
-        Map<String, String> tokenOrEmail = userService.kakaoLogin(code);
+    public ResponseEntity<?> kakaoLogin(@RequestParam String code, HttpServletRequest request) {
+        Map<String, String> tokenOrEmail = userService.kakaoLogin(code, request);
 
         // 가입된 계정이 아님
         if(tokenOrEmail.get("email") != null){
@@ -60,8 +60,8 @@ public class UserController {
     }
 
     @GetMapping("/auth/login/google")
-    public ResponseEntity<?> googleLogin(@RequestParam String code){
-        Map<String, String> tokenOrEmail = userService.googleLogin(code);
+    public ResponseEntity<?> googleLogin(@RequestParam String code, HttpServletRequest request){
+        Map<String, String> tokenOrEmail = userService.googleLogin(code, request);
 
         // 가입된 계정이 아님
         if(tokenOrEmail.get("email") != null){

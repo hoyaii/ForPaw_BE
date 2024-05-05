@@ -137,13 +137,11 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
         }
 
-        // 로그인 IP 로깅
-        String clientIp = getClientIP(request);
-        String userAgent = request.getHeader("User-Agent");
-        recordLoginAttempt(user, clientIp, userAgent);
-
-        // 정지 상태 체크
+        // 계정 정지 상태 체크
         checkAccountSuspension(user);
+
+        // 로그인 IP 로깅
+        recordLoginAttempt(user, request);
 
         // 기존에 로그인 된 세션 삭제
         invalidateDuplicateSession(user);
@@ -152,7 +150,7 @@ public class UserService {
     }
 
     @Transactional
-    public Map<String, String> kakaoLogin(String code) {
+    public Map<String, String> kakaoLogin(String code, HttpServletRequest request) {
         // 카카오 엑세스 토큰 획득 => 유저 정보 획득
         KakaoOauthDTO.TokenDTO token = getKakaoToken(code);
         KakaoOauthDTO.UserInfoDTO userInfo = getKakaoUserInfo(token.access_token());
@@ -170,11 +168,14 @@ public class UserService {
 
         User user = processLogin(email);
 
+        // 로그인 IP 로깅
+        recordLoginAttempt(user, request);
+
         return createToken(user);
     }
 
     @Transactional
-    public Map<String, String> googleLogin(String code){
+    public Map<String, String> googleLogin(String code, HttpServletRequest request){
         // 구글 엑세스 토큰 획득
         GoogleOauthDTO.TokenDTO token = getGoogleToken(code);
         GoogleOauthDTO.UserInfoDTO userInfoDTO = getGoogleUserInfo(token.access_token());
@@ -189,6 +190,9 @@ public class UserService {
         }
 
         User user = processLogin(email);
+
+        // 로그인 IP 로깅
+        recordLoginAttempt(user, request);
 
         return createToken(user);
     }
@@ -710,10 +714,13 @@ public class UserService {
         return user;
     }
 
-    public void recordLoginAttempt(User user, String ip, String userAgent) {
+    public void recordLoginAttempt(User user, HttpServletRequest  request) {
+        String clientIp = getClientIP(request);
+        String userAgent = request.getHeader("User-Agent");
+
         LoginAttempt attempt = LoginAttempt.builder()
                 .user(user)
-                .clientIp(ip)
+                .clientIp(clientIp)
                 .userAgent(userAgent)
                 .build();
 
