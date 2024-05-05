@@ -31,11 +31,15 @@ public class UserStatus {
     @Column
     private Integer suspensionDays;
 
+    @Column
+    private String suspensionReason;
+
     @Builder
-    public UserStatus(User user, boolean isActive, LocalDateTime suspensionStart, Integer suspensionDays) {
+    public UserStatus(User user, boolean isActive, LocalDateTime suspensionStart, Integer suspensionDays, String suspensionReason) {
         this.user = user;
         this.isActive = isActive;
         this.suspensionStart = suspensionStart;
         this.suspensionDays = suspensionDays;
+        this.suspensionReason = suspensionReason;
     }
 }
