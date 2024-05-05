@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -77,7 +78,8 @@ public class AlarmService {
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
 
-        alarm.updateIsRead(true);
+        // 현재 시간을 기준으로 읽었다고 업데이트
+        alarm.updateIsRead(true, LocalDateTime.now());
     }
 
     @Transactional

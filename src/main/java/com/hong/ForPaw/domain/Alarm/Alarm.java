@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "alarm_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -34,6 +36,9 @@ public class Alarm extends TimeStamp {
     private Boolean isRead = false;
 
     @Column
+    private LocalDateTime readDate;
+
+    @Column
     @Enumerated(EnumType.STRING)
     private AlarmType alarmType;
 
@@ -45,7 +50,8 @@ public class Alarm extends TimeStamp {
         this.alarmType = alarmType;
     }
 
-    public void updateIsRead(Boolean isRead){
+    public void updateIsRead(Boolean isRead, LocalDateTime readDate){
         this.isRead = isRead;
+        this.readDate = readDate;
     }
 }
