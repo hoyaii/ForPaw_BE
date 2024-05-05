@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +47,8 @@ import reactor.core.publisher.Mono;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -441,6 +444,14 @@ public class UserService {
 
         // 유저 삭제 (soft delete 처리)
         userRepository.deleteById(userId);
+    }
+
+    // 탈퇴한지 6개월 지난 유저 데이터 삭제 (매일 자정 30분에 실행)
+    @Transactional
+    @Scheduled(cron = "0 30 0 * * ?")
+    public void deleteExpiredUserData(){
+        LocalDateTime sixMonthsAgo = LocalDateTime.now().minus(6, ChronoUnit.MONTHS);
+        userRepository.deleteAllWithRemovedBefore(sixMonthsAgo);
     }
 
     @Transactional
