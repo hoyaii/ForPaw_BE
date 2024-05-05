@@ -9,12 +9,15 @@ import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
 import com.hong.ForPaw.repository.Alarm.EmitterRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cglib.core.Local;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -103,6 +106,19 @@ public class AlarmService {
                     sendNotification(emitter, eventId, key, alarmDTO);
                 }
         );
+    }
+
+    // 매일 새벽 1시 30분에 알람 데이터 청소
+    @Transactional
+    @Scheduled(cron = "0 30 1 * * *")
+    public void cleanUpAlarms(){
+        // 읽은 알람은 일주일 후에 삭제
+        LocalDateTime oneWeekAgo = LocalDateTime.now().minus(1, ChronoUnit.WEEKS);
+        alarmRepository.deleteReadAlarmBefore(oneWeekAgo);
+
+        // 읽지 않은 알람은 한 달 후에 삭제
+        LocalDateTime oneMonthAgo = LocalDateTime.now().minus(1, ChronoUnit.MONTHS);
+        alarmRepository.deleteNotReadAlarmBefore(oneMonthAgo);
     }
 
     private void sendNotification(SseEmitter emitter, String eventId, String emitterId, Object data) {
