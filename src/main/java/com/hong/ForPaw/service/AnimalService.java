@@ -466,7 +466,7 @@ public class AnimalService {
         }
     }
 
-    public URI buildKakaoGeocodingURI(String address) {
+    private URI buildKakaoGeocodingURI(String address) {
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(kakaoGeoCodingURI);
         uriBuilder.queryParam("query", address);
 
@@ -475,7 +475,7 @@ public class AnimalService {
         return uri;
     }
 
-    public URI buildGoogleGeocodingURI(String address) {
+    private URI buildGoogleGeocodingURI(String address) {
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(googleGeoCodingURI);
         uriBuilder.queryParam("address", address);
         uriBuilder.queryParam("key", googleAPIKey);
