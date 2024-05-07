@@ -123,7 +123,7 @@ public class UserService {
         Long loginFailNum = redisService.getDataInLong("loginFail", user.getId().toString());
         if(loginFailNum >= 3L) {
             loginFailNumDaily++;
-            redisService.storeDate("loginFailDaily", user.getId().toString(), loginFailNumDaily.toString(), 86400000L);  // 24시간
+            redisService.storeValue("loginFailDaily", user.getId().toString(), loginFailNumDaily.toString(), 86400000L);  // 24시간
 
             if(loginFailNumDaily == 3L){
                 sendAccountSuspensionByMail(user.getEmail());
@@ -135,7 +135,7 @@ public class UserService {
         // 비밀번호가 일치하지 않음
         if(!passwordEncoder.matches(requestDTO.password(), user.getPassword())){
             loginFailNum++;
-            redisService.storeDate("loginFail", user.getId().toString(), loginFailNum.toString(), 300000L); // 5분
+            redisService.storeValue("loginFail", user.getId().toString(), loginFailNum.toString(), 300000L); // 5분
 
             throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
         }
@@ -273,7 +273,7 @@ public class UserService {
 
         // 인증 코드 전송 및 레디스에 저장
         String verificationCode = sendCodeByMail(requestDTO.email());
-        redisService.storeDate("emailCode", requestDTO.email(), verificationCode, 5 * 60 * 1000L); // 5분 동안 유효
+        redisService.storeValue("emailCode", requestDTO.email(), verificationCode, 5 * 60 * 1000L); // 5분 동안 유효
     }
 
     @Transactional
@@ -303,11 +303,11 @@ public class UserService {
         }
 
         // 요청 횟수 업데이트
-        redisService.storeDate("requestNum", requestDTO.email(), String.valueOf(recoveryNum + 1), 10 * 60 * 1000L);
+        redisService.storeValue("requestNum", requestDTO.email(), String.valueOf(recoveryNum + 1), 10 * 60 * 1000L);
 
         // 인증 코드 전송 및 레디스에 저장
         String verificationCode = sendCodeByMail(requestDTO.email());
-        redisService.storeDate("emailCode", requestDTO.email(), verificationCode, 5 * 60 * 1000L);
+        redisService.storeValue("emailCode", requestDTO.email(), verificationCode, 5 * 60 * 1000L);
     }
 
     @Transactional
@@ -617,11 +617,11 @@ public class UserService {
         String refreshToken = JWTProvider.createRefreshToken(user);
 
         // Access Token 세션에 저장 (중복 로그인 방지)
-        redisService.storeDate("accessToken", String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP);
+        redisService.storeValue("accessToken", String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP);
 
         // Refresh Token 갱신
         redisService.removeData("refreshToken", String.valueOf(user.getId()));
-        redisService.storeDate("refreshToken", String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP);
+        redisService.storeValue("refreshToken", String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP);
 
         // Map으로 토큰들을 담아 반환
         Map<String, String> tokens = new HashMap<>();

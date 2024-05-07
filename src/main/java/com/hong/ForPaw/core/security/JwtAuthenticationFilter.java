@@ -26,7 +26,7 @@ import java.time.format.DateTimeFormatter;
 public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
     private RedisService redisService;
-    public static final Long VISIT_EXP = 1000L * 60 * 60 * 24 * 30; // 한 달
+    public static final Long VISIT_EXP = 1000L * 60 * 60 * 24 * 7; // 일 주일
 
     public JwtAuthenticationFilter(AuthenticationManager authenticationManager, RedisService redisService) {
         super(authenticationManager);
@@ -58,9 +58,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
                             myUserDetails.getAuthorities()
                     );
 
-            if (!redisService.isDateExist("visit", createVisitKey(id))) {
-                redisService.storeDate("visit", createVisitKey(id), "", VISIT_EXP);
-            }
+            redisService.addSetElement(createVisitKey(), id, VISIT_EXP);
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (SignatureVerificationException sve) {
@@ -72,10 +70,10 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         }
     }
 
-    private String createVisitKey(Long id) {
+    private String createVisitKey() {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");
 
-        return id + ":" + now.format(formatter);
+        return "visit" + ":" + now.format(formatter);
     }
 }

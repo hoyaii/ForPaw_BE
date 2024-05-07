@@ -73,7 +73,7 @@ public class PostService {
         postRepository.save(post);
 
         // 3개월 동안만 좋아요를 할 수 있다
-        redisService.storeDate("postLikeNum", post.getId().toString(), "0", POST_EXP);
+        redisService.storeValue("postLikeNum", post.getId().toString(), "0", POST_EXP);
 
         return new PostResponse.CreatePostDTO(post.getId());
     }
@@ -445,7 +445,7 @@ public class PostService {
         postRepository.incrementCommentNum(postId);
 
         // 3개월 동안만 좋아요를 할 수 있다
-        redisService.storeDate("commentLikeNum", comment.getId().toString(), "0", POST_EXP);
+        redisService.storeValue("commentLikeNum", comment.getId().toString(), "0", POST_EXP);
 
         // 알람 생성
         String content = "새로운 댓글: " + requestDTO.content();
@@ -491,7 +491,7 @@ public class PostService {
         postRepository.incrementCommentNum(postId);
 
         // 3개월 동안만 좋아요를 할 수 있다
-        redisService.storeDate("commentLikeNum", comment.getId().toString(), "0", POST_EXP);
+        redisService.storeValue("commentLikeNum", comment.getId().toString(), "0", POST_EXP);
 
         // 알람 생성
         String content = "새로운 대댓글: " + requestDTO.content();
