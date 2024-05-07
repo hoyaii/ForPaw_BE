@@ -26,7 +26,6 @@ import java.time.format.DateTimeFormatter;
 public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
     private RedisService redisService;
-    public static final Long VISIT_EXP = 1000L * 60 * 60 * 24 * 7; // 일 주일
 
     public JwtAuthenticationFilter(AuthenticationManager authenticationManager, RedisService redisService) {
         super(authenticationManager);
@@ -58,7 +57,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
                             myUserDetails.getAuthorities()
                     );
 
-            redisService.addSetElement(createVisitKey(), id, VISIT_EXP);
+            redisService.addSetElement(createVisitKey(), id);
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (SignatureVerificationException sve) {

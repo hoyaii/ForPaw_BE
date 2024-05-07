@@ -65,6 +65,8 @@ public class RedisService {
     // 데이터 삭제
     public void removeData(String type, String id) { redisTemplate.delete(buildKey(type, id)); }
 
+    public void removeData(String key) { redisTemplate.delete(key); }
+
     // 데이터 반환 - Long 반환
     public Long getDataInLong(String type, String id){
         String value = redisTemplate.opsForValue().get(buildKey(type, id));
