@@ -106,7 +106,7 @@ public class UserService {
 
     @Value("${google.oauth.userInfo.uri}")
     private String googleUserInfoURI;
-    
+
     @Transactional
     public Map<String, String> login(UserRequest.LoginDTO requestDTO, HttpServletRequest request){
         User user = userRepository.findByEmailWithUserStatus(requestDTO.email()).orElseThrow(
@@ -725,7 +725,7 @@ public class UserService {
         return user;
     }
 
-    public void recordLoginAttempt(User user, HttpServletRequest  request) {
+    public void recordLoginAttempt(User user, HttpServletRequest request) {
         String clientIp = getClientIP(request);
         String userAgent = request.getHeader("User-Agent");
 

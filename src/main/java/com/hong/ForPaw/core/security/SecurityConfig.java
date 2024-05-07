@@ -4,11 +4,14 @@ package com.hong.ForPaw.core.security;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.core.utils.FilterResponseUtils;
+import com.hong.ForPaw.service.RedisService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.SecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
@@ -17,24 +20,31 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.stereotype.Component;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final RedisService redisService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
-    public static class CustomSecurityFilterConfigurer extends SecurityConfigurerAdapter<DefaultSecurityFilterChain, HttpSecurity> {
-        @Override
-        public void configure(HttpSecurity http) {
-            AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
-            http.addFilter(new JwtAuthenticationFilter(authenticationManager));
-        }
+    @Bean
+    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
+        return http.getSharedObject(AuthenticationManagerBuilder.class).build();
+    }
+
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(AuthenticationManager authenticationManager) {
+        return new JwtAuthenticationFilter(authenticationManager, redisService);
     }
 
     @Bean
@@ -75,8 +85,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
-                // 사용자 정의 필터 추가
-                .with(new CustomSecurityFilterConfigurer(), customConfigurer -> {});
+                // 필터 추가
+                .addFilter(jwtAuthenticationFilter(authenticationManager(http)));
 
         return http.build();
     }

@@ -5,6 +5,7 @@ import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.User;
+import com.hong.ForPaw.service.RedisService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,12 +19,18 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Slf4j
 public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
-    public JwtAuthenticationFilter(AuthenticationManager authenticationManager) {
+    private RedisService redisService;
+    public static final Long VISIT_EXP = 1000L * 60 * 60 * 24 * 30; // 한 달
+
+    public JwtAuthenticationFilter(AuthenticationManager authenticationManager, RedisService redisService) {
         super(authenticationManager);
+        this.redisService = redisService;
     }
 
     @Override
@@ -50,6 +57,11 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
                             myUserDetails.getPassword(),
                             myUserDetails.getAuthorities()
                     );
+
+            if (!redisService.isDateExist("visit", createVisitKey(id))) {
+                redisService.storeDate("visit", createVisitKey(id), "", VISIT_EXP);
+            }
+
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (SignatureVerificationException sve) {
             log.error("토큰 검증 실패");
@@ -58,5 +70,12 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         } finally {
             chain.doFilter(request, response);
         }
+    }
+
+    private String createVisitKey(Long id) {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");
+
+        return id + ":" + now.format(formatter);
     }
 }
