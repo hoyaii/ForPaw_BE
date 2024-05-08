@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,6 +35,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     @Query("SELECT COUNT(c) > 0 FROM Comment c WHERE c.id = :id AND c.removedAt IS NULL")
     boolean existsById(Long id);
+
+    @Query("SELECT COUNT(c) FROM Comment c WHERE c.createdDate >= :date AND c.removedAt IS NULL")
+    Long countALlWithinDate(LocalDateTime date);
 
     void deleteAllByPostId(Long postId);
 

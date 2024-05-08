@@ -41,4 +41,7 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
     @Modifying
     @Query("UPDATE Animal a SET a.inquiryNum = a.inquiryNum - 1 WHERE a.id = :animalId AND a.inquiryNum > 0")
     void decrementInquiryNumById(@Param("animalId") Long animalId);
+
+    @Query("SELECT COUNT(a) FROM Animal a WHERE a.removedAt IS NULL")
+    Long countAnimal();
 }

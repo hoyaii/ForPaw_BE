@@ -1,12 +1,12 @@
 package com.hong.ForPaw.repository;
 
 import com.hong.ForPaw.domain.Apply.Apply;
-import com.hong.ForPaw.domain.Post.Post;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +21,18 @@ public interface ApplyRepository extends JpaRepository<Apply, Long> {
 
     @Query("SELECT a FROM Apply a WHERE a.user.id = :userId AND a.removedAt IS NULL")
     List<Apply> findAllByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT COUNT(a) FROM Apply a WHERE a.status = 'PROCESSING' AND a.removedAt IS NULL")
+    Long countProcessing();
+
+    @Query("SELECT COUNT(a) FROM Apply a WHERE a.status = 'PROCESSING' AND a.updatedDate >= :date AND a.removedAt IS NULL")
+    Long countProcessingWithinDate(LocalDateTime date);
+
+    @Query("SELECT COUNT(a) FROM Apply a WHERE a.status = 'PROCESSED' AND a.removedAt IS NULL")
+    Long countProcessed();
+
+    @Query("SELECT COUNT(a) FROM Apply a WHERE a.status = 'PROCESSED' AND a.updatedDate >= :date AND a.removedAt IS NULL")
+    Long countProcessedWithinDate(LocalDateTime date);
 
     @Query("SELECT COUNT(a) > 0 FROM Apply a WHERE a.id = :applyId AND a.user.id = :userId AND a.removedAt IS NULL")
     boolean existsByApplyIdAndUserId(@Param("applyId") Long applyId, @Param("userId") Long userId);
