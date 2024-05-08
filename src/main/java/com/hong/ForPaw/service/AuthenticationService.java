@@ -86,8 +86,9 @@ public class AuthenticationService {
                 adoptedTotalNum
         );
 
-        LocalDateTime nowHourOnly = now.withMinute(0).withSecond(0).withNano(0);
-        List<Visit> visits = visitRepository.findALlWithinDate(nowHourOnly.minusWeeks(1));
+        // 일주일 전까지의 Vist 엔티티 불러오기
+        LocalDateTime nowDateOnly = now.minusHours(0).withMinute(0).withSecond(0).withNano(0);
+        List<Visit> visits = visitRepository.findALlWithinDate(nowDateOnly.minusWeeks(1));
 
         // 일별 방문자 수 집계
         Map<LocalDate, Long> dailyVisitors = visits.stream()
@@ -115,7 +116,6 @@ public class AuthenticationService {
                 .collect(Collectors.toList());
 
         // 오늘 발생한 이벤트 요약
-        LocalDateTime nowDateOnly = now.minusHours(0).withMinute(0).withSecond(0).withNano(0);
         Long entryNum = userRepository.countALlWithinDate(nowDateOnly);
         Long newPostNum = postRepository.countALlWithinDate(nowDateOnly);
         Long newCommentNum = commentRepository.countALlWithinDate(nowDateOnly);
