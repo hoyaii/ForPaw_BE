@@ -1,6 +1,7 @@
 package com.hong.ForPaw.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,16 @@ public class RedisService {
         SetOperations<String, String> setOps = redisTemplate.opsForSet();
         setOps.add(key, String.valueOf(userId));
         redisTemplate.expire(key, expirationTime, TimeUnit.SECONDS);
+    }
+
+    public void addListElementWithLimit(String key, String value, Long limit) {
+        ListOperations<String, String> listOps = redisTemplate.opsForList();
+        listOps.leftPush(key, value);
+
+        // 리스트 크기가 5를 초과하는 경우, 가장 오래된 항목(리스트의 끝) 제거
+        while (listOps.size(key) > limit) {
+            listOps.rightPop(key);
+        }
     }
 
     public void incrementCnt(String type, String id, Long cnt){

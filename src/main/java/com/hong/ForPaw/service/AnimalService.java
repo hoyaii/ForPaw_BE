@@ -247,6 +247,10 @@ public class AnimalService {
 
         boolean isLike = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent();
 
+        // 추천을 위해 검색한 동물의 id 저장 (5개까지만 저장된다)
+        String key = "animalSearch:" + userId;
+        redisService.addListElementWithLimit(key, animalId.toString(), 5l);
+
         return new AnimalResponse.FindAnimalByIdDTO(animalId,
                 animal.getName(),
                 animal.getAge(),
