@@ -17,7 +17,6 @@ import com.hong.ForPaw.repository.Animal.FavoriteAnimalRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,8 +25,6 @@ import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -173,29 +170,22 @@ public class AnimalService {
 
     @Transactional
     public AnimalResponse.FindAnimalListDTO findRecommendedAnimalList(Long userId){
-        String key = "animalSearch:" + userId;
-
-        List<Integer> animalIds = redisService.getMembersOfList(key).stream()
-                .map(Integer::parseInt)
-                .toList();
-
-        // 만약에 비어 있을 때
-        if(animalIds.isEmpty()){
-
-        }
-
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("animal_ids", animalIds.toString());
+        Map<String, Long> jsonBody = Map.of("user_id", userId);
 
         List<Long> recommendedAnimalIds = webClient.post()
                 .uri(animalRecommendURI)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData(formData))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(jsonBody))
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<Long>>() {})
+                .bodyToMono(AnimalResponse.RecommendationDTO.class)
+                .map(AnimalResponse.RecommendationDTO::recommendedAnimals)
                 .block();
 
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
+
+        if(recommendedAnimalIds.isEmpty()){
+
+        }
 
         List<AnimalResponse.AnimalDTO> animalDTOS =animalRepository.findAllByIds(recommendedAnimalIds).stream()
                 .map(animal -> {

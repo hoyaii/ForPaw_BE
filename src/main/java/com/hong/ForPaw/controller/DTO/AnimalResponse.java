@@ -52,4 +52,6 @@ public class AnimalResponse {
                            String tel,
                            String residence,
                            ApplyStatus status){ }
+
+    public record RecommendationDTO(List<Long> recommendedAnimals) {}
 }
