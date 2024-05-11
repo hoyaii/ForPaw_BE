@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -99,6 +100,11 @@ public class RedisService {
     public Set<String> getMembersOfSet(String key) {
         SetOperations<String, String> setOps = redisTemplate.opsForSet();
         return setOps.members(key);
+    }
+
+    public List<String> getMembersOfList(String key) {
+        ListOperations<String, String> listOps = redisTemplate.opsForList();
+        return listOps.range(key, 0, -1);
     }
 
     private String buildKey(String type, String id){

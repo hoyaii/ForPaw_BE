@@ -17,13 +17,18 @@ import com.hong.ForPaw.repository.Animal.FavoriteAnimalRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
@@ -72,6 +77,9 @@ public class AnimalService {
 
     @Value("${google.api.key}")
     private String googleAPIKey;
+
+    @Value("${recommend.uri}")
+    private String animalRecommendURI;
 
     @Transactional
     @Scheduled(cron = "0 0 0,12 * * *") // 매일 자정과 정오에 실행
@@ -161,6 +169,53 @@ public class AnimalService {
                             });
                 })
                 .subscribe();
+    }
+
+    @Transactional
+    public AnimalResponse.FindAnimalListDTO findRecommendedAnimalList(Long userId){
+        String key = "animalSearch:" + userId;
+
+        List<Integer> animalIds = redisService.getMembersOfList(key).stream()
+                .map(Integer::parseInt)
+                .toList();
+
+        // 만약에 비어 있을 때
+        if(animalIds.isEmpty()){
+
+        }
+
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("animal_ids", animalIds.toString());
+
+        List<Long> recommendedAnimalIds = webClient.post()
+                .uri(animalRecommendURI)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData(formData))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<List<Long>>() {})
+                .block();
+
+        List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
+
+        List<AnimalResponse.AnimalDTO> animalDTOS =animalRepository.findAllByIds(recommendedAnimalIds).stream()
+                .map(animal -> {
+                    Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
+
+                    return new AnimalResponse.AnimalDTO(
+                            animal.getId(),
+                            animal.getName(),
+                            animal.getAge(),
+                            animal.getGender(),
+                            animal.getSpecialMark(),
+                            animal.getRegion(),
+                            animal.getInquiryNum(),
+                            likeNum,
+                            likedAnimalIds.contains(animal.getId()),
+                            animal.getProfileURL());
+                })
+                .collect(Collectors.toList());
+
+        return new AnimalResponse.FindAnimalListDTO(animalDTOS);
     }
 
     @Transactional
