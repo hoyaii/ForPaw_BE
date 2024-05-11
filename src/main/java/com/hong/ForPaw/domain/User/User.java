@@ -46,7 +46,8 @@ public class User extends TimeStamp {
 
     // 활동 지역 - 시/도
     @Column
-    private String province;
+    @Enumerated(EnumType.STRING)
+    private Province province;
 
     // 활동 지역 - 군/구/시
     @Column
@@ -60,7 +61,7 @@ public class User extends TimeStamp {
     private LocalDateTime removedAt;
 
     @Builder
-    public User(Long id, UserStatus status, String name, String nickName, String email, String password, UserRole role, String profileURL, String province, String district, String subDistrict) {
+    public User(Long id, UserStatus status, String name, String nickName, String email, String password, UserRole role, String profileURL, Province province, String district, String subDistrict) {
         this.id = id;
         this.status = status;
         this.name = name;
@@ -78,7 +79,7 @@ public class User extends TimeStamp {
         this.password  = password;
     }
 
-    public void updateProfile(String nickName, String province, String district, String subDistrict,String profileURL){
+    public void updateProfile(String nickName, Province province, String district, String subDistrict,String profileURL){
         this.nickName = nickName;
         this.province = province;
         this.district = district;

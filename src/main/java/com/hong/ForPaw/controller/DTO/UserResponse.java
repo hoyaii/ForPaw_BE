@@ -2,6 +2,7 @@ package com.hong.ForPaw.controller.DTO;
 
 
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
+import com.hong.ForPaw.domain.User.Province;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,7 +18,7 @@ public class UserResponse {
 
     public record ProfileDTO(String name,
                              String nickName,
-                             String province,
+                             Province province,
                              String district,
                              String subDistrict,
                              String profileURL) {}

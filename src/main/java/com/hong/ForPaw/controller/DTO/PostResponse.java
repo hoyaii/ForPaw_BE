@@ -1,5 +1,7 @@
 package com.hong.ForPaw.controller.DTO;
 
+import com.hong.ForPaw.domain.User.Province;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -61,14 +63,14 @@ public class PostResponse {
                              String name,
                              String content,
                              LocalDateTime date,
-                             String location,
+                             Province location,
                              List<ReplyDTO> replies) {}
 
     public record ReplyDTO(Long id,
                            String name,
                            String content,
                            LocalDateTime date,
-                           String location) {}
+                           Province location) {}
 
     public record CreateCommentDTO(Long id) {}
 }
