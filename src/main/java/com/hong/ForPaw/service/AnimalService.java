@@ -189,7 +189,7 @@ public class AnimalService {
                 .orElseThrow(() -> new CustomException(ExceptionCode.BAD_APPROACH));
 
         Pageable pageable =createPageable(page, 5, "id");
-        Page<Animal>  animalPage = animalRepository.findAllByCategory(category, pageable);
+        Page<Animal> animalPage = animalRepository.findAllByCategory(category, pageable);
 
         if(animalPage.isEmpty()){
             throw new CustomException(ExceptionCode.ANIMAL_NOT_EXIST);
@@ -561,12 +561,26 @@ public class AnimalService {
     }
 
     private List<Long> findAnimalIdsByUserLocation(Long userId) {
-        District userDistrict = userRepository.findDistrictById(userId).get();
-        List<Long> animalIds = animalRepository.findAnimalIdsByDistrict(userDistrict, PageRequest.of(0, 5));
+        // 5개 반환
+        PageRequest pageRequest = PageRequest.of(0, 5);
 
+        // 로그인 되지 않았으면, 그냥 시간순으로 반환
+        if (userId == null) {
+            return animalRepository.findAllIds(pageRequest).getContent();
+        }
+
+        // 사용자 district를 바탕으로 조회
+        List<Long> animalIds = userRepository.findDistrictById(userId)
+                .map(district -> animalRepository.findAnimalIdsByDistrict(district, pageRequest))
+                .orElseGet(ArrayList::new);
+
+        // 조회된 동물 ID의 수가 5개 미만인 경우, province 범위까지 확대해서 추가 조회
         if (animalIds.size() < 5) {
-            Province userProvince = userRepository.findProvinceById(userId).get();
-            animalIds = animalRepository.findAnimalIdsByProvince(userProvince, PageRequest.of(0, 5));
+            animalIds.addAll(userRepository.findProvinceById(userId)
+                    .map(province -> animalRepository.findAnimalIdsByProvince(province, pageRequest))
+                    .orElseGet(ArrayList::new));
+
+            return animalIds.subList(0, Math.min(5, animalIds.size()));
         }
 
         return animalIds;

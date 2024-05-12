@@ -23,6 +23,9 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
     Page<Animal> findAll(Pageable pageable);
 
     @Query("SELECT a.id FROM Animal a WHERE a.removedAt IS NULL")
+    Page<Long> findAllIds(Pageable pageable);
+
+    @Query("SELECT a.id FROM Animal a WHERE a.removedAt IS NULL")
     List<Long> findAllIds();
 
     @Query("SELECT a FROM Animal a WHERE (:category IS NULL OR a.category = :category) AND a.removedAt IS NULL")
