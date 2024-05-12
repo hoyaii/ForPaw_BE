@@ -1,6 +1,7 @@
 package com.hong.ForPaw.controller.DTO;
 
-import com.hong.ForPaw.domain.User.Province;
+import com.hong.ForPaw.domain.District;
+import com.hong.ForPaw.domain.Province;
 import com.hong.ForPaw.domain.User.UserRole;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -44,9 +45,10 @@ public class UserRequest {
             @NotBlank(message="닉네을 입력해주세요.")
             @Size(min=2, max=20, message = "닉네임은 2자에서 20자 이내여야 합니다.")
             String nickName,
-            @NotBlank(message = "활동 지역을 입력해주세요.")
+            @NotNull(message = "활동 지역을 입력해주세요.")
             Province province,
-            String district,
+            @NotNull(message = "활동 지역을 입력해주세요.")
+            District district,
             String subDistrict,
             @NotBlank(message = "비밀번호를 입력해주세요.")
             @Size(min=8, max=20, message = "비밀번호는 8자에서 20자 이내여야 합니다.")
@@ -65,9 +67,10 @@ public class UserRequest {
             @NotBlank(message="닉네을 입력해주세요.")
             @Size(min=2, max=20, message = "닉네임은 2자에서 20자 이내여야 합니다.")
             String nickName,
-            @NotBlank(message = "활동 지역을 입력해주세요.")
+            @NotNull(message = "활동 지역을 입력해주세요.")
             Province province,
-            String district,
+            @NotNull(message = "활동 지역을 입력해주세요.")
+            District district,
             String subDistrict,
             @NotBlank(message = "프로필을 입력해주세요.")
             String profileURL) {}
@@ -87,9 +90,10 @@ public class UserRequest {
     public record UpdateProfileDTO(
             @NotBlank(message="닉네임을 입력해주세요.")
             String nickName,
-            @NotBlank(message = "활동 지역을 입력해주세요.")
+            @NotNull(message = "활동 지역을 입력해주세요.")
             Province province,
-            String district,
+            @NotNull(message = "활동 지역을 입력해주세요.")
+            District district,
             String subDistrict,
             @NotBlank(message = "프로필을 입력해주세요.")
             String profileURL) {}

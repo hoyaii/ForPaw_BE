@@ -1,6 +1,7 @@
 package com.hong.ForPaw.repository.Group;
 
 import com.hong.ForPaw.domain.Group.Group;
+import com.hong.ForPaw.domain.District;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,10 +16,10 @@ import java.util.List;
 public interface GroupRepository extends JpaRepository<Group, Long> {
 
     @Query("SELECT g FROM Group g WHERE g.district = :district AND g.subDistrict = :subDistrict")
-    Page<Group> findByDistrictAndSubDistrict(@Param("district") String district, @Param("subDistrict") String subDistrict, Pageable pageable);
+    Page<Group> findByDistrictAndSubDistrict(@Param("district") District district, @Param("subDistrict") String subDistrict, Pageable pageable);
 
     @Query("SELECT g FROM Group g WHERE g.district = :district")
-    Page<Group> findByDistrict(@Param("district") String district, Pageable pageable);
+    Page<Group> findByDistrict(@Param("district") District district, Pageable pageable);
 
     boolean existsByName(String name);
 

@@ -1,6 +1,6 @@
 package com.hong.ForPaw.controller.DTO;
 
-import com.hong.ForPaw.domain.User.Province;
+import com.hong.ForPaw.domain.Province;
 
 import java.time.LocalDateTime;
 import java.util.List;

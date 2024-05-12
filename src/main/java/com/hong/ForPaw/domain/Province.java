@@ -1,4 +1,4 @@
-package com.hong.ForPaw.domain.User;
+package com.hong.ForPaw.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,7 +14,6 @@ public enum Province {
     GWANGJU("광주광역시"),
     DAEJEON("대전광역시"),
     ULSAN("울산광역시"),
-    SEJONG("세종"),
     GYEONGGI("경기도"),
     GANGWON("강원특별자치도"),
     CHUNGCHEONGNORTH("충청북도"),

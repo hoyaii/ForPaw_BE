@@ -861,7 +861,7 @@ class GroupControllerTest {
         ResultActions result = mvc.perform(
                 get("/api/groups/")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .param("province", region)
+                        .param("subDistrict", region)
         );
 
         // then
@@ -881,7 +881,7 @@ class GroupControllerTest {
         ResultActions result = mvc.perform(
                 get("/api/groups/local")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .param("province", region)
+                        .param("subDistrict", region)
                         .param("size", "5")
                         .param("page", "0")
         );

@@ -1,5 +1,6 @@
 package com.hong.ForPaw.controller.DTO;
 
+import com.hong.ForPaw.domain.District;
 import com.hong.ForPaw.domain.Group.GroupRole;
 
 import java.time.LocalDateTime;
@@ -8,7 +9,7 @@ import java.util.List;
 public class GroupResponse {
 
     public record FindGroupByIdDTO(String name,
-                                   String district,
+                                   District district,
                                    String subDistrict,
                                    String description,
                                    String category,
@@ -30,7 +31,7 @@ public class GroupResponse {
                                     String description,
                                     Long participationNum,
                                     String category,
-                                    String district,
+                                    District district,
                                     String subDistrict,
                                     String profileURL,
                                     Long likeNum) {}
@@ -38,7 +39,7 @@ public class GroupResponse {
     public record NewGroupDTO(Long id,
                               String name,
                               String category,
-                              String district,
+                              District district,
                               String subDistrict,
                               String profileURL) {}
 
@@ -47,7 +48,7 @@ public class GroupResponse {
                                 String description,
                                 Long participationNum,
                                 String category,
-                                String district,
+                                District district,
                                 String subDistrict,
                                 String profileURL,
                                 Long likeNum) {}
@@ -57,7 +58,7 @@ public class GroupResponse {
                              String description,
                              Long participationNum,
                              String category,
-                             String district,
+                             District district,
                              String subDistrict,
                              String profileURL,
                              Long likeNum) {}

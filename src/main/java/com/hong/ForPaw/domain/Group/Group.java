@@ -1,5 +1,7 @@
 package com.hong.ForPaw.domain.Group;
 
+import com.hong.ForPaw.domain.District;
+import com.hong.ForPaw.domain.Province;
 import com.hong.ForPaw.domain.TimeStamp;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -21,7 +23,7 @@ public class Group extends TimeStamp {
     private String name;
 
     @Column
-    private String district;
+    private District district;
 
     @Column
     private String subDistrict;
@@ -42,7 +44,7 @@ public class Group extends TimeStamp {
     private Long likeNum = 0L;
 
     @Builder
-    public Group(String name, String district, String subDistrict, String description, String category, String profileURL) {
+    public Group(String name, District district, String subDistrict, String description, String category, String profileURL) {
         this.name = name;
         this.district = district;
         this.subDistrict = subDistrict;
@@ -51,7 +53,7 @@ public class Group extends TimeStamp {
         this.profileURL = profileURL;
     }
 
-    public void updateInfo(String name, String district, String subDistrict, String description, String category, String profileURL){
+    public void updateInfo(String name, District district, String subDistrict, String description, String category, String profileURL){
         this.name = name;
         this.district = district;
         this.subDistrict = subDistrict;

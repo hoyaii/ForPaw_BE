@@ -1,5 +1,7 @@
 package com.hong.ForPaw.controller.DTO;
 
+import com.hong.ForPaw.domain.District;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -30,8 +32,8 @@ public class SearchResponse {
                            String description,
                            Long participationNum,
                            String category,
-                           String region,
-                           String subRegion,
+                           District district,
+                           String subDistrict,
                            String profileURL,
                            Long likeNum) {}
 

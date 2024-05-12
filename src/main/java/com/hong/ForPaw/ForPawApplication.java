@@ -1,6 +1,7 @@
 package com.hong.ForPaw;
 
-import com.hong.ForPaw.domain.User.Province;
+import com.hong.ForPaw.domain.District;
+import com.hong.ForPaw.domain.Province;
 import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.UserRepository;
@@ -32,7 +33,7 @@ public class ForPawApplication {
 		};
 	}
 
-	private User newUser(String email, String name, String nickName, PasswordEncoder passwordEncoder, UserRole userRole, String profileURL, Province province, String district, String subDistrict, String subRegin) {
+	private User newUser(String email, String name, String nickName, PasswordEncoder passwordEncoder, UserRole userRole, String profileURL, Province province, District district, String subDistrict, String subRegin) {
 		return User.builder()
 				.email(email)
 				.name(name)

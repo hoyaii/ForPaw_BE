@@ -11,6 +11,7 @@ import com.hong.ForPaw.domain.Chat.ChatUser;
 import com.hong.ForPaw.domain.Group.*;
 import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Post.PostType;
+import com.hong.ForPaw.domain.District;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
@@ -54,7 +55,7 @@ public class GroupService {
     private final EntityManager entityManager;
     private final BrokerService brokerService;
 
-    private static final String DEFAULT_DISTRICT = "수성구";
+    private static final District DEFAULT_DISTRICT = District.SUSEONG;
     private static final String DEFAULT_SUBDISTRICT = "두산동";
 
     @Transactional
@@ -147,7 +148,7 @@ public class GroupService {
 
     @Transactional
     public GroupResponse.FindAllGroupListDTO findGroupList(Long userId){
-        String district = DEFAULT_DISTRICT;
+        District district = DEFAULT_DISTRICT;
         String subDistrict = DEFAULT_SUBDISTRICT;
 
         // 로그인이 되어 있으면, 가입 시 기재한 주소를 바탕으로 그룹 조회
@@ -178,7 +179,7 @@ public class GroupService {
 
     // 지역 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindLocalGroupListDTO findLocalGroupList(Long userId, String district, String subDistrict, Integer page){
+    public GroupResponse.FindLocalGroupListDTO findLocalGroupList(Long userId, District district, String subDistrict, Integer page){
         Pageable pageable = createPageable(page, 5, "participantNum");
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, district, subDistrict, pageable);
 
@@ -191,11 +192,11 @@ public class GroupService {
 
     // 새 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindNewGroupListDTO findNewGroupList(Long userId, String district, Integer page){
-        // 디폴트 값은 유저가 입력한 district 값
+    public GroupResponse.FindNewGroupListDTO findNewGroupList(Long userId, District district, Integer page){
+        // 디폴트 값은 유저가 입력한 subDistrict 값
         district = Optional.ofNullable(district)
-                .filter(d -> !d.isEmpty())
-                .orElseGet(() -> userRepository.findDistrictById(userId).orElse("수성구"));
+                .filter(d -> !d.getValue().isEmpty())
+                .orElseGet(() -> userRepository.findDistrictById(userId).orElse(District.SUSEONG));
 
         Pageable pageable = createPageable(page, 5, "id");
         List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, district, pageable);
@@ -699,7 +700,7 @@ public class GroupService {
         meetingRepository.deleteById(meetingId);
     }
 
-    private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, String district){
+    private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, District district){
         // 내가 가입한 그룹
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIds = userId != null ? getGroupIds(userId) : Collections.emptySet();
@@ -736,7 +737,7 @@ public class GroupService {
         return recommendGroupDTOS;
     }
 
-    private List<GroupResponse.LocalGroupDTO> getLocalGroupDTOS(Long userId, String district, String subDistrict, Pageable pageable){
+    private List<GroupResponse.LocalGroupDTO> getLocalGroupDTOS(Long userId, District district, String subDistrict, Pageable pageable){
         // 내가 가입한 그룹
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIds = userId != null ? getGroupIds(userId) : Collections.emptySet();
@@ -764,7 +765,7 @@ public class GroupService {
         return localGroupDTOS;
     }
 
-    private List<GroupResponse.NewGroupDTO> getNewGroupDTOS(Long userId, String district, Pageable pageable){
+    private List<GroupResponse.NewGroupDTO> getNewGroupDTOS(Long userId, District district, Pageable pageable){
         // 내가 가입한 그룹
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIds = userId != null ? getGroupIds(userId) : Collections.emptySet();
