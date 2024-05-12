@@ -1,6 +1,7 @@
 package com.hong.ForPaw.repository;
 
 import com.hong.ForPaw.domain.District;
+import com.hong.ForPaw.domain.Province;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.User.UserRole;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -36,6 +37,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u.district FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
     Optional<District> findDistrictById(@Param("id") Long id);
+
+    @Query("SELECT u.province FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
+    Optional<Province> findProvinceById(@Param("id") Long id);
 
     @Query("SELECT u FROM User u WHERE u.id = :id")
     Optional<User> findByIdWithRemoved(@Param("id") Long id);

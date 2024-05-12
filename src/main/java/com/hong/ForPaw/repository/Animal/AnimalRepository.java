@@ -2,6 +2,8 @@ package com.hong.ForPaw.repository.Animal;
 
 import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Animal.AnimalType;
+import com.hong.ForPaw.domain.District;
+import com.hong.ForPaw.domain.Province;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -33,6 +35,12 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
 
     @Query("SELECT a FROM Animal a WHERE a.noticeEdt < NOW() AND a.removedAt IS NULL")
     List<Animal> findAllNoticeEnded();
+
+    @Query("SELECT a.id FROM Animal a WHERE a.shelter.regionCode.orgName = :district ORDER BY a.id ASC")
+    List<Long> findAnimalIdsByDistrict(District district, Pageable pageable);
+
+    @Query("SELECT a.id FROM Animal a WHERE a.shelter.regionCode.uprName = :province ORDER BY a.id ASC")
+    List<Long> findAnimalIdsByProvince(Province province, Pageable pageable);
 
     @Query("SELECT COUNT(a) > 0 FROM Animal a WHERE a.id = :animalId AND a.removedAt IS NULL")
     boolean existsById(@Param("animalId") Long animalId);

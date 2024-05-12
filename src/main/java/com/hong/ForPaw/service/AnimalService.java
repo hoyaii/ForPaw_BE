@@ -9,6 +9,7 @@ import com.hong.ForPaw.domain.Apply.Apply;
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Animal.FavoriteAnimal;
 import com.hong.ForPaw.domain.District;
+import com.hong.ForPaw.domain.Province;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Shelter;
@@ -171,46 +172,6 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse.FindAnimalListDTO findRecommendedAnimalList(Long userId){
-        Map<String, Long> jsonBody = Map.of("user_id", userId);
-
-        List<Long> recommendedAnimalIds = webClient.post()
-                .uri(animalRecommendURI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(jsonBody))
-                .retrieve()
-                .bodyToMono(AnimalResponse.RecommendationDTO.class)
-                .map(AnimalResponse.RecommendationDTO::recommendedAnimals)
-                .block();
-
-        List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
-
-        if(recommendedAnimalIds.isEmpty()){
-
-        }
-
-        List<AnimalResponse.AnimalDTO> animalDTOS =animalRepository.findAllByIds(recommendedAnimalIds).stream()
-                .map(animal -> {
-                    Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
-
-                    return new AnimalResponse.AnimalDTO(
-                            animal.getId(),
-                            animal.getName(),
-                            animal.getAge(),
-                            animal.getGender(),
-                            animal.getSpecialMark(),
-                            animal.getRegion(),
-                            animal.getInquiryNum(),
-                            likeNum,
-                            likedAnimalIds.contains(animal.getId()),
-                            animal.getProfileURL());
-                })
-                .collect(Collectors.toList());
-
-        return new AnimalResponse.FindAnimalListDTO(animalDTOS);
-    }
-
-    @Transactional
     public AnimalResponse.FindAnimalListDTO findAnimalList(Integer page, String sort, Long userId){
         // animalType 매핑을 해주는 맵
         Map<String, AnimalType> animalTypeMap = Map.of(
@@ -250,6 +211,47 @@ public class AnimalService {
                         likeNum,
                         likedAnimalIds.contains(animal.getId()),
                         animal.getProfileURL());
+                })
+                .collect(Collectors.toList());
+
+        return new AnimalResponse.FindAnimalListDTO(animalDTOS);
+    }
+
+    @Transactional
+    public AnimalResponse.FindAnimalListDTO findRecommendedAnimalList(Long userId){
+        Map<String, Long> jsonBody = Map.of("user_id", userId);
+
+        List<Long> recommendedAnimalIds = webClient.post()
+                .uri(animalRecommendURI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(jsonBody))
+                .retrieve()
+                .bodyToMono(AnimalResponse.RecommendationDTO.class)
+                .map(AnimalResponse.RecommendationDTO::recommendedAnimals)
+                .block();
+
+        // 조회 기록이 없어서, 추천하는 ID 목록이 없으면 사용자 위치 기반으로 추천
+        if (recommendedAnimalIds.isEmpty()) {
+            recommendedAnimalIds = findAnimalIdsByUserLocation(userId);
+        }
+
+        List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
+
+        List<AnimalResponse.AnimalDTO> animalDTOS =animalRepository.findAllByIds(recommendedAnimalIds).stream()
+                .map(animal -> {
+                    Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
+
+                    return new AnimalResponse.AnimalDTO(
+                            animal.getId(),
+                            animal.getName(),
+                            animal.getAge(),
+                            animal.getGender(),
+                            animal.getSpecialMark(),
+                            animal.getRegion(),
+                            animal.getInquiryNum(),
+                            likeNum,
+                            likedAnimalIds.contains(animal.getId()),
+                            animal.getProfileURL());
                 })
                 .collect(Collectors.toList());
 
@@ -538,5 +540,17 @@ public class AnimalService {
 
     private Pageable createPageable(int page, int size, String sortProperty) {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
+    }
+
+    private List<Long> findAnimalIdsByUserLocation(Long userId) {
+        District userDistrict = userRepository.findDistrictById(userId).get();
+        List<Long> animalIds = animalRepository.findAnimalIdsByDistrict(userDistrict, PageRequest.of(0, 5));
+
+        if (animalIds.size() < 5) {
+            Province userProvince = userRepository.findProvinceById(userId).get();
+            animalIds = animalRepository.findAnimalIdsByProvince(userProvince, PageRequest.of(0, 5));
+        }
+
+        return animalIds;
     }
 }
