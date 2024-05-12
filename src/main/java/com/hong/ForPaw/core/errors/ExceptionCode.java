@@ -63,12 +63,12 @@ public enum ExceptionCode {
     // 게시글 관련 에러
     POST_TYPE_INCORRECT(HttpStatus.BAD_REQUEST, "게시글의 요청 타입이 올바르지 않습니다."),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 글입니다."),
-    POST_CANT_LIKE(HttpStatus.BAD_REQUEST, "자신의 글에는 좋아요를 할 수 없습니다."),
+    CANT_LIKE_MY_POST(HttpStatus.BAD_REQUEST, "자신의 글에는 좋아요를 할 수 없습니다."),
     NOT_QUESTION_TYPE(HttpStatus.BAD_REQUEST, "질문글이 아닙니다."),
     IS_QUESTION_TYPE(HttpStatus.BAD_REQUEST, "질문글은 질문 조회 API를 호출해주세요."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 댓글입니다."),
     NOT_POSTS_COMMENT(HttpStatus.BAD_REQUEST, "게시글의 댓글이 아닙니다."),
-    COMMENT_CANT_LIKE(HttpStatus.BAD_REQUEST, "자신의 댓글에는 좋아요를 할 수 없습니다."),
+    CANT_LIKE_MY_COMMENT(HttpStatus.BAD_REQUEST, "자신의 댓글에는 좋아요를 할 수 없습니다."),
     POST_LIKE_EXPIRED(HttpStatus.BAD_REQUEST, "오래된 글은 공감할 수 없습니다."),
 
     // 알람 관련 에러

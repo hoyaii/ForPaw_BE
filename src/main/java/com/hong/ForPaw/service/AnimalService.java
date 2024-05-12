@@ -37,6 +37,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -239,7 +240,7 @@ public class AnimalService {
 
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
 
-        List<AnimalResponse.AnimalDTO> animalDTOS =animalRepository.findAllByIds(recommendedAnimalIds).stream()
+        List<AnimalResponse.AnimalDTO> animalDTOS =animalRepository.findAllByIdList(recommendedAnimalIds).stream()
                 .map(animal -> {
                     Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
 
@@ -348,6 +349,20 @@ public class AnimalService {
         }
     }
 
+    @Scheduled(cron = "0 20 0 * * *")
+    @Transactional
+    public void syncLikes() {
+        List<Long> animalIds = animalRepository.findAllIds();
+
+        for (Long postId : animalIds) {
+            Long likeNum = redisService.getDataInLong("animalLikeNum", postId.toString());
+
+            if (likeNum != null) {
+                animalRepository.updateLikeNum(likeNum, postId);
+            }
+        }
+    }
+
     @Transactional
     public AnimalResponse.CreateApplyDTO applyAdoption(AnimalRequest.ApplyAdoptionDTO requestDTO, Long userId, Long animalId){
         // 동물이 존재하지 않으면 에러
@@ -436,7 +451,8 @@ public class AnimalService {
     @Transactional
     @Scheduled(cron = "0 0 3 * * *") // 매일 새벽 3시에 실행
     public void deleteEndAdoptAnimal(){
-        List<Animal> animals = animalRepository.findAllNoticeEnded();
+        LocalDateTime now = LocalDateTime.now();
+        List<Animal> animals = animalRepository.findAllOutOfDate(now);
 
         // 캐싱한 '좋아요 수' 삭제
         animals.forEach(

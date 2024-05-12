@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -366,14 +367,14 @@ public class PostService {
 
         // 자기 자신의 글에는 좋아요를 할 수 없다.
         if (postWriterId.equals(userId)) {
-            throw new CustomException(ExceptionCode.POST_CANT_LIKE);
+            throw new CustomException(ExceptionCode.CANT_LIKE_MY_POST);
         }
 
         Optional<PostLike> postLikeOP = postLikeRepository.findByUserIdAndPostId(userId, postId);
 
         // 이미 좋아요를 눌렀다면, 취소하는 액션이니 게시글의 좋아요 수를 감소시키고 하고, postLike 엔티티 삭제
         if(postLikeOP.isPresent()){
-            checkLikeExpired(postLikeOP.get().getCreatedDate());
+            checkExpiration(postLikeOP.get().getCreatedDate());
 
             postLikeRepository.delete(postLikeOP.get());
             redisService.decrementCnt("postLikeNum", postId.toString(), 1L);
@@ -389,33 +390,19 @@ public class PostService {
         }
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 25 0 * * *")
     @Transactional
     public void syncLikes() {
-        // 업데이트는 100개씩 진행
-        int page = 0;
-        int batchSize = 100;
-
-        Pageable pageable = PageRequest.of(page, batchSize);
-        Page<Long> postIdsPage;
-
-        do {
-            postIdsPage = processLikesBatch(pageable);
-            pageable = pageable.next();
-        } while (postIdsPage != null && postIdsPage.hasNext());
-    }
-
-    public Page<Long> processLikesBatch(Pageable pageable) {
-        Page<Long> postIdsPage = postRepository.findAllPostId(pageable);
-        List<Long> postIds = postIdsPage.getContent();
+        LocalDateTime threeMonthsAgo = LocalDateTime.now().minus(3, ChronoUnit.MONTHS);
+        List<Long> postIds = postRepository.findPostIdsWithinDate(threeMonthsAgo);
 
         for (Long postId : postIds) {
             Long likeNum = redisService.getDataInLong("postLikeNum", postId.toString());
+
             if (likeNum != null) {
                 postRepository.updateLikeNum(likeNum, postId);
             }
         }
-        return postIdsPage;
     }
 
     @Transactional
@@ -559,14 +546,14 @@ public class PostService {
 
         // 자기 자신의 댓글에는 좋아요를 할 수 없다.
         if(commentWriterId.equals(userId)){
-            throw new CustomException(ExceptionCode.COMMENT_CANT_LIKE);
+            throw new CustomException(ExceptionCode.CANT_LIKE_MY_COMMENT);
         }
 
         Optional<CommentLike> commentLikeOP = commentLikeRepository.findByUserIdAndCommentId(userId, commentId);
 
         // 이미 좋아요를 눌렀다면, 취소하는 액션이니 게시글의 좋아요 수를 감소시키고 하고, postLike 엔티티 삭제
         if(commentLikeOP.isPresent()){
-            checkLikeExpired(commentLikeOP.get().getCreatedDate());
+            checkExpiration(commentLikeOP.get().getCreatedDate());
 
             commentLikeRepository.delete(commentLikeOP.get());
             redisService.decrementCnt("commentLikeNum", commentId.toString(), 1L);
@@ -696,7 +683,7 @@ public class PostService {
         }
     }
 
-    private void checkLikeExpired(LocalDateTime date){
+    private void checkExpiration(LocalDateTime date){
         LocalDate likeDate =  date.toLocalDate();
         LocalDate now = LocalDate.now();
         Period period = Period.between(likeDate, now);

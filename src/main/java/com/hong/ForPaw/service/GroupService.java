@@ -481,33 +481,18 @@ public class GroupService {
         }
     }
 
-    @Scheduled(cron = "0 15 * * * *")
+    @Scheduled(cron = "0 15 0 * * *")
     @Transactional
     public void syncLikes() {
-        // 업데이트는 50개씩 진행
-        int page = 0;
-        int batchSize = 50;
-
-        Pageable pageable = PageRequest.of(page, batchSize);
-        Page<Long> groupIdsPage;
-
-        do {
-            groupIdsPage = processLikesBatch(pageable);
-            pageable = pageable.next();
-        } while (groupIdsPage != null && groupIdsPage.hasNext());
-    }
-
-    public Page<Long> processLikesBatch(Pageable pageable) {
-        Page<Long> groupIdsPage = groupRepository.findGroupIds(pageable);
-        List<Long> groupIds = groupIdsPage.getContent();
+        List<Long> groupIds = groupRepository.findGroupIds();
 
         for (Long groupId : groupIds) {
             Long likeNum = redisService.getDataInLong("groupLikeNum", groupId.toString());
+
             if (likeNum != null) {
                 groupRepository.updateLikeNum(likeNum, groupId);
             }
         }
-        return groupIdsPage;
     }
 
     @Transactional
