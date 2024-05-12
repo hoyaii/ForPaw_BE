@@ -40,11 +40,12 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
     @Query("UPDATE Shelter s SET s.latitude = :latitude, s.longitude = :longitude WHERE s.id = :shelterId")
     void updateAddressInfo(@Param("latitude") Double latitude, @Param("longitude") Double longitude, @Param("shelterId") Long shelterId);
 
-    @Query(value = "SELECT * FROM shelter_tb " +
-            "WHERE animal_cnt >= 1 " +
-            "ORDER BY (6371 * ACOS(COS(RADIANS(:lat)) * COS(RADIANS(latitude)) " +
-            "* COS(RADIANS(longitude) - RADIANS(:lon)) + SIN(RADIANS(:lat)) " +
-            "* SIN(RADIANS(latitude)))) ASC",
-            nativeQuery = true)
+    @Query(value = "SELECT s.*" +
+            "FROM shelter_tb s " +
+            "JOIN region_code_tb rc ON s.region_code_id = rc.id " +
+            "WHERE s.animal_cnt >= 1 " +
+            "ORDER BY (6371 * ACOS(COS(RADIANS(:lat)) * COS(RADIANS(s.latitude)) " +
+            "* COS(RADIANS(s.longitude) - RADIANS(:lon)) + SIN(RADIANS(:lat)) " +
+            "* SIN(RADIANS(s.latitude)))) ASC", nativeQuery = true)
     List<Shelter> findNearestShelters(@Param("lat") double lat, @Param("lon") double lon);
 }

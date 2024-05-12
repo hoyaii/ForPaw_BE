@@ -26,10 +26,7 @@ import reactor.core.publisher.Flux;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -76,11 +73,17 @@ public class ShelterService {
     }
     @Transactional
     public ShelterResponse.FindShelterListDTO findShelterList(Double lat, Double lng){
-        // 가장 가까운 순으로 보호소 가져옴
-        List<Shelter> shelterPage = shelterRepository.findNearestShelters(lat, lng);
+        // 가장 가까운 순으로 보호소 가져옴 (네이티브 쿼리 사용) => 성능에 따라 캐싱 고려
+        List<Shelter> shelters = shelterRepository.findNearestShelters(lat, lng);
 
-        List<ShelterResponse.ShelterDTO> shelterDTOS = shelterPage.stream()
-                .map(shelter -> new ShelterResponse.ShelterDTO(shelter.getId(), shelter.getName(), shelter.getLatitude(), shelter.getLongitude()))
+        List<ShelterResponse.ShelterDTO> shelterDTOS = shelters.stream()
+                .map(shelter -> new ShelterResponse.ShelterDTO(
+                        shelter.getId(),
+                        shelter.getName(),
+                        shelter.getLatitude(),
+                        shelter.getLongitude(),
+                        shelter.getRegionCode().getUprName().getValue(),
+                        shelter.getRegionCode().getOrgName().getValue()))
                 .collect(Collectors.toList());
 
         return new ShelterResponse.FindShelterListDTO(shelterDTOS);

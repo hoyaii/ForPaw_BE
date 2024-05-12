@@ -25,5 +25,7 @@ public class ShelterResponse {
     public record ShelterDTO(Long id,
                              String name,
                              Double lat,
-                             Double lng) {}
+                             Double lng,
+                             String province,
+                             String district) {}
 }

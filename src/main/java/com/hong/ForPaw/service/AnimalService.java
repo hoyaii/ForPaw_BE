@@ -127,7 +127,29 @@ public class AnimalService {
                 .then()
                 .block();
 
-        updateAddressByGoogle();
+        // updateAddressByGoogle();
+    }
+
+    // 보호소 정보 업데이트 후 이어서 위치 업데이트 진행
+    @Transactional
+    @Scheduled(cron = "0 12 6 * * MON")
+    public void updateAddressByGoogle(){
+        List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
+
+        Flux.fromIterable(shelters)
+                .delayElements(Duration.ofMillis(50))
+                .flatMap(shelter -> {
+                    URI uri = buildGoogleGeocodingURI(shelter.getCareAddr());
+                    return webClient.get()
+                            .uri(uri)
+                            .retrieve()
+                            .bodyToMono(GoogleMapDTO.MapDTO.class)
+                            .flatMap(mapDTO -> Mono.justOrEmpty(mapDTO.results().stream().findFirst()))
+                            .doOnNext(resultDTO -> {
+                                shelterRepository.updateAddressInfo(resultDTO.geometry().location().lat(), resultDTO.geometry().location().lng(), shelter.getId());
+                            });
+                })
+                .subscribe();
     }
 
     @Transactional
@@ -146,26 +168,6 @@ public class AnimalService {
                             .flatMap(mapDTO -> Mono.justOrEmpty(mapDTO.documents().stream().findFirst()))
                             .doOnNext(document -> {
                                 shelterRepository.updateAddressInfo(Double.valueOf(document.y()), Double.valueOf(document.x()), shelter.getId());
-                            });
-                })
-                .subscribe();
-    }
-
-    @Transactional
-    public void updateAddressByGoogle(){
-        List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
-
-        Flux.fromIterable(shelters)
-                .delayElements(Duration.ofMillis(50))
-                .flatMap(shelter -> {
-                    URI uri = buildGoogleGeocodingURI(shelter.getCareAddr());
-                    return webClient.get()
-                            .uri(uri)
-                            .retrieve()
-                            .bodyToMono(GoogleMapDTO.MapDTO.class)
-                            .flatMap(mapDTO -> Mono.justOrEmpty(mapDTO.results().stream().findFirst()))
-                            .doOnNext(resultDTO -> {
-                                shelterRepository.updateAddressInfo(resultDTO.geometry().location().lat(), resultDTO.geometry().location().lng(), shelter.getId());
                             });
                 })
                 .subscribe();

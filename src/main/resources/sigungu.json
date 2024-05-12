@@ -511,7 +511,7 @@
         {"uprCd": "6440000", "orgCd": "4580000", "orgdownNm": "SEOCHON"},
         {"uprCd": "6440000", "orgCd": "4520000", "orgdownNm": "ASAN"},
         {"uprCd": "6440000", "orgCd": "4560000", "orgdownNm": "YEONGI"},
-        {"uprCd": "6440000", "orgCd": "4610000", "orgchosenNm": "YESAN"},
+        {"uprCd": "6440000", "orgCd": "4610000", "orgdownNm": "YESAN"},
         {"uprCd": "6440000", "orgCd": "4490000", "orgdownNm": "CHEONAN"},
         {"uprCd": "6440000", "orgCd": "4590000", "orgdownNm": "CHEONGYANG"},
         {"uprCd": "6440000", "orgCd": "4620000", "orgdownNm": "TAAN"},
