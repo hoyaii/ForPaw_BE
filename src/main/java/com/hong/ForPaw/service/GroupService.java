@@ -193,7 +193,7 @@ public class GroupService {
     // 새 그룹 추가 조회
     @Transactional
     public GroupResponse.FindNewGroupListDTO findNewGroupList(Long userId, District district, Integer page){
-        // 디폴트 값은 유저가 입력한 subDistrict 값
+        // 디폴트 값은 유저가 입력한 district 값
         district = Optional.ofNullable(district)
                 .filter(d -> !d.getValue().isEmpty())
                 .orElseGet(() -> userRepository.findDistrictById(userId).orElse(District.SUSEONG));

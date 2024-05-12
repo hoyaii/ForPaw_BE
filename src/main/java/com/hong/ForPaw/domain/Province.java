@@ -8,7 +8,7 @@ import lombok.Getter;
 public enum Province {
 
     SEOUL("서울특별시"),
-    DEAGU("대구광역시"),
+    DAEGU("대구광역시"),
     BUSAN("부산광역시"),
     INCHEON("인천광역시"),
     GWANGJU("광주광역시"),

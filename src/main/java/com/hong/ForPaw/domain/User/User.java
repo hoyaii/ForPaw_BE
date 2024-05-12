@@ -12,7 +12,6 @@ import org.hibernate.annotations.SQLDelete;
 
 import java.time.LocalDateTime;
 
-
 @Entity
 @Table(name = "user_tb")
 @SQLDelete(sql = "UPDATE user_tb SET removed_at = NOW() WHERE id=?")
@@ -53,6 +52,7 @@ public class User extends TimeStamp {
 
     // 활동 지역 - 군/구/시
     @Column
+    @Enumerated(EnumType.STRING)
     private District district;
 
     // 활동 지역 - 동/읍/면

@@ -8,6 +8,7 @@ import com.hong.ForPaw.domain.Animal.AnimalType;
 import com.hong.ForPaw.domain.Apply.Apply;
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Animal.FavoriteAnimal;
+import com.hong.ForPaw.domain.District;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Shelter;
@@ -47,6 +48,7 @@ public class AnimalService {
 
     private final AnimalRepository animalRepository;
     private final ShelterRepository shelterRepository;
+    private final UserRepository userRepository;
     private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final RedisService redisService;
     private final ApplyRepository applyRepository;
