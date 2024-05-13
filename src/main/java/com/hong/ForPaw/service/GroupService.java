@@ -56,8 +56,8 @@ public class GroupService {
     private final EntityManager entityManager;
     private final BrokerService brokerService;
 
-    private static final Province DEFAULT_DISTRICT = Province.DAEGU;
-    private static final District DEFAULT_SUBDISTRICT = District.SUSEONG;
+    private static final Province DEFAULT_PROVINCE = Province.DAEGU;
+    private static final District DEFAULT_DISTRICT = District.SUSEONG;
 
     @Transactional
     public GroupResponse.CreateGroupDTO createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId){
@@ -90,6 +90,9 @@ public class GroupService {
 
         // 그룹 참여자 수 증가 (그룹장 참여)
         groupRepository.incrementParticipantNum(group.getId());
+
+        // 레디스에 좋아요 수 데이터 생성 (그룹의 경우 유효기간이 없고, 그룹이 삭제되기 전까지 남아 있음)
+        redisService.storeValue("groupLikeNum", group.getId().toString(), "0");
 
         // 그룹 채팅방 생성
         ChatRoom chatRoom = ChatRoom.builder()
@@ -150,8 +153,8 @@ public class GroupService {
 
     @Transactional
     public GroupResponse.FindAllGroupListDTO findGroupList(Long userId){
-        Province province = DEFAULT_DISTRICT;
-        District district = DEFAULT_SUBDISTRICT;
+        Province province = DEFAULT_PROVINCE;
+        District district = DEFAULT_DISTRICT;
 
         // 로그인이 되어 있으면, 가입 시 기재한 주소를 바탕으로 그룹 조회
         if (userId != null) {
@@ -527,6 +530,9 @@ public class GroupService {
         commentRepository.deleteAllByGroupId(groupId);
         postRepository.deleteAllByGroupId(groupId);
 
+        // 레디스에 저장된 좋아요 수 삭제
+        redisService.removeData("groupLikeNum", groupId.toString());
+
         // 그룹 채팅방 삭제
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
         String queueName = "room." + chatRoom.getId();
@@ -763,7 +769,6 @@ public class GroupService {
     }
 
     private List<GroupResponse.NewGroupDTO> getNewGroupDTOS(Long userId, Province province, Pageable pageable){
-        // 내가 가입한 그룹
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIds = userId != null ? getGroupIds(userId) : Collections.emptySet();
 
