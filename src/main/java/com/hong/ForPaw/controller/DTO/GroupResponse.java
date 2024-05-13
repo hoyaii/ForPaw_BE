@@ -34,7 +34,8 @@ public class GroupResponse {
                                     District district,
                                     String subDistrict,
                                     String profileURL,
-                                    Long likeNum) {}
+                                    Long likeNum,
+                                    boolean isLike) {}
 
     public record NewGroupDTO(Long id,
                               String name,
@@ -51,7 +52,8 @@ public class GroupResponse {
                                 District district,
                                 String subDistrict,
                                 String profileURL,
-                                Long likeNum) {}
+                                Long likeNum,
+                                boolean isLike) {}
 
     public record MyGroupDTO(Long id,
                              String name,
@@ -61,7 +63,8 @@ public class GroupResponse {
                              District district,
                              String subDistrict,
                              String profileURL,
-                             Long likeNum) {}
+                             Long likeNum,
+                             boolean isLike) {}
 
     public record FindGroupDetailByIdDTO(String profileURL,
                                          String name,

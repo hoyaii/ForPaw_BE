@@ -162,17 +162,20 @@ public class GroupService {
         // 이 API의 페이지네이션은 0페이지인 5개만 보내줄 것이다.
         Pageable pageable = createPageable(0, 5, "id");
 
+        // 좋아요 한 그룹
+        List<Long> likedGroupIds = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
+
         // 추천 그룹 찾기
-        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = getRecommendGroupDTOS(userId, district);
+        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = getRecommendGroupDTOS(userId, district, likedGroupIds);
 
         // 지역 그룹 찾기
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, district, subDistrict, pageable);
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, district, subDistrict, likedGroupIds, pageable);
 
         // 새 그룹 찾기
         List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, district, pageable);
 
         // 내 그룹 찾기, 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
-        List<GroupResponse.MyGroupDTO> myGroupDTOS = userId != null ? getMyGroupDTOS(userId, pageable) : new ArrayList<>();
+        List<GroupResponse.MyGroupDTO> myGroupDTOS = userId != null ? getMyGroupDTOS(userId, likedGroupIds, pageable) : new ArrayList<>();
 
         return new GroupResponse.FindAllGroupListDTO(recommendGroupDTOS, newGroupDTOS, localGroupDTOS, myGroupDTOS);
     }
@@ -180,8 +183,11 @@ public class GroupService {
     // 지역 그룹 추가 조회
     @Transactional
     public GroupResponse.FindLocalGroupListDTO findLocalGroupList(Long userId, District district, String subDistrict, Integer page){
+        // 좋아요 한 그룹
+        List<Long> likedGroupIds = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
         Pageable pageable = createPageable(page, 5, "participantNum");
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, district, subDistrict, pageable);
+
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, district, subDistrict, likedGroupIds, pageable);
 
         if(localGroupDTOS.isEmpty()){
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
@@ -211,8 +217,11 @@ public class GroupService {
     // 내 그룹 추가 조회
     @Transactional
     public GroupResponse.FindMyGroupListDTO findMyGroupList(Long userId, Integer page){
+        // 좋아요 한 그룹
+        List<Long> likedGroupIds = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
         Pageable pageable = createPageable(page, 5, "id");
-        List<GroupResponse.MyGroupDTO> myGroupDTOS = getMyGroupDTOS(userId, pageable);
+
+        List<GroupResponse.MyGroupDTO> myGroupDTOS = getMyGroupDTOS(userId, likedGroupIds, pageable);
 
         if(myGroupDTOS.isEmpty()){
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
@@ -685,8 +694,7 @@ public class GroupService {
         meetingRepository.deleteById(meetingId);
     }
 
-    private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, District district){
-        // 내가 가입한 그룹
+    private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, District district, List<Long> likedGroupIds){
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIds = userId != null ? getGroupIds(userId) : Collections.emptySet();
 
@@ -695,21 +703,23 @@ public class GroupService {
         Pageable pageable = PageRequest.of(0, 30, sort);
 
         Page<Group> recommendGroups = groupRepository.findByDistrict(district, pageable);
+
         List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = recommendGroups.getContent().stream()
                 .filter(group -> !joinedGroupIds.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> {
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
 
                     return new GroupResponse.RecommendGroupDTO(
-                        group.getId(),
-                        group.getName(),
-                        group.getDescription(),
-                        group.getParticipantNum(),
-                        group.getCategory(),
-                        group.getDistrict(),
-                        group.getSubDistrict(),
-                        group.getProfileURL(),
-                        likeNum);
+                            group.getId(),
+                            group.getName(),
+                            group.getDescription(),
+                            group.getParticipantNum(),
+                            group.getCategory(),
+                            group.getDistrict(),
+                            group.getSubDistrict(),
+                            group.getProfileURL(),
+                            likeNum,
+                            likedGroupIds.contains(group.getId()));
                 })
                 .collect(Collectors.toList());
 
@@ -722,8 +732,7 @@ public class GroupService {
         return recommendGroupDTOS;
     }
 
-    private List<GroupResponse.LocalGroupDTO> getLocalGroupDTOS(Long userId, District district, String subDistrict, Pageable pageable){
-        // 내가 가입한 그룹
+    private List<GroupResponse.LocalGroupDTO> getLocalGroupDTOS(Long userId, District district, String subDistrict, List<Long> likedGroupIds, Pageable pageable){
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIds = userId != null ? getGroupIds(userId) : Collections.emptySet();
 
@@ -735,15 +744,16 @@ public class GroupService {
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
 
                     return new GroupResponse.LocalGroupDTO(
-                        group.getId(),
-                        group.getName(),
-                        group.getDescription(),
-                        group.getParticipantNum(),
-                        group.getCategory(),
-                        group.getDistrict(),
-                        group.getSubDistrict(),
-                        group.getProfileURL(),
-                        likeNum);
+                            group.getId(),
+                            group.getName(),
+                            group.getDescription(),
+                            group.getParticipantNum(),
+                            group.getCategory(),
+                            group.getDistrict(),
+                            group.getSubDistrict(),
+                            group.getProfileURL(),
+                            likeNum,
+                            likedGroupIds.contains(group.getId()));
                 })
                 .collect(Collectors.toList());
 
@@ -771,7 +781,7 @@ public class GroupService {
         return newGroupDTOS;
     }
 
-    private List<GroupResponse.MyGroupDTO> getMyGroupDTOS(Long userId, Pageable pageable){
+    private List<GroupResponse.MyGroupDTO> getMyGroupDTOS(Long userId, List<Long> likedGroupIds, Pageable pageable){
         List<Group> joinedGroups = groupUserRepository.findAllGroupByUserId(userId, pageable).getContent();
 
         List<GroupResponse.MyGroupDTO> myGroupDTOS = joinedGroups.stream()
@@ -779,15 +789,16 @@ public class GroupService {
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
 
                     return new GroupResponse.MyGroupDTO(
-                        group.getId(),
-                        group.getName(),
-                        group.getDescription(),
-                        group.getParticipantNum(),
-                        group.getCategory(),
-                        group.getDistrict(),
-                        group.getSubDistrict(),
-                        group.getProfileURL(),
-                        likeNum);
+                            group.getId(),
+                            group.getName(),
+                            group.getDescription(),
+                            group.getParticipantNum(),
+                            group.getCategory(),
+                            group.getDistrict(),
+                            group.getSubDistrict(),
+                            group.getProfileURL(),
+                            likeNum,
+                            likedGroupIds.contains(group.getId()));
                 })
                 .collect(Collectors.toList());
 

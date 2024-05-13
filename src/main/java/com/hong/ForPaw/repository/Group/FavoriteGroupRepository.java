@@ -4,6 +4,7 @@ import com.hong.ForPaw.domain.Group.FavoriteGroup;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -19,4 +20,7 @@ public interface FavoriteGroupRepository extends JpaRepository<FavoriteGroup, Lo
     List<FavoriteGroup> findAllByUserIdWithGroup(Long userId);
 
     void deleteAllByGroupId(Long groupId);
+
+    @Query("SELECT fg.group.id FROM FavoriteGroup fg WHERE fg.user.id = :userId")
+    List<Long> findLikedGroupIdsByUserId(@Param("userId") Long userId);
 }
