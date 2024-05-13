@@ -119,8 +119,8 @@ public class SearchService {
                         group.getName(),
                         group.getDescription(), group.getParticipantNum(),
                         group.getCategory(),
+                        group.getProvince(),
                         group.getDistrict(),
-                        group.getSubDistrict(),
                         group.getProfileURL(),
                         likeNum);
                 })

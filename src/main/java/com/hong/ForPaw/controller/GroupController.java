@@ -5,6 +5,7 @@ import com.hong.ForPaw.controller.DTO.GroupResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.domain.District;
+import com.hong.ForPaw.domain.Province;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.service.GroupService;
 import jakarta.validation.Valid;
@@ -54,14 +55,14 @@ public class GroupController {
     }
 
     @GetMapping("/groups/local")
-    public ResponseEntity<?> findLocalGroupList(@RequestParam("district") District district, @RequestParam("subDistrict") String subDistrict , @RequestParam("page") Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
-        GroupResponse.FindLocalGroupListDTO responseDTO = groupService.findLocalGroupList(userDetails.getUser().getId(), district, subDistrict, page);
+    public ResponseEntity<?> findLocalGroupList(@RequestParam("province") Province province, @RequestParam("district") District district, @RequestParam("page") Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
+        GroupResponse.FindLocalGroupListDTO responseDTO = groupService.findLocalGroupList(userDetails.getUser().getId(), province, district, page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/groups/new")
-    public ResponseEntity<?> findNewGroupList(@RequestParam(value = "district", required = false) District district, @RequestParam("page") Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
-        GroupResponse.FindNewGroupListDTO responseDTO = groupService.findNewGroupList(userDetails.getUser().getId(), district, page);
+    public ResponseEntity<?> findNewGroupList(@RequestParam(value = "province", required = false) Province province, @RequestParam("page") Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
+        GroupResponse.FindNewGroupListDTO responseDTO = groupService.findNewGroupList(userDetails.getUser().getId(), province, page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

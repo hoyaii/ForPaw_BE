@@ -2,6 +2,7 @@ package com.hong.ForPaw.controller.DTO;
 
 import com.hong.ForPaw.domain.District;
 import com.hong.ForPaw.domain.Group.GroupRole;
+import com.hong.ForPaw.domain.Province;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.List;
 public class GroupResponse {
 
     public record FindGroupByIdDTO(String name,
+                                   Province province,
                                    District district,
                                    String subDistrict,
                                    String description,
@@ -31,8 +33,8 @@ public class GroupResponse {
                                     String description,
                                     Long participationNum,
                                     String category,
+                                    Province province,
                                     District district,
-                                    String subDistrict,
                                     String profileURL,
                                     Long likeNum,
                                     boolean isLike) {}
@@ -40,8 +42,8 @@ public class GroupResponse {
     public record NewGroupDTO(Long id,
                               String name,
                               String category,
+                              Province province,
                               District district,
-                              String subDistrict,
                               String profileURL) {}
 
     public record LocalGroupDTO(Long id,
@@ -49,8 +51,8 @@ public class GroupResponse {
                                 String description,
                                 Long participationNum,
                                 String category,
+                                Province province,
                                 District district,
-                                String subDistrict,
                                 String profileURL,
                                 Long likeNum,
                                 boolean isLike) {}
@@ -60,8 +62,8 @@ public class GroupResponse {
                              String description,
                              Long participationNum,
                              String category,
+                             Province province,
                              District district,
-                             String subDistrict,
                              String profileURL,
                              Long likeNum,
                              boolean isLike) {}
