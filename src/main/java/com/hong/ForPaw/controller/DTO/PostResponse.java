@@ -68,6 +68,7 @@ public class PostResponse {
 
     public record ReplyDTO(Long id,
                            String name,
+                           String replyName,
                            String content,
                            LocalDateTime date,
                            Province location) {}

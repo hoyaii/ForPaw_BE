@@ -223,6 +223,7 @@ public class PostService {
             else { // 자식 댓글이면, ReplyDTO로 변환해서 부모 댓글의 replies 리스트에 추가
                 PostResponse.ReplyDTO replyDTO = new PostResponse.ReplyDTO(
                         comment.getId(),
+                        comment.getParent().getUser().getNickName(),
                         comment.getUser().getNickName(),
                         comment.getContent(),
                         comment.getCreatedDate(),
