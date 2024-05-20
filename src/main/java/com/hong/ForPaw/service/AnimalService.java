@@ -451,7 +451,7 @@ public class AnimalService {
     @Transactional
     @Scheduled(cron = "0 0 3 * * *") // 매일 새벽 3시에 실행
     public void deleteEndAdoptAnimal(){
-        LocalDateTime now = LocalDateTime.now();
+        LocalDate now = LocalDateTime.now().toLocalDate();
         List<Animal> animals = animalRepository.findAllOutOfDate(now);
 
         // 캐싱한 '좋아요 수' 삭제

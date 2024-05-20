@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -41,7 +42,7 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
     Page<Animal> findByShelterId(@Param("careRegNo") Long careRegNo, Pageable pageable);
 
     @Query("SELECT a FROM Animal a WHERE a.noticeEdt < :date AND a.removedAt IS NULL")
-    List<Animal> findAllOutOfDate(LocalDateTime date);
+    List<Animal> findAllOutOfDate(LocalDate date);
 
     @Query("SELECT a.id FROM Animal a WHERE a.shelter.regionCode.orgName = :district ORDER BY a.id ASC")
     List<Long> findAnimalIdsByDistrict(District district, Pageable pageable);

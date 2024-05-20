@@ -26,3 +26,7 @@ out/
 /dist/
 /nbdist/
 /.nb-gradle/
+
+# Python compiled files
+__pycache__/
+*.py[cod]
