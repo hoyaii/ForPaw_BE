@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import redis
 import random
-from .services import load_and_vectorize_data, get_similar_animals  # 같은 패키지 내에서 상대 경로 사용
+from app.services import load_and_vectorize_data, get_similar_animals
 from contextlib import asynccontextmanager
 
 app = FastAPI()
@@ -11,14 +11,14 @@ app = FastAPI()
 # Redis 설정
 r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
-class RecommendRequest(BaseModel):
-    user_id: int
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global tfidf_matrix, animal_index
     tfidf_matrix, animal_index = await load_and_vectorize_data()
     yield
+
+class RecommendRequest(BaseModel):
+    user_id: int
 
 @app.post("/recommend/animal")
 async def recommend(request: RecommendRequest):
