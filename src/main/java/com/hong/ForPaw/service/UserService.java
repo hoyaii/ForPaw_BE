@@ -301,14 +301,10 @@ public class UserService {
         if(userRepository.findByEmail(requestDTO.email()).isEmpty())
             throw new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND);
 
-        // 요청 횟수 3회 넘아가면 10분 동안 요청 불가
-        Long recoveryNum = redisService.getDataInLong("requestNum", requestDTO.email());
-        if(recoveryNum >= 3L){
-            throw new CustomException(ExceptionCode.EXCEED_REQUEST_NUM);
+        // 계속 이메일을 보내는 건 방지. 5분 후에 다시 시도할 수 있다
+        if(redisService.isDateExist("emailCode", requestDTO.email())){
+            throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
         }
-
-        // 요청 횟수 업데이트
-        redisService.storeValue("requestNum", requestDTO.email(), String.valueOf(recoveryNum + 1), 10 * 60 * 1000L);
 
         // 인증 코드 전송 및 레디스에 저장
         String verificationCode = sendCodeByMail(requestDTO.email());
@@ -317,6 +313,10 @@ public class UserService {
 
     @Transactional
     public void verifyAndSendPassword(UserRequest.VerifyCodeDTO requestDTO){
+        User user = userRepository.findByEmail(requestDTO.email()).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND)
+        );
+
         // 레디스를 통해 해당 코드가 유효한지 확인
         if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
             throw new CustomException(ExceptionCode.CODE_WRONG);
@@ -324,7 +324,6 @@ public class UserService {
 
         // 임시 비밀번호 생성 후 업데이트
         String password = generatePassword();
-        User user = userRepository.findByEmail(requestDTO.email()).get(); // 이미 앞에서 계정 존재 여부를 확인 했으니 바로 가져옴
         user.updatePassword(passwordEncoder.encode(password));
 
         sendPasswordByMail(requestDTO.email(), password);
