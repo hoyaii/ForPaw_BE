@@ -25,6 +25,7 @@ import com.hong.ForPaw.repository.Inquiry.InquiryRepository;
 import com.hong.ForPaw.repository.Post.PostReadStatusRepository;
 import com.hong.ForPaw.repository.UserRepository;
 import com.hong.ForPaw.repository.UserStatusRepository;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -106,6 +107,37 @@ public class UserService {
 
     @Value("${google.oauth.userInfo.uri}")
     private String googleUserInfoURI;
+
+    @Value("${admin.email}")
+    private String adminEmail;
+
+    @Value("${admin.password}")
+    private String adminPassword;
+
+    @Transactional
+    public void initSuperAdmin(){
+        // SuperAdmin이 등록되어 있지 않다면 등록
+        if(!userRepository.existsByNickWithRemoved("admin")){
+            User admin = User.builder()
+                    .email(adminEmail)
+                    .name("admin")
+                    .nickName("admin")
+                    .password(passwordEncoder.encode(adminPassword))
+                    .role(UserRole.SUPER)
+                    .build();
+
+            userRepository.save(admin);
+
+            UserStatus userStatus = UserStatus.builder()
+                    .user(admin)
+                    .isActive(true)
+                    .build();
+
+            userStatusRepository.save(userStatus);
+
+            setAlarm(admin);
+        }
+    }
 
     @Transactional
     public Map<String, String> login(UserRequest.LoginDTO requestDTO, HttpServletRequest request){

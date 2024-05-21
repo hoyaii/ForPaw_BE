@@ -4,7 +4,9 @@ import com.hong.ForPaw.domain.District;
 import com.hong.ForPaw.domain.Province;
 import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.User;
+import com.hong.ForPaw.domain.User.UserStatus;
 import com.hong.ForPaw.repository.UserRepository;
+import com.hong.ForPaw.repository.UserStatusRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -31,12 +33,11 @@ public class ForPawApplication {
 
 	@Profile("local")
 	@Bean
-	CommandLineRunner localServerStart(UserRepository userRepository){
+	CommandLineRunner localServerStart(PasswordEncoder passwordEncoder, UserRepository userRepository){
 		return args -> {
-			// Super Admin 추가
-			if(!userRepository.existsByEmailWithRemoved("admin@naver.com")){
-				userRepository.save(newUser("admin@naver.com", "운영자", "운영자", "pnu1234!", UserRole.SUPER, "www.s3.com", Province.DAEGU, District.SUSEONG, "두산동"));
-			}
+			//userRepository.saveAll(Arrays.asList(
+			//
+			//));
 		};
 	}
 
