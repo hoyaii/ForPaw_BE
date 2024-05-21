@@ -105,7 +105,7 @@ public class UserController {
 
     @PostMapping("/accounts/check/email/verify")
     public ResponseEntity<?> verifyRegisterCode(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO){
-        userService.verifyCode(requestDTO);
+        userService.verifyRegisterCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
@@ -116,8 +116,14 @@ public class UserController {
     }
 
     @PostMapping("/accounts/recovery/verify")
-    public ResponseEntity<?> verifyAndSendPassword(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO){
-        userService.verifyAndSendPassword(requestDTO);
+    public ResponseEntity<?> verifyRecoveryCode(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO){
+        userService.verifyRecoveryCode(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
+    @PostMapping("/accounts/recovery/reset")
+    public ResponseEntity<?> resetPassword(@RequestBody @Valid UserRequest.ResetPasswordDTO requestDTO){
+        userService.resetPassword(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 

@@ -282,7 +282,7 @@ public class UserService {
     }
 
     @Transactional
-    public void verifyCode(UserRequest.VerifyCodeDTO requestDTO){
+    public void verifyRegisterCode(UserRequest.VerifyCodeDTO requestDTO){
         // 레디스를 통해 해당 코드가 유효한지 확인
         if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
             throw new CustomException(ExceptionCode.CODE_WRONG);
@@ -312,27 +312,42 @@ public class UserService {
     }
 
     @Transactional
-    public void verifyAndSendPassword(UserRequest.VerifyCodeDTO requestDTO){
-        User user = userRepository.findByEmail(requestDTO.email()).orElseThrow(
+    public void verifyRecoveryCode(UserRequest.VerifyCodeDTO requestDTO){
+        if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
+            throw new CustomException(ExceptionCode.CODE_WRONG);
+
+        // resetPassword()에서 서버에 요청으로 이메일과 비밀번호를 동시에 보내지 않도록, 코드에 대한 이메일을 저장
+        redisService.storeValue("emailCodeToEmail", requestDTO.code(), requestDTO.email(), 5 * 60 * 1000L);
+    }
+
+    @Transactional
+    public void resetPassword(UserRequest.ResetPasswordDTO requestDTO){
+        String email = redisService.getDataInStr("emailCodeToEmail", requestDTO.code());
+
+        // 해당 email이 계정 복구중이 아님. (verifyRecoveryCode()를 거쳐야 값이 존재한다)
+        if(email == null){
+            throw new CustomException(ExceptionCode.BAD_APPROACH);
+        }
+
+        User user = userRepository.findByEmail(email).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND)
         );
 
-        // 레디스를 통해 해당 코드가 유효한지 확인
-        if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
-            throw new CustomException(ExceptionCode.CODE_WRONG);
-        redisService.removeData("emailCode", requestDTO.email());
+        // 다시 한번 이메일 코드 체크
+        if(!redisService.validateData("emailCode", email, requestDTO.code()))
+            throw new CustomException(ExceptionCode.BAD_APPROACH);
+        redisService.removeData("emailCode", email);
 
-        // 임시 비밀번호 생성 후 업데이트
-        String password = generatePassword();
-        user.updatePassword(passwordEncoder.encode(password));
-
-        sendPasswordByMail(requestDTO.email(), password);
+        // 새로운 비밀번호로 업데이트
+        user.updatePassword(passwordEncoder.encode(requestDTO.newPassword()));
     }
 
     // 재설정 화면에서 실시간으로 일치여부를 확인하기 위해 사용
     @Transactional
     public void verifyPassword(UserRequest.CurPasswordDTO requestDTO, Long userId){
-        User user = userRepository.findById(userId).get();
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
 
         if(!passwordEncoder.matches(requestDTO.password(), user.getPassword())){
             throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
