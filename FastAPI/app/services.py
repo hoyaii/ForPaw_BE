@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from contextlib import asynccontextmanager
 from .models import Animal
 from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Collection
+import numpy as np  
 
 # Milvus에 연결
 connections.connect("default", host="localhost", port="19530")
@@ -74,3 +75,41 @@ async def get_similar_animals(animal_id, animal_index, tfidf_matrix, num_results
         similar_animal_ids = [res.id for res in results[0].ids]
 
         return similar_animal_ids
+    
+# 주기적으로 새로운 동물 데이터를 업데이트하는 함수
+async def update_new_animals(animal_index, tfidf_matrix):
+    async with get_db_session() as db:
+        result = await db.execute(select(Animal))
+        animals = result.scalars().all()
+
+        # 현재 animal_index에서 기존의 모든 동물 ID를 가져옴
+        existing_ids = set(animal_index.keys())
+        # 새로운 동물만을 리스트로 생성
+        new_animals = [animal for animal in animals if animal.id not in existing_ids]
+
+        # 새로운 동물이 없는 경우, 함수 종료
+        if not new_animals:
+            return
+
+        # 새로운 동물 데이터로 텍스트 리스트를 생성
+        new_texts = [
+            f"{animal.shelter_id} {animal.age} {animal.color} {animal.gender} {animal.kind} {animal.region} {animal.special_mark} {animal.happen_place}"
+            for animal in new_animals
+        ]
+
+    # 새로운 텍스트 데이터를 TF-IDF 벡터로 변환
+    new_vectors = vectorizer.transform(new_texts).toarray()
+
+    # 새로운 동물들의 ID 리스트를 생성
+    new_ids = [animal.id for animal in new_animals]
+
+    # Milvus에 새로운 데이터 삽입
+    animal_collection.insert([new_ids, new_vectors])
+    
+    # 기존 tfidf_matrix에 새로운 벡터 추가
+    current_length = len(tfidf_matrix)
+    tfidf_matrix = np.vstack([tfidf_matrix, new_vectors])
+
+    # animal_index를 업데이트하여 새로운 동물들의 ID와 인덱스를 추가
+    animal_index.update({animal.id: current_length + idx for idx, animal in enumerate(new_animals)})
+    print(f"Updated with new animals")

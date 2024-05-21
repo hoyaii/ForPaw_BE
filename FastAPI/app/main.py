@@ -3,8 +3,10 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import redis
 import random
-from app.services import load_and_vectorize_data, get_similar_animals
+from app.services import load_and_vectorize_data, get_similar_animals, update_new_animals
 from contextlib import asynccontextmanager
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from functools import partial
 
 app = FastAPI()
 
@@ -15,7 +17,16 @@ r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
 async def lifespan(app: FastAPI):
     global tfidf_matrix, animal_index
     tfidf_matrix, animal_index = await load_and_vectorize_data()
-    yield
+    
+    # 스케줄러 설정
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(partial(update_new_animals, animal_index, tfidf_matrix), 'cron', hour=16, minute=26)
+    scheduler.start()
+
+    try:
+        yield
+    finally:
+        scheduler.shutdown()
 
 class RecommendRequest(BaseModel):
     user_id: int
