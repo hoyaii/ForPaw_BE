@@ -10,6 +10,7 @@ public enum ExceptionCode {
     // 사용자 관련 에러
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 사용자를 찾을 수 없습니다."),
     USER_EMAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 이메일을 찾을 수 없습니다."),
+    ALREADY_SEND_EMAIL(HttpStatus.NOT_FOUND, "이미 이메일을 전송하였습니다. 5분 후에 다시 시도해주세요"),
     USER_EMAIL_EXIST(HttpStatus.BAD_REQUEST, "이미 존재하는 이메일입니다."),
     USER_NICKNAME_EXIST(HttpStatus.BAD_REQUEST, "이미 존재하는 닉네임입니다."),
     USER_ACCOUNT_WRONG(HttpStatus.BAD_REQUEST, "이메일 또는 비밀번호를 다시 확인해 주세요"),
