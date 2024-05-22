@@ -53,7 +53,7 @@ public class User extends TimeStamp {
     // 활동 지역 - 군/구/시
     @Column
     @Enumerated(EnumType.STRING)
-    private District district;
+    private District  district;
 
     // 활동 지역 - 동/읍/면
     @Column
