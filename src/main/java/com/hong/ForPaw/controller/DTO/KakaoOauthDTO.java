@@ -15,7 +15,7 @@ public class KakaoOauthDTO {
 
     public record Properties(String nickname, String profile_image, String thumbnail_image) {}
 
-    public record Account(Boolean profile_nickname_needs_agreement, Boolean profile_image_needs_agreement, Profile profile) {}
+    public record Account(String email, Boolean profile_nickname_needs_agreement, Boolean profile_image_needs_agreement, Profile profile) {}
 
     public record Profile(String nickname,
                           String thumbnail_image_url,
