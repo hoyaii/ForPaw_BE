@@ -128,12 +128,13 @@ public class UserService {
 
             userRepository.save(admin);
 
-            UserStatus userStatus = UserStatus.builder()
+            UserStatus status = UserStatus.builder()
                     .user(admin)
                     .isActive(true)
                     .build();
 
-            userStatusRepository.save(userStatus);
+            userStatusRepository.save(status);
+            admin.updateStatus(status);
 
             setAlarm(admin);
         }
@@ -258,13 +259,8 @@ public class UserService {
 
         userRepository.save(user);
 
-        UserStatus status = UserStatus.builder()
-                .user(user)
-                .isActive(true)
-                .build();
-
-        userStatusRepository.save(status);
-        user.updateStatus(status);
+        // 유저 상태 설정
+        setUserStatus(user);
 
         // 알람 사용을 위한 설정
         setAlarm(user);
@@ -293,6 +289,7 @@ public class UserService {
 
         userRepository.save(user);
 
+        setUserStatus(user);
         setAlarm(user);
     }
 
@@ -814,5 +811,15 @@ public class UserService {
         }
 
         return ip;
+    }
+
+    private void setUserStatus(User user){
+        UserStatus status = UserStatus.builder()
+                .user(user)
+                .isActive(true)
+                .build();
+
+        userStatusRepository.save(status);
+        user.updateStatus(status);
     }
 }
