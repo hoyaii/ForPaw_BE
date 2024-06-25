@@ -27,7 +27,7 @@ public class ChatUser extends TimeStamp {
     private ChatRoom chatRoom;
 
     @Column
-    private Long lastMessageId = 0L;
+    private String lastMessageId;
 
     @Column
     private Long lastMessageIdx = 0L;
@@ -38,7 +38,7 @@ public class ChatUser extends TimeStamp {
         this.chatRoom = chatRoom;
     }
 
-    public void updateLastMessage(Long lastMessageId, Long lastMessageIdx){
+    public void updateLastMessage(String lastMessageId, Long lastMessageIdx){
         this.lastMessageId = lastMessageId;
         this.lastMessageIdx = lastMessageIdx;
     }

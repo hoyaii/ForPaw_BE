@@ -21,9 +21,11 @@ public class ChatController {
 
     private final ChatService chatService;
 
-    @MessageMapping("/chat/send")
-    public void sendMessage(@Payload ChatRequest.SendMessageDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        chatService.sendMessage(requestDTO, userDetails.getUser().getId(), userDetails.getUsername());
+    // 테스트 시 MessageMapping => PostMapping으로 바꾸고, 응답이 없는 거 인지하고 있어야 함.
+    @PostMapping("/chat/send")
+    public ResponseEntity<?> sendMessage(@RequestBody ChatRequest.SendMessageDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        ChatResponse.SendMessageDTO responseDTO = chatService.sendMessage(requestDTO, userDetails.getUser().getId(), userDetails.getUsername());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/chatRooms")

@@ -24,16 +24,11 @@ public class ChatRequest {
                              Long senderId,
                              String senderName,
                              String content,
-                             String imageURL,
-                             @JsonProperty("date")
-                             @JsonSerialize(using = LocalDateTimeSerializer.class)
-                             @JsonDeserialize(using = LocalDateTimeDeserializer.class)
-                             @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS")
-                             LocalDateTime date) {}
+                             String imageURL) {}
 
     public record ReadMessageDTO(
             @NotNull(message = "채팅방 ID를 입력해주세요.")
             Long chatRoomId,
             @NotNull(message = "메시지 ID를 입력해주세요.")
-            Long messageId) {}
+            String messageId) {}
 }

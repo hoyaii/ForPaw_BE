@@ -92,17 +92,6 @@ public class BrokerService {
         endpoint.setMessageListener(m -> {
             ChatRequest.MessageDTO messageDTO = (ChatRequest.MessageDTO) converter.fromMessage(m);
 
-            // 메시지 저장
-            Message message = Message.builder()
-                    .chatRoomId(messageDTO.chatRoomId())
-                    .senderId(messageDTO.senderId())
-                    .senderName(messageDTO.senderName())
-                    .content(messageDTO.content())
-                    .imageURL(messageDTO.imageURL())
-                    .date(messageDTO.date())
-                    .build();
-            messageRepository.save(message);
-
             // 이미지 저장
             ChatRoom chatRoomRef = entityManager.getReference(ChatRoom.class, messageDTO.chatRoomId());
             ChatImage chatImage = ChatImage.builder()

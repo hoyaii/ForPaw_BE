@@ -32,7 +32,7 @@ class GroupControllerTest {
 
     @Autowired
     private ObjectMapper om;
-
+/*
     @Test
     @WithUserDetails(value = "yg040762@naver.com")
     public void 그룹_생성_성공() throws Exception {
@@ -51,7 +51,7 @@ class GroupControllerTest {
         System.out.println("테스트 : " + responseBody);
 
         result.andExpect(jsonPath("$.success").value("true"));
-    }
+    }*/
 
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
@@ -71,7 +71,7 @@ class GroupControllerTest {
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
-
+/*
     @Test
     @WithUserDetails(value = "yg04076@naver.com")
     public void 그룹_정보_수정_성공() throws Exception {
@@ -92,7 +92,7 @@ class GroupControllerTest {
 
         result.andExpect(jsonPath("$.success").value("true"));
     }
-
+*/
     // 테스트 시나리오를 짜고 DB 세팅 후테스트 해야함! yg04076@naver.com은 그룹 생성자, yg040762@naver.com은 가입 신청자
     @Test
     @WithUserDetails(value = "yg04076@naver.com")

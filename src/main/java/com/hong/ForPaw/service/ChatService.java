@@ -40,7 +40,7 @@ public class ChatService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
-    public void sendMessage(ChatRequest.SendMessageDTO requestDTO, Long senderId, String senderName){
+    public ChatResponse.SendMessageDTO sendMessage(ChatRequest.SendMessageDTO requestDTO, Long senderId, String senderName){
         // 권한 체크
         checkChatAuthority(senderId, requestDTO.chatRoomId());
 
@@ -51,16 +51,28 @@ public class ChatService {
                 senderId,
                 senderName,
                 requestDTO.content(),
-                requestDTO.imageURL(), // 프론트에서는 presignedURI를 통해 S3에 업로드 후, 이미지 URI를 서버로 넘겨준다
-                date
+                requestDTO.imageURL() // 프론트에서는 presignedURI를 통해 S3에 업로드 후, 이미지 URI를 서버로 넘겨준다
         );
+
+        // 메시지 브로커에 전송 (알람과 이미지 비동기 처리)
+        brokerService.produceChat(requestDTO.chatRoomId(), messageDTO);
+
+        // 메시지 저장
+        Message message = Message.builder()
+                .chatRoomId(requestDTO.chatRoomId())
+                .senderId(senderId)
+                .senderName(senderName)
+                .content(requestDTO.content())
+                .imageURL(requestDTO.imageURL())
+                .date(date)
+                .build();
+        messageRepository.save(message);
 
         // STOMP 프로토콜을 통한 실시간 메시지 전송
         String destination = "/room/" + requestDTO.chatRoomId();
         messagingTemplate.convertAndSend(destination, messageDTO);
 
-        // 메시지 브로커에 전송
-        brokerService.produceChat(requestDTO.chatRoomId(), messageDTO);
+        return new ChatResponse.SendMessageDTO(message.getId());
     }
 
     @Transactional
@@ -122,7 +134,7 @@ public class ChatService {
             ChatResponse.MessageDTD lastMessageDTO = messageDTOS.get(messageDTOS.size() - 1);
             long chatNum = messageRepository.countByChatRoomId(chatRoomId);
 
-            chatUser.updateLastMessage(Long.valueOf(lastMessageDTO.messageId()), chatNum - 1);
+            chatUser.updateLastMessage(lastMessageDTO.messageId(), chatNum - 1);
         }
 
         return new ChatResponse.FindMessageListInRoomDTO(chatUser.getLastMessageId(), messageDTOS);
