@@ -87,7 +87,7 @@ public class ChatService {
                     String lastMessageContent = lastMessageOP.map(Message::getContent).orElse(null);
                     LocalDateTime lastMessageDate = lastMessageOP.map(Message::getDate).orElse(null);
 
-                    // 마지막으로 읽은 페이지
+                    // 마지막으로 읽은 페이지 (인덱스/50)
                     Long lastReadMessageIdx = chatUser.getLastMessageIdx();
                     Long offset = lastReadMessageIdx != 0L ? lastReadMessageIdx / 50 : 0L;
 
@@ -121,6 +121,7 @@ public class ChatService {
                     .map(message -> new ChatResponse.MessageDTD(message.getId(),
                             message.getSenderName(),
                             message.getContent(),
+                            message.getImageURL(),
                             message.getDate(),
                             message.getSenderId().equals(userId)))
                     .toList();
@@ -131,10 +132,10 @@ public class ChatService {
 
         // 마지막으로 읽은 메시지의 id와 index 업데이트
         if (!messageDTOS.isEmpty()) {
-            ChatResponse.MessageDTD lastMessageDTO = messageDTOS.get(messageDTOS.size() - 1);
+            ChatResponse.MessageDTD lastMessage = messageDTOS.get(messageDTOS.size() - 1);
             long chatNum = messageRepository.countByChatRoomId(chatRoomId);
 
-            chatUser.updateLastMessage(lastMessageDTO.messageId(), chatNum - 1);
+            chatUser.updateLastMessage(lastMessage.messageId(), chatNum - 1);
         }
 
         return new ChatResponse.FindMessageListInRoomDTO(chatUser.getLastMessageId(), messageDTOS);
@@ -177,6 +178,7 @@ public class ChatService {
     public void readMessage(ChatRequest.ReadMessageDTO requestDTO, Long userId){
         // 권한 체크
         ChatUser chatUser = checkChatAuthority(userId, requestDTO.chatRoomId());
+
         chatUser.updateLastMessage(requestDTO.messageId(), chatUser.getLastMessageIdx() + 1);
     }
 

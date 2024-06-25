@@ -12,6 +12,7 @@ public class ChatResponse {
     public record MessageDTD(String messageId,
                              String senderName,
                              String content,
+                             String imageURL,
                              LocalDateTime date,
                              boolean isMine) {}
 

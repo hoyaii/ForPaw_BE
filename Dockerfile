@@ -1,26 +1,26 @@
-# gradle:7.6-jdk17 이미지를 기반으로 함
+# Gradle 7.6 및 JDK 17을 기반으로 하는 이미지를 사용하여 빌드 단계 설정
 FROM gradle:7.6-jdk17 AS builder
 
-# 작업 디렉토리 설정
+# 작업 디렉토리를 /project로 설정
 WORKDIR /project
 
-# Gradle 캐시를 활용하기 위해 빌드 스크립트를 먼저 복사
+# build.gradle 및 settings.gradle 파일을 컨테이너의 /project 디렉토리로 복사
 COPY build.gradle settings.gradle /project/
 
-# 의존성 다운로드
+# 초기 빌드를 수행하여 설정 오류나 종속성 문제를 빠르게 확인
 RUN gradle build --no-daemon --parallel --info || return 0
 
-# 소스 코드 복사
+# 나머지 프로젝트 파일을 컨테이너의 현재 작업 디렉토리(/project)로 복사
 COPY . .
 
-# gradle 빌드
+# 프로젝트를 깨끗하게 초기화하고 테스트 단계를 제외한 빌드 실행
 RUN gradle clean build -x test
 
-# 런타임 이미지를 생성
+# OpenJDK 17 슬림 버전을 기반으로 하는 런타임 단계 설정
 FROM openjdk:17-jdk-slim AS runtime
 
-# 빌드된 JAR 파일을 복사
+# 빌드 단계에서 생성된 JAR 파일을 런타임 단계의 /app 디렉토리로 복사
 COPY --from=builder /project/build/libs/ForPaw-0.0.1-SNAPSHOT.jar /app/ForPaw-0.0.1-SNAPSHOT.jar
 
-# 빌드 결과 JAR 파일을 실행
+# 컨테이너가 시작될 때 JAR 파일을 실행하도록 설정
 CMD ["java", "-jar", "/app/ForPaw-0.0.1-SNAPSHOT.jar"]

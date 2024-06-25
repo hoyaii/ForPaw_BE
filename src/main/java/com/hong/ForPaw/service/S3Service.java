@@ -32,10 +32,10 @@ public class S3Service {
         // 현재 시간, userId를 기반으로 키 생성
         String objectKey = createKey(userId);
 
-        GeneratePresignedUrlRequest generatePresignedUrlRequest =
-                new GeneratePresignedUrlRequest(bucketName, objectKey)
+        GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, objectKey)
                         .withMethod(httpMethod)
                         .withExpiration(expiration);
+
         return amazonS3.generatePresignedUrl(generatePresignedUrlRequest);
     }
 
