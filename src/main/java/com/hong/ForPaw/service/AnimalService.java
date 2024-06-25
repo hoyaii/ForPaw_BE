@@ -8,8 +8,6 @@ import com.hong.ForPaw.domain.Animal.AnimalType;
 import com.hong.ForPaw.domain.Apply.Apply;
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Animal.FavoriteAnimal;
-import com.hong.ForPaw.domain.District;
-import com.hong.ForPaw.domain.Province;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Shelter;
@@ -103,37 +101,12 @@ public class AnimalService {
                             .doOnNext(animalRepository::saveAll);
                 })
                 .then()
+                .doOnTerminate(this::updateAddressByGoogle) // loadAnimalData가 완료되면 updateAddressByGoogle 실행
                 .subscribe();
-    }
-
-    // 동물 조회 API에 보호소 세부 정보가 일부 있어서, 동물 조회 API를 활용하여 보호소 정보 업데이트 로직을 수행
-    @Transactional
-    @Scheduled(cron = "0 10 6 * * MON") // 매주 월요일 새벽 6시 10분에 실행
-    public void updateShelterInfo() {
-        List<Shelter> shelters = shelterRepository.findAllWithRegionCode();
-
-        Flux.fromIterable(shelters)
-                .delayElements(Duration.ofMillis(50)) // 각 요청 사이에 0.05초 지연
-                .flatMap(shelter -> {
-                    Long careRegNo = shelter.getId();
-                    URI uri = buildAnimalURI(serviceKey, careRegNo);
-
-                    return webClient.get()
-                            .uri(uri)
-                            .retrieve()
-                            .bodyToMono(String.class)
-                            .retry(3)
-                            .flatMapMany(response -> processShelterUpdate(response, shelter).thenMany(Flux.empty()));
-                })
-                .then()
-                .block();
-
-        // updateAddressByGoogle();
     }
 
     // 보호소 정보 업데이트 후 이어서 위치 업데이트 진행
     @Transactional
-    @Scheduled(cron = "0 12 6 * * MON")
     public void updateAddressByGoogle(){
         List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
 
@@ -464,8 +437,14 @@ public class AnimalService {
 
     private Flux<Animal> processAnimalData(String response, Shelter shelter) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+
         try {
             AnimalDTO json = mapper.readValue(response, AnimalDTO.class);
+
+            // 동물 데이터를 바탕으로 보호소 정보 업데이트
+            updateShelterByAnimalData(json, shelter);
+
+            // 동물 데이터를 바탕으로 동물 엔티티 생성
             return Flux.fromIterable(Optional.ofNullable(json.response().body().items())
                             .map(AnimalDTO.ItemsDTO::item)
                             .orElse(Collections.emptyList()))
@@ -476,16 +455,12 @@ public class AnimalService {
         }
     }
 
-    private Mono<Void> processShelterUpdate(String response, Shelter shelter) {
-        return Mono.fromCallable(() -> {
-                AnimalDTO json = mapper.readValue(response, AnimalDTO.class);
-                Optional.ofNullable(json)
-                        .map(j -> j.response().body().items().item())
-                        .filter(items -> !items.isEmpty())
-                        .map(items -> items.get(0))
-                        .ifPresent(itemDTO -> shelterRepository.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), Long.valueOf(json.response().body().totalCount()), shelter.getId()));
-            return null;
-        }).then();
+    private void updateShelterByAnimalData(AnimalDTO json, Shelter shelter) {
+        Optional.ofNullable(json)
+                .map(j -> j.response().body().items().item())
+                .filter(items -> !items.isEmpty())
+                .map(items -> items.get(0))
+                .ifPresent(itemDTO -> shelterRepository.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), Long.valueOf(json.response().body().totalCount()), shelter.getId()));
     }
 
     private Animal createAnimal(AnimalDTO.ItemDTO itemDTO, Shelter shelter, DateTimeFormatter formatter) {

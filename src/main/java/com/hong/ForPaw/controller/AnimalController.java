@@ -30,13 +30,6 @@ public class AnimalController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
-    // 테스트 용
-    @PostMapping("/shelters/update")
-    public ResponseEntity<?> updateShelters(){
-        animalService.updateShelterInfo();
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
-    }
-
     @GetMapping("/animals/recommend")
     public ResponseEntity<?> findRecommendedAnimalList(@AuthenticationPrincipal CustomUserDetails userDetails){
         Long userId = Optional.ofNullable(userDetails)
