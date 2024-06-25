@@ -82,8 +82,8 @@ public class ShelterService {
                         shelter.getName(),
                         shelter.getLatitude(),
                         shelter.getLongitude(),
-                        shelter.getRegionCode().getUprName().getValue(),
-                        shelter.getRegionCode().getOrgName().getValue()))
+                        shelter.getCareAddr(),
+                        shelter.getCareTel()))
                 .collect(Collectors.toList());
 
         return new ShelterResponse.FindShelterListDTO(shelterDTOS);

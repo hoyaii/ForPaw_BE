@@ -26,6 +26,6 @@ public class ShelterResponse {
                              String name,
                              Double lat,
                              Double lng,
-                             String province,
-                             String district) {}
+                             String careAddr,
+                             String careTel) {}
 }
