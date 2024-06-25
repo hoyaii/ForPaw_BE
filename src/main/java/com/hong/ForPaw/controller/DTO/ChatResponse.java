@@ -19,7 +19,7 @@ public class ChatResponse {
 
     public record ChatImageDTO(String imageURL) {}
 
-    public record ChatUserDTO(String userName) {}
+    public record ChatUserDTO(Long userId, String userName) {}
 
     public record FindChatRoomListDTO(List<ChatResponse.RoomDTO> rooms) {}
 
