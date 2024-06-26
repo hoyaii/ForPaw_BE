@@ -149,27 +149,17 @@ public class AnimalService {
 
     @Transactional
     public AnimalResponse.FindAnimalListDTO findAnimalList(Integer page, String sort, Long userId){
-        // animalType 매핑을 해주는 맵
-        Map<String, AnimalType> animalTypeMap = Map.of(
-                "dog", AnimalType.dog,
-                "cat", AnimalType.cat,
-                "other", AnimalType.other
-        );
+        // sort 파라미터를 AnimalType으로 변환
+        AnimalType animalType = getAnimalType(sort);
 
-        AnimalType category = Optional.ofNullable(sort)
-                .filter(s -> !s.equals("date")) // date가 들어오면 모든 동물이 최신순으로 정렬되서 나감
-                .flatMap(s -> Optional.ofNullable(animalTypeMap.get(s)))
-                .orElseThrow(() -> new CustomException(ExceptionCode.BAD_APPROACH));
-
-        Pageable pageable =createPageable(page, 5, "id");
-        Page<Animal> animalPage = animalRepository.findAllByCategory(category, pageable);
+        Pageable pageable =createPageable(page, 5, "createdDate");
+        Page<Animal> animalPage = animalRepository.findAllByCategory(animalType, pageable);
 
         if(animalPage.isEmpty()){
             throw new CustomException(ExceptionCode.ANIMAL_NOT_EXIST);
         }
 
-        // 사용자가 '좋아요' 표시한 Animal의 ID 목록
-        // 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
+        // 사용자가 '좋아요' 표시한 Animal의 ID 목록 => 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
@@ -559,5 +549,18 @@ public class AnimalService {
         }
 
         return animalIds;
+    }
+
+    // sort가 date, dog, cat, other이 아니면 에러 발생
+    private AnimalType getAnimalType(String sort) {
+        if(sort.equals("date")) {
+            return null;
+        }
+
+        return Optional.ofNullable(Map.of(
+                        "dog", AnimalType.dog,
+                        "cat", AnimalType.cat,
+                        "other", AnimalType.other).get(sort))
+                .orElseThrow(() -> new CustomException(ExceptionCode.BAD_APPROACH));
     }
 }
