@@ -30,8 +30,6 @@
 | 문서 | 
 |:--------:|
 | [API 문서](https://blog.naver.com/hoyai-/223363402048) |
-| [피그마](https://www.figma.com/design/MK6cQwmngJYETU2C7guudO/For_Paw_New?m=dev&node-id=0-1&t=MM14UYeh0xjT1NWT-1) |
-
 
 <br/>
 <br/>
