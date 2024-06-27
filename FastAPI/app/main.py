@@ -1,17 +1,13 @@
 # main.py
 from fastapi import FastAPI
-import redis
 import random
-from app.services import load_and_vectorize_data, get_similar_animals, update_new_animals, initialize_milvus, initialize_redis, initialize_mysql
+from app.services import load_and_vectorize_data, get_similar_animals, update_new_animals, redis_client
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from functools import partial
 from .models import RecommendRequest
 
 app = FastAPI()
-
-# Redis 설정
-r = initialize_redis()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -29,11 +25,14 @@ async def lifespan(app: FastAPI):
     finally:
         scheduler.shutdown()
 
+# lifespan 컨텍스트 매니저 설정
+app.router.lifespan_context = lifespan
+
 @app.post("/recommend/animal")
 async def recommend(request: RecommendRequest):
     # user_id를 바탕으로 Redis에서 조회한 동물 id 리스트 가져오기
     key = f"animalSearch:{request.user_id}"
-    animal_ids_str = r.lrange(key, 0, -1)
+    animal_ids_str = redis_client.lrange(key, 0, -1)
 
     # 문자열 리스트를 정수 리스트로 변환
     animal_ids = list(map(int, animal_ids_str))
