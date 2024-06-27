@@ -11,7 +11,7 @@ from functools import partial
 app = FastAPI()
 
 # Redis 설정
-r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+r = redis.Redis(host='redis', port=6379, db=0, decode_responses=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -52,3 +52,7 @@ async def recommend(request: RecommendRequest):
         recommended_animals = unique_list  
 
     return {"recommendedAnimals": recommended_animals}
+
+@app.get("/")
+async def root():
+    return {"message": "Hello, World!"}

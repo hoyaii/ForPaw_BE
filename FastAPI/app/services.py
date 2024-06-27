@@ -10,7 +10,7 @@ from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Colle
 import numpy as np  
 
 # Milvus에 연결
-connections.connect("default", host="localhost", port="19530")
+connections.connect("default", host="milvus-standalone", port="19530")
 
 # 컬렉션 스키마 정의
 fields = [
@@ -23,8 +23,8 @@ animal_schema = CollectionSchema(fields, "animal_vectors")
 # 컬렉션 생성
 animal_collection = Collection("animal_collection", animal_schema)
 
-# MySQL스 설정
-DATABASE_URL = "mysql+aiomysql://root:0623@localhost/ForPaw"
+# MySQL 설정
+DATABASE_URL = "mysql+aiomysql://hoyai:gk011014@forpaw.cjgwcqgyck73.ap-northeast-2.rds.amazonaws.com:3306/forpaw?serverTimezone=UTC"
 engine = create_async_engine(DATABASE_URL)
 AsyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
 

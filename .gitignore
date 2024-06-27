@@ -30,3 +30,6 @@ out/
 # Python compiled files
 __pycache__/
 *.py[cod]
+
+# Docker Volumes
+volumes/

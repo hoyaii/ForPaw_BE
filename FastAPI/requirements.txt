@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic
+redis
+sqlalchemy
+aiomysql
+scikit-learn
+pymilvus
+apscheduler
+
