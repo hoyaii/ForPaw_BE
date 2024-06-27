@@ -10,10 +10,11 @@ from .models import Animal
 from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Collection, utility
 import numpy as np  
 import redis
+from .config import settings
 
 # Milvus 초기화 함수
 def initialize_milvus():
-    connections.connect("default", host="milvus-standalone", port="19530")
+    connections.connect("default", host=settings.MILVUS_HOST, port=str(settings.MILVUS_PORT))
 
     # 컬렉션 이름은 animal_collection
     collection_name = "animal_collection"
@@ -37,15 +38,14 @@ def initialize_milvus():
 
 # MySQL 초기화 함수
 def initialize_mysql():
-    DATABASE_URL = "mysql+aiomysql://hoyai:gk011014@forpaw.cjgwcqgyck73.ap-northeast-2.rds.amazonaws.com:3306/forpaw"
-    engine = create_async_engine(DATABASE_URL)
+    engine = create_async_engine(settings.DATABASE_URL)
     AsyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
     
     return AsyncSessionLocal
 
 # Redis 초기화 함수
 def initialize_redis():
-    return redis.Redis(host='redis', port=6379, db=0, decode_responses=True)
+    return redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB, decode_responses=True)
 
 # Milvus, MySQL, 백터화 객체 초기화
 animal_collection = initialize_milvus()

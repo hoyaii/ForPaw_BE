@@ -7,4 +7,4 @@ aiomysql
 scikit-learn
 pymilvus
 apscheduler
-
+pydantic-settings
