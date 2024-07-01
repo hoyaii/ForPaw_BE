@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +22,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT p FROM Post p WHERE p.removedAt IS NULL")
     List<Post> findAll();
+
+    @Query("SELECT p FROM Post p WHERE p.createdDate BETWEEN :startOfToday AND :endOfToday AND p.removedAt IS NULL")
+    List<Post> findAllByDate(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDay") LocalDateTime endOfDay);
 
     @Query("SELECT p FROM Post p WHERE p.id = :id AND p.removedAt IS NULL")
     Optional<Post> findById(@Param("id") Long id);

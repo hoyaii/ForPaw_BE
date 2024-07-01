@@ -65,6 +65,9 @@ public class Post extends TimeStamp {
     @Column
     private Long commentNum = 0L;
 
+    @Column
+    private Long readCnt = 0L;
+
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
 
@@ -96,4 +99,6 @@ public class Post extends TimeStamp {
     public void updateParent(Post parent){
         this.parent =parent;
     }
+
+    public void updateReadCnt() { this.readCnt++; }
 }
