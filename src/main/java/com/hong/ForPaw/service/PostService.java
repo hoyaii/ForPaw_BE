@@ -610,14 +610,14 @@ public class PostService {
 
         // 인기 입양 글 업데이트
         List<Post> adoptionPosts = postRepository.findAllByDate(startOfToday, endOfToday, PostType.ADOPTION);
-        processPopularPosts(adoptionPosts);
+        processPopularPosts(adoptionPosts, PostType.ADOPTION);
 
         // 인기 임시보호 글 업데이트
         List<Post> fosteringPosts = postRepository.findAllByDate(startOfToday, endOfToday, PostType.FOSTERING);
-        processPopularPosts(fosteringPosts);
+        processPopularPosts(fosteringPosts, PostType.FOSTERING);
     }
 
-    private void processPopularPosts(List<Post> posts){
+    private void processPopularPosts(List<Post> posts, PostType postType){
         // 포인트가 10이 넘으면 popularPosts 리스트에 추가
         List<Post> popularPosts = posts.stream()
                 .peek(post -> {
@@ -643,6 +643,7 @@ public class PostService {
         popularPosts.forEach(post -> {
             PopularPost popularPost = PopularPost.builder()
                     .post(post)
+                    .postType(postType)
                     .build();
             popularPostRepository.save(popularPost);
         });

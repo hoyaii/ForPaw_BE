@@ -21,8 +21,12 @@ public class PopularPost {
     @JoinColumn(name = "post_id")
     private Post post;
 
+    @Column
+    private PostType postType;
+
     @Builder
-    public PopularPost(Post post){
+    public PopularPost(Post post, PostType postType){
         this.post = post;
+        this.postType = postType;
     }
 }
