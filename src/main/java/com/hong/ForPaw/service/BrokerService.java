@@ -47,9 +47,11 @@ public class BrokerService {
     public void initChatListener(){
         chatRoomRepository.findAll()
                 .forEach(chatRoom -> {
+                    String exchangeName = "chat.exchange";
                     String queueName = "room." + chatRoom.getId();
                     String listenerId = "room." + chatRoom.getId();
 
+                    registerDirectExQueue(exchangeName, queueName);
                     registerChatListener(listenerId, queueName);
                 });
     }
@@ -58,9 +60,11 @@ public class BrokerService {
     public void initAlarmListener(){
         userRepository.findAll()
                 .forEach(user -> {
+                    String exchangeName = "alarm.exchange";
                     String queueName = "user." + user.getId();
                     String listenerId = "user." + user.getId();
 
+                    registerDirectExQueue(exchangeName, queueName);
                     registerAlarmListener(listenerId, queueName);
                 });
     }
@@ -89,8 +93,8 @@ public class BrokerService {
         SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
         endpoint.setId(listenerId);
         endpoint.setQueueNames(queueName);
-        endpoint.setMessageListener(m -> {
-            ChatRequest.MessageDTO messageDTO = (ChatRequest.MessageDTO) converter.fromMessage(m);
+        endpoint.setMessageListener(message -> {
+            ChatRequest.MessageDTO messageDTO = (ChatRequest.MessageDTO) converter.fromMessage(message);
 
             // 이미지 저장
             ChatRoom chatRoomRef = entityManager.getReference(ChatRoom.class, messageDTO.chatRoomId());
@@ -125,8 +129,8 @@ public class BrokerService {
         SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
         endpoint.setId(listenerId);
         endpoint.setQueueNames(queueName);
-        endpoint.setMessageListener(m -> {
-            AlarmRequest.AlarmDTO alarmDTO = (AlarmRequest.AlarmDTO) converter.fromMessage(m);
+        endpoint.setMessageListener(message -> {
+            AlarmRequest.AlarmDTO alarmDTO = (AlarmRequest.AlarmDTO) converter.fromMessage(message);
 
             User receiver = entityManager.getReference(User.class, alarmDTO.receiverId());
             Alarm alarm = Alarm.builder()
