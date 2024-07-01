@@ -608,8 +608,16 @@ public class PostService {
         LocalDateTime startOfToday = now.atStartOfDay();
         LocalDateTime endOfToday = now.atTime(LocalTime.MAX);
 
-        List<Post> posts = postRepository.findAllByDate(startOfToday, endOfToday);
+        // 인기 입양 글 업데이트
+        List<Post> adoptionPosts = postRepository.findAllByDate(startOfToday, endOfToday, PostType.ADOPTION);
+        processPopularPosts(adoptionPosts);
 
+        // 인기 임시보호 글 업데이트
+        List<Post> fosteringPosts = postRepository.findAllByDate(startOfToday, endOfToday, PostType.FOSTERING);
+        processPopularPosts(fosteringPosts);
+    }
+
+    private void processPopularPosts(List<Post> posts){
         // 포인트가 10이 넘으면 popularPosts 리스트에 추가
         List<Post> popularPosts = posts.stream()
                 .peek(post -> {

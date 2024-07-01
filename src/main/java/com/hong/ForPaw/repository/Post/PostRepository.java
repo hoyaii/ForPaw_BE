@@ -23,8 +23,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE p.removedAt IS NULL")
     List<Post> findAll();
 
-    @Query("SELECT p FROM Post p WHERE p.createdDate BETWEEN :startOfToday AND :endOfToday AND p.removedAt IS NULL")
-    List<Post> findAllByDate(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDay") LocalDateTime endOfDay);
+    @Query("SELECT p FROM Post p WHERE p.createdDate BETWEEN :startOfToday AND :endOfToday AND p.postType = :postType AND p.removedAt IS NULL")
+    List<Post> findAllByDate(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDay") LocalDateTime endOfDay, @Param("postType") PostType postType);
 
     @Query("SELECT p FROM Post p WHERE p.id = :id AND p.removedAt IS NULL")
     Optional<Post> findById(@Param("id") Long id);
