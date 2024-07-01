@@ -353,6 +353,7 @@ public class PostService {
         postLikeRepository.deleteAllByPostId(postId);
         postReadStatusRepository.deleteAllByPostId(postId);
         commentLikeRepository.deleteAllByPostId(postId);
+        popularPostRepository.deleteByPostId(postId);
         commentRepository.deleteAllByPostId(postId); // soft-delete
         postRepository.deleteById(postId); // soft-delete
     }
