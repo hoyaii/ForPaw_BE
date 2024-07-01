@@ -87,7 +87,7 @@ public class PostService {
         );
 
         // 질문글에만 답변을 달 수 있다
-        if(!parentPost.getPostType().equals(PostType.question)){
+        if(!parentPost.getPostType().equals(PostType.QUESTION)){
             throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
         }
 
@@ -101,7 +101,7 @@ public class PostService {
 
         Post post = Post.builder()
                 .user(userRef)
-                .postType(PostType.answer)
+                .postType(PostType.ANSWER)
                 .title(parentPost.getTitle() + "(답변)")
                 .content(requestDTO.content())
                 .build();
@@ -138,10 +138,10 @@ public class PostService {
         Pageable pageable = createPageable(0, 5, "id");
 
         // 입양 스토리 글 찾기
-        List<PostResponse.PostDTO> adoptionPosts = getPostDTOsByType(PostType.adoption, pageable);
+        List<PostResponse.PostDTO> adoptionPosts = getPostDTOsByType(PostType.ADOPTION, pageable);
 
         // 임시 보호 글 찾기
-        List<PostResponse.PostDTO> fosteringPosts = getPostDTOsByType(PostType.fostering, pageable);
+        List<PostResponse.PostDTO> fosteringPosts = getPostDTOsByType(PostType.FOSTERING, pageable);
 
         // 질문해요 글 찾기
         List<PostResponse.QnaDTO> questionPosts = getQnaDTOs(pageable);
@@ -152,7 +152,7 @@ public class PostService {
     @Transactional
     public PostResponse.FindAdoptionPostListDTO findAdoptionPostList(Integer page, String sort){
         Pageable pageable = createPageable(page, 5, sort);
-        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.adoption, pageable);
+        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.ADOPTION, pageable);
 
         if(adoptPostDTOS.isEmpty()){
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
@@ -164,7 +164,7 @@ public class PostService {
     @Transactional
     public PostResponse.FindFosteringPostListDTO findFosteringPostList(Integer page, String sort){
         Pageable pageable = createPageable(page, 5, sort);
-        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.fostering, pageable);
+        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.FOSTERING, pageable);
 
         if(adoptPostDTOS.isEmpty()){
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
@@ -192,7 +192,7 @@ public class PostService {
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
-        if(post.getPostType().equals(PostType.question)){
+        if(post.getPostType().equals(PostType.QUESTION)){
             throw new CustomException(ExceptionCode.IS_QUESTION_TYPE);
         }
 
@@ -260,7 +260,7 @@ public class PostService {
         );
 
         // 질문 게시글에 대해서만 조회 가능
-        if(!post.getPostType().equals(PostType.question)){
+        if(!post.getPostType().equals(PostType.QUESTION)){
             throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
         }
 
@@ -414,7 +414,7 @@ public class PostService {
         );
 
         // 질문글에는 댓글을 달 수 없다 (댓글 대신 답변이 달리니)
-        if(postRepository.findPostTypeByPostId(postId).get().equals(PostType.question)){
+        if(postRepository.findPostTypeByPostId(postId).get().equals(PostType.QUESTION)){
             throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
         }
 
@@ -643,7 +643,7 @@ public class PostService {
 
     public List<PostResponse.QnaDTO> getQnaDTOs(Pageable pageable){
         // 유저를 패치조인하여 조회
-        Page<Post> postPage = postRepository.findByPostTypeWithUser(PostType.question, pageable);
+        Page<Post> postPage = postRepository.findByPostTypeWithUser(PostType.QUESTION, pageable);
 
         List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
                 .map(post -> new PostResponse.QnaDTO(

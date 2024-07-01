@@ -7,11 +7,11 @@ import lombok.Getter;
 @Getter
 public enum PostType {
 
-    notice("공지사항"),
-    adoption("입양 스토리"),
-    fostering("임시 보호 스토리"),
-    question("궁금해요"),
-    answer("답변");
+    NOTICE("공지사항"),
+    ADOPTION("입양 스토리"),
+    FOSTERING("임시 보호 스토리"),
+    QUESTION("궁금해요"),
+    ANSWER("답변");
 
     private String value;
 }

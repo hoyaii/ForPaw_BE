@@ -38,7 +38,7 @@ class PostControllerTest {
         imageDTOS.add(new PostRequest.PostImageDTO("https://example.com/image1.jpg"));
         imageDTOS.add(new PostRequest.PostImageDTO("https://example.com/image2.jpg"));
 
-        PostRequest.CreatePostDTO requestDTO = new PostRequest.CreatePostDTO("불독 입양 후기 올립니다5!", PostType.adoption, "입양 2일차 입니다!", imageDTOS);
+        PostRequest.CreatePostDTO requestDTO = new PostRequest.CreatePostDTO("불독 입양 후기 올립니다5!", PostType.ADOPTION, "입양 2일차 입니다!", imageDTOS);
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
