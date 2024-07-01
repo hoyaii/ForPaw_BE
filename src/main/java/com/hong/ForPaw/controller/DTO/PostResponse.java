@@ -11,11 +11,11 @@ public class PostResponse {
 
     public record CreateAnswerDTO(Long id) {}
 
-    public record FindAllPostDTO(List<PostDTO> adoptions, List<PostDTO> protections, List<QnaDTO> questions) {}
+    public record FindAllPostDTO(List<PostDTO> adoptions, List<PostDTO> fostering, List<QnaDTO> questions) {}
 
     public record FindAdoptionPostListDTO(List<PostDTO> adoptions) {}
 
-    public record FindProtectionPostListDTO(List<PostDTO> protections) {}
+    public record FindFosteringPostListDTO(List<PostDTO> fostering) {}
 
     public record FindQnaPostListDTO(List<QnaDTO> questions) {}
 

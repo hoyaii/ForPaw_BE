@@ -9,7 +9,7 @@ public enum PostType {
 
     notice("공지사항"),
     adoption("입양 스토리"),
-    protection("임시 보호 스토리"),
+    fostering("임시 보호 스토리"),
     question("궁금해요"),
     answer("답변");
 

@@ -141,12 +141,12 @@ public class PostService {
         List<PostResponse.PostDTO> adoptionPosts = getPostDTOsByType(PostType.adoption, pageable);
 
         // 임시 보호 글 찾기
-        List<PostResponse.PostDTO> protectionPosts = getPostDTOsByType(PostType.protection, pageable);
+        List<PostResponse.PostDTO> fosteringPosts = getPostDTOsByType(PostType.fostering, pageable);
 
         // 질문해요 글 찾기
         List<PostResponse.QnaDTO> questionPosts = getQnaDTOs(pageable);
 
-        return new PostResponse.FindAllPostDTO(adoptionPosts, protectionPosts, questionPosts);
+        return new PostResponse.FindAllPostDTO(adoptionPosts, fosteringPosts, questionPosts);
     }
 
     @Transactional
@@ -162,15 +162,15 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse.FindProtectionPostListDTO findProtectionPostList(Integer page, String sort){
+    public PostResponse.FindFosteringPostListDTO findFosteringPostList(Integer page, String sort){
         Pageable pageable = createPageable(page, 5, sort);
-        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.protection, pageable);
+        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.fostering, pageable);
 
         if(adoptPostDTOS.isEmpty()){
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
         }
 
-        return new PostResponse.FindProtectionPostListDTO(adoptPostDTOS);
+        return new PostResponse.FindFosteringPostListDTO(adoptPostDTOS);
     }
 
     @Transactional
