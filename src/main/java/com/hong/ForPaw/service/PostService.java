@@ -136,15 +136,26 @@ public class PostService {
 
     @Transactional
     public PostResponse.FindAdoptionPostListDTO findAdoptionPostList(Integer page, String sort) {
-        List<PostResponse.PostDTO> postDTOS = findPostsByTypeForAdoptAndFoster(PostType.ADOPTION, page, sort);
+        List<PostResponse.PostDTO> postDTOS;
+
+        if(sort.equals("createdDate")) {
+            postDTOS = findPostsByTypeForAdoptAndFoster(PostType.ADOPTION, page);
+        } else{
+            postDTOS = findPopularPostsByType(PostType.ADOPTION, page);
+        }
 
         return new PostResponse.FindAdoptionPostListDTO(postDTOS);
     }
 
     @Transactional
     public PostResponse.FindFosteringPostListDTO findFosteringPostList(Integer page, String sort) {
-        List<PostResponse.PostDTO> postDTOS = findPostsByTypeForAdoptAndFoster(PostType.FOSTERING, page, sort);
+        List<PostResponse.PostDTO> postDTOS;
 
+        if(sort.equals("createdDate")) {
+            postDTOS = findPostsByTypeForAdoptAndFoster(PostType.FOSTERING, page);
+        } else{
+            postDTOS = findPopularPostsByType(PostType.FOSTERING, page);
+        }
         return new PostResponse.FindFosteringPostListDTO(postDTOS);
     }
 
@@ -649,8 +660,40 @@ public class PostService {
         });
     }
 
-    private List<PostResponse.PostDTO> findPostsByTypeForAdoptAndFoster(PostType postType, Integer page, String sort) {
-        Pageable pageable = createPageable(page, 5, sort);
+    private List<PostResponse.PostDTO> findPopularPostsByType(PostType postType, Integer page){
+        Pageable pageable = createPageable(page, 5, "createdDate");
+
+        Page<PopularPost> popularPostPage = popularPostRepository.findAllWithPost(postType, pageable);
+        List<PostResponse.PostDTO> postDTOS = popularPostPage.getContent().stream()
+                .map(PopularPost::getPost)
+                .map(post -> {
+                    // 캐싱 기간이 지나 캐싱이 불가능하면, DB에서 조회
+                    Long likeNum = redisService.getDataInLongWithNull("postLikeNum", post.getId().toString());
+                    if (likeNum == null) {
+                        likeNum = post.getLikeNum();
+                    }
+
+                    return new PostResponse.PostDTO(
+                            post.getId(),
+                            post.getUser().getNickName(),
+                            post.getTitle(),
+                            post.getContent(),
+                            post.getCreatedDate(),
+                            post.getCommentNum(),
+                            likeNum,
+                            post.getPostImages().get(0).getImageURL());
+                })
+                .toList();
+
+        if (postDTOS.isEmpty()) {
+            throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
+        }
+
+        return postDTOS;
+    }
+
+    private List<PostResponse.PostDTO> findPostsByTypeForAdoptAndFoster(PostType postType, Integer page) {
+        Pageable pageable = createPageable(page, 5, "createdDate");
 
         // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findByPostTypeWithUser(postType, pageable);
@@ -673,7 +716,7 @@ public class PostService {
                             likeNum,
                             post.getPostImages().get(0).getImageURL());
                 })
-                .collect(Collectors.toList());
+                .toList();
 
         if (postDTOS.isEmpty()) {
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
