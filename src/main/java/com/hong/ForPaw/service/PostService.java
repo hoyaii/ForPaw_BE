@@ -610,18 +610,34 @@ public class PostService {
 
         List<Post> posts = postRepository.findAllByDate(startOfToday, endOfToday);
 
-        for (Post post : posts) {
-            double hotPoint = post.getReadCnt() * 0.001 + post.getCommentNum() + post.getLikeNum() * 5;
-            post.updateHotPoint(hotPoint);
+        // 포인트가 10이 넘으면 popularPosts 리스트에 추가
+        List<Post> popularPosts = posts.stream()
+                .peek(post -> {
+                    double hotPoint = post.getReadCnt() * 0.001 + post.getCommentNum() + post.getLikeNum() * 5;
+                    post.updateHotPoint(hotPoint);
+                })
+                .filter(post -> post.getHotPoint() > 10.0)
+                .collect(Collectors.toList());
 
-            if(hotPoint > 10.0){
-                PopularPost popularPost = PopularPost.builder()
-                        .post(post)
-                        .build();
+        // popularPosts 리스트의 개수가 5개 미만이라면, 5개가 되도록 채우기
+        if (popularPosts.size() < 5) {
+            List<Post> remainingPosts = posts.stream()
+                    .filter(post -> !popularPosts.contains(post))
+                    .sorted(Comparator.comparingDouble(Post::getHotPoint).reversed())
+                    .toList();
 
-                popularPostRepository.save(popularPost);
-            }
+            popularPosts.addAll(remainingPosts.stream()
+                    .limit(5 - popularPosts.size())
+                    .toList());
         }
+
+        // popularPosts 리스트의 post는 popularPost 엔티티로 저장됨
+        popularPosts.forEach(post -> {
+            PopularPost popularPost = PopularPost.builder()
+                    .post(post)
+                    .build();
+            popularPostRepository.save(popularPost);
+        });
     }
 
     private List<PostResponse.PostDTO> findPostsByTypeForAdoptAndFoster(PostType postType, Integer page, String sort) {
