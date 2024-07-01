@@ -46,6 +46,7 @@ public class PostService {
     private final CommentRepository commentRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final ReportRepository reportRepository;
+    private final PopularPostRepository popularPostRepository;
     private final RedisService redisService;
     private final S3Service s3Service;
     private final BrokerService brokerService;
@@ -600,7 +601,7 @@ public class PostService {
         reportRepository.save(report);
     }
 
-    @Scheduled(cron = "0 0 1,15 * * *")
+    @Scheduled(cron = "0 0 6,18 * * *")
     @Transactional
     public void updateTodayPopularPosts() {
         LocalDate now = LocalDate.now();
@@ -610,8 +611,16 @@ public class PostService {
         List<Post> posts = postRepository.findAllByDate(startOfToday, endOfToday);
 
         for (Post post : posts) {
-            Double hotPoint = (post.getReadCnt() * 0.001 + post.getCommentNum() + post.getLikeNum() * 5);
+            double hotPoint = post.getReadCnt() * 0.001 + post.getCommentNum() + post.getLikeNum() * 5;
             post.updateHotPoint(hotPoint);
+
+            if(hotPoint > 10.0){
+                PopularPost popularPost = PopularPost.builder()
+                        .post(post)
+                        .build();
+
+                popularPostRepository.save(popularPost);
+            }
         }
     }
 
