@@ -133,50 +133,35 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse.FindAllPostDTO findPostList(){
-        // 페이지네이션은 0페이지에 5개만 보내줌
-        Pageable pageable = createPageable(0, 5, "id");
+    public PostResponse.FindAdoptionPostListDTO findAdoptionPostList(Integer page, String sort) {
+        List<PostResponse.PostDTO> postDTOS = findPostsByTypeForAdoptAndFoster(PostType.ADOPTION, page, sort);
 
-        // 입양 스토리 글 찾기
-        List<PostResponse.PostDTO> adoptionPosts = getPostDTOsByType(PostType.ADOPTION, pageable);
-
-        // 임시 보호 글 찾기
-        List<PostResponse.PostDTO> fosteringPosts = getPostDTOsByType(PostType.FOSTERING, pageable);
-
-        // 질문해요 글 찾기
-        List<PostResponse.QnaDTO> questionPosts = getQnaDTOs(pageable);
-
-        return new PostResponse.FindAllPostDTO(adoptionPosts, fosteringPosts, questionPosts);
+        return new PostResponse.FindAdoptionPostListDTO(postDTOS);
     }
 
     @Transactional
-    public PostResponse.FindAdoptionPostListDTO findAdoptionPostList(Integer page, String sort){
-        Pageable pageable = createPageable(page, 5, sort);
-        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.ADOPTION, pageable);
+    public PostResponse.FindFosteringPostListDTO findFosteringPostList(Integer page, String sort) {
+        List<PostResponse.PostDTO> postDTOS = findPostsByTypeForAdoptAndFoster(PostType.FOSTERING, page, sort);
 
-        if(adoptPostDTOS.isEmpty()){
-            throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
-        }
-
-        return new PostResponse.FindAdoptionPostListDTO(adoptPostDTOS);
-    }
-
-    @Transactional
-    public PostResponse.FindFosteringPostListDTO findFosteringPostList(Integer page, String sort){
-        Pageable pageable = createPageable(page, 5, sort);
-        List<PostResponse.PostDTO> adoptPostDTOS = getPostDTOsByType(PostType.FOSTERING, pageable);
-
-        if(adoptPostDTOS.isEmpty()){
-            throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
-        }
-
-        return new PostResponse.FindFosteringPostListDTO(adoptPostDTOS);
+        return new PostResponse.FindFosteringPostListDTO(postDTOS);
     }
 
     @Transactional
     public PostResponse.FindQnaPostListDTO findQuestionPostList(Integer page, String sort){
         Pageable pageable = createPageable(page, 5, sort);
-        List<PostResponse.QnaDTO> qnaDTOS = getQnaDTOs(pageable);
+
+        // 유저를 패치조인하여 조회
+        Page<Post> postPage = postRepository.findByPostTypeWithUser(PostType.QUESTION, pageable);
+
+        List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
+                .map(post -> new PostResponse.QnaDTO(
+                        post.getId(),
+                        post.getUser().getNickName(),
+                        post.getTitle(),
+                        post.getContent(),
+                        post.getCreatedDate(),
+                        post.getAnswerNum()))
+                .collect(Collectors.toList());
 
         if(qnaDTOS.isEmpty()){
             throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
@@ -614,15 +599,17 @@ public class PostService {
         reportRepository.save(report);
     }
 
-    public List<PostResponse.PostDTO> getPostDTOsByType(PostType postType, Pageable pageable){
+    private List<PostResponse.PostDTO> findPostsByTypeForAdoptAndFoster(PostType postType, Integer page, String sort) {
+        Pageable pageable = createPageable(page, 5, sort);
+
         // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findByPostTypeWithUser(postType, pageable);
 
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
-                .map(post ->  {
+                .map(post -> {
                     // 캐싱 기간이 지나 캐싱이 불가능하면, DB에서 조회
                     Long likeNum = redisService.getDataInLongWithNull("postLikeNum", post.getId().toString());
-                    if(likeNum == null){
+                    if (likeNum == null) {
                         likeNum = post.getLikeNum();
                     }
 
@@ -638,24 +625,11 @@ public class PostService {
                 })
                 .collect(Collectors.toList());
 
+        if (postDTOS.isEmpty()) {
+            throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
+        }
+
         return postDTOS;
-    }
-
-    public List<PostResponse.QnaDTO> getQnaDTOs(Pageable pageable){
-        // 유저를 패치조인하여 조회
-        Page<Post> postPage = postRepository.findByPostTypeWithUser(PostType.QUESTION, pageable);
-
-        List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
-                .map(post -> new PostResponse.QnaDTO(
-                            post.getId(),
-                            post.getUser().getNickName(),
-                            post.getTitle(),
-                            post.getContent(),
-                            post.getCreatedDate(),
-                            post.getAnswerNum()))
-                .collect(Collectors.toList());
-
-        return qnaDTOS;
     }
 
     private Pageable createPageable(int page, int size, String sortProperty) {

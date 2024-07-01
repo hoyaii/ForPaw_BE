@@ -32,12 +32,6 @@ public class PostController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @GetMapping("/posts")
-    public ResponseEntity<?> findPostList(){
-        PostResponse.FindAllPostDTO responseDTO = postService.findPostList();
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
-    }
-
     @GetMapping("/posts/adoption")
     public ResponseEntity<?> findAdoptionPostList(@RequestParam("page") Integer page, @RequestParam("sort") String sort){
         PostResponse.FindAdoptionPostListDTO responseDTO = postService.findAdoptionPostList(page, sort);
