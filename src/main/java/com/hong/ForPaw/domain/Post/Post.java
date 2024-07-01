@@ -68,6 +68,9 @@ public class Post extends TimeStamp {
     @Column
     private Long readCnt = 0L;
 
+    @Column
+    private Double hotPoint = 0.0;
+
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
 
@@ -101,4 +104,6 @@ public class Post extends TimeStamp {
     }
 
     public void updateReadCnt() { this.readCnt++; }
+
+    public void updateHotPoint(Double hotPoint) { this.hotPoint = hotPoint;}
 }

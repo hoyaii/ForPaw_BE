@@ -600,6 +600,21 @@ public class PostService {
         reportRepository.save(report);
     }
 
+    @Scheduled(cron = "0 0 1,15 * * *")
+    @Transactional
+    public void updateTodayPopularPosts() {
+        LocalDate now = LocalDate.now();
+        LocalDateTime startOfToday = now.atStartOfDay();
+        LocalDateTime endOfToday = now.atTime(LocalTime.MAX);
+
+        List<Post> posts = postRepository.findAllByDate(startOfToday, endOfToday);
+
+        for (Post post : posts) {
+            Double hotPoint = (post.getReadCnt() * 0.001 + post.getCommentNum() + post.getLikeNum() * 5);
+            post.updateHotPoint(hotPoint);
+        }
+    }
+
     private List<PostResponse.PostDTO> findPostsByTypeForAdoptAndFoster(PostType postType, Integer page, String sort) {
         Pageable pageable = createPageable(page, 5, sort);
 
