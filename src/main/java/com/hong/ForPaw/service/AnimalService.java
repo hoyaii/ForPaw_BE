@@ -238,16 +238,16 @@ public class AnimalService {
                     Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
 
                     return new AnimalResponse.AnimalDTO(
-                        animal.getId(),
-                        animal.getName(),
-                        animal.getAge(),
-                        animal.getGender(),
-                        animal.getSpecialMark(),
-                        animal.getRegion(),
-                        animal.getInquiryNum(),
-                        likeNum,
-                        true,
-                        animal.getProfileURL());
+                            animal.getId(),
+                            animal.getName(),
+                            animal.getAge(),
+                            animal.getGender(), 
+                            animal.getSpecialMark(),
+                            animal.getRegion(),
+                            animal.getInquiryNum(),
+                            likeNum,
+                            true,
+                            animal.getProfileURL());
                 })
                 .collect(Collectors.toList());
 

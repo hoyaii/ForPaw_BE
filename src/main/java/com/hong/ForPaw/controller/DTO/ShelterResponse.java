@@ -6,9 +6,13 @@ public class ShelterResponse {
 
     public record FindShelterListDTO(List<ShelterDTO> shelters){}
 
-    public record FindShelterByIdDTO(String careAddr,
-                                     String careTel,
-                                     List<AnimalDTO> animals) {}
+    public record FindShelterInfoByIdDTO(Long id,
+                                         Double lat,
+                                         Double lng,
+                                         String careAddr,
+                                         String careTel) {}
+
+    public record FindShelterAnimalsByIdDTO(List<AnimalDTO> animals) {}
 
     public record AnimalDTO(Long id,
                             String name,

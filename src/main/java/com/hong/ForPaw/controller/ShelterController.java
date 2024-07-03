@@ -32,14 +32,20 @@ public class ShelterController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, responseDTO));
     }
 
-    @GetMapping("/shelters/{shelterId}")
-    public ResponseEntity<?> findShelterById(@PathVariable Long shelterId, @RequestParam("page") Integer page, @RequestParam(value = "sort", defaultValue = "noticeSdt") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
+    @GetMapping("/shelters/{shelterId}/info")
+    public ResponseEntity<?> findShelterInfoById(@PathVariable Long shelterId){
+        ShelterResponse.FindShelterInfoByIdDTO responseDTO = shelterService.findShelterInfoById(shelterId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
+    @GetMapping("/shelters/{shelterId}/animals")
+    public ResponseEntity<?> findShelterAnimalsById(@PathVariable Long shelterId, @RequestParam("page") Integer page, @RequestParam(value = "sort", defaultValue = "noticeSdt") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
         Long userId = Optional.ofNullable(userDetails)
                 .map(CustomUserDetails::getUser)
                 .map(User::getId)
                 .orElse(null);
 
-        ShelterResponse.FindShelterByIdDTO responseDTO = shelterService.findShelterById(shelterId, userId, page, sort);
+        ShelterResponse.FindShelterAnimalsByIdDTO responseDTO = shelterService.findShelterAnimalsById(shelterId, userId, page, sort);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }

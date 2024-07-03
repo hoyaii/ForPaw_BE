@@ -89,17 +89,27 @@ public class ShelterService {
     }
 
     @Transactional
-    public ShelterResponse.FindShelterByIdDTO findShelterById(Long shelterId, Long userId, Integer page, String sort){
+    public ShelterResponse.FindShelterInfoByIdDTO findShelterInfoById(Long shelterId){
         // 보호소가 존재하지 않으면 에러
         Shelter shelter = shelterRepository.findById(shelterId).orElseThrow(
                 () -> new CustomException(ExceptionCode.SHELTER_NOT_FOUND)
         );
 
+        return new ShelterResponse.FindShelterInfoByIdDTO(
+                shelter.getId(),
+                shelter.getLatitude(),
+                shelter.getLongitude(),
+                shelter.getCareAddr(),
+                shelter.getCareTel()
+        );
+    }
+
+    @Transactional
+    public ShelterResponse.FindShelterAnimalsByIdDTO findShelterAnimalsById(Long shelterId, Long userId, Integer page, String sort){
         Pageable pageable = createPageable(page, 5, sort);
         Page<Animal> animalPage = animalRepository.findByShelterId(shelterId, pageable);
 
-        // 사용자가 '좋아요' 표시한 Animal의 ID 목록
-        // 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
+        // 사용자가 '좋아요' 표시한 Animal의 ID 목록, 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
 
         List<ShelterResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
@@ -108,20 +118,20 @@ public class ShelterService {
                     Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
 
                     return new ShelterResponse.AnimalDTO(
-                        animal.getId(),
-                        animal.getName(),
-                        animal.getAge(),
-                        animal.getGender(),
-                        animal.getSpecialMark(),
-                        animal.getRegion(),
-                        inquiryNum,
-                        likeNum,
-                        likedAnimalIds.contains(animal.getId()),
-                        animal.getProfileURL());
+                            animal.getId(),
+                            animal.getName(),
+                            animal.getAge(),
+                            animal.getGender(),
+                            animal.getSpecialMark(),
+                            animal.getRegion(),
+                            inquiryNum,
+                            likeNum,
+                            likedAnimalIds.contains(animal.getId()),
+                            animal.getProfileURL());
                 })
                 .collect(Collectors.toList());
 
-        return new ShelterResponse.FindShelterByIdDTO(shelter.getCareAddr(), shelter.getCareTel(), animalDTOS);
+        return new ShelterResponse.FindShelterAnimalsByIdDTO(animalDTOS);
     }
 
     private Flux<Shelter> processShelterData(String response, RegionCode regionCode){
