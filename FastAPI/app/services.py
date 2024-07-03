@@ -54,6 +54,9 @@ redis_client = initialize_redis()
 vectorizer = TfidfVectorizer()
 vector_dim = 512
 
+# PCA 객체 초기화
+pca = PCA(n_components=vector_dim)  
+
 @asynccontextmanager
 async def get_db_session():
     async with AsyncSessionLocal() as session:
@@ -74,7 +77,6 @@ async def load_and_vectorize_data():
     vectors = tfidf_matrix.toarray()
 
     # PCA를 사용하여 벡터 차원을 512로 축소
-    pca = PCA(n_components=vector_dim)
     reduced_vectors = pca.fit_transform(vectors)
 
     # 동물 ID 리스트 생성
@@ -134,10 +136,9 @@ async def update_new_animals(animal_index, tfidf_matrix):
             for animal in new_animals
         ]
 
-    # 새로운 텍스트 데이터를 TF-IDF 벡터로 변환
+    # 새로운 텍스트 데이터를 TF-IDF 벡터로 변환, 전역으로 선언한 PCA를 사용
     new_vectors = vectorizer.transform(new_texts).toarray()
-    pca = PCA(n_components=vector_dim)
-    reduced_new_vectors = pca.fit_transform(new_vectors)
+    reduced_new_vectors = pca.transform(new_vectors)  
 
     # 새로운 동물들의 ID 리스트를 생성
     new_ids = [animal.id for animal in new_animals]
