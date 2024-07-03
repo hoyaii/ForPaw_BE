@@ -185,21 +185,8 @@ public class AnimalService {
 
     @Transactional
     public AnimalResponse.FindAnimalListDTO findRecommendedAnimalList(Long userId){
-        Map<String, Long> jsonBody = Map.of("user_id", userId);
-
-        List<Long> recommendedAnimalIds = webClient.post()
-                .uri(animalRecommendURI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(jsonBody))
-                .retrieve()
-                .bodyToMono(AnimalResponse.RecommendationDTO.class)
-                .map(AnimalResponse.RecommendationDTO::recommendedAnimals)
-                .block();
-
-        // 조회 기록이 없어서, 추천하는 ID 목록이 없으면 사용자 위치 기반으로 추천
-        if (recommendedAnimalIds.isEmpty()) {
-            recommendedAnimalIds = findAnimalIdsByUserLocation(userId);
-        }
+        // 추천 동물 ID 목록
+        List<Long> recommendedAnimalIds = getRecommendedAnimalIds(userId);
 
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
 
@@ -241,7 +228,7 @@ public class AnimalService {
                             animal.getId(),
                             animal.getName(),
                             animal.getAge(),
-                            animal.getGender(), 
+                            animal.getGender(),
                             animal.getSpecialMark(),
                             animal.getRegion(),
                             animal.getInquiryNum(),
@@ -535,14 +522,35 @@ public class AnimalService {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 
-    private List<Long> findAnimalIdsByUserLocation(Long userId) {
-        // 5개 반환
+    public List<Long> getRecommendedAnimalIds(Long userId){
         PageRequest pageRequest = PageRequest.of(0, 5);
 
-        // 로그인 되지 않았으면, 그냥 시간순으로 반환
+        // 로그인 되지 않았으면, 추천을 할 수 없으니 그냥 최신순 반환
         if (userId == null) {
             return animalRepository.findAllIds(pageRequest).getContent();
         }
+
+        Map<String, Long> jsonBody = Map.of("user_id", userId);
+
+        List<Long> recommendedAnimalIds = webClient.post()
+                .uri(animalRecommendURI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(jsonBody))
+                .retrieve()
+                .bodyToMono(AnimalResponse.RecommendationDTO.class)
+                .map(AnimalResponse.RecommendationDTO::recommendedAnimals)
+                .block();
+
+        // 조회 기록이 없어서, 추천하는 ID 목록이 없으면 사용자 위치 기반으로 가져온다
+        if (recommendedAnimalIds.isEmpty()) {
+            recommendedAnimalIds = findAnimalIdListByLocation(userId);
+        }
+
+        return recommendedAnimalIds;
+    }
+
+    private List<Long> findAnimalIdListByLocation(Long userId) {
+        PageRequest pageRequest = PageRequest.of(0, 5);
 
         // 사용자 district를 바탕으로 조회
         List<Long> animalIds = userRepository.findDistrictById(userId)

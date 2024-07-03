@@ -9,8 +9,8 @@ import java.util.List;
 public class HomeResponse {
 
     public record FindHomeDTO(List<AnimalDTO> animals,
-                              List<GroupDTO> groups,
-                              List<PostDTO> posts) {}
+                              List<GroupResponse.RecommendGroupDTO> groups,
+                              List<PostResponse.PostDTO> posts) {}
 
     public record AnimalDTO(Long id,
                             String name,

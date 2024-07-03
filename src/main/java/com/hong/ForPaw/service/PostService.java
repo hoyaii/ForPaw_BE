@@ -139,9 +139,9 @@ public class PostService {
         List<PostResponse.PostDTO> postDTOS;
 
         if(sort.equals("createdDate")) {
-            postDTOS = findPostsByTypeForAdoptAndFoster(PostType.ADOPTION, page);
+            postDTOS = findPostListByType(PostType.ADOPTION, page);
         } else{
-            postDTOS = findPopularPostsByType(PostType.ADOPTION, page);
+            postDTOS = findPopularPostListByType(PostType.ADOPTION, page);
         }
 
         return new PostResponse.FindAdoptionPostListDTO(postDTOS);
@@ -152,9 +152,9 @@ public class PostService {
         List<PostResponse.PostDTO> postDTOS;
 
         if(sort.equals("createdDate")) {
-            postDTOS = findPostsByTypeForAdoptAndFoster(PostType.FOSTERING, page);
+            postDTOS = findPostListByType(PostType.FOSTERING, page);
         } else{
-            postDTOS = findPopularPostsByType(PostType.FOSTERING, page);
+            postDTOS = findPopularPostListByType(PostType.FOSTERING, page);
         }
         return new PostResponse.FindFosteringPostListDTO(postDTOS);
     }
@@ -661,7 +661,7 @@ public class PostService {
         });
     }
 
-    private List<PostResponse.PostDTO> findPopularPostsByType(PostType postType, Integer page){
+    public List<PostResponse.PostDTO> findPopularPostListByType(PostType postType, Integer page){
         Pageable pageable = createPageable(page, 5, "createdDate");
 
         Page<PopularPost> popularPostPage = popularPostRepository.findAllWithPost(postType, pageable);
@@ -693,7 +693,7 @@ public class PostService {
         return postDTOS;
     }
 
-    private List<PostResponse.PostDTO> findPostsByTypeForAdoptAndFoster(PostType postType, Integer page) {
+    private List<PostResponse.PostDTO> findPostListByType(PostType postType, Integer page) {
         Pageable pageable = createPageable(page, 5, "createdDate");
 
         // 유저를 패치조인하여 조회

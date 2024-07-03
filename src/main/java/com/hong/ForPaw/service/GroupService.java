@@ -702,7 +702,7 @@ public class GroupService {
         meetingRepository.deleteById(meetingId);
     }
 
-    private List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, Province province, List<Long> likedGroupIds){
+    public List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, Province province, List<Long> likedGroupIds){
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIdSet = userId != null ? getGroupIdSet(userId) : Collections.emptySet();
 
