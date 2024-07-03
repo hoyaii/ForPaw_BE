@@ -65,10 +65,10 @@ async def get_db_session():
 async def load_and_vectorize_data():
     # 비동기 세션을 사용하여 데이터베이스에 연결. Animal 테이블에서 모든 데이터를 가져와서 리스트로 변환
     async with get_db_session() as db:
-        result = await db.execute(select(Animal))
+        result = await db.execute(select(Animal).filter(Animal.removed_at.is_(None)))
         animals = result.scalars().all()
         texts = [
-            f"{animal.shelter_id} {animal.age} {animal.color} {animal.gender} {animal.kind} {animal.region} {animal.special_mark} {animal.happen_place}"
+            f"{animal.age} {animal.color} {animal.gender} {animal.kind} {animal.region} {animal.special_mark} {animal.neuter}"
             for animal in animals
         ]
 
@@ -119,7 +119,7 @@ async def get_similar_animals(animal_id, animal_index, tfidf_matrix, num_results
 # MySQL에 저장된 새로운 동물 데이터를 백터 DB에 업데이트
 async def update_new_animals(animal_index, tfidf_matrix):
     async with get_db_session() as db:
-        result = await db.execute(select(Animal))
+        result = await db.execute(select(Animal).filter(Animal.removed_at.is_(None)))
         animals = result.scalars().all()
 
         # 현재 animal_index에서 기존의 모든 동물 ID를 가져옴
