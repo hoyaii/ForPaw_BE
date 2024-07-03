@@ -47,6 +47,11 @@ public class RedisService {
         }
     }
 
+    public void deleteListElement(String key, String value){
+        ListOperations<String, String> listOps = redisTemplate.opsForList();
+        listOps.remove(key, 0, value);
+    }
+
     public void incrementCnt(String type, String id, Long cnt){
         redisTemplate.opsForValue().increment(buildKey(type, id), cnt);
     }

@@ -422,6 +422,16 @@ public class AnimalService {
                 animal -> redisService.removeData("animalLikeNum", animal.getId().toString())
         );
 
+        // 우저가 검색한 동물 기록에서 삭제
+        List<User> users = userRepository.findAll();
+
+        for(User user : users){
+            animals.forEach(animal -> {
+                String key = "animalSearch:" + user.getId();
+                redisService.deleteListElement(key, animal.getId().toString());
+            });
+        }
+
         animalRepository.deleteAll(animals);
     }
 
