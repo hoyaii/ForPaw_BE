@@ -72,9 +72,8 @@ public class ShelterService {
                 .subscribe(shelterRepository::saveAll);
     }
     @Transactional
-    public ShelterResponse.FindShelterListDTO findShelterList(Double lat, Double lng){
-        // 가장 가까운 순으로 보호소 가져옴 (네이티브 쿼리 사용) => 성능에 따라 캐싱 고려
-        List<Shelter> shelters = shelterRepository.findNearestShelters(lat, lng);
+    public ShelterResponse.FindShelterListDTO findShelterList(){
+        List<Shelter> shelters = shelterRepository.findAll();
 
         List<ShelterResponse.ShelterDTO> shelterDTOS = shelters.stream()
                 .map(shelter -> new ShelterResponse.ShelterDTO(

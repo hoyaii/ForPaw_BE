@@ -27,8 +27,8 @@ public class ShelterController {
     }
 
     @GetMapping("/shelters")
-    public ResponseEntity<?> findShelterList(@RequestParam("lat") Double lat, @RequestParam("lng") Double lng){
-        ShelterResponse.FindShelterListDTO responseDTO = shelterService.findShelterList(lat, lng);
+    public ResponseEntity<?> findShelterList(){
+        ShelterResponse.FindShelterListDTO responseDTO = shelterService.findShelterList();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, responseDTO));
     }
 
