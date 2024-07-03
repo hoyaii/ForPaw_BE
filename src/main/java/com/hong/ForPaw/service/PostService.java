@@ -176,10 +176,6 @@ public class PostService {
                         post.getAnswerNum()))
                 .collect(Collectors.toList());
 
-        if(qnaDTOS.isEmpty()){
-            throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
-        }
-
         return new PostResponse.FindQnaPostListDTO(qnaDTOS);
     }
 
@@ -686,10 +682,6 @@ public class PostService {
                 })
                 .toList();
 
-        if (postDTOS.isEmpty()) {
-            throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
-        }
-
         return postDTOS;
     }
 
@@ -718,10 +710,6 @@ public class PostService {
                             post.getPostImages().get(0).getImageURL());
                 })
                 .toList();
-
-        if (postDTOS.isEmpty()) {
-            throw new CustomException(ExceptionCode.SEARCH_NOT_FOUND);
-        }
 
         return postDTOS;
     }

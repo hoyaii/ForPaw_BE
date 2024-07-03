@@ -1,5 +1,6 @@
 package com.hong.ForPaw.domain.Post;
 
+import com.hong.ForPaw.domain.TimeStamp;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -12,7 +13,7 @@ import org.hibernate.annotations.SQLDelete;
 @SQLDelete(sql = "UPDATE popular_post_tb SET removed_at = NOW() WHERE id=?")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class PopularPost {
+public class PopularPost extends TimeStamp {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
