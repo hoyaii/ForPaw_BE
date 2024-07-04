@@ -52,6 +52,8 @@ public class PostService {
     private final BrokerService brokerService;
     private final EntityManager entityManager;
     public static final Long POST_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
+    private static final String SORT_BY_CREATED_DATE = "createdDate";
+    private static final String SORT_BY_LIKE_NUM = "likeNum";
 
     @Transactional
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId){
@@ -138,10 +140,12 @@ public class PostService {
     public PostResponse.FindAdoptionPostListDTO findAdoptionPostList(Integer page, String sort) {
         List<PostResponse.PostDTO> postDTOS;
 
-        if(sort.equals("createdDate")) {
+        if(sort.equals(SORT_BY_CREATED_DATE)) {
             postDTOS = findPostListByType(PostType.ADOPTION, page);
-        } else{
+        } else if(sort.equals(SORT_BY_LIKE_NUM)){
             postDTOS = findPopularPostListByType(PostType.ADOPTION, page);
+        } else{
+            throw new CustomException(ExceptionCode.POST_TYPE_INCORRECT);
         }
 
         return new PostResponse.FindAdoptionPostListDTO(postDTOS);
@@ -151,17 +155,20 @@ public class PostService {
     public PostResponse.FindFosteringPostListDTO findFosteringPostList(Integer page, String sort) {
         List<PostResponse.PostDTO> postDTOS;
 
-        if(sort.equals("createdDate")) {
+        if(sort.equals(SORT_BY_CREATED_DATE)) {
             postDTOS = findPostListByType(PostType.FOSTERING, page);
-        } else{
+        } else if(sort.equals(SORT_BY_LIKE_NUM)){
             postDTOS = findPopularPostListByType(PostType.FOSTERING, page);
+        } else{
+            throw new CustomException(ExceptionCode.POST_TYPE_INCORRECT);
         }
+
         return new PostResponse.FindFosteringPostListDTO(postDTOS);
     }
 
     @Transactional
-    public PostResponse.FindQnaPostListDTO findQuestionPostList(Integer page, String sort){
-        Pageable pageable = createPageable(page, 5, sort);
+    public PostResponse.FindQnaPostListDTO findQuestionPostList(Integer page){
+        Pageable pageable = createPageable(page, 5, SORT_BY_CREATED_DATE);
 
         // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findByPostTypeWithUser(PostType.QUESTION, pageable);
@@ -658,7 +665,7 @@ public class PostService {
     }
 
     public List<PostResponse.PostDTO> findPopularPostListByType(PostType postType, Integer page){
-        Pageable pageable = createPageable(page, 5, "createdDate");
+        Pageable pageable = createPageable(page, 5, SORT_BY_CREATED_DATE);
 
         Page<PopularPost> popularPostPage = popularPostRepository.findAllWithPost(postType, pageable);
         List<PostResponse.PostDTO> postDTOS = popularPostPage.getContent().stream()
@@ -686,7 +693,7 @@ public class PostService {
     }
 
     private List<PostResponse.PostDTO> findPostListByType(PostType postType, Integer page) {
-        Pageable pageable = createPageable(page, 5, "createdDate");
+        Pageable pageable = createPageable(page, 5, SORT_BY_CREATED_DATE);
 
         // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findByPostTypeWithUser(postType, pageable);

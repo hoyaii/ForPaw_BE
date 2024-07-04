@@ -45,8 +45,8 @@ public class PostController {
     }
 
     @GetMapping("/posts/question")
-    public ResponseEntity<?> findQuestionPostList(@RequestParam("page") Integer page, @RequestParam("sort") String sort){
-        PostResponse.FindQnaPostListDTO responseDTO = postService.findQuestionPostList(page, sort);
+    public ResponseEntity<?> findQuestionPostList(@RequestParam("page") Integer page){
+        PostResponse.FindQnaPostListDTO responseDTO = postService.findQuestionPostList(page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
