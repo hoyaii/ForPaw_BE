@@ -8,3 +8,5 @@ scikit-learn
 pymilvus
 apscheduler
 pydantic-settings
+openai
+langchain
