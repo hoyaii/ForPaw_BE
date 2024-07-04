@@ -8,9 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -21,8 +23,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> unknownServerError(Exception e){
-        String message = extractDesiredMessage(e.getMessage());
-
+        String message = e.getMessage();
         ApiUtils.ApiResult<?> apiResult = ApiUtils.error(message, HttpStatus.INTERNAL_SERVER_ERROR);
         return new ResponseEntity<>(apiResult, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -46,15 +47,16 @@ public class GlobalExceptionHandler {
                 errorMessage = "유효하지 않은 값입니다. 허용된 값은 " + enumValues + " 입니다.";
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
             }
+        } else if (ex.getMessage().contains("Required request body is missing")) {
+            errorMessage = "요청 본문이 누락되었습니다.";
         }
+
         return ResponseEntity.badRequest().body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
     }
 
-    // 메시지에서 원하는 부분만 노출 되도록 처리
-    private String extractDesiredMessage(String fullMessage) {
-        if (fullMessage != null && fullMessage.contains("Required request body is missing")) {
-            return "Required request body is missing.";
-        }
-        return fullMessage;
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<?> handleMissingServletRequestParameterException(MissingServletRequestParameterException ex) {
+        String errorMessage = "요청 파라미터 " + ex.getParameterName() + "가 누락되었습니다.";
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
     }
 }
