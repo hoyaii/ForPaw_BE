@@ -1,4 +1,6 @@
 # services.py
+from langchain.llms import OpenAI
+from langchain.prompts import PromptTemplate
 from sqlalchemy.future import select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -159,3 +161,26 @@ async def update_new_animals(animal_index, tfidf_matrix):
 
     # animal_index를 업데이트하여 새로운 동물들의 ID와 인덱스를 추가
     animal_index.update({animal.id: current_length + idx for idx, animal in enumerate(new_animals)})
+
+async def generate_animal_introduction(animal_id):
+    async with get_db_session() as db:
+        result = await db.execute(select(Animal).filter(Animal.id == animal_id))
+        animal = result.scalars().first()
+        if not animal:
+            raise HTTPException(status_code=404, detail="해당 동물을 찾을 수 없습니다.")
+    
+    prompt = (
+        f"Create a friendly and heartwarming introduction for a pet adoption service using the following details:\n"
+        f"Name: {animal.name}\n"
+        f"Kind: {animal.kind}\n"
+        f"Gender: {'Male' if animal.gender == 'M' else 'Female'}\n"
+        f"Color: {animal.color}\n"
+        f"Location Found: {animal.happen_place}\n"
+        f"Special Marks: {animal.special_mark}\n"
+    )
+
+    llm = OpenAI(openai_api_key=settings.OPENAI_API_KEY)
+    prompt_template = PromptTemplate(input_variables=["prompt"], template="{prompt}")
+    introduction = llm(prompt_template.render(prompt=prompt))
+
+    return introduction.strip()

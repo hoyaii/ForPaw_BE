@@ -19,6 +19,7 @@ class Animal(Base):
     happen_place = Column(String(255))
     neuter = Column(String, nullable=True)
     removed_at = Column(DateTime, nullable=True)
+    introduction = Column(String(255), nullable=False)
 
 class RecommendRequest(BaseModel):
     user_id: int
