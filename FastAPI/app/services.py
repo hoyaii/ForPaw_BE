@@ -1,5 +1,5 @@
 # services.py
-from langchain.llms import OpenAI
+from langchain_community.llms import OpenAI
 from langchain.prompts import PromptTemplate
 from sqlalchemy.future import select
 from sqlalchemy.orm import sessionmaker
@@ -179,8 +179,9 @@ async def generate_animal_introduction(animal_id):
         f"Special Marks: {animal.special_mark}\n"
     )
 
-    llm = OpenAI(openai_api_key=settings.OPENAI_API_KEY)
+    llm = OpenAI(api_key=settings.OPENAI_API_KEY)
     prompt_template = PromptTemplate(input_variables=["prompt"], template="{prompt}")
-    introduction = llm(prompt_template.render(prompt=prompt))
-
+    formatted_prompt = prompt_template.format(prompt=prompt)
+    introduction = llm(formatted_prompt)
+    
     return introduction.strip()

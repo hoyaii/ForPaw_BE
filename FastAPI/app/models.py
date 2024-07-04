@@ -20,6 +20,7 @@ class Animal(Base):
     neuter = Column(String, nullable=True)
     removed_at = Column(DateTime, nullable=True)
     introduction = Column(String(255), nullable=False)
+    name = Column(String(255))
 
 class RecommendRequest(BaseModel):
     user_id: int

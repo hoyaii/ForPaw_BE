@@ -1,11 +1,11 @@
 # main.py
 from fastapi import FastAPI
 import random
-from app.services import load_and_vectorize_data, get_similar_animals, update_new_animals, redis_client
+from app.services import load_and_vectorize_data, get_similar_animals, update_new_animals, redis_client, generate_animal_introduction
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from functools import partial
-from .models import RecommendRequest
+from .models import RecommendRequest, AnimalIntroductionRequest
 
 app = FastAPI()
 
@@ -52,3 +52,9 @@ async def recommend(request: RecommendRequest):
         recommended_animals = unique_list  
 
     return {"recommendedAnimals": recommended_animals}
+
+@app.post("/introduce/animal")
+async def introduce_animal(request: AnimalIntroductionRequest):
+    introduction = await generate_animal_introduction(request.animal_id)
+    
+    return {"introduction": introduction}
