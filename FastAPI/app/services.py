@@ -170,18 +170,39 @@ async def generate_animal_introduction(animal_id):
             raise HTTPException(status_code=404, detail="해당 동물을 찾을 수 없습니다.")
     
     prompt = (
-        f"Create a friendly and heartwarming introduction for a pet adoption service using the following details:\n"
+        "### Persona ###\n"
+        f"Your task is to write a warm and heartfelt introduction for the animal based on the following information.\n"
+        f"Highlight the animal's positive traits and suitability as a pet to encourage potential adopters.\n"
+        "### Animal Information ###\n"
         f"Name: {animal.name}\n"
-        f"Kind: {animal.kind}\n"
+        f"Species: {animal.kind}\n"
         f"Gender: {'Male' if animal.gender == 'M' else 'Female'}\n"
+        f"Spayed/Neutered: {'Yes' if animal.neuter == 'Y' else 'No'}\n"
         f"Color: {animal.color}\n"
+        f"Approximate Age: {animal.age}\n"
         f"Location Found: {animal.happen_place}\n"
-        f"Special Marks: {animal.special_mark}\n"
+        f"Special Characteristics: {animal.special_mark}\n"
+        "### Background ###\n"
+        f"{animal.name} was found in {animal.happen_place}. Known for its {animal.special_mark} and unique {animal.color} coat, {animal.name} has shown remarkable resilience and a loving nature despite its circumstances.\n"
+        "### Conclusion ###\n"
+        f"To all pet adoption service users, please consider adopting {animal.name}.\n"
+        "### Writing Guidelines ###\n"
+        "1. Provide the introduction in Korean, focusing on encouraging potential adopters.\n"
+        "2. Write from the animal's perspective. Use a tone that conveys warmth and affection. Most sentences should end with '요' to maintain a soft and friendly tone.\n"
+        "3. Start with a strong, attention-grabbing sentence that includes a metaphor or simile.\n"
+        "4. Use punctuation marks and emoticons where appropriate to add enthusiasm, friendliness, and enhance the emotional appeal. Not all sentences need them.\n"
+        "5. Please write a response using between 400 and 500 characters."
     )
 
     llm = OpenAI(api_key=settings.OPENAI_API_KEY)
     prompt_template = PromptTemplate(input_variables=["prompt"], template="{prompt}")
     formatted_prompt = prompt_template.format(prompt=prompt)
-    introduction = llm(formatted_prompt)
+    max_response_tokens = 750
+
+    introduction = llm(
+        formatted_prompt,
+        max_tokens=max_response_tokens,
+        temperature=0.3
+    )
     
     return introduction.strip()

@@ -11,3 +11,4 @@ pydantic-settings
 openai
 langchain
 langchain_community
+cryptography
