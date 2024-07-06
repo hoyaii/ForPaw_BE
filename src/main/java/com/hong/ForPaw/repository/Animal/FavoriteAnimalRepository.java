@@ -18,7 +18,7 @@ public interface FavoriteAnimalRepository extends JpaRepository<FavoriteAnimal, 
     Optional<FavoriteAnimal> findByUserIdAndAnimalId(Long userId, Long animalId);
 
     @Query("SELECT f.animal FROM FavoriteAnimal f WHERE f.user.id = :userId")
-    Page<Animal> findAnimalByUserId(@Param("userId") Long userId, Pageable pageable);
+    Page<Animal> findFavoriteAnimalByUserId(@Param("userId") Long userId, Pageable pageable);
 
     @Query("SELECT fa.animal.id FROM FavoriteAnimal fa WHERE fa.user.id = :userId")
     List<Long> findLikedAnimalIdsByUserId(@Param("userId") Long userId);

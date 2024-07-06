@@ -13,7 +13,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,7 +29,7 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
     List<Long> findAllIds();
 
     @Query("SELECT a FROM Animal a WHERE (:category IS NULL OR a.category = :category) AND a.removedAt IS NULL")
-    Page<Animal> findAllByCategory(@Param("category") AnimalType category, Pageable pageable);
+    Page<Animal> findAllByAnimalType(@Param("category") AnimalType category, Pageable pageable);
 
     @Query("SELECT a FROM Animal a WHERE a.id = :id AND a.removedAt IS NULL")
     Optional<Animal> findById(@Param("id") Long id);

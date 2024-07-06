@@ -80,6 +80,12 @@ public class AnimalService {
     @Value("${recommend.uri}")
     private String animalRecommendURI;
 
+    private static final Map<String, AnimalType> ANIMAL_TYPE_MAP = Map.of(
+            "dog", AnimalType.DOG,
+            "cat", AnimalType.CAT,
+            "other", AnimalType.OTHER
+    );
+
     @Transactional
     @Scheduled(cron = "0 0 0,12 * * *") // 매일 자정과 정오에 실행
     public void updateAnimalData() {
@@ -153,10 +159,10 @@ public class AnimalService {
     @Transactional
     public AnimalResponse.FindAnimalListDTO findAnimalList(Integer page, String sort, Long userId){
         // sort 파라미터를 AnimalType으로 변환
-        AnimalType animalType = getAnimalType(sort);
+        AnimalType animalType = converStringToAnimalType(sort);
 
         Pageable pageable =createPageable(page, 5, "createdDate");
-        Page<Animal> animalPage = animalRepository.findAllByCategory(animalType, pageable);
+        Page<Animal> animalPage = animalRepository.findAllByAnimalType(animalType, pageable);
 
         if(animalPage.isEmpty()){
             throw new CustomException(ExceptionCode.ANIMAL_NOT_EXIST);
@@ -189,7 +195,7 @@ public class AnimalService {
     @Transactional
     public AnimalResponse.FindAnimalListDTO findRecommendedAnimalList(Long userId){
         // 추천 동물 ID 목록
-        List<Long> recommendedAnimalIds = getRecommendedAnimalIds(userId);
+        List<Long> recommendedAnimalIds = getRecommendedAnimalIdList(userId);
 
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
 
@@ -217,7 +223,7 @@ public class AnimalService {
     @Transactional
     public AnimalResponse.FindLikeAnimalListDTO findLikeAnimalList(Integer page, Long userId){
         Pageable pageable =createPageable(page, 5, "id");
-        Page<Animal> animalPage = favoriteAnimalRepository.findAnimalByUserId(userId, pageable);
+        Page<Animal> animalPage = favoriteAnimalRepository.findFavoriteAnimalByUserId(userId, pageable);
 
         if(animalPage.isEmpty()){
             throw new CustomException(ExceptionCode.ANIMAL_NOT_EXIST);
@@ -246,15 +252,15 @@ public class AnimalService {
 
     @Transactional
     public AnimalResponse.FindAnimalByIdDTO findAnimalById(Long animalId, Long userId){
+        // 추천을 위해 검색한 동물의 id 저장 (5개까지만 저장된다)
+        String key = "animalSearch:" + userId;
+        redisService.addListElementWithLimit(key, animalId.toString(), 5l);
+
         Animal animal = animalRepository.findById(animalId).orElseThrow(
                 () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
         );
 
         boolean isLike = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent();
-
-        // 추천을 위해 검색한 동물의 id 저장 (5개까지만 저장된다)
-        String key = "animalSearch:" + userId;
-        redisService.addListElementWithLimit(key, animalId.toString(), 5l);
 
         return new AnimalResponse.FindAnimalByIdDTO(animalId,
                 animal.getName(),
@@ -480,11 +486,11 @@ public class AnimalService {
 
     public AnimalType parseAnimalType(String input) {
         if (input.startsWith("[개]")) {
-            return AnimalType.dog;
+            return AnimalType.DOG;
         } else if (input.startsWith("[고양이]")) {
-            return AnimalType.cat;
+            return AnimalType.CAT;
         } else {
-            return AnimalType.other;
+            return AnimalType.OTHER;
         }
     }
 
@@ -527,7 +533,7 @@ public class AnimalService {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 
-    public List<Long> getRecommendedAnimalIds(Long userId){
+    public List<Long> getRecommendedAnimalIdList(Long userId){
         PageRequest pageRequest = PageRequest.of(0, 5);
 
         // 로그인 되지 않았으면, 추천을 할 수 없으니 그냥 최신순 반환
@@ -535,12 +541,11 @@ public class AnimalService {
             return animalRepository.findAllIds(pageRequest).getContent();
         }
 
-        Map<String, Long> jsonBody = Map.of("user_id", userId);
-
+        Map<String, Long> requestBody = Map.of("user_id", userId);
         List<Long> recommendedAnimalIds = webClient.post()
                 .uri(animalRecommendURI)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(jsonBody))
+                .body(BodyInserters.fromValue(requestBody))
                 .retrieve()
                 .bodyToMono(AnimalResponse.RecommendationDTO.class)
                 .map(AnimalResponse.RecommendationDTO::recommendedAnimals)
@@ -548,16 +553,16 @@ public class AnimalService {
 
         // 조회 기록이 없어서, 추천하는 ID 목록이 없으면 사용자 위치 기반으로 가져온다
         if (recommendedAnimalIds.isEmpty()) {
-            recommendedAnimalIds = findAnimalIdListByLocation(userId);
+            recommendedAnimalIds = findAnimalIdListByUserLocation(userId);
         }
 
         return recommendedAnimalIds;
     }
 
-    private List<Long> findAnimalIdListByLocation(Long userId) {
+    private List<Long> findAnimalIdListByUserLocation(Long userId) {
         PageRequest pageRequest = PageRequest.of(0, 5);
 
-        // 사용자 district를 바탕으로 조회
+        // 우선 사용자 district를 바탕으로 조회
         List<Long> animalIds = userRepository.findDistrictById(userId)
                 .map(district -> animalRepository.findAnimalIdsByDistrict(district, pageRequest))
                 .orElseGet(ArrayList::new);
@@ -575,15 +580,12 @@ public class AnimalService {
     }
 
     // sort가 date, dog, cat, other이 아니면 에러 발생
-    private AnimalType getAnimalType(String sort) {
+    private AnimalType converStringToAnimalType(String sort) {
         if(sort.equals("date")) {
             return null;
         }
 
-        return Optional.ofNullable(Map.of(
-                        "dog", AnimalType.dog,
-                        "cat", AnimalType.cat,
-                        "other", AnimalType.other).get(sort))
+        return Optional.ofNullable(ANIMAL_TYPE_MAP.get(sort))
                 .orElseThrow(() -> new CustomException(ExceptionCode.BAD_APPROACH));
     }
 }
