@@ -4,10 +4,8 @@ import com.hong.ForPaw.controller.DTO.ChatRequest;
 import com.hong.ForPaw.controller.DTO.ChatResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
-import com.hong.ForPaw.domain.Chat.ChatImage;
 import com.hong.ForPaw.domain.Chat.ChatUser;
 import com.hong.ForPaw.domain.Chat.Message;
-import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Chat.ChatImageRepository;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
@@ -55,7 +53,7 @@ public class ChatService {
         );
 
         // 메시지 브로커에 전송 (알람과 이미지 비동기 처리)
-        brokerService.produceChat(requestDTO.chatRoomId(), messageDTO);
+        brokerService.produceChatToRoom(requestDTO.chatRoomId(), messageDTO);
 
         // 메시지 저장
         Message message = Message.builder()

@@ -373,7 +373,7 @@ public class GroupService {
                 date,
                 AlarmType.join);
 
-        brokerService.produceAlarm(applicantId, alarmDTO);
+        brokerService.produceAlarmToUser(applicantId, alarmDTO);
 
         // 그룹 채팅방에 참여
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
@@ -412,7 +412,7 @@ public class GroupService {
                 date,
                 AlarmType.join);
 
-        brokerService.produceAlarm(applicantId, alarmDTO);
+        brokerService.produceAlarmToUser(applicantId, alarmDTO);
     }
 
     @Transactional
@@ -451,7 +451,7 @@ public class GroupService {
                     date,
                     AlarmType.notice);
 
-            brokerService.produceAlarm(user.getId(), alarmDTO);
+            brokerService.produceAlarmToUser(user.getId(), alarmDTO);
         }
 
         return new GroupResponse.CreateNoticeDTO(notice.getId());
@@ -607,7 +607,7 @@ public class GroupService {
                     date,
                     AlarmType.newMeeting);
 
-            brokerService.produceAlarm(user.getId(), alarmDTO);
+            brokerService.produceAlarmToUser(user.getId(), alarmDTO);
         }
         
         return new GroupResponse.CreateMeetingDTO(meeting.getId());

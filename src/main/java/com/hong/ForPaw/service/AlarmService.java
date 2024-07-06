@@ -4,12 +4,9 @@ import com.hong.ForPaw.controller.DTO.AlarmResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm.Alarm;
-import com.hong.ForPaw.domain.Alarm.AlarmType;
-import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
 import com.hong.ForPaw.repository.Alarm.EmitterRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cglib.core.Local;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,7 +41,7 @@ public class AlarmService {
 
         // 503 에러를 방지하기 위한 더미 이벤트 전송
         String eventId = generateIdByTime(userId);
-        sendNotification(emitter, eventId, emitterId, "EventStream Created. [userId=" + userId + "]");
+        emitAlarmEvent(emitter, eventId, emitterId, "ForPaw");
 
         return emitter;
     }
@@ -86,7 +83,7 @@ public class AlarmService {
     }
 
     @Transactional
-    public void send(Alarm alarm) {
+    public void sendAlarmBySSE(Alarm alarm) {
         // 이벤트 ID 생성
         String receiverId = alarm.getReceiver().getId().toString();
         String eventId = generateIdByTime(receiverId);
@@ -103,7 +100,7 @@ public class AlarmService {
                             alarm.getRedirectURL(),
                             alarm.getCreatedDate(),
                             false);
-                    sendNotification(emitter, eventId, key, alarmDTO);
+                    emitAlarmEvent(emitter, eventId, key, alarmDTO);
                 }
         );
     }
@@ -121,7 +118,7 @@ public class AlarmService {
         alarmRepository.deleteNotReadAlarmBefore(oneMonthAgo);
     }
 
-    private void sendNotification(SseEmitter emitter, String eventId, String emitterId, Object data) {
+    private void emitAlarmEvent(SseEmitter emitter, String eventId, String emitterId, Object data) {
         // SseEmitter 객체를 통해 클라이언트에게 알람 이벤트를 전송
         try {
             emitter.send(SseEmitter.event()
@@ -141,7 +138,7 @@ public class AlarmService {
         // 누락된 알람이 있는지 캐시를 뒤져서, 누락된 알람은 다시 전송
         eventCaches.entrySet().stream()
                 .filter(entry -> lastEventId.compareTo(entry.getKey()) < 0) // 결과가 음수면, lastEventId가 더 작다는 의미고, 누락된 알람이라는 뜻!
-                .forEach(entry -> sendNotification(emitter, entry.getKey(), emitterId, entry.getValue()));
+                .forEach(entry -> emitAlarmEvent(emitter, entry.getKey(), emitterId, entry.getValue()));
     }
 
     private String generateIdByTime(String userId) {

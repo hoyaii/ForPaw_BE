@@ -131,7 +131,7 @@ public class PostService {
                 date,
                 AlarmType.answer);
 
-        brokerService.produceAlarm(parentPost.getUser().getId(), alarmDTO);
+        brokerService.produceAlarmToUser(parentPost.getUser().getId(), alarmDTO);
 
         return new PostResponse.CreateAnswerDTO(post.getId());
     }
@@ -449,7 +449,7 @@ public class PostService {
                 date,
                 AlarmType.comment);
 
-        brokerService.produceAlarm(writerId, alarmDTO);
+        brokerService.produceAlarmToUser(writerId, alarmDTO);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
     }
@@ -495,7 +495,7 @@ public class PostService {
                 date,
                 AlarmType.comment);
 
-        brokerService.produceAlarm(parentComment.getUser().getId(), alarmDTO);
+        brokerService.produceAlarmToUser(parentComment.getUser().getId(), alarmDTO);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
     }

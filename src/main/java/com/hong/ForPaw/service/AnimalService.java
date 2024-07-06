@@ -196,7 +196,6 @@ public class AnimalService {
     public AnimalResponse.FindAnimalListDTO findRecommendedAnimalList(Long userId){
         // 추천 동물 ID 목록
         List<Long> recommendedAnimalIds = getRecommendedAnimalIdList(userId);
-
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
 
         List<AnimalResponse.AnimalDTO> animalDTOS =animalRepository.findAllByIdList(recommendedAnimalIds).stream()

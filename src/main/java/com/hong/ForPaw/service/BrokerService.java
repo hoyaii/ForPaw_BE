@@ -6,7 +6,6 @@ import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Chat.ChatImage;
 import com.hong.ForPaw.domain.Chat.ChatRoom;
-import com.hong.ForPaw.domain.Chat.Message;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
 import com.hong.ForPaw.repository.Chat.ChatImageRepository;
@@ -118,7 +117,7 @@ public class BrokerService {
                                 date,
                                 AlarmType.chatting);
 
-                        produceAlarm(messageDTO.senderId(), alarmDTO);
+                        produceAlarmToUser(messageDTO.senderId(), alarmDTO);
                     });
         });
 
@@ -141,21 +140,21 @@ public class BrokerService {
                     .build();
 
             // 알람 실시간 전송 후 저장
-            alarmService.send(alarm);
+            alarmService.sendAlarmBySSE(alarm);
             alarmRepository.save(alarm);
         });
 
         rabbitListenerEndpointRegistry.registerListenerContainer(endpoint, rabbitListenerContainerFactory, true);
     }
 
-    public void produceChat(Long chatRoomId, ChatRequest.MessageDTO message){
+    public void produceChatToRoom(Long chatRoomId, ChatRequest.MessageDTO message){
         String exchangeName = "chat.exchange";
         String routingKey = "room." + chatRoomId;
 
         rabbitTemplate.convertAndSend(exchangeName, routingKey, message);
     }
 
-    public void produceAlarm(Long userId, AlarmRequest.AlarmDTO alarm) {
+    public void produceAlarmToUser(Long userId, AlarmRequest.AlarmDTO alarm) {
         String exchangeName = "alarm.exchange";
         String routingKey = "user." + userId;
 
