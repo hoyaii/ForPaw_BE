@@ -171,8 +171,8 @@ async def generate_animal_introduction(animal_id):
     
     prompt = (
         "### Persona ###\n"
-        f"Your task is to write a warm and heartfelt introduction for the animal based on the following information.\n"
-        f"Highlight the animal's positive traits and suitability as a pet to encourage potential adopters.\n"
+        "1. Your task is to write a introduction for the animal based on the following information.\n"
+        "2. Highlight the animal's positive traits and suitability as a pet to encourage potential adopters.\n"
         "### Animal Information ###\n"
         f"Name: {animal.name}\n"
         f"Species: {animal.kind}\n"
@@ -183,15 +183,22 @@ async def generate_animal_introduction(animal_id):
         f"Location Found: {animal.happen_place}\n"
         f"Special Characteristics: {animal.special_mark}\n"
         "### Background ###\n"
-        f"{animal.name} was found in {animal.happen_place}. Known for its {animal.special_mark} and unique {animal.color} coat, {animal.name} has shown remarkable resilience and a loving nature despite its circumstances.\n"
-        "### Conclusion ###\n"
-        f"To all pet adoption service users, please consider adopting {animal.name}.\n"
+        f"{animal.name}, a {animal.kind}, was found in {animal.happen_place}. Known for its {animal.special_mark} and unique {animal.color} coat, {animal.name} has shown loving nature despite its circumstances.\n"
+        "### Title ###\n"
+        "1. Provide a catchy and appealing title for the introduction in Korean.\n"
+        "2. The title should be 25 characters or fewer.\n"
+        "3. Use a term of endearment or a metaphorical expression in the title.\n"
+        "### Response Format ###\n"
+        "1. The first line should be the title, prefixed with 'Title: '.\n"
+        "2. After the title, there should be two newline characters (\\n\\n).\n"
+        "3. The introduction should follow after the newline characters.\n"
         "### Writing Guidelines ###\n"
-        "1. Provide the introduction in Korean, focusing on encouraging potential adopters.\n"
+        "1. Provide the introduction in Korean.\n"
         "2. Write from the animal's perspective. Use a tone that conveys warmth and affection. Most sentences should end with '요' to maintain a soft and friendly tone.\n"
         "3. Start with a strong, attention-grabbing sentence that includes a metaphor or simile.\n"
-        "4. Use punctuation marks and emoticons where appropriate to add enthusiasm, friendliness, and enhance the emotional appeal. Not all sentences need them.\n"
-        "5. Please write a response using between 400 and 500 characters."
+        "4. Avoid repetition.\n"
+        "5. Use punctuation marks and emoticons where appropriate to add enthusiasm, friendliness, and enhance the emotional appeal. Not all sentences need them.\n"
+        "6. Please write a response using between 200 and 300 characters."
     )
 
     llm = OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -199,10 +206,18 @@ async def generate_animal_introduction(animal_id):
     formatted_prompt = prompt_template.format(prompt=prompt)
     max_response_tokens = 750
 
-    introduction = llm(
+    response = llm(
         formatted_prompt,
         max_tokens=max_response_tokens,
         temperature=0.3
     )
     
-    return introduction.strip()
+    # 타이틀만 추출
+    response_lines = response.strip().split('\n')
+    title = response_lines[0].replace("Title: ", "").strip()
+    introduction = '\n'.join(response_lines[1:]).strip()
+
+    return {
+        "title": title,
+        "introduction": introduction
+    }
