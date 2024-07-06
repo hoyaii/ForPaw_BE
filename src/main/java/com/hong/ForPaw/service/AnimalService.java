@@ -82,7 +82,7 @@ public class AnimalService {
 
     @Transactional
     @Scheduled(cron = "0 0 0,12 * * *") // 매일 자정과 정오에 실행
-    public void loadAnimalData() {
+    public void updateAnimalData() {
         List<Shelter> shelters = shelterRepository.findAllWithRegionCode();
 
         Flux.fromIterable(shelters)
@@ -96,7 +96,10 @@ public class AnimalService {
                             .retrieve()
                             .bodyToMono(String.class)
                             .retry(3)
-                            .flatMapMany(response -> processAnimalData(response, shelter))
+                            .flatMap(response -> updateShelterByAnimalData(response, shelter) // 동물 데이터로 보호소 업데이트
+                                    .then(Mono.just(response)))
+                            .flatMapMany(response -> convertResponseToAnimal(response, shelter) // 동물 엔티티 컬렉션으로 변환
+                                    .onErrorResume(e -> Flux.empty()))
                             .collectList()
                             .doOnNext(animalRepository::saveAll);
                 })
@@ -422,35 +425,37 @@ public class AnimalService {
         animalRepository.deleteAll(animals);
     }
 
-    private Flux<Animal> processAnimalData(String response, Shelter shelter) {
+    private Flux<Animal> convertResponseToAnimal(String response, Shelter shelter) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-        try {
+        return Mono.fromCallable(() -> {
             AnimalDTO json = mapper.readValue(response, AnimalDTO.class);
 
-            // 동물 데이터를 바탕으로 보호소 정보 업데이트
-            updateShelterByAnimalData(json, shelter);
-
-            // 동물 데이터를 바탕으로 동물 엔티티 생성
-            return Flux.fromIterable(Optional.ofNullable(json.response().body().items())
-                            .map(AnimalDTO.ItemsDTO::item)
-                            .orElse(Collections.emptyList()))
+            return Optional.ofNullable(json.response().body().items())
+                    .map(AnimalDTO.ItemsDTO::item)
+                    .orElse(Collections.emptyList())
+                    .stream()
                     .filter(itemDTO -> LocalDate.parse(itemDTO.noticeEdt(), formatter).isAfter(LocalDate.now())) // 공고 종료가 된 것은 필터링
-                    .map(itemDTO -> createAnimal(itemDTO, shelter, formatter));
-        } catch (Exception e) {
-            return Flux.empty();
-        }
+                    .map(itemDTO -> buildAnimal(itemDTO, shelter))
+                    .collect(Collectors.toList());
+        }).flatMapMany(Flux::fromIterable);
     }
 
-    private void updateShelterByAnimalData(AnimalDTO json, Shelter shelter) {
-        Optional.ofNullable(json)
-                .map(j -> j.response().body().items().item())
-                .filter(items -> !items.isEmpty())
-                .map(items -> items.get(0))
-                .ifPresent(itemDTO -> shelterRepository.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), Long.valueOf(json.response().body().totalCount()), shelter.getId()));
+    private Mono<Void> updateShelterByAnimalData(String response, Shelter shelter) {
+        return Mono.fromCallable(() -> {
+            AnimalDTO json = mapper.readValue(response, AnimalDTO.class);
+            Optional.ofNullable(json)
+                    .map(j -> j.response().body().items().item())
+                    .filter(items -> !items.isEmpty())
+                    .map(items -> items.get(0))
+                    .ifPresent(itemDTO -> shelterRepository.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), Long.valueOf(json.response().body().totalCount()), shelter.getId()));
+            return Mono.empty();
+        }).then();
     }
 
-    private Animal createAnimal(AnimalDTO.ItemDTO itemDTO, Shelter shelter, DateTimeFormatter formatter) {
+    private Animal buildAnimal(AnimalDTO.ItemDTO itemDTO, Shelter shelter) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+
         return Animal.builder()
                 .id(Long.valueOf(itemDTO.desertionNo()))
                 .name(createAnimalName())

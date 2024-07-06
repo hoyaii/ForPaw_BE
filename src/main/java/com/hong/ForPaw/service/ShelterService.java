@@ -140,6 +140,7 @@ public class ShelterService {
     private List<Shelter> convertResponseToShelter(String response, RegionCode regionCode) throws IOException {
         // JSON 파싱 에러 던질 수 있음
         ShelterDTO json = mapper.readValue(response, ShelterDTO.class);
+
         List<ShelterDTO.itemDTO> itemDTOS = Optional.ofNullable(json.response().body().items())
                 .map(ShelterDTO.ItemsDTO::item)
                 .orElse(Collections.emptyList());
