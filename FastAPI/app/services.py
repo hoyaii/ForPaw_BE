@@ -49,15 +49,12 @@ def initialize_mysql():
 def initialize_redis():
     return redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB, decode_responses=True)
 
-# Milvus, MySQL, 백터화 객체 초기화
+# Milvus, MySQL, 백터화 객체 초기화, PCA 객체 초기화
 animal_collection = initialize_milvus()
 AsyncSessionLocal = initialize_mysql()
 redis_client = initialize_redis()
 vectorizer = TfidfVectorizer()
-vector_dim = 512
-
-# PCA 객체 초기화
-pca = PCA(n_components=vector_dim)  
+pca = PCA(n_components=512)  
 
 @asynccontextmanager
 async def get_db_session():

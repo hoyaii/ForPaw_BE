@@ -22,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
@@ -50,15 +52,14 @@ public class ShelterService {
 
     @Transactional
     @Scheduled(cron = "0 0 6 * * MON") // 매주 월요일 새벽 6시에 실행
-    public void loadShelterData() {
-        List<RegionCode> regionCodeList = regionCodeRepository.findAll();
+    public void updateShelterData() {
+        List<RegionCode> regionCodes = regionCodeRepository.findAll();
 
-        Flux.fromIterable(regionCodeList)
+        Flux.fromIterable(regionCodes)
                 .delayElements(Duration.ofMillis(50))
                 .flatMap(regionCode -> {
                     Integer uprCd = regionCode.getUprCd();
                     Integer orgCd = regionCode.getOrgCd();
-
                     URI uri = buildShelterURI(baseUrl, serviceKey, uprCd, orgCd);
 
                     return webClient.get()
@@ -66,7 +67,9 @@ public class ShelterService {
                             .retrieve()
                             .bodyToMono(String.class)
                             .retry(3)
-                            .flatMapMany(response -> processShelterData(response, regionCode));
+                            .flatMapMany(response -> Mono.fromCallable(() -> convertResponseToShelter(response, regionCode))
+                                    .flatMapMany(Flux::fromIterable)
+                                    .onErrorResume(e -> Flux.empty())); // 에러 발생 시, 빈 Flux 반환 (JSON 파싱 에러)
                 })
                 .collectList()
                 .subscribe(shelterRepository::saveAll);
@@ -134,26 +137,20 @@ public class ShelterService {
         return new ShelterResponse.FindShelterAnimalsByIdDTO(animalDTOS);
     }
 
-    private Flux<Shelter> processShelterData(String response, RegionCode regionCode){
-        try {
-            ShelterDTO json = mapper.readValue(response, ShelterDTO.class);
-            List<ShelterDTO.itemDTO> itemDTOS = Optional.ofNullable(json.response().body().items())
-                    .map(ShelterDTO.ItemsDTO::item)
-                    .orElse(Collections.emptyList());
+    private List<Shelter> convertResponseToShelter(String response, RegionCode regionCode) throws IOException {
+        // JSON 파싱 에러 던질 수 있음
+        ShelterDTO json = mapper.readValue(response, ShelterDTO.class);
+        List<ShelterDTO.itemDTO> itemDTOS = Optional.ofNullable(json.response().body().items())
+                .map(ShelterDTO.ItemsDTO::item)
+                .orElse(Collections.emptyList());
 
-            return Flux.fromIterable(itemDTOS)
-                    .map(itemDTO -> createShelter(regionCode, itemDTO.careRegNo(), itemDTO.careNm()));
-        } catch (Exception e) {
-            return Flux.empty();
-        }
-    }
-
-    private Shelter createShelter(RegionCode regionCode, Long careRegNo, String careNm){
-        return Shelter.builder()
-                .regionCode(regionCode)
-                .id(careRegNo)
-                .name(careNm)
-                .build();
+        return itemDTOS.stream()
+                .map(itemDTO -> Shelter.builder()
+                        .regionCode(regionCode)
+                        .id(itemDTO.careRegNo())
+                        .name(itemDTO.careNm())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     private URI buildShelterURI(String baseUrl, String serviceKey, Integer uprCd, Integer orgCd) {

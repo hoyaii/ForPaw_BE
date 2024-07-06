@@ -22,7 +22,7 @@ public class ShelterController {
 
     @GetMapping("/shelters/import")
     public ResponseEntity<?> loadShelter(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        shelterService.loadShelterData();
+        shelterService.updateShelterData();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
