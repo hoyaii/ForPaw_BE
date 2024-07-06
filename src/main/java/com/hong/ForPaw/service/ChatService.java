@@ -36,6 +36,7 @@ public class ChatService {
     private final ChatImageRepository chatImageRepository;
     private final BrokerService brokerService;
     private final SimpMessagingTemplate messagingTemplate;
+    private static final String SORT_BY_ID = "id";
 
     @Transactional
     public ChatResponse.SendMessageDTO sendMessage(ChatRequest.SendMessageDTO requestDTO, Long senderId, String senderName){
@@ -111,7 +112,7 @@ public class ChatService {
         int currentPage = startPage;
 
         while(!isLast) {
-            Pageable pageable = PageRequest.of(currentPage, 50, Sort.by("id"));
+            Pageable pageable = createAscSortedPageable(currentPage, 50, SORT_BY_ID);
             Page<Message> messages = messageRepository.findByChatRoomId(chatRoomId, pageable);
             isLast = messages.isLast(); // 현재 페이지가 마지막 페이지인지 확인
 
@@ -150,7 +151,7 @@ public class ChatService {
                 .toList();
 
         // 채팅방의 이미지
-        Pageable pageable = createPageable(0, 6, "id");
+        Pageable pageable = createDescSortedPageable(0, 6, SORT_BY_ID);
         List<ChatResponse.ChatImageDTO> chatImageDTOS = chatImageRepository.findByChatRoomId(chatRoomId, pageable).getContent().stream()
                 .map(chatImage -> new ChatResponse.ChatImageDTO(chatImage.getImageURL()))
                 .toList();
@@ -164,7 +165,7 @@ public class ChatService {
         checkChatAuthority(userId, chatRoomId);
 
         // 채팅방의 이미지
-        Pageable pageable = createPageable(page, 6, "id");
+        Pageable pageable = createDescSortedPageable(page, 6, SORT_BY_ID);
         List<ChatResponse.ChatImageDTO> chatImageDTOS = chatImageRepository.findByChatRoomId(chatRoomId, pageable).getContent().stream()
                 .map(chatImage -> new ChatResponse.ChatImageDTO(chatImage.getImageURL()))
                 .toList();
@@ -190,7 +191,11 @@ public class ChatService {
         return chatUserOP.get();
     }
 
-    private Pageable createPageable(int page, int size, String sortProperty) {
+    private Pageable createDescSortedPageable(int page, int size, String sortProperty) {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
+    }
+
+    private Pageable createAscSortedPageable(int page, int size, String sortProperty) {
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, sortProperty));
     }
 }

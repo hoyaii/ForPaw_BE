@@ -47,7 +47,7 @@ public class S3Service {
         return userId + "/" + formattedDateTime + "-" + uuid;
     }
 
-    // S3에서 이미지를 삭제하는 메소드를 추가합니다.
+    // S3에서 이미지를 삭제하는 메소드를 추가
     public void deleteImage(String objectKey) {
         amazonS3.deleteObject(bucketName, objectKey);
     }

@@ -80,6 +80,8 @@ public class AnimalService {
     @Value("${recommend.uri}")
     private String animalRecommendURI;
 
+    private static final String SORT_BY_ID = "id";
+    private static final String SORT_BY_CREATED_DATE = "createdDate";
     private static final Map<String, AnimalType> ANIMAL_TYPE_MAP = Map.of(
             "dog", AnimalType.DOG,
             "cat", AnimalType.CAT,
@@ -161,7 +163,7 @@ public class AnimalService {
         // sort 파라미터를 AnimalType으로 변환
         AnimalType animalType = converStringToAnimalType(sort);
 
-        Pageable pageable =createPageable(page, 5, "createdDate");
+        Pageable pageable =createPageable(page, 5, SORT_BY_CREATED_DATE);
         Page<Animal> animalPage = animalRepository.findAllByAnimalType(animalType, pageable);
 
         if(animalPage.isEmpty()){
@@ -221,7 +223,7 @@ public class AnimalService {
 
     @Transactional
     public AnimalResponse.FindLikeAnimalListDTO findLikeAnimalList(Integer page, Long userId){
-        Pageable pageable =createPageable(page, 5, "id");
+        Pageable pageable =createPageable(page, 5, SORT_BY_ID);
         Page<Animal> animalPage = favoriteAnimalRepository.findFavoriteAnimalByUserId(userId, pageable);
 
         if(animalPage.isEmpty()){

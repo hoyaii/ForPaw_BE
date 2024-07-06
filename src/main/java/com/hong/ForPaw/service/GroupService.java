@@ -58,6 +58,9 @@ public class GroupService {
 
     private static final Province DEFAULT_PROVINCE = Province.DAEGU;
     private static final District DEFAULT_DISTRICT = District.SUSEONG;
+    private static final String SORT_BY_ID = "id";
+    private static final String SORT_BY_LIKE_NUM = "likeNum";
+    private static final String SORT_BY_PARTICIPANT_NUM = "participantNum";
 
     @Transactional
     public GroupResponse.CreateGroupDTO createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId){
@@ -165,7 +168,7 @@ public class GroupService {
         }
 
         // 이 API의 페이지네이션은 0페이지인 5개만 보내줄 것이다.
-        Pageable pageable = createPageable(0, 5, "id");
+        Pageable pageable = createPageable(0, 5, SORT_BY_ID);
 
         // 좋아요 한 그룹
         List<Long> likedGroupIds = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
@@ -190,8 +193,8 @@ public class GroupService {
     public GroupResponse.FindLocalGroupListDTO findLocalGroupList(Long userId, Province province, District district, Integer page){
         // 좋아요 한 그룹
         List<Long> likedGroupIds = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
-        Pageable pageable = createPageable(page, 5, "participantNum");
 
+        Pageable pageable = createPageable(page, 5, SORT_BY_ID);
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, province, district, likedGroupIds, pageable);
 
         return new GroupResponse.FindLocalGroupListDTO(localGroupDTOS);
@@ -205,7 +208,7 @@ public class GroupService {
                 .filter(d -> !d.getValue().isEmpty())
                 .orElseGet(() -> userRepository.findProvinceById(userId).orElse(Province.DAEGU));
 
-        Pageable pageable = createPageable(page, 5, "id");
+        Pageable pageable = createPageable(page, 5, SORT_BY_ID);
         List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, province, pageable);
 
         return new GroupResponse.FindNewGroupListDTO(newGroupDTOS);
@@ -216,8 +219,8 @@ public class GroupService {
     public GroupResponse.FindMyGroupListDTO findMyGroupList(Long userId, Integer page){
         // 좋아요 한 그룹
         List<Long> likedGroupIds = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
-        Pageable pageable = createPageable(page, 5, "id");
 
+        Pageable pageable = createPageable(page, 5, SORT_BY_ID);
         List<GroupResponse.MyGroupDTO> myGroupDTOS = getMyGroupDTOS(userId, likedGroupIds, pageable);
 
         return new GroupResponse.FindMyGroupListDTO(myGroupDTOS);
@@ -231,7 +234,7 @@ public class GroupService {
         );
 
         // 정기 모임과 공지사항은 0페이지의 5개만 보여준다.
-        Pageable pageable = createPageable(0, 5, "id");
+        Pageable pageable = createPageable(0, 5, SORT_BY_ID);
 
         // 정기 모임
         List<GroupResponse.MeetingDTO> meetingDTOS = getMeetingDTOS(groupId, pageable);
@@ -254,7 +257,7 @@ public class GroupService {
         // 맴버인지 체크
         checkIsMember(groupId, userId);
 
-        Pageable pageable = createPageable(page, 5, "id");
+        Pageable pageable = createPageable(page, 5, SORT_BY_ID);
         List<GroupResponse.NoticeDTO> noticeDTOS = getNoticeDTOS(userId, groupId, pageable);
 
         return new GroupResponse.FindNoticeListDTO(noticeDTOS);
@@ -269,7 +272,7 @@ public class GroupService {
         // 맴버인지 체크
         checkIsMember(groupId, userId);
 
-        Pageable pageable = createPageable(page, 5, "id");
+        Pageable pageable = createPageable(page, 5, SORT_BY_ID);
         List<GroupResponse.MeetingDTO> meetingsDTOS = getMeetingDTOS(groupId, pageable);
 
         return new GroupResponse.FindMeetingListDTO(meetingsDTOS);
@@ -695,7 +698,7 @@ public class GroupService {
         Set<Long> joinedGroupIdSet = userId != null ? getGroupIdSet(userId) : Collections.emptySet();
 
         // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순
-        Sort sort = Sort.by(Sort.Order.desc("likeNum"), Sort.Order.desc("participantNum"));
+        Sort sort = Sort.by(Sort.Order.desc(SORT_BY_LIKE_NUM), Sort.Order.desc(SORT_BY_PARTICIPANT_NUM));
         Pageable pageable = PageRequest.of(0, 30, sort);
 
         Page<Group> recommendGroups = groupRepository.findByProvince(province, pageable);
