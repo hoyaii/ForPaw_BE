@@ -1,7 +1,8 @@
 # models.py
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Enum as PgEnum
 from sqlalchemy.ext.declarative import declarative_base
 from pydantic import BaseModel
+from .enums import Province, District
 
 Base = declarative_base()
 
@@ -22,8 +23,25 @@ class Animal(Base):
     introduction = Column(String(255), nullable=False)
     name = Column(String(255))
 
+class Group(Base):
+    __tablename__ = "groups_tb"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255))
+    province = Column(PgEnum(Province))
+    district = Column(PgEnum(District))
+    subDistrict = Column(String(255))
+    description = Column(String(255))
+    category = Column(String(255))
+    profileURL = Column(String(255))
+    participantNum = Column(Integer, default=0)
+    likeNum = Column(Integer, default=0)
+
 class RecommendRequest(BaseModel):
     user_id: int
 
 class AnimalIntroductionRequest(BaseModel):
     animal_id: int
+
+class GroupRecommendRequest(BaseModel):
+    user_id: int
