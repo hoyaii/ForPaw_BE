@@ -19,6 +19,9 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
     @Query("DELETE FROM Shelter s WHERE s.animalCnt = 0")
     void deleteZeroShelter();
 
+    @Query("SELECT s FROM Shelter s WHERE s.careAddr IS NOT NULL")
+    List<Shelter> findAllWithNonNullCareAddr();
+
     List<Shelter> findByAnimalCntGreaterThan(Long animalCnt);
 
     @Query(value = "SELECT * FROM shelter_tb WHERE MATCH(name, care_addr) AGAINST(:keyword IN BOOLEAN MODE)", nativeQuery = true)
