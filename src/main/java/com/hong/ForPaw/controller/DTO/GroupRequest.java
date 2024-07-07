@@ -14,7 +14,7 @@ public class GroupRequest {
 
     public record CreateGroupDTO(
             @NotBlank(message = "그룹의 이름을 입력해주세요.")
-            @Pattern(regexp = "^[a-zA-Z0-9가-힣]+$", message = "그룹 이름에는 띄어쓰기를 사용할 수 없습니다.")
+            //@Pattern(regexp = "^[a-zA-Z0-9가-힣]+$", message = "그룹 이름에는 띄어쓰기를 사용할 수 없습니다.")
             String name,
             @NotNull(message = "활동 지역을 입력해주세요.")
             Province province,
@@ -29,7 +29,7 @@ public class GroupRequest {
 
     public record UpdateGroupDTO(
             @NotBlank(message = "그룹의 이름을 입력해주세요.")
-            @Pattern(regexp = "^[a-zA-Z0-9가-힣]+$", message = "그룹 이름에는 띄어쓰기를 사용할 수 없습니다.")
+            //@Pattern(regexp = "^[a-zA-Z0-9가-힣]+$", message = "그룹 이름에는 띄어쓰기를 사용할 수 없습니다.")
             String name,
             @NotNull(message = "활동 지역을 입력해주세요.")
             Province province,
