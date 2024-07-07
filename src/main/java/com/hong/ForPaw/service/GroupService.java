@@ -94,9 +94,6 @@ public class GroupService {
         // 그룹 참여자 수 증가 (그룹장 참여)
         groupRepository.incrementParticipantNum(group.getId());
 
-        // 레디스에 좋아요 수 데이터 생성 (그룹의 경우 유효기간이 없고, 그룹이 삭제되기 전까지 남아 있음)
-        redisService.storeValue("groupLikeNum", group.getId().toString(), "0");
-
         // 그룹 채팅방 생성
         ChatRoom chatRoom = ChatRoom.builder()
                 .group(group)
@@ -113,13 +110,11 @@ public class GroupService {
 
         chatUserRepository.save(chatUser);
 
-        // 그룹 채팅방의 exchange 등록 후 그룹장에 대한 큐와 리스너 등록
-        String exchangeName = "chat.exchange";
-        String queueName = "room." + chatRoom.getId();
-        String listenerId = "room." + chatRoom.getId();
+        // 레디스에 저장될 '좋아요 수' 값 초기화  (그룹의 경우 유효기간이 없고, 그룹이 삭제되기 전까지 남아 있음)
+        redisService.storeValue("groupLikeNum", group.getId().toString(), "0");
 
-        brokerService.registerDirectExQueue(exchangeName, queueName);
-        brokerService.registerChatListener(listenerId, queueName);
+        // RabbitMQ 설정
+        configureRabbitMQForChatRoom(chatRoom);
 
         return new GroupResponse.CreateGroupDTO(group.getId());
     }
@@ -916,5 +911,15 @@ public class GroupService {
                 .collect(Collectors.toList());
 
         return memberDTOS;
+    }
+
+    private void configureRabbitMQForChatRoom(ChatRoom chatRoom) {
+        // 그룹 채팅방의 exchange 등록 후 그룹장에 대한 큐와 리스너 등록
+        String exchangeName = "chat.exchange";
+        String queueName = "room." + chatRoom.getId();
+        String listenerId = "room." + chatRoom.getId();
+
+        brokerService.registerDirectExQueue(exchangeName, queueName);
+        brokerService.registerChatListener(listenerId, queueName);
     }
 }
