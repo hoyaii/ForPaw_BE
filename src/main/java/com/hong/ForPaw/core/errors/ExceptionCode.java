@@ -84,7 +84,8 @@ public enum ExceptionCode {
     EXCEED_REQUEST_NUM(HttpStatus.BAD_REQUEST, "가능한 요청 횟수를 초과하였습니다."),
 
     // 검색
-    SEARCH_NOT_FOUND(HttpStatus.NOT_FOUND, "검색 결과값이 존재하지 않습니다");
+    SEARCH_NOT_FOUND(HttpStatus.NOT_FOUND, "검색 결과값이 존재하지 않습니다"),
+    SEARCH_KEYWORD_EMPTY(HttpStatus.BAD_REQUEST, "검색어는 빈 문자열일 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;

@@ -8,7 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import PCA
 from fastapi import HTTPException
 from contextlib import asynccontextmanager
-from .models import Animal
+from .models import Animal, Group
 from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Collection, utility
 import numpy as np  
 import redis
@@ -18,7 +18,7 @@ from .config import settings
 def initialize_milvus():
     connections.connect("default", host=settings.MILVUS_HOST, port=str(settings.MILVUS_PORT))
 
-    # 컬렉션 이름은 animal_collection
+    # 동물 컬렉션 초기화
     collection_name = "animal_collection"
 
     # fastAPI를 시작할 때, 기존에 저장된 데이터는 삭제
@@ -35,6 +35,21 @@ def initialize_milvus():
     # 컬렉션 생성
     animal_schema = CollectionSchema(fields, "animal_vectors")
     animal_collection = Collection(collection_name, animal_schema)
+
+    # 그룹 컬렉션 초기화
+    group_collection_name = "group_collection"
+
+    if utility.has_collection(group_collection_name):
+        group_collection = Collection(name=group_collection_name)
+        group_collection.drop()
+
+    group_fields = [
+        FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=False), 
+        FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=512)  
+    ]
+
+    group_schema = CollectionSchema(group_fields, "group_vectors")
+    group_collection = Collection(group_collection_name, group_schema)
     
     return animal_collection
 

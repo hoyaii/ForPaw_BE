@@ -1,6 +1,8 @@
 package com.hong.ForPaw.service;
 
 import com.hong.ForPaw.controller.DTO.SearchResponse;
+import com.hong.ForPaw.core.errors.CustomException;
+import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Group.Group;
 import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Shelter;
@@ -22,10 +24,10 @@ public class SearchService {
     private final ShelterRepository shelterRepository;
     private final PostRepository postRepository;
     private final GroupRepository groupRepository;
-    private final RedisService redisService;
 
     @Transactional
     public SearchResponse.SearchAllDTO searchAll(String keyword){
+        checkKeywordEmpty(keyword);
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
 
         // 보호소 검색
@@ -42,6 +44,8 @@ public class SearchService {
 
     @Transactional
     public SearchResponse.SearchShelterListDTO searchShelterList(String keyword){
+        checkKeywordEmpty(keyword);
+
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
         List<SearchResponse.ShelterDTO> shelterDTOS = getShelterDTOsByKeyword(formattedKeyword);
 
@@ -50,6 +54,8 @@ public class SearchService {
 
     @Transactional
     public SearchResponse.SearchPostListDTO searchPostList(String keyword){
+        checkKeywordEmpty(keyword);
+
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
         List<SearchResponse.PostDTO> postDTOS = getPostDTOsByKeyword(formattedKeyword);
 
@@ -58,6 +64,8 @@ public class SearchService {
 
     @Transactional
     public SearchResponse.SearchGroupListDTO searchGroupList(String keyword){
+        checkKeywordEmpty(keyword);
+
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
         List<SearchResponse.GroupDTO> groupDTOS = getGroupDTOsByKeyword(formattedKeyword);
 
@@ -118,5 +126,11 @@ public class SearchService {
         }
 
         return modifiedKeyword.toString().trim();
+    }
+
+    private void checkKeywordEmpty(String keyword) {
+        if(keyword == null || keyword.trim().isEmpty()){
+            throw new CustomException(ExceptionCode.SEARCH_KEYWORD_EMPTY);
+        }
     }
 }
