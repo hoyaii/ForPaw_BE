@@ -21,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -80,8 +81,10 @@ public class SecurityConfig {
 
                 // 인증 요구사항 및 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/accounts/profile", "/api/accounts/password/**", "/api/accounts/role", "/api/accounts/withdraw", "/api/shelters/import").authenticated()
-                        .requestMatchers("/api/auth/**", "/api/accounts/**", "/api/animals", "/api/shelters/**", "/api/groups", "/api/home", "/api/search/**").permitAll()
+                        .requestMatchers("/api/accounts/profile", "/api/accounts/password/**", "/api/accounts/role", "/api/accounts/withdraw", "/api/shelters/import", "/api/animals/like").authenticated()
+                        .requestMatchers(new AntPathRequestMatcher("/api/animals/*/like")).authenticated()
+                        .requestMatchers(new AntPathRequestMatcher("/api/animals/*/apply")).authenticated()
+                        .requestMatchers("/api/auth/**", "/api/accounts/**", "/api/animals/**", "/api/shelters/**", "/api/groups", "/api/home", "/api/search/**").permitAll()
                         .anyRequest().authenticated()
                 )
 

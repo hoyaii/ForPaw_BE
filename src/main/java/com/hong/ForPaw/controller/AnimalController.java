@@ -59,7 +59,12 @@ public class AnimalController {
 
     @GetMapping("/animals/{animalId}")
     public ResponseEntity<?> findAnimalById(@PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails){
-        AnimalResponse.FindAnimalByIdDTO responseDTO = animalService.findAnimalById(animalId, userDetails.getUser().getId());
+        Long userId = Optional.ofNullable(userDetails)
+                .map(CustomUserDetails::getUser)
+                .map(User::getId)
+                .orElse(null);
+
+        AnimalResponse.FindAnimalByIdDTO responseDTO = animalService.findAnimalById(animalId, userId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -72,7 +77,7 @@ public class AnimalController {
     @PostMapping("/animals/{animalId}/apply")
     public ResponseEntity<?> applyAdoption(@RequestBody @Valid AnimalRequest.ApplyAdoptionDTO requestDTO, @PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails){
         AnimalResponse.CreateApplyDTO responseDTO = animalService.applyAdoption(requestDTO, userDetails.getUser().getId(), animalId);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, requestDTO));
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/applies")

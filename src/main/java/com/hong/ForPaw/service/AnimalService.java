@@ -253,9 +253,11 @@ public class AnimalService {
 
     @Transactional
     public AnimalResponse.FindAnimalByIdDTO findAnimalById(Long animalId, Long userId){
-        // 추천을 위해 검색한 동물의 id 저장 (5개까지만 저장된다)
-        String key = "animalSearch:" + userId;
-        redisService.addListElementWithLimit(key, animalId.toString(), 5l);
+        // 로그인을 한 경우, 추천을 위해 검색한 동물의 id 저장 (5개까지만 저장된다)
+        if(userId != null){
+            String key = "animalSearch:" + userId;
+            redisService.addListElementWithLimit(key, animalId.toString(), 5l);
+        }
 
         Animal animal = animalRepository.findById(animalId).orElseThrow(
                 () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
