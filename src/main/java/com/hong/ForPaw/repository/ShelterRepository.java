@@ -1,8 +1,6 @@
 package com.hong.ForPaw.repository;
 
 import com.hong.ForPaw.domain.Shelter;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -24,7 +22,7 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
     List<Shelter> findByAnimalCntGreaterThan(Long animalCnt);
 
     @Query(value = "SELECT * FROM shelter_tb WHERE MATCH(name, care_addr) AGAINST(:keyword IN BOOLEAN MODE)", nativeQuery = true)
-    List<Shelter> findByKeywordContaining(@Param("keyword") String keyword);
+    List<Shelter> findByNameContaining(@Param("keyword") String keyword);
 
     @EntityGraph(attributePaths = {"regionCode"})
     @Query("SELECT s FROM Shelter s")

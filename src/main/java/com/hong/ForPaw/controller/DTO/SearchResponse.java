@@ -22,20 +22,15 @@ public class SearchResponse {
                           String title,
                           String content,
                           LocalDateTime date,
-                          Long commentNum,
-                          Long likeNum,
-                          List<PostImageDTO> images){}
+                          String imageURL){}
 
-    public record PostImageDTO(Long id, String imageURL) {}
 
     public record GroupDTO(Long id,
                            String name,
                            String description,
-                           Long participationNum,
                            String category,
                            Province province,
                            District district,
-                           String profileURL,
-                           Long likeNum) {}
+                           String profileURL) {}
 
 }

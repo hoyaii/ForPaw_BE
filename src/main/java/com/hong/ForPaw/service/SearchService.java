@@ -65,7 +65,7 @@ public class SearchService {
     }
 
     private List<SearchResponse.ShelterDTO> getShelterDTOsByKeyword(String keyword){
-        List<Shelter> shelters = shelterRepository.findByKeywordContaining(keyword);
+        List<Shelter> shelters = shelterRepository.findByNameContaining(keyword);
 
         List<SearchResponse.ShelterDTO> shelterDTOS = shelters.stream()
                 .filter(shelter -> shelter.getAnimalCnt() > 0)
@@ -79,22 +79,12 @@ public class SearchService {
         List<Post> posts = postRepository.findByTitleContaining(keyword);
 
         List<SearchResponse.PostDTO> postDTOS = posts.stream()
-                .map(post -> {
-                    List<SearchResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
-                            .map(postImage -> new SearchResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
-                            .collect(Collectors.toList());
-
-                    Long likeNum = redisService.getDataInLong("postLikeNum", post.getId().toString());
-
-                    return new SearchResponse.PostDTO(
-                            post.getId(),
-                            post.getTitle(),
-                            post.getContent(),
-                            post.getCreatedDate(),
-                            post.getCommentNum(),
-                            likeNum,
-                            postImageDTOS);
-                })
+                .map(post -> new SearchResponse.PostDTO(
+                        post.getId(),
+                        post.getTitle(),
+                        post.getContent(),
+                        post.getCreatedDate(),
+                        post.getPostImages().get(0).getImageURL()))
                 .collect(Collectors.toList());
 
         return postDTOS;
@@ -104,19 +94,15 @@ public class SearchService {
         List<Group> groups = groupRepository.findByNameContaining(keyword);
 
         List<SearchResponse.GroupDTO> groupDTOS = groups.stream()
-                .map(group -> {
-                    Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
-
-                    return new SearchResponse.GroupDTO(
+                .map(group -> new SearchResponse.GroupDTO(
                         group.getId(),
                         group.getName(),
-                        group.getDescription(), group.getParticipantNum(),
+                        group.getDescription(),
                         group.getCategory(),
                         group.getProvince(),
                         group.getDistrict(),
-                        group.getProfileURL(),
-                        likeNum);
-                })
+                        group.getProfileURL())
+                )
                 .collect(Collectors.toList());
 
         return groupDTOS;
