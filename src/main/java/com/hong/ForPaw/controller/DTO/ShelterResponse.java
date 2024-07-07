@@ -10,7 +10,8 @@ public class ShelterResponse {
                                          Double lat,
                                          Double lng,
                                          String careAddr,
-                                         String careTel) {}
+                                         String careTel,
+                                         Long animalCnt) {}
 
     public record FindShelterAnimalsByIdDTO(List<AnimalDTO> animals) {}
 

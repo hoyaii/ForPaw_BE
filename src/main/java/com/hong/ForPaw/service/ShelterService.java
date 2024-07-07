@@ -103,7 +103,8 @@ public class ShelterService {
                 shelter.getLatitude(),
                 shelter.getLongitude(),
                 shelter.getCareAddr(),
-                shelter.getCareTel()
+                shelter.getCareTel(),
+                shelter.getAnimalCnt()
         );
     }
 
