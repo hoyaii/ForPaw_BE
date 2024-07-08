@@ -74,6 +74,7 @@ public class ShelterService {
                 .collectList()
                 .subscribe(shelterRepository::saveAll);
     }
+
     @Transactional
     public ShelterResponse.FindShelterListDTO findShelterList(){
         List<Shelter> shelters = shelterRepository.findAllWithNonNullCareAddr();

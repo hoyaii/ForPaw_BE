@@ -49,4 +49,8 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
             "* COS(RADIANS(s.longitude) - RADIANS(:lon)) + SIN(RADIANS(:lat)) " +
             "* SIN(RADIANS(s.latitude)))) ASC", nativeQuery = true)
     List<Shelter> findNearestShelters(@Param("lat") double lat, @Param("lon") double lon);
+
+    @Modifying
+    @Query("DELETE FROM Shelter s WHERE s.animalCnt = 0 OR s.latitude IS NULL")
+    void deleteSheltersWithZeroAnimalCnt();
 }

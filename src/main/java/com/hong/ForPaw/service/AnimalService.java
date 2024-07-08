@@ -133,30 +133,24 @@ public class AnimalService {
                                 shelterRepository.updateAddressInfo(resultDTO.geometry().location().lat(), resultDTO.geometry().location().lng(), shelter.getId());
                             });
                 })
-                .doOnTerminate(this::deleteExpiredAdoptionAnimals)
+                .doOnTerminate(this::cleanupExpiredAnimalsAndShelters)
                 .subscribe();
     }
 
-    // 공가가 종료된 것은 삭제
+    // 공가가 종료된 동물과 관련해서 후처리
     @Transactional
-    public void deleteExpiredAdoptionAnimals(){
+    public void cleanupExpiredAnimalsAndShelters(){
         Set<Shelter> updatedShelters = new HashSet<>();
-
         List<Animal> expiredAnimals = animalRepository.findAllOutOfDateWithShelter(LocalDateTime.now().toLocalDate());
+
         // 캐싱한 '좋아요 수' 삭제
         expiredAnimals.forEach(animal -> {
             updatedShelters.add(animal.getShelter());
             redisService.removeData("animalLikeNum", animal.getId().toString());
         });
 
-        // 동물의 개수가 변경된 보호소의 '보호 동물 수' 업데이트
-        updatedShelters.forEach(shelter ->
-                shelter.updateAnimalCnt(animalRepository.countByShelterId(shelter.getId()))
-        );
-
         // 유저가 검색한 동물 기록에서 삭제
         List<User> users = userRepository.findAll();
-
         for(User user : users){
             expiredAnimals.forEach(animal -> {
                 String key = "animalSearch:" + user.getId();
@@ -164,7 +158,16 @@ public class AnimalService {
             });
         }
 
+        // 공지가 만료된 유기 동물 삭제
         animalRepository.deleteAll(expiredAnimals);
+
+        // 보호소의 '보호 동물 수' 업데이트
+        updatedShelters.forEach(shelter ->
+                shelter.updateAnimalCnt(animalRepository.countByShelterId(shelter.getId()))
+        );
+
+        // 보호 중인 동물이 0개인 보호소 삭제
+        shelterRepository.deleteSheltersWithZeroAnimalCnt();
     }
 
     @Transactional
