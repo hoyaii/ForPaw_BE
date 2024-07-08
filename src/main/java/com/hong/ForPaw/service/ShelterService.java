@@ -100,6 +100,7 @@ public class ShelterService {
 
         return new ShelterResponse.FindShelterInfoByIdDTO(
                 shelter.getId(),
+                shelter.getName(),
                 shelter.getLatitude(),
                 shelter.getLongitude(),
                 shelter.getCareAddr(),

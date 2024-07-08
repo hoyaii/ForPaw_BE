@@ -30,12 +30,12 @@ class Group(Base):
     name = Column(String(255))
     province = Column(PgEnum(Province))
     district = Column(PgEnum(District))
-    subDistrict = Column(String(255))
+    sub_district = Column(String(255))
     description = Column(String(255))
     category = Column(String(255))
     profileURL = Column(String(255))
-    participantNum = Column(Integer, default=0)
-    likeNum = Column(Integer, default=0)
+    participant_num = Column(Integer, default=0)
+    like_num = Column(Integer, default=0)
 
 class RecommendRequest(BaseModel):
     user_id: int

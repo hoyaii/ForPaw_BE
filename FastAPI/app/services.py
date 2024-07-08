@@ -18,7 +18,7 @@ from .config import settings
 def initialize_milvus():
     connections.connect("default", host=settings.MILVUS_HOST, port=str(settings.MILVUS_PORT))
 
-    # 동물 컬렉션 초기화
+    # 1. 동물 컬렉션 초기화
     collection_name = "animal_collection"
 
     # fastAPI를 시작할 때, 기존에 저장된 데이터는 삭제
@@ -36,7 +36,7 @@ def initialize_milvus():
     animal_schema = CollectionSchema(fields, "animal_vectors")
     animal_collection = Collection(collection_name, animal_schema)
 
-    # 그룹 컬렉션 초기화
+    # 2. 그룹 컬렉션 초기화
     group_collection_name = "group_collection"
 
     if utility.has_collection(group_collection_name):
@@ -45,13 +45,13 @@ def initialize_milvus():
 
     group_fields = [
         FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=False), 
-        FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=512)  
+        FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=4)  
     ]
 
     group_schema = CollectionSchema(group_fields, "group_vectors")
     group_collection = Collection(group_collection_name, group_schema)
     
-    return animal_collection
+    return animal_collection, group_collection
 
 # MySQL 초기화 함수
 def initialize_mysql():
@@ -65,19 +65,21 @@ def initialize_redis():
     return redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB, decode_responses=True)
 
 # Milvus, MySQL, 백터화 객체 초기화, PCA 객체 초기화
-animal_collection = initialize_milvus()
+animal_collection, group_collection = initialize_milvus()
 AsyncSessionLocal = initialize_mysql()
 redis_client = initialize_redis()
 vectorizer = TfidfVectorizer()
-pca = PCA(n_components=512)  
+animal_pca = PCA(n_components=512)
+group_pca = PCA(n_components=4)
 
 @asynccontextmanager
 async def get_db_session():
     async with AsyncSessionLocal() as session:
         yield session
 
-async def load_and_vectorize_data():
+async def load_and_vectorize_animal_data():
     # 비동기 세션을 사용하여 데이터베이스에 연결. Animal 테이블에서 모든 데이터를 가져와서 리스트로 변환
+    # 만약, DB에 Animal 데이터가 하나도 없다면 에러 발생하니 주의
     async with get_db_session() as db:
         result = await db.execute(select(Animal).filter(Animal.removed_at.is_(None)))
         animals = result.scalars().all()
@@ -91,7 +93,7 @@ async def load_and_vectorize_data():
     vectors = tfidf_matrix.toarray()
 
     # PCA를 사용하여 벡터 차원을 512로 축소
-    reduced_vectors = pca.fit_transform(vectors)
+    reduced_vectors = animal_pca.fit_transform(vectors)
 
     # 동물 ID 리스트 생성
     ids = [animal.id for animal in animals]
@@ -107,6 +109,30 @@ async def load_and_vectorize_data():
     animal_collection.load()
     
     return reduced_vectors, {animal.id: idx for idx, animal in enumerate(animals)}
+
+async def load_and_vectorize_group_data():
+    async with get_db_session() as db:
+        result = await db.execute(select(Group))
+        groups = result.scalars().all()
+        texts = [
+            f"{group.province} {group.district} {group.sub_district} {group.category} {group.description}"
+            for group in groups
+        ]
+
+    tfidf_matrix = vectorizer.fit_transform(texts)
+    vectors = tfidf_matrix.toarray()
+
+    reduced_vectors = group_pca.fit_transform(vectors)
+
+    ids = [group.id for group in groups]
+
+    group_collection.insert([ids, reduced_vectors])
+
+    index_params = {"index_type": "IVF_FLAT", "metric_type": "L2", "params": {"nlist": 128}}
+    group_collection.create_index("vector", index_params)
+    group_collection.load()
+    
+    return reduced_vectors, {group.id: idx for idx, group in enumerate(groups)}
 
 async def get_similar_animals(animal_id, animal_index, tfidf_matrix, num_results=5):
     async with get_db_session() as db:
@@ -129,6 +155,25 @@ async def get_similar_animals(animal_id, animal_index, tfidf_matrix, num_results
         similar_animal_ids = [res for res in results[0].ids]
 
         return similar_animal_ids
+
+async def get_similar_groups(group_id, group_index, tfidf_matrix, num_results=5):
+    async with get_db_session() as db:
+        result = await db.execute(select(Group).filter(Group.id == group_id))
+        query_group = result.scalars().first()
+        if not query_group:
+            raise HTTPException(status_code=404, detail="해당 그룹을 찾을 수 없습니다.")
+
+        idx = group_index.get(group_id)
+        if idx is None:
+            raise HTTPException(status_code=404, detail="해당 그룹에 대한 인덱스가 존재하지 않습니다.")
+
+        query_vec = tfidf_matrix[idx].tolist()
+        search_params = {"metric_type": "L2", "params": {"nprobe": 10}}
+        results = group_collection.search([query_vec], "vector", search_params, limit=num_results)
+
+        similar_group_ids = [res.id for res in results[0].ids]
+
+        return similar_group_ids
     
 # MySQL에 저장된 새로운 동물 데이터를 백터 DB에 업데이트
 async def update_new_animals(animal_index, tfidf_matrix):
@@ -152,7 +197,7 @@ async def update_new_animals(animal_index, tfidf_matrix):
 
     # 새로운 텍스트 데이터를 TF-IDF 벡터로 변환, 전역으로 선언한 PCA를 사용
     new_vectors = vectorizer.transform(new_texts).toarray()
-    reduced_new_vectors = pca.transform(new_vectors)  
+    reduced_new_vectors = animal_pca.transform(new_vectors)  
 
     # 새로운 동물들의 ID 리스트를 생성
     new_ids = [animal.id for animal in new_animals]
@@ -173,6 +218,38 @@ async def update_new_animals(animal_index, tfidf_matrix):
 
     # animal_index를 업데이트하여 새로운 동물들의 ID와 인덱스를 추가
     animal_index.update({animal.id: current_length + idx for idx, animal in enumerate(new_animals)})
+
+async def update_new_groups(group_index, tfidf_matrix):
+    async with get_db_session() as db:
+        result = await db.execute(select(Group))
+        groups = result.scalars().all()
+
+        existing_ids = set(group_index.keys())
+        new_groups = [group for group in groups if group.id not in existing_ids]
+
+        if not new_groups:
+            return
+
+        new_texts = [
+            f"{group.province} {group.district} {group.subDistrict} {group.category} {group.description}"
+            for group in new_groups
+        ]
+
+    new_vectors = vectorizer.transform(new_texts).toarray()
+    reduced_new_vectors = group_pca.transform(new_vectors)
+
+    new_ids = [group.id for group in new_groups]
+
+    group_collection.insert([new_ids, reduced_new_vectors])
+
+    index_params = {"index_type": "IVF_FLAT", "metric_type": "L2", "params": {"nlist": 128}}
+    group_collection.create_index("vector", index_params)
+    group_collection.load()
+
+    current_length = len(tfidf_matrix)
+    tfidf_matrix = np.vstack([tfidf_matrix, reduced_new_vectors])
+
+    group_index.update({group.id: current_length + idx for idx, group in enumerate(new_groups)})
 
 async def generate_animal_introduction(animal_id):
     async with get_db_session() as db:

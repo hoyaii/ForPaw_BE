@@ -1,23 +1,25 @@
 # main.py
 from fastapi import FastAPI
 import random
-from app.services import load_and_vectorize_data, get_similar_animals, update_new_animals, redis_client, generate_animal_introduction
+from app.services import load_and_vectorize_animal_data, load_and_vectorize_group_data, get_similar_animals, update_new_animals, redis_client, generate_animal_introduction, get_similar_groups, update_new_groups
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from functools import partial
-from .models import RecommendRequest, AnimalIntroductionRequest
+from .models import RecommendRequest, AnimalIntroductionRequest, GroupRecommendRequest
 
 app = FastAPI()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 데이터를 로드하고 벡터화
-    global tfidf_matrix, animal_index
-    tfidf_matrix, animal_index = await load_and_vectorize_data()
-    
+    global tfidf_matrix, animal_index, group_index, group_matrix
+    tfidf_matrix, animal_index = await load_and_vectorize_animal_data()
+    group_matrix, group_index = await load_and_vectorize_group_data()
+
     # 스케줄러 설정, 매일 16시 26분에 update_new_animals 함수를 실행
     scheduler = AsyncIOScheduler()
     scheduler.add_job(partial(update_new_animals, animal_index, tfidf_matrix), 'cron', hour=16, minute=26)
+    scheduler.add_job(partial(update_new_groups, group_index, group_matrix), 'cron', hour=16, minute=30)
     scheduler.start()
 
     try:
@@ -52,6 +54,27 @@ async def recommend(request: RecommendRequest):
         recommended_animals = unique_list  
 
     return {"recommendedAnimals": recommended_animals}
+
+@app.post("/recommend/group")
+async def recommend_group(request: GroupRecommendRequest):
+    key = f"groupSearch:{request.user_id}"
+    group_ids_str = redis_client.lrange(key, 0, -1)
+
+    group_ids = list(map(int, group_ids_str))
+    unique_ids = set()
+
+    for group_id in group_ids:
+        recommended_groups = await get_similar_groups(group_id, group_index, group_matrix)
+        unique_ids.update(recommended_groups)
+
+    unique_list = list(unique_ids)
+
+    if len(unique_list) > 5:
+        recommended_groups = random.sample(unique_list, 5)
+    else:
+        recommended_groups = unique_list  
+
+    return {"recommendedGroups": recommended_groups}
 
 @app.post("/introduce/animal")
 async def introduce_animal(request: AnimalIntroductionRequest):

@@ -23,9 +23,11 @@ public class Group extends TimeStamp {
     private String name;
 
     @Column
+    @Enumerated(EnumType.STRING)
     private Province province;
 
     @Column
+    @Enumerated(EnumType.STRING)
     private District district;
 
     @Column

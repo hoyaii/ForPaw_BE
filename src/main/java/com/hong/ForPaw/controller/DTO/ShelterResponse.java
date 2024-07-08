@@ -7,6 +7,7 @@ public class ShelterResponse {
     public record FindShelterListDTO(List<ShelterDTO> shelters){}
 
     public record FindShelterInfoByIdDTO(Long id,
+                                         String name,
                                          Double lat,
                                          Double lng,
                                          String careAddr,
