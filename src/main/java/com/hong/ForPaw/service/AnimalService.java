@@ -457,7 +457,7 @@ public class AnimalService {
                     .map(j -> j.response().body().items().item())
                     .filter(items -> !items.isEmpty())
                     .map(items -> items.get(0))
-                    .ifPresent(itemDTO -> shelterRepository.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), Long.valueOf(json.response().body().totalCount()), shelter.getId()));
+                    .ifPresent(itemDTO -> shelterRepository.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), countActiveAnimals(json), shelter.getId()));
             return Mono.empty();
         }).then();
     }
@@ -590,5 +590,13 @@ public class AnimalService {
 
         return Optional.ofNullable(ANIMAL_TYPE_MAP.get(sort))
                 .orElseThrow(() -> new CustomException(ExceptionCode.BAD_APPROACH));
+    }
+
+    private Long countActiveAnimals(AnimalDTO json) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+
+        return json.response().body().items().item().stream()
+                .filter(itemDTO -> LocalDate.parse(itemDTO.noticeEdt(), formatter).isAfter(LocalDate.now()))
+                .count();
     }
 }

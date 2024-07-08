@@ -73,7 +73,6 @@ async def load_and_vectorize_animal_data():
     # PCA 객체를 사용하여 벡터 차원을 512로 축소 
     reduced_vectors = vectorize_and_reduce(texts, animal_pca)
     ids = [animal.id for animal in animals]
-
     insert_and_index_vectors(animal_collection, ids, reduced_vectors)
     
     return reduced_vectors, {animal.id: idx for idx, animal in enumerate(animals)}
@@ -90,7 +89,6 @@ async def load_and_vectorize_group_data():
     # 벡터 차원을 4로 축소 
     reduced_vectors = vectorize_and_reduce(texts, group_pca)
     ids = [group.id for group in groups]
-
     insert_and_index_vectors(group_collection, ids, reduced_vectors)
     
     return reduced_vectors, {group.id: idx for idx, group in enumerate(groups)}
@@ -273,12 +271,12 @@ async def generate_animal_introduction(animal_id):
     }
 
 def vectorize_and_reduce(texts: List[str], pca_model: PCA) -> np.ndarray:
-    # 텍스트 데이터를 TF-IDF 벡터로 변환 후 밀집 배열로 변환
+    # 텍스트 데이터를 TF-IDF 벡터로 변환 후 차원 축소
+    # 백터의 길이는 Milvus 초기 설정시 설정한 차원으로 나누어져야 함 => 길이를 축소해서 나누어지게 만듦
     tfidf_matrix = vectorizer.fit_transform(texts)
     vectors = tfidf_matrix.toarray()
-
-    # 백터의 길이는 Milvus 초기 설정시 설정한 차원으로 나누어져야 함 => 길이를 축소해서 나누어지게 만듦
     reduced_vectors = pca_model.fit_transform(vectors)
+
     return reduced_vectors
 
 def insert_and_index_vectors(collection: Collection, ids: List[int], vectors: np.ndarray):
@@ -289,7 +287,6 @@ def insert_and_index_vectors(collection: Collection, ids: List[int], vectors: np
     index_params = {"index_type": "IVF_FLAT", "metric_type": "L2", "params": {"nlist": 128}}
     collection.create_index("vector", index_params)
 
-    # 컬렉션 로드
     collection.load()
 
 def create_collection(collection_name: str, fields: List[FieldSchema]):
