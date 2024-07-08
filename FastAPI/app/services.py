@@ -13,45 +13,25 @@ from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Colle
 import numpy as np  
 import redis
 from .config import settings
-from typing import List, Tuple, Dict, Any
+from typing import List
 
 # Milvus 초기화 함수
 def initialize_milvus():
     connections.connect("default", host=settings.MILVUS_HOST, port=str(settings.MILVUS_PORT))
 
     # 1. 동물 컬렉션 초기화
-    collection_name = "animal_collection"
-
-    # fastAPI를 시작할 때, 기존에 저장된 데이터는 삭제
-    if utility.has_collection(collection_name):
-        collection = Collection(name=collection_name)
-        collection.drop()
-
-    # ID 필드와 벡터 필드 정의. 차원은 512 
-    fields = [
+    animal_fields = [
         FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=False), 
-        FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=512)  
+        FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=512)
     ]
-
-    # 컬렉션 생성
-    animal_schema = CollectionSchema(fields, "animal_vectors")
-    animal_collection = Collection(collection_name, animal_schema)
+    animal_collection = create_collection("animal_collection", animal_fields)
 
     # 2. 그룹 컬렉션 초기화
-    group_collection_name = "group_collection"
-
-    if utility.has_collection(group_collection_name):
-        group_collection = Collection(name=group_collection_name)
-        group_collection.drop()
-
-    # '차원 > 엔티티의 개수'여야 하는데, 서비스 초반에는 그룹의 개수가 적기 때문에 우선은 4로 설정함 (추후 조정)
     group_fields = [
         FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=False), 
-        FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=4)  
+        FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=4)  # 초기 설정
     ]
-
-    group_schema = CollectionSchema(group_fields, "group_vectors")
-    group_collection = Collection(group_collection_name, group_schema)
+    group_collection = create_collection("group_collection", group_fields)
     
     return animal_collection, group_collection
 
@@ -311,3 +291,14 @@ def insert_and_index_vectors(collection: Collection, ids: List[int], vectors: np
 
     # 컬렉션 로드
     collection.load()
+
+def create_collection(collection_name: str, fields: List[FieldSchema]):
+    # fastAPI를 시작할 때, 기존에 저장되 있던 컬렉션은 삭제
+    if utility.has_collection(collection_name):
+        collection = Collection(name=collection_name)
+        collection.drop()
+
+    # 컬렉션 생성
+    schema = CollectionSchema(fields, f"{collection_name}_vectors")
+    collection = Collection(collection_name, schema)
+    return collection
