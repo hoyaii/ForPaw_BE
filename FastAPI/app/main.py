@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
 app.router.lifespan_context = lifespan
 
 @app.post("/recommend/animal")
-async def recommend(request: RecommendRequest):
+async def recommend_animal(request: RecommendRequest):
     # user_id를 바탕으로 Redis에서 조회한 동물 id 리스트 가져오기
     key = f"animalSearch:{request.user_id}"
     animal_ids_str = redis_client.lrange(key, 0, -1)

@@ -89,7 +89,7 @@ public class AnimalService {
     );
 
     @Transactional
-    @Scheduled(cron = "0 0 0,12 * * *") // 매일 자정과 정오에 실행
+    @Scheduled(cron = "0 0 0 * * *") // 매일 자정에 실행
     public void updateAnimalData() {
         List<Shelter> shelters = shelterRepository.findAllWithRegionCode();
 

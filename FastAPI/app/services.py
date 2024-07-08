@@ -93,46 +93,40 @@ async def load_and_vectorize_group_data():
     
     return reduced_vectors, {group.id: idx for idx, group in enumerate(groups)}
 
-async def get_similar_animals(animal_id, animal_index, tfidf_matrix, num_results=5):
-    async with get_db_session() as db:
-        # 주어진 ID의 동물 선택해서 
+async def get_similar_animals(animal_id, animal_index, tfidf_matrix):
+    # animal_id에 대한 동물이 존재여부 체크
+    async with get_db_session() as db: 
         result = await db.execute(select(Animal).filter(Animal.id == animal_id))
         query_animal = result.scalars().first()
         if not query_animal:
-            raise HTTPException(status_code=404, detail="해당 동물을 찾을 수 없습니다.")
+            return []
     
-        # 조회된 동물의 인덱스 찾기
-        idx = animal_index.get(animal_id)
-        if idx is None:
-            raise HTTPException(status_code=404, detail="해당 동물에 대한 인덱스가 존재하지 않습니다.")
+    # animal_id에 대한 인덱스 존재여부 체크
+    idx = animal_index.get(animal_id)
+    if idx is None:
+        return []
     
-        # 해당 동물의 벡터를 배열로 변환하고, 전체 데이터베이스 벡터와의 코사인 유사도 계산
-        query_vec = tfidf_matrix[idx].tolist() 
-        search_params = {"metric_type": "L2", "params": {"nprobe": 10}}
-        results = animal_collection.search([query_vec], "vector", search_params, limit=num_results)
-        
-        similar_animal_ids = [res for res in results[0].ids]
+    # 해당 동물의 벡터를 배열로 변환하고, 전체 데이터베이스 벡터와의 코사인 유사도 계산
+    query_vec = tfidf_matrix[idx].tolist() 
+    similar_animal_ids = search_similar_items(query_vec, animal_collection, 5)
 
-        return similar_animal_ids
+    return similar_animal_ids
 
-async def get_similar_groups(group_id, group_index, tfidf_matrix, num_results=5):
+async def get_similar_groups(group_id, group_index, tfidf_matrix):
     async with get_db_session() as db:
         result = await db.execute(select(Group).filter(Group.id == group_id))
         query_group = result.scalars().first()
         if not query_group:
-            raise HTTPException(status_code=404, detail="해당 그룹을 찾을 수 없습니다.")
+            return []
 
-        idx = group_index.get(group_id)
-        if idx is None:
-            raise HTTPException(status_code=404, detail="해당 그룹에 대한 인덱스가 존재하지 않습니다.")
+    idx = group_index.get(group_id)
+    if idx is None:
+        return []
 
-        query_vec = tfidf_matrix[idx].tolist()
-        search_params = {"metric_type": "L2", "params": {"nprobe": 10}}
-        results = group_collection.search([query_vec], "vector", search_params, limit=num_results)
+    query_vec = tfidf_matrix[idx].tolist()
+    similar_group_ids = search_similar_items(query_vec, group_collection, 5)
 
-        similar_group_ids = [res.id for res in results[0].ids]
-
-        return similar_group_ids
+    return similar_group_ids
     
 # MySQL에 저장된 새로운 동물 데이터를 백터 DB에 업데이트
 async def update_new_animals(animal_index, tfidf_matrix):
@@ -299,3 +293,9 @@ def create_collection(collection_name: str, fields: List[FieldSchema]):
     schema = CollectionSchema(fields, f"{collection_name}_vectors")
     collection = Collection(collection_name, schema)
     return collection
+
+def search_similar_items(query_vec, collection, result_num):
+    search_params = {"metric_type": "L2", "params": {"nprobe": 10}}
+    results = collection.search([query_vec], "vector", search_params, limit=result_num)
+    similar_item_ids = [res.id for res in results[0].ids]
+    return similar_item_ids
