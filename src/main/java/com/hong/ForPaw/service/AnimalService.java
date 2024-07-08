@@ -142,10 +142,11 @@ public class AnimalService {
     public void deleteExpiredAdoptionAnimals(){
         Set<Shelter> updatedShelters = new HashSet<>();
 
-        List<Animal> animals = animalRepository.findAllOutOfDateWithShelter(LocalDateTime.now().toLocalDate());
-        animals.forEach(animal -> {
+        List<Animal> expiredAnimals = animalRepository.findAllOutOfDateWithShelter(LocalDateTime.now().toLocalDate());
+        // 캐싱한 '좋아요 수' 삭제
+        expiredAnimals.forEach(animal -> {
             updatedShelters.add(animal.getShelter());
-            redisService.removeData("animalLikeNum", animal.getId().toString()); // 캐싱한 '좋아요 수' 삭제
+            redisService.removeData("animalLikeNum", animal.getId().toString());
         });
 
         // 동물의 개수가 변경된 보호소의 '보호 동물 수' 업데이트
@@ -153,17 +154,17 @@ public class AnimalService {
                 shelter.updateAnimalCnt(animalRepository.countByShelterId(shelter.getId()))
         );
 
-        // 우저가 검색한 동물 기록에서 삭제
+        // 유저가 검색한 동물 기록에서 삭제
         List<User> users = userRepository.findAll();
 
         for(User user : users){
-            animals.forEach(animal -> {
+            expiredAnimals.forEach(animal -> {
                 String key = "animalSearch:" + user.getId();
                 redisService.deleteListElement(key, animal.getId().toString());
             });
         }
 
-        animalRepository.deleteAll(animals);
+        animalRepository.deleteAll(expiredAnimals);
     }
 
     @Transactional
@@ -598,9 +599,10 @@ public class AnimalService {
 
     private Long countActiveAnimals(AnimalDTO json) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        LocalDate yesterday = LocalDate.now().minusDays(1);
 
         return json.response().body().items().item().stream()
-                .filter(itemDTO -> LocalDate.parse(itemDTO.noticeEdt(), formatter).isAfter(LocalDate.now()))
+                .filter(itemDTO -> LocalDate.parse(itemDTO.noticeEdt(), formatter).isAfter(yesterday))
                 .count();
     }
 }
