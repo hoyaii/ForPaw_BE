@@ -47,4 +47,8 @@ public class Shelter {
         this.careTel = careTel;
         this.careAddr = careAddr;
     }
+
+    public void updateAnimalCnt(Long animalCnt){
+        this.animalCnt = animalCnt;
+    }
 }

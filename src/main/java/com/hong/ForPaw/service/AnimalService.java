@@ -112,13 +112,12 @@ public class AnimalService {
                             .doOnNext(animalRepository::saveAll);
                 })
                 .then()
-                .doOnTerminate(this::updateAddressByGoogle) // loadAnimalData가 완료되면 updateAddressByGoogle 실행
+                .doOnTerminate(this::updateShelterAddressByGoogle) // loadAnimalData가 완료되면 updateShelterAddressByGoogle 실행
                 .subscribe();
     }
 
-    // 보호소 정보 업데이트 후 이어서 위치 업데이트 진행
     @Transactional
-    public void updateAddressByGoogle(){
+    public void updateShelterAddressByGoogle(){
         List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
 
         Flux.fromIterable(shelters)
@@ -134,11 +133,41 @@ public class AnimalService {
                                 shelterRepository.updateAddressInfo(resultDTO.geometry().location().lat(), resultDTO.geometry().location().lng(), shelter.getId());
                             });
                 })
+                .doOnTerminate(this::deleteExpiredAdoptionAnimals)
                 .subscribe();
     }
 
+    // 공가가 종료된 것은 삭제
     @Transactional
-    public void updateAddressByKakao(){
+    public void deleteExpiredAdoptionAnimals(){
+        Set<Shelter> updatedShelters = new HashSet<>();
+
+        List<Animal> animals = animalRepository.findAllOutOfDateWithShelter(LocalDateTime.now().toLocalDate());
+        animals.forEach(animal -> {
+            updatedShelters.add(animal.getShelter());
+            redisService.removeData("animalLikeNum", animal.getId().toString()); // 캐싱한 '좋아요 수' 삭제
+        });
+
+        // 동물의 개수가 변경된 보호소의 '보호 동물 수' 업데이트
+        updatedShelters.forEach(shelter ->
+                shelter.updateAnimalCnt(animalRepository.countByShelterId(shelter.getId()))
+        );
+
+        // 우저가 검색한 동물 기록에서 삭제
+        List<User> users = userRepository.findAll();
+
+        for(User user : users){
+            animals.forEach(animal -> {
+                String key = "animalSearch:" + user.getId();
+                redisService.deleteListElement(key, animal.getId().toString());
+            });
+        }
+
+        animalRepository.deleteAll(animals);
+    }
+
+    @Transactional
+    public void updateShelterAddressByKakao(){
         List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
 
         Flux.fromIterable(shelters)
@@ -407,31 +436,6 @@ public class AnimalService {
         animalRepository.decrementInquiryNumById(animalId);
 
         applyRepository.deleteById(applyId);
-    }
-
-    // 공가가 종료된 것은 주기적으로 삭제
-    @Transactional
-    @Scheduled(cron = "0 0 3 * * *") // 매일 새벽 3시에 실행
-    public void deleteEndAdoptAnimal(){
-        LocalDate now = LocalDateTime.now().toLocalDate();
-        List<Animal> animals = animalRepository.findAllOutOfDate(now);
-
-        // 캐싱한 '좋아요 수' 삭제
-        animals.forEach(
-                animal -> redisService.removeData("animalLikeNum", animal.getId().toString())
-        );
-
-        // 우저가 검색한 동물 기록에서 삭제
-        List<User> users = userRepository.findAll();
-
-        for(User user : users){
-            animals.forEach(animal -> {
-                String key = "animalSearch:" + user.getId();
-                redisService.deleteListElement(key, animal.getId().toString());
-            });
-        }
-
-        animalRepository.deleteAll(animals);
     }
 
     private Flux<Animal> convertResponseToAnimal(String response, Shelter shelter) {
