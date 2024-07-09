@@ -19,8 +19,8 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
     @Query("DELETE FROM Shelter s WHERE s.animalCnt = 0")
     void deleteZeroShelter();
 
-    @Query("SELECT s FROM Shelter s WHERE s.careAddr IS NOT NULL")
-    List<Shelter> findAllWithNonNullCareAddr();
+    @Query("SELECT s FROM Shelter s WHERE s.latitude IS NOT NULL")
+    List<Shelter> findAllWithNonNullLatitude();
 
     List<Shelter> findByAnimalCntGreaterThan(Long animalCnt);
 
@@ -51,6 +51,7 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
     List<Shelter> findNearestShelters(@Param("lat") double lat, @Param("lon") double lon);
 
     @Modifying
-    @Query("DELETE FROM Shelter s WHERE s.animalCnt = 0 OR s.latitude IS NULL")
+    @Transactional
+    @Query("DELETE FROM Shelter s WHERE s.animalCnt = 0")
     void deleteSheltersWithZeroAnimalCnt();
 }

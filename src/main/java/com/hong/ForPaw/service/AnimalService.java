@@ -133,13 +133,13 @@ public class AnimalService {
                                 shelterRepository.updateAddressInfo(resultDTO.geometry().location().lat(), resultDTO.geometry().location().lng(), shelter.getId());
                             });
                 })
-                .doOnTerminate(this::cleanupExpiredAnimalsAndShelters)
+                .doOnTerminate(this::cleanupExpiredAnimals)
                 .subscribe();
     }
 
     // 공가가 종료된 동물과 관련해서 후처리
     @Transactional
-    public void cleanupExpiredAnimalsAndShelters(){
+    public void cleanupExpiredAnimals(){
         Set<Shelter> updatedShelters = new HashSet<>();
         List<Animal> expiredAnimals = animalRepository.findAllOutOfDateWithShelter(LocalDateTime.now().toLocalDate());
 
@@ -165,9 +165,6 @@ public class AnimalService {
         updatedShelters.forEach(shelter ->
                 shelter.updateAnimalCnt(animalRepository.countByShelterId(shelter.getId()))
         );
-
-        // 보호 중인 동물이 0개인 보호소 삭제
-        shelterRepository.deleteSheltersWithZeroAnimalCnt();
     }
 
     @Transactional

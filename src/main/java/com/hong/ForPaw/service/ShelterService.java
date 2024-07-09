@@ -77,7 +77,7 @@ public class ShelterService {
 
     @Transactional
     public ShelterResponse.FindShelterListDTO findShelterList(){
-        List<Shelter> shelters = shelterRepository.findAllWithNonNullCareAddr();
+        List<Shelter> shelters = shelterRepository.findAllWithNonNullLatitude();
 
         List<ShelterResponse.ShelterDTO> shelterDTOS = shelters.stream()
                 .map(shelter -> new ShelterResponse.ShelterDTO(
