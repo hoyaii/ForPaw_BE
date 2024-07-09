@@ -28,7 +28,7 @@ public class ShelterController {
 
     @GetMapping("/shelters")
     public ResponseEntity<?> findShelterList(){
-        ShelterResponse.FindShelterListDTO responseDTO = shelterService.findShelterList();
+        ShelterResponse.FindShelterListDTO responseDTO = shelterService.findActiveShelterList();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.CREATED, responseDTO));
     }
 
