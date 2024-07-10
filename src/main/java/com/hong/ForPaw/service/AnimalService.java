@@ -91,6 +91,7 @@ public class AnimalService {
     @Transactional
     @Scheduled(cron = "0 0 0 * * *") // 매일 자정에 실행
     public void updateAnimalData() {
+        List<Long> existAnimalIds = animalRepository.findAllIds();
         List<Shelter> shelters = shelterRepository.findAllWithRegionCode();
 
         Flux.fromIterable(shelters)
@@ -106,7 +107,7 @@ public class AnimalService {
                             .retry(3)
                             .flatMap(response -> updateShelterByAnimalData(response, shelter) // 동물 데이터로 보호소 업데이트
                                     .then(Mono.just(response)))
-                            .flatMapMany(response -> convertResponseToAnimal(response, shelter) // 동물 엔티티 컬렉션으로 변환
+                            .flatMapMany(response -> convertResponseToAnimal(response, shelter, existAnimalIds) // 동물 엔티티 컬렉션으로 변환
                                     .onErrorResume(e -> Flux.empty()))
                             .collectList()
                             .doOnNext(animalRepository::saveAll);
@@ -133,6 +134,7 @@ public class AnimalService {
                                 shelterRepository.updateAddressInfo(resultDTO.geometry().location().lat(), resultDTO.geometry().location().lng(), shelter.getId());
                             });
                 })
+                .then()
                 .doOnTerminate(this::cleanupExpiredAnimals)
                 .subscribe();
     }
@@ -439,7 +441,7 @@ public class AnimalService {
         applyRepository.deleteById(applyId);
     }
 
-    private Flux<Animal> convertResponseToAnimal(String response, Shelter shelter) {
+    private Flux<Animal> convertResponseToAnimal(String response, Shelter shelter, List<Long> existAnimalIds) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
 
         return Mono.fromCallable(() -> {
@@ -449,6 +451,7 @@ public class AnimalService {
                     .map(AnimalDTO.ItemsDTO::item)
                     .orElse(Collections.emptyList())
                     .stream()
+                    .filter(itemDTO -> !existAnimalIds.contains(Long.valueOf(itemDTO.desertionNo()))) // 이미 존재하는 동물은 패스
                     .filter(itemDTO -> LocalDate.parse(itemDTO.noticeEdt(), formatter).isAfter(LocalDate.now())) // 공고 종료가 된 것은 필터링
                     .map(itemDTO -> buildAnimal(itemDTO, shelter))
                     .collect(Collectors.toList());
