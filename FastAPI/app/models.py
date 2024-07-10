@@ -1,7 +1,6 @@
 # models.py
 from sqlalchemy import Column, Integer, String, DateTime, Text, Enum as PgEnum
 from sqlalchemy.ext.declarative import declarative_base
-from pydantic import BaseModel
 from .enums import Province, District
 
 Base = declarative_base()
@@ -37,9 +36,3 @@ class Group(Base):
     profileURL = Column(String(255))
     participant_num = Column(Integer, default=0)
     like_num = Column(Integer, default=0)
-
-class RecommendRequest(BaseModel):
-    user_id: int
-
-class GroupRecommendRequest(BaseModel):
-    user_id: int

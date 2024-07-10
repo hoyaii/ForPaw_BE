@@ -5,7 +5,7 @@ from app.services import load_and_vectorize_animal_data, load_and_vectorize_grou
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from functools import partial
-from .models import RecommendRequest, GroupRecommendRequest
+from .schemas import RecommendRequest, GroupRecommendRequest
 
 app = FastAPI()
 
