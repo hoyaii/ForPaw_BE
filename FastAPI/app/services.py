@@ -2,61 +2,17 @@
 from langchain_community.llms import OpenAI
 from langchain.prompts import PromptTemplate
 from sqlalchemy.future import select
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import PCA
 from fastapi import HTTPException
 from contextlib import asynccontextmanager
 from .models import Animal, Group
-from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Collection, utility
+from pymilvus import Collection
 import numpy as np  
-import redis
 from .config import settings
 from typing import List
 import logging
-
-def create_collection(collection_name: str, fields: List[FieldSchema]):
-    # fastAPI를 시작할 때, 기존에 저장되 있던 컬렉션은 삭제
-    if utility.has_collection(collection_name):
-        collection = Collection(name=collection_name)
-        collection.drop()
-
-    # 컬렉션 생성
-    schema = CollectionSchema(fields, f"{collection_name}_vectors")
-    collection = Collection(collection_name, schema)
-    return collection
-
-# Milvus 초기화 함수
-def initialize_milvus():
-    connections.connect("default", host=settings.MILVUS_HOST, port=str(settings.MILVUS_PORT))
-
-    # 1. 동물 컬렉션 초기화
-    animal_fields = [
-        FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=False), 
-        FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=512)
-    ]
-    animal_collection = create_collection("animal_collection", animal_fields)
-
-    # 2. 그룹 컬렉션 초기화
-    group_fields = [
-        FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=False), 
-        FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=4)  # 초기 설정
-    ]
-    group_collection = create_collection("group_collection", group_fields)
-    
-    return animal_collection, group_collection
-
-# MySQL 초기화 함수
-def initialize_mysql():
-    engine = create_async_engine(settings.DATABASE_URL)
-    AsyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
-    
-    return AsyncSessionLocal
-
-# Redis 초기화 함수
-def initialize_redis():
-    return redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB, decode_responses=True)
+from .init import initialize_mysql, initialize_redis, initialize_milvus
 
 # Milvus, MySQL, 백터화 객체 초기화, PCA 객체 초기화
 animal_collection, group_collection = initialize_milvus()
