@@ -14,6 +14,7 @@ import numpy as np
 import redis
 from .config import settings
 from typing import List
+import logging
 
 def create_collection(collection_name: str, fields: List[FieldSchema]):
     # fastAPI를 시작할 때, 기존에 저장되 있던 컬렉션은 삭제
@@ -64,6 +65,10 @@ redis_client = initialize_redis()
 vectorizer = TfidfVectorizer()
 animal_pca = PCA(n_components=512)
 group_pca = PCA(n_components=4)
+
+# 로깅 설정
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def get_db_session():
@@ -295,10 +300,7 @@ async def generate_animal_introduction(animal_id):
     title = response_lines[0].replace("Title: ", "").strip()
     introduction = '\n'.join(response_lines[1:]).strip()
 
-    return {
-        "title": title,
-        "introduction": introduction
-    }
+    return title, introduction
 
 async def find_animal_ids_with_null_title():
     async with get_db_session() as db:
@@ -307,16 +309,22 @@ async def find_animal_ids_with_null_title():
         return animal_ids
 
 async def update_animal_introductions(animal_ids):
+    # 5개씩 작업하고 커밋. (모두 처리하고 커밋하면, 에러가 발생하면 받아온 데이터 다 날릴 수 있음)
     async with get_db_session() as db:
-        for animal_id in animal_ids:
-            title, introduction = await generate_animal_introduction(animal_id)
+        for i in range(0, len(animal_ids), 5):
+            batch = animal_ids[i:i+5]
+            for animal_id in batch:
+                title, introduction = await generate_animal_introduction(animal_id)
 
-            result = await db.execute(select(Animal).filter(Animal.id == animal_id))
-            animal = result.scalars().first()
+                result = await db.execute(select(Animal).filter(Animal.id == animal_id))
+                animal = result.scalars().first()
 
-            if animal:
-                animal.introduction_title = title
-                animal.introduction_content = introduction
-                db.add(animal)  
+                if animal:
+                    animal.introduction_title = title
+                    animal.introduction_content = introduction
+                    db.add(animal)
+                    logger.info(f"동물 ID {animal_id} 업데이트 완료.")
 
-        await db.commit()
+            await db.commit()
+    
+    logger.info("----------------배치 작업 완료----------------")

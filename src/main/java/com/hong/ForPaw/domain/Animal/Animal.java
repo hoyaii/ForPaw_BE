@@ -81,7 +81,7 @@ public class Animal extends TimeStamp {
     @Column
     private String introductionTitle;
 
-    @Column
+    @Column(columnDefinition="TEXT")
     private String introductionContent;
 
     @Column

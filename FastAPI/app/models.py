@@ -1,5 +1,5 @@
 # models.py
-from sqlalchemy import Column, Integer, String, DateTime, Enum as PgEnum
+from sqlalchemy import Column, Integer, String, DateTime, Text, Enum as PgEnum
 from sqlalchemy.ext.declarative import declarative_base
 from pydantic import BaseModel
 from .enums import Province, District
@@ -21,7 +21,7 @@ class Animal(Base):
     neuter = Column(String, nullable=True)
     removed_at = Column(DateTime, nullable=True)
     introduction_title = Column(String(255))
-    introduction_content = Column(String(1020))
+    introduction_content = Column(Text)  
     name = Column(String(255))
 
 class Group(Base):

@@ -1,5 +1,5 @@
 # main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 import random
 from app.services import load_and_vectorize_animal_data, load_and_vectorize_group_data, get_similar_animals, update_new_animals, redis_client, generate_animal_introduction, get_similar_groups, update_new_groups, find_animal_ids_with_null_title, update_animal_introductions
 from contextlib import asynccontextmanager
@@ -77,8 +77,8 @@ async def recommend_group(request: GroupRecommendRequest):
     return {"recommendedGroups": recommended_groups}
 
 @app.post("/introduce/animal")
-async def process_animal_introduction():
+async def process_animal_introduction(background_tasks: BackgroundTasks):
     animal_ids = await find_animal_ids_with_null_title()
-    await update_animal_introductions(animal_ids)
+    background_tasks.add_task(update_animal_introductions, animal_ids)
     
     return {"success": "true", "code": 200, "message": "OK", "result": "null"}
