@@ -19,6 +19,9 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
     @Query("DELETE FROM Shelter s WHERE s.animalCnt = 0")
     void deleteZeroShelter();
 
+    @Query("SELECT s.id FROM Shelter s")
+    List<Long> findAllIds();
+
     @Query("SELECT s FROM Shelter s WHERE s.animalCnt > 0 AND s.latitude IS NOT NULL")
     List<Shelter> findAllWithAnimalAndLatitude();
 

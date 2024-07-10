@@ -76,7 +76,7 @@ public class SearchService {
         List<Shelter> shelters = shelterRepository.findByNameContaining(keyword);
 
         List<SearchResponse.ShelterDTO> shelterDTOS = shelters.stream()
-                .filter(shelter -> shelter.getAnimalCnt() > 0)
+                .filter(shelter -> shelter.getAnimalCnt() > 0 && shelter.getLatitude() != null)
                 .map(shelter -> new SearchResponse.ShelterDTO(shelter.getId(), shelter.getName()))
                 .collect(Collectors.toList());
 

@@ -53,6 +53,7 @@ public class ShelterService {
     @Transactional
     @Scheduled(cron = "0 0 6 * * MON") // 매주 월요일 새벽 6시에 실행
     public void updateShelterData() {
+        List<Long> existShelterIds = shelterRepository.findAllIds();
         List<RegionCode> regionCodes = regionCodeRepository.findAll();
 
         Flux.fromIterable(regionCodes)
@@ -67,7 +68,7 @@ public class ShelterService {
                             .retrieve()
                             .bodyToMono(String.class)
                             .retry(3)
-                            .flatMapMany(response -> Mono.fromCallable(() -> convertResponseToShelter(response, regionCode))
+                            .flatMapMany(response -> Mono.fromCallable(() -> convertResponseToShelter(response, regionCode, existShelterIds))
                                     .flatMapMany(Flux::fromIterable)
                                     .onErrorResume(e -> Flux.empty())); // 에러 발생 시, 빈 Flux 반환 (JSON 파싱 에러)
                 })
@@ -140,7 +141,7 @@ public class ShelterService {
         return new ShelterResponse.FindShelterAnimalsByIdDTO(animalDTOS);
     }
 
-    private List<Shelter> convertResponseToShelter(String response, RegionCode regionCode) throws IOException {
+    private List<Shelter> convertResponseToShelter(String response, RegionCode regionCode, List<Long> existShelterIds) throws IOException {
         // JSON 파싱 에러 던질 수 있음
         ShelterDTO json = mapper.readValue(response, ShelterDTO.class);
 
@@ -149,6 +150,7 @@ public class ShelterService {
                 .orElse(Collections.emptyList());
 
         return itemDTOS.stream()
+                .filter(itemDTO -> !existShelterIds.contains(itemDTO.careRegNo())) // 이미 저장되어 있는 보호소는 업데이트 하지 않는다
                 .map(itemDTO -> Shelter.builder()
                         .regionCode(regionCode)
                         .id(itemDTO.careRegNo())

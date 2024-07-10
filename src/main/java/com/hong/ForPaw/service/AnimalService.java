@@ -451,7 +451,7 @@ public class AnimalService {
                     .map(AnimalDTO.ItemsDTO::item)
                     .orElse(Collections.emptyList())
                     .stream()
-                    .filter(itemDTO -> !existAnimalIds.contains(Long.valueOf(itemDTO.desertionNo()))) // 이미 존재하는 동물은 패스
+                    .filter(itemDTO -> !existAnimalIds.contains(Long.valueOf(itemDTO.desertionNo()))) // 이미 저장되어 있는 동물은 업데이트 하지 않는다
                     .filter(itemDTO -> LocalDate.parse(itemDTO.noticeEdt(), formatter).isAfter(LocalDate.now())) // 공고 종료가 된 것은 필터링
                     .map(itemDTO -> buildAnimal(itemDTO, shelter))
                     .collect(Collectors.toList());
