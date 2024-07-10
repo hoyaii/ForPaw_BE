@@ -52,6 +52,9 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
     @Query("SELECT a.id FROM Animal a WHERE a.shelter.regionCode.uprName = :province ORDER BY a.id ASC")
     List<Long> findAnimalIdsByProvince(Province province, Pageable pageable);
 
+    @Query("SELECT a.id FROM Animal a WHERE a.introductionTitle IS NULL")
+    List<Long> findAnimalIdsWithNullTitle();
+
     @Query("SELECT COUNT(a) > 0 FROM Animal a WHERE a.id = :animalId AND a.removedAt IS NULL")
     boolean existsById(@Param("animalId") Long animalId);
 

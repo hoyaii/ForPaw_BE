@@ -20,7 +20,8 @@ class Animal(Base):
     happen_place = Column(String(255))
     neuter = Column(String, nullable=True)
     removed_at = Column(DateTime, nullable=True)
-    introduction = Column(String(255), nullable=False)
+    introduction_title = Column(String(255))
+    introduction_content = Column(String(1020))
     name = Column(String(255))
 
 class Group(Base):
@@ -39,9 +40,6 @@ class Group(Base):
 
 class RecommendRequest(BaseModel):
     user_id: int
-
-class AnimalIntroductionRequest(BaseModel):
-    animal_id: int
 
 class GroupRecommendRequest(BaseModel):
     user_id: int

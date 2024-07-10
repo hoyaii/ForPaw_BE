@@ -79,7 +79,10 @@ public class Animal extends TimeStamp {
     private String name;
 
     @Column
-    private String introduction;
+    private String introductionTitle;
+
+    @Column
+    private String introductionContent;
 
     @Column
     private Long likeNum = 0L;
@@ -91,7 +94,7 @@ public class Animal extends TimeStamp {
     private LocalDateTime removedAt;
 
     @Builder
-    public Animal(Long id, Shelter shelter, LocalDate happenDt, String happenPlace, String kind, AnimalType category, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark, String name, String region, String introduction) {
+    public Animal(Long id, Shelter shelter, LocalDate happenDt, String happenPlace, String kind, AnimalType category, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark, String name, String region, String introductionContent, String introductionTitle) {
         this.id = id;
         this.shelter = shelter;
         this.happenDt = happenDt;
@@ -110,6 +113,7 @@ public class Animal extends TimeStamp {
         this.specialMark = specialMark;
         this.name = name;
         this.region = region;
-        this.introduction = introduction;
+        this.introductionContent = introductionContent;
+        this.introductionTitle = introductionTitle;
     }
 }

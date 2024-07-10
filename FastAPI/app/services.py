@@ -15,6 +15,17 @@ import redis
 from .config import settings
 from typing import List
 
+def create_collection(collection_name: str, fields: List[FieldSchema]):
+    # fastAPI를 시작할 때, 기존에 저장되 있던 컬렉션은 삭제
+    if utility.has_collection(collection_name):
+        collection = Collection(name=collection_name)
+        collection.drop()
+
+    # 컬렉션 생성
+    schema = CollectionSchema(fields, f"{collection_name}_vectors")
+    collection = Collection(collection_name, schema)
+    return collection
+
 # Milvus 초기화 함수
 def initialize_milvus():
     connections.connect("default", host=settings.MILVUS_HOST, port=str(settings.MILVUS_PORT))
@@ -59,6 +70,25 @@ async def get_db_session():
     async with AsyncSessionLocal() as session:
         yield session
 
+def vectorize_and_reduce(texts: List[str], pca_model: PCA) -> np.ndarray:
+    # 텍스트 데이터를 TF-IDF 벡터로 변환 후 차원 축소
+    # 백터의 길이는 Milvus 초기 설정시 설정한 차원으로 나누어져야 함 => 길이를 축소해서 나누어지게 만듦
+    tfidf_matrix = vectorizer.fit_transform(texts)
+    vectors = tfidf_matrix.toarray()
+    reduced_vectors = pca_model.fit_transform(vectors)
+
+    return reduced_vectors
+
+def insert_and_index_vectors(collection: Collection, ids: List[int], vectors: np.ndarray):
+    # Milvus에 데이터 삽입
+    collection.insert([ids, vectors.tolist()])
+
+    # 인덱스 생성
+    index_params = {"index_type": "IVF_FLAT", "metric_type": "L2", "params": {"nlist": 128}}
+    collection.create_index("vector", index_params)
+
+    collection.load()
+
 async def load_and_vectorize_animal_data():
     # 비동기 세션을 사용하여 데이터베이스에 연결. Animal 테이블에서 모든 데이터를 가져와서 리스트로 변환
     # 만약, DB에 Animal 데이터가 하나도 없다면 에러 발생하니 주의
@@ -92,6 +122,12 @@ async def load_and_vectorize_group_data():
     insert_and_index_vectors(group_collection, ids, reduced_vectors)
     
     return reduced_vectors, {group.id: idx for idx, group in enumerate(groups)}
+
+def search_similar_items(query_vec, collection, result_num):
+    search_params = {"metric_type": "L2", "params": {"nprobe": 10}}
+    results = collection.search([query_vec], "vector", search_params, limit=result_num)
+    similar_item_ids = [res for res in results[0].ids]
+    return similar_item_ids
 
 async def get_similar_animals(animal_id, animal_index, tfidf_matrix):
     # animal_id에 대한 동물이 존재여부 체크
@@ -264,38 +300,23 @@ async def generate_animal_introduction(animal_id):
         "introduction": introduction
     }
 
-def vectorize_and_reduce(texts: List[str], pca_model: PCA) -> np.ndarray:
-    # 텍스트 데이터를 TF-IDF 벡터로 변환 후 차원 축소
-    # 백터의 길이는 Milvus 초기 설정시 설정한 차원으로 나누어져야 함 => 길이를 축소해서 나누어지게 만듦
-    tfidf_matrix = vectorizer.fit_transform(texts)
-    vectors = tfidf_matrix.toarray()
-    reduced_vectors = pca_model.fit_transform(vectors)
+async def find_animal_ids_with_null_title():
+    async with get_db_session() as db:
+        result = await db.execute(select(Animal.id).filter(Animal.introduction_title.is_(None)))
+        animal_ids = result.scalars().all()
+        return animal_ids
 
-    return reduced_vectors
+async def update_animal_introductions(animal_ids):
+    async with get_db_session() as db:
+        for animal_id in animal_ids:
+            title, introduction = await generate_animal_introduction(animal_id)
 
-def insert_and_index_vectors(collection: Collection, ids: List[int], vectors: np.ndarray):
-    # Milvus에 데이터 삽입
-    collection.insert([ids, vectors.tolist()])
+            result = await db.execute(select(Animal).filter(Animal.id == animal_id))
+            animal = result.scalars().first()
 
-    # 인덱스 생성
-    index_params = {"index_type": "IVF_FLAT", "metric_type": "L2", "params": {"nlist": 128}}
-    collection.create_index("vector", index_params)
+            if animal:
+                animal.introduction_title = title
+                animal.introduction_content = introduction
+                db.add(animal)  
 
-    collection.load()
-
-def create_collection(collection_name: str, fields: List[FieldSchema]):
-    # fastAPI를 시작할 때, 기존에 저장되 있던 컬렉션은 삭제
-    if utility.has_collection(collection_name):
-        collection = Collection(name=collection_name)
-        collection.drop()
-
-    # 컬렉션 생성
-    schema = CollectionSchema(fields, f"{collection_name}_vectors")
-    collection = Collection(collection_name, schema)
-    return collection
-
-def search_similar_items(query_vec, collection, result_num):
-    search_params = {"metric_type": "L2", "params": {"nprobe": 10}}
-    results = collection.search([query_vec], "vector", search_params, limit=result_num)
-    similar_item_ids = [res.id for res in results[0].ids]
-    return similar_item_ids
+        await db.commit()

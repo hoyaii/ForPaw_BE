@@ -312,7 +312,9 @@ public class AnimalService {
                 animal.getNoticeSdt(),
                 animal.getNoticeEdt(),
                 animal.getProcessState(),
-                animal.getNeuter());
+                animal.getNeuter(),
+                animal.getIntroductionTitle(),
+                animal.getIntroductionContent());
     }
 
     @Transactional
@@ -492,6 +494,7 @@ public class AnimalService {
                 .neuter(itemDTO.neuterYn())
                 .specialMark(itemDTO.specialMark())
                 .region(shelter.getRegionCode().getUprName() + " " + shelter.getRegionCode().getOrgName())
+                .introductionContent("소개글을 작성중입니다!")
                 .build();
     }
 

@@ -37,7 +37,9 @@ public class AnimalResponse {
                                     LocalDate noticeSdt,
                                     LocalDate noticeEdt,
                                     String processState,
-                                    String neuter){}
+                                    String neuter,
+                                    String introductionTitle,
+                                    String introductionContent){}
 
     public record FindApplyListDTO(List<ApplyDTO> applies) { }
 
