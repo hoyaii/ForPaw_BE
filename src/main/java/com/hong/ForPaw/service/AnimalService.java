@@ -39,6 +39,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -481,7 +483,7 @@ public class AnimalService {
                 .shelter(shelter)
                 .happenDt(LocalDate.parse(itemDTO.happenDt(), formatter))
                 .happenPlace(itemDTO.happenPlace())
-                .kind(itemDTO.kindCd())
+                .kind(parseSpecies(itemDTO.kindCd()))
                 .category(parseAnimalType(itemDTO.kindCd()))
                 .color(itemDTO.colorCd())
                 .age(itemDTO.age())
@@ -610,5 +612,17 @@ public class AnimalService {
         return json.response().body().items().item().stream()
                 .filter(itemDTO -> LocalDate.parse(itemDTO.noticeEdt(), formatter).isAfter(yesterday))
                 .count();
+    }
+
+    // 구체적인 종 파싱
+    private static String parseSpecies(String input) {
+        Pattern pattern = Pattern.compile("\\[.*?\\] (.+)");
+        Matcher matcher = pattern.matcher(input);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+
+        return null;
     }
 }
