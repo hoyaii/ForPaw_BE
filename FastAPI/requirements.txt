@@ -12,3 +12,4 @@ openai
 langchain
 langchain_community
 cryptography
+langchain-openai

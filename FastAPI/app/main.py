@@ -5,20 +5,20 @@ from app.services import load_and_vectorize_animal_data, load_and_vectorize_grou
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from functools import partial
-from .schemas import RecommendRequest, GroupRecommendRequest
+from .schemas import RecommendRequest, GroupRecommendRequest, AnimalIntroductionRequest
 
 app = FastAPI()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 데이터를 로드하고 벡터화
-    global tfidf_matrix, animal_index, group_index, group_matrix
-    tfidf_matrix, animal_index = await load_and_vectorize_animal_data()
+    global animal_matrix, animal_index, group_index, group_matrix
+    animal_matrix, animal_index = await load_and_vectorize_animal_data()
     group_matrix, group_index = await load_and_vectorize_group_data()
 
     # 스케줄러 설정, 매일 16시 26분에 update_new_animals 함수를 실행
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(partial(update_new_animals, animal_index, tfidf_matrix), 'cron', hour=16, minute=26)
+    scheduler.add_job(partial(update_new_animals, animal_index, animal_matrix), 'cron', hour=16, minute=26)
     scheduler.add_job(partial(update_new_groups, group_index, group_matrix), 'cron', hour=16, minute=30)
     scheduler.start()
 
@@ -42,7 +42,7 @@ async def recommend_animal(request: RecommendRequest):
 
     # 각 동물 ID에 대해 유사한 동물들을 추천 받음
     for animal_id in animal_ids:
-        recommended_animals = await get_similar_animals(animal_id, animal_index, tfidf_matrix)
+        recommended_animals = await get_similar_animals(animal_id, animal_index, animal_matrix)
         unique_ids.update(recommended_animals)
 
     unique_list = list(unique_ids)
