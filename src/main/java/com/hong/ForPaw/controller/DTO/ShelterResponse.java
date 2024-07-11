@@ -14,7 +14,7 @@ public class ShelterResponse {
                                          String careTel,
                                          Long animalCnt) {}
 
-    public record FindShelterAnimalsByIdDTO(List<AnimalDTO> animals) {}
+    public record FindShelterAnimalsByIdDTO(List<AnimalDTO> animals, boolean isLastPage) {}
 
     public record AnimalDTO(Long id,
                             String name,

@@ -5,6 +5,7 @@ import com.hong.ForPaw.controller.DTO.ShelterResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Animal.Animal;
+import com.hong.ForPaw.domain.Animal.AnimalType;
 import com.hong.ForPaw.domain.RegionCode;
 import com.hong.ForPaw.controller.DTO.ShelterDTO;
 import com.hong.ForPaw.domain.Shelter;
@@ -49,6 +50,14 @@ public class ShelterService {
 
     @Value("${openAPI.shelter.uri}")
     private String baseUrl;
+
+    private static final String SORT_BY_CREATED_DATE = "createdDate";
+
+    private static final Map<String, AnimalType> ANIMAL_TYPE_MAP = Map.of(
+            "dog", AnimalType.DOG,
+            "cat", AnimalType.CAT,
+            "other", AnimalType.OTHER
+    );
 
     @Transactional
     @Scheduled(cron = "0 0 6 * * MON") // 매주 월요일 새벽 6시에 실행
@@ -113,15 +122,17 @@ public class ShelterService {
 
     @Transactional
     public ShelterResponse.FindShelterAnimalsByIdDTO findShelterAnimalsById(Long shelterId, Long userId, Integer page, String sort){
-        Pageable pageable = createPageable(page, 5, sort);
-        Page<Animal> animalPage = animalRepository.findByShelterId(shelterId, pageable);
+        AnimalType animalType = converStringToAnimalType(sort);
+        Pageable pageable = createPageable(page, 5, SORT_BY_CREATED_DATE);
+
+        Page<Animal> animalPage = animalRepository.findByShelterIdAndType(animalType, shelterId, pageable);
+        boolean isLastPage = !animalPage.hasNext();
 
         // 사용자가 '좋아요' 표시한 Animal의 ID 목록, 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
 
         List<ShelterResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
-                    Long inquiryNum = redisService.getDataInLong("inquiryNum", animal.getId().toString());
                     Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
 
                     return new ShelterResponse.AnimalDTO(
@@ -131,14 +142,14 @@ public class ShelterService {
                             animal.getGender(),
                             animal.getSpecialMark(),
                             animal.getRegion(),
-                            inquiryNum,
+                            animal.getInquiryNum(),
                             likeNum,
                             likedAnimalIds.contains(animal.getId()),
                             animal.getProfileURL());
                 })
                 .collect(Collectors.toList());
 
-        return new ShelterResponse.FindShelterAnimalsByIdDTO(animalDTOS);
+        return new ShelterResponse.FindShelterAnimalsByIdDTO(animalDTOS, isLastPage);
     }
 
     private List<Shelter> convertResponseToShelter(String response, RegionCode regionCode, List<Long> existShelterIds) throws IOException {
@@ -170,5 +181,14 @@ public class ShelterService {
 
     private Pageable createPageable(int page, int size, String sortProperty) {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
+    }
+
+    private AnimalType converStringToAnimalType(String sort) {
+        if(sort.equals("date")) {
+            return null;
+        }
+
+        return Optional.ofNullable(ANIMAL_TYPE_MAP.get(sort))
+                .orElseThrow(() -> new CustomException(ExceptionCode.BAD_APPROACH));
     }
 }

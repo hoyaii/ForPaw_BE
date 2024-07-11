@@ -12,7 +12,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -39,8 +38,8 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
     @Query("SELECT a FROM Animal a WHERE a.id IN :ids AND a.removedAt IS NULL")
     List<Animal> findAllByIdList(List<Long> ids);
     
-    @Query("SELECT a FROM Animal a WHERE a.shelter.id = :careRegNo AND a.removedAt IS NULL")
-    Page<Animal> findByShelterId(@Param("careRegNo") Long careRegNo, Pageable pageable);
+    @Query("SELECT a FROM Animal a WHERE (:category IS NULL OR a.category = :category) AND a.shelter.id = :careRegNo AND a.removedAt IS NULL")
+    Page<Animal> findByShelterIdAndType(@Param("category") AnimalType category, @Param("careRegNo") Long careRegNo, Pageable pageable);
 
     @EntityGraph(attributePaths = {"shelter"})
     @Query("SELECT a FROM Animal a WHERE a.noticeEdt < :date AND a.removedAt IS NULL")
