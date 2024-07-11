@@ -157,7 +157,7 @@ public class GroupService {
         // 로그인이 되어 있으면, 가입 시 기재한 주소를 바탕으로 그룹 조회
         if (userId != null) {
             User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new CustomException(ExceptionCode.USER_NOT_FOUND));
+                    .orElseThrow(() -> new CustomException(ExceptionCode.USER_UNAUTHORIZED));
             province = user.getProvince();
             district = user.getDistrict();
         }
@@ -336,7 +336,6 @@ public class GroupService {
 
         // 그룹 채팅방에서 탈퇴
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
-
         ChatUser chatUser = chatUserRepository.findByUserIdAndChatRoom(userId, chatRoom).get();
         chatUserRepository.delete(chatUser);
     }
@@ -359,22 +358,13 @@ public class GroupService {
         groupRepository.incrementParticipantNum(groupId);
 
         // 알람 생성
-        User applicant = entityManager.getReference(User.class, applicantId);
         String content = "가입이 승인 되었습니다!";
         String redirectURL = "groups/" + groupId + "/detail";
-        LocalDateTime date = LocalDateTime.now();
+        createAlarm(applicantId, content, redirectURL, AlarmType.join);
 
-        AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
-                applicantId,
-                content,
-                redirectURL,
-                date,
-                AlarmType.join);
-
-        brokerService.produceAlarmToUser(applicantId, alarmDTO);
-
-        // 그룹 채팅방에 참여
+        // 신청자는 그룹 채팅방에 참여됨
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
+        User applicant = entityManager.getReference(User.class, applicantId);
 
         ChatUser chatUser = ChatUser.builder()
                 .user(applicant)
@@ -401,16 +391,7 @@ public class GroupService {
         // 알람 생성
         String content = "가입이 거절 되었습니다.";
         String redirectURL = "groups/" + groupId + "/detail";
-        LocalDateTime date = LocalDateTime.now();
-
-        AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
-                applicantId,
-                content,
-                redirectURL,
-                date,
-                AlarmType.join);
-
-        brokerService.produceAlarmToUser(applicantId, alarmDTO);
+        createAlarm(applicantId, content, redirectURL, AlarmType.join);
     }
 
     @Transactional
@@ -423,7 +404,6 @@ public class GroupService {
 
         Group groupRef = entityManager.getReference(Group.class, groupId);
         User userRef = entityManager.getReference(User.class, userId);
-
         Post notice = Post.builder()
                 .user(userRef)
                 .group(groupRef)
@@ -440,16 +420,7 @@ public class GroupService {
         for(User user : users){
             String content = "공지: " + requestDTO.title();
             String redirectURL = "posts/" + notice.getId() + "/entire";
-            LocalDateTime date = LocalDateTime.now();
-
-            AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
-                    user.getId(),
-                    content,
-                    redirectURL,
-                    date,
-                    AlarmType.notice);
-
-            brokerService.produceAlarmToUser(user.getId(), alarmDTO);
+            createAlarm(user.getId(), content, redirectURL, AlarmType.notice);
         }
 
         return new GroupResponse.CreateNoticeDTO(notice.getId());
@@ -596,16 +567,7 @@ public class GroupService {
         for(User user : users){
             String content = "새로운 정기 모임: " + requestDTO.name();
             String redirectURL = "groups/" + groupId + "/meetings/"+meeting.getId();
-            LocalDateTime date = LocalDateTime.now();
-
-            AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
-                    user.getId(),
-                    content,
-                    redirectURL,
-                    date,
-                    AlarmType.newMeeting);
-
-            brokerService.produceAlarmToUser(user.getId(), alarmDTO);
+            createAlarm(user.getId(), content, redirectURL, AlarmType.newMeeting);
         }
         
         return new GroupResponse.CreateMeetingDTO(meeting.getId());
@@ -690,7 +652,7 @@ public class GroupService {
 
     public List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, Province province, List<Long> likedGroupIds){
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
-        Set<Long> joinedGroupIdSet = userId != null ? getGroupIdSet(userId) : Collections.emptySet();
+        Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
 
         // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순
         Sort sort = Sort.by(Sort.Order.desc(SORT_BY_LIKE_NUM), Sort.Order.desc(SORT_BY_PARTICIPANT_NUM));
@@ -728,7 +690,7 @@ public class GroupService {
 
     private List<GroupResponse.LocalGroupDTO> getLocalGroupDTOS(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable){
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
-        Set<Long> joinedGroupIdSet = userId != null ? getGroupIdSet(userId) : Collections.emptySet();
+        Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
 
         Page<Group> localGroups = groupRepository.findByDistrictAndSubDistrict(province, district, pageable);
 
@@ -756,7 +718,7 @@ public class GroupService {
 
     private List<GroupResponse.NewGroupDTO> getNewGroupDTOS(Long userId, Province province, Pageable pageable){
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
-        Set<Long> joinedGroupIdSet = userId != null ? getGroupIdSet(userId) : Collections.emptySet();
+        Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
 
         Page<Group> newGroups = groupRepository.findByProvince(province, pageable);
 
@@ -798,7 +760,7 @@ public class GroupService {
         return myGroupDTOS;
     }
 
-    private Set<Long> getGroupIdSet(Long userId){
+    private Set<Long> getAllGroupIdSet(Long userId){
         List<Group> groups = groupUserRepository.findAllGroupByUserId(userId);
 
         Set<Long> groupIdSet = groups.stream()
@@ -921,5 +883,18 @@ public class GroupService {
 
         brokerService.registerDirectExQueue(exchangeName, queueName);
         brokerService.registerChatListener(listenerId, queueName);
+    }
+
+    private void createAlarm(Long userId, String content, String redirectURL, AlarmType alarmType) {
+        LocalDateTime date = LocalDateTime.now();
+
+        AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
+                userId,
+                content,
+                redirectURL,
+                date,
+                alarmType);
+
+        brokerService.produceAlarmToUser(userId, alarmDTO);
     }
 }
