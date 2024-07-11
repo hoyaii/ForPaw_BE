@@ -1,11 +1,11 @@
 # main.py
 from fastapi import FastAPI, BackgroundTasks
 import random
-from app.services import load_and_vectorize_animal_data, load_and_vectorize_group_data, get_similar_animals, update_new_animals, redis_client, generate_animal_introduction, get_similar_groups, update_new_groups, find_animal_ids_with_null_title, update_animal_introductions
+from app.services import load_and_vectorize_animal_data, load_and_vectorize_group_data, get_similar_animals, update_new_animals, redis_client, generate_animal_introduction, get_similar_groups, update_new_groups, get_animal_ids_with_null_title, update_animal_introductions
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from functools import partial
-from .schemas import RecommendRequest, GroupRecommendRequest, AnimalIntroductionRequest
+from .dto import RecommendRequest, GroupRecommendRequest, AnimalIntroductionRequest
 
 app = FastAPI()
 
@@ -78,7 +78,13 @@ async def recommend_group(request: GroupRecommendRequest):
 
 @app.post("/introduce/animal")
 async def process_animal_introduction(background_tasks: BackgroundTasks):
-    animal_ids = await find_animal_ids_with_null_title()
+    animal_ids = await get_animal_ids_with_null_title()
     background_tasks.add_task(update_animal_introductions, animal_ids)
     
     return {"success": "true", "code": 200, "message": "OK", "result": "null"}
+
+@app.post("/introduce/animal/test")
+async def introduce_animal(request: AnimalIntroductionRequest):
+    introduction = await generate_animal_introduction(request.animal_id)
+    
+    return {"introduction": introduction}

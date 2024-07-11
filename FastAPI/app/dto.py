@@ -1,4 +1,4 @@
-# schemas.py
+# dto.py
 from pydantic import BaseModel
 
 class RecommendRequest(BaseModel):
@@ -6,3 +6,6 @@ class RecommendRequest(BaseModel):
 
 class GroupRecommendRequest(BaseModel):
     user_id: int
+
+class AnimalIntroductionRequest(BaseModel):
+    animal_id: int
