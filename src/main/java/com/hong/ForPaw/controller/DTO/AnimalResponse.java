@@ -7,9 +7,11 @@ import java.util.List;
 
 public class AnimalResponse {
 
-    public record FindAnimalListDTO(List<AnimalDTO> animals) {}
+    public record FindAnimalListDTO(List<AnimalDTO> animals, boolean isLastPage) {}
 
-    public record FindLikeAnimalListDTO(List<AnimalDTO> animals) {}
+    public record FindRecommendedAnimalList(List<AnimalDTO> animals) {}
+
+    public record FindLikeAnimalListDTO(List<AnimalDTO> animals, boolean isLastPage) {}
 
     public record AnimalDTO(Long id,
                             String name,

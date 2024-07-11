@@ -36,7 +36,7 @@ public class AnimalController {
                 .map(User::getId)
                 .orElse(null);
 
-        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findRecommendedAnimalList(userId);
+        AnimalResponse.FindRecommendedAnimalList responseDTO = animalService.findRecommendedAnimalList(userId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

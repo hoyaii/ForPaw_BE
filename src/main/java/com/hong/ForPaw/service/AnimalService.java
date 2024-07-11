@@ -199,6 +199,7 @@ public class AnimalService {
 
         Pageable pageable =createPageable(page, 5, SORT_BY_CREATED_DATE);
         Page<Animal> animalPage = animalRepository.findAllByAnimalType(animalType, pageable);
+        boolean isLastPage = !animalPage.hasNext();
 
         if(animalPage.isEmpty()){
             throw new CustomException(ExceptionCode.ANIMAL_NOT_EXIST);
@@ -225,11 +226,11 @@ public class AnimalService {
                 })
                 .collect(Collectors.toList());
 
-        return new AnimalResponse.FindAnimalListDTO(animalDTOS);
+        return new AnimalResponse.FindAnimalListDTO(animalDTOS, isLastPage);
     }
 
     @Transactional
-    public AnimalResponse.FindAnimalListDTO findRecommendedAnimalList(Long userId){
+    public AnimalResponse.FindRecommendedAnimalList findRecommendedAnimalList(Long userId){
         // 추천 동물 ID 목록
         List<Long> recommendedAnimalIds = getRecommendedAnimalIdList(userId);
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
@@ -252,13 +253,14 @@ public class AnimalService {
                 })
                 .collect(Collectors.toList());
 
-        return new AnimalResponse.FindAnimalListDTO(animalDTOS);
+        return new AnimalResponse.FindRecommendedAnimalList(animalDTOS);
     }
 
     @Transactional
     public AnimalResponse.FindLikeAnimalListDTO findLikeAnimalList(Integer page, Long userId){
-        Pageable pageable =createPageable(page, 5, SORT_BY_ID);
+        Pageable pageable = createPageable(page, 5, SORT_BY_ID);
         Page<Animal> animalPage = favoriteAnimalRepository.findFavoriteAnimalByUserId(userId, pageable);
+        boolean isLastPage = !animalPage.hasNext();
 
         if(animalPage.isEmpty()){
             throw new CustomException(ExceptionCode.ANIMAL_NOT_EXIST);
@@ -282,7 +284,7 @@ public class AnimalService {
                 })
                 .collect(Collectors.toList());
 
-        return new AnimalResponse.FindLikeAnimalListDTO(animalDTOS);
+        return new AnimalResponse.FindLikeAnimalListDTO(animalDTOS, isLastPage);
     }
 
     @Transactional
