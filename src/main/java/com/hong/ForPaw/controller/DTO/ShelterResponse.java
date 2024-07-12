@@ -21,12 +21,15 @@ public class ShelterResponse {
                             String age,
                             String gender,
                             String specialMark,
+                            String kind,
+                            String weight,
+                            String neuter,
+                            String processState,
                             String region,
                             Long inquiryNum,
                             Long likeNum,
                             Boolean isLike,
-                            String profileURL
-    ){};
+                            String profileURL){};
 
     public record ShelterDTO(Long id,
                              String name,
