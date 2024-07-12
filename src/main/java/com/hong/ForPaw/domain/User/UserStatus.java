@@ -1,5 +1,6 @@
 package com.hong.ForPaw.domain.User;
 
+import com.hong.ForPaw.domain.Authentication.Visit;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -22,6 +23,10 @@ public class UserStatus {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "visit_id")
+    private Visit visit;
+
     @Column
     private boolean isActive;
 
@@ -29,13 +34,13 @@ public class UserStatus {
     private LocalDateTime suspensionStart;
 
     @Column
-    private Integer suspensionDays;
+    private Long suspensionDays;
 
     @Column
     private String suspensionReason;
 
     @Builder
-    public UserStatus(User user, boolean isActive, LocalDateTime suspensionStart, Integer suspensionDays, String suspensionReason) {
+    public UserStatus(User user, boolean isActive, LocalDateTime suspensionStart, Long suspensionDays, String suspensionReason) {
         this.user = user;
         this.isActive = isActive;
         this.suspensionStart = suspensionStart;

@@ -22,6 +22,11 @@ public interface ApplyRepository extends JpaRepository<Apply, Long> {
     @Query("SELECT a FROM Apply a WHERE a.user.id = :userId AND a.removedAt IS NULL")
     List<Apply> findAllByUserId(@Param("userId") Long userId);
 
+    @Query("SELECT COUNT(a) FROM Apply a WHERE a.user.id = : userId AND a.status = 'PROCESSED' ")
+    Long countByUserIdProcessed(@Param("userId") Long userId);
+    @Query("SELECT COUNT(a) FROM Apply a WHERE a.user.id = : userId AND a.status = 'PROCESSING' ")
+    Long countByUserIdProcessing(@Param("userId") Long userId);
+
     @Query("SELECT COUNT(a) FROM Apply a WHERE a.status = 'PROCESSING' AND a.removedAt IS NULL")
     Long countProcessing();
 

@@ -1,5 +1,6 @@
 package com.hong.ForPaw.controller.DTO;
 
+import com.hong.ForPaw.domain.User.UserRole;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,4 +28,21 @@ public class AuthenticationResponse {
                                   Long newPost,
                                   Long newComment,
                                   Long newAdoptApplication) {}
+
+    public record findUserList(List<UserDTO> users){}
+
+    public record UserDTO(Long id,
+                          String nickname,
+                          String email,
+                          LocalDateTime signUpDate,
+                          LocalDateTime lastLogin,
+                          Long applicationsSubmitted,
+                          Long applicationsCompleted,
+                          UserRole role,
+                          boolean isActive,
+                          LocalDateTime suspensionStart,
+                          Long suspensionDays,
+                          String suspensionReason
+    ){}
+
 }
