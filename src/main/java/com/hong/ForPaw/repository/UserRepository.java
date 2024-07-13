@@ -1,9 +1,12 @@
 package com.hong.ForPaw.repository;
 
 import com.hong.ForPaw.domain.District;
+import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Province;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.User.UserRole;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -19,6 +22,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u FROM User u WHERE u.removedAt IS NULL")
     List<User> findAll();
+
+    @EntityGraph(attributePaths = {"userStatus"})
+    @Query("SELECT u FROM User u WHERE u.removedAt IS NULL")
+    Page<User> findAllWithUserStatus(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"userStatus"})
+    @Query("SELECT u FROM User u WHERE (u.role = 'ADMIN' OR u.role = 'USER') AND u.removedAt IS NULL")
+    Page<User> findAllAdminAndUserWithStatus(Pageable pageable);
 
     @Query("SELECT u FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
     Optional<User> findById(@Param("id") Long id);
