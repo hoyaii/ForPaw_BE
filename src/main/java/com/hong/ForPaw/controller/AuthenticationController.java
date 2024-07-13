@@ -62,5 +62,12 @@ public class AuthenticationController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
     }
 
+    @PostMapping("/admin/user/unsuspend")
+    public ResponseEntity<?> UnSuspend(@AuthenticationPrincipal CustomUserDetails customUserDetails,
+        Long userId){
+        authenticationService.UnSuspend(customUserDetails.getUser().getId(),userId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
+    }
+
 
 }

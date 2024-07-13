@@ -194,6 +194,21 @@ public class AuthenticationService {
         byUserIdone.UpdatesuspensionReason(userBanDTO.reason());
     }
 
+    @Transactional
+    public void UnSuspend(Long id, Long userId){
+        checkSuperAuthority(id);
+
+        userRepository.findById(userId).orElseThrow(
+            () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+        UserStatus byUserIdone = userStatusRepository.findByUserIdOne(userId);
+        byUserIdone.UpdateisActive(true);
+        byUserIdone.UpdatesuspensionStart(null);
+        byUserIdone.UpdatesuspensionDays(null);
+        byUserIdone.UpdatesuspensionReason(null);
+
+    }
+
     private String getPreviousHourKey() {
         LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");
