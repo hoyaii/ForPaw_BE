@@ -208,6 +208,15 @@ public class AuthenticationService {
         byUserIdone.UpdatesuspensionReason(null);
 
     }
+    @Transactional
+    public void DeleteUser(Long id, Long userId){
+        checkSuperAuthority(id);
+
+        userRepository.findById(userId).orElseThrow(
+            () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+        userRepository.deleteById(userId);
+    }
 
     private String getPreviousHourKey() {
         LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);

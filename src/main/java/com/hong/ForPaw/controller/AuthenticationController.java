@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -69,5 +70,11 @@ public class AuthenticationController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
     }
 
+    @DeleteMapping("/admin/user")
+    public ResponseEntity<?> DeleteUser(@AuthenticationPrincipal CustomUserDetails customUserDetails,
+        Long userId){
+        authenticationService.DeleteUser(customUserDetails.getUser().getId(),userId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
+    }
 
 }
