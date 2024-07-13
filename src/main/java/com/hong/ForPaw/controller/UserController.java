@@ -153,8 +153,16 @@ public class UserController {
 
     @PatchMapping("/auth/access")
     public ResponseEntity<?> updateAccessToken(@RequestBody @Valid UserRequest.UpdateAccessTokenDTO requestDTO){
-        UserResponse.AccessTokenDTO responseDTO = userService.updateAccessToken(requestDTO);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+        Map<String, String> tokens = userService.updateAccessToken(requestDTO);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
+                        .httpOnly(true)
+                        .secure(true)
+                        .sameSite("None")
+                        .maxAge(JWTProvider.REFRESH_EXP)
+                        .build().toString())
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(tokens.get("accessToken"))));
     }
 
     // 관리자 페이지용
