@@ -1,6 +1,7 @@
 package com.hong.ForPaw.controller;
 
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse;
+import com.hong.ForPaw.controller.DTO.AuthenticationResponse.UserBanDTO;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse.UserRoleDTO;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse.findUserList;
 import com.hong.ForPaw.core.security.CustomUserDetails;
@@ -52,6 +53,13 @@ public class AuthenticationController {
         UserRoleDTO userRole = authenticationService.changeUserRole(
             userDetails.getUser().getId(), userRoleDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,userRole));
+    }
+
+    @PostMapping("/admin/user/suspend")
+    public ResponseEntity<?> BanUser(@AuthenticationPrincipal CustomUserDetails customUserDetails,
+        AuthenticationResponse.UserBanDTO userBanDTO){
+        authenticationService.BanUser(customUserDetails.getUser().getId(),userBanDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
     }
 
 

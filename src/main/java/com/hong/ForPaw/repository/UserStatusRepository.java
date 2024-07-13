@@ -17,4 +17,8 @@ public interface UserStatusRepository extends JpaRepository<UserStatus, Long> {
     @EntityGraph(attributePaths = {"user"})
     @Query("SELECT u FROM UserStatus u WHERE u.user.id = :id")
     Page<UserStatus> findByUserId(@Param("id") Long id, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT u FROM UserStatus u WHERE u.user.id = :id")
+    UserStatus findByUserIdOne(@Param("id") Long id);
 }

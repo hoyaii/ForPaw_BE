@@ -2,9 +2,6 @@ package com.hong.ForPaw.service;
 
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse.UserDTO;
-import com.hong.ForPaw.controller.DTO.AuthenticationResponse.findUserList;
-import com.hong.ForPaw.controller.DTO.PostResponse;
-import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Authentication.Visit;
@@ -22,8 +19,6 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -183,6 +178,20 @@ public class AuthenticationService {
         );
         user.updateRole(userRoleDTO.role());
         return userRoleDTO;
+    }
+
+    @Transactional
+    public void BanUser(Long id, AuthenticationResponse.UserBanDTO userBanDTO){
+        checkSuperAuthority(id);
+
+        userRepository.findById(userBanDTO.userId()).orElseThrow(
+            () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+        UserStatus byUserIdone = userStatusRepository.findByUserIdOne(userBanDTO.userId());
+        byUserIdone.UpdateisActive(false);
+        byUserIdone.UpdatesuspensionStart(LocalDateTime.now().minusHours(1));
+        byUserIdone.UpdatesuspensionDays(userBanDTO.duration());
+        byUserIdone.UpdatesuspensionReason(userBanDTO.reason());
     }
 
     private String getPreviousHourKey() {

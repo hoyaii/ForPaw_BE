@@ -8,6 +8,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import lombok.Setter;
+import org.joda.time.DateTime;
+import org.springframework.stereotype.Service;
 
 @Entity
 @Table(name = "user_status_tb")
@@ -46,5 +49,20 @@ public class UserStatus {
         this.suspensionStart = suspensionStart;
         this.suspensionDays = suspensionDays;
         this.suspensionReason = suspensionReason;
+    }
+
+    public void UpdatesuspensionReason(String suspensionReason){
+        this.suspensionReason = suspensionReason;
+    }
+
+    public void UpdatesuspensionDays(Long suspensionDays){
+        this.suspensionDays = suspensionDays;
+    }
+
+    public void UpdatesuspensionStart(LocalDateTime suspensionStart){
+        this.suspensionStart = suspensionStart;
+    }
+    public void UpdateisActive(Boolean isActive){
+        this.isActive = isActive;
     }
 }

@@ -47,4 +47,6 @@ public class AuthenticationResponse {
 
     public record UserRoleDTO(Long userId, UserRole role){}
 
+    public record UserBanDTO(Long userId, Long duration, String reason){};
+
 }
