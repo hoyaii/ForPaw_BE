@@ -1,17 +1,20 @@
 package com.hong.ForPaw.controller;
 
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse;
+import com.hong.ForPaw.controller.DTO.AuthenticationResponse.ApplyDTO;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse.UserBanDTO;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse.UserRoleDTO;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse.findUserList;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.security.JWTProvider;
 import com.hong.ForPaw.core.utils.ApiUtils;
+import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -66,15 +69,25 @@ public class AuthenticationController {
     @PostMapping("/admin/user/unsuspend")
     public ResponseEntity<?> UnSuspend(@AuthenticationPrincipal CustomUserDetails customUserDetails,
         Long userId){
-        authenticationService.UnSuspend(customUserDetails.getUser().getId(),userId);
+        authenticationService.unSuspend(customUserDetails.getUser().getId(),userId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
     }
 
     @DeleteMapping("/admin/user")
     public ResponseEntity<?> DeleteUser(@AuthenticationPrincipal CustomUserDetails customUserDetails,
         Long userId){
-        authenticationService.DeleteUser(customUserDetails.getUser().getId(),userId);
+        authenticationService.deleteUser(customUserDetails.getUser().getId(),userId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
+    }
+
+    @GetMapping("/admin/adoption")
+    public ResponseEntity<?> GetApply(@AuthenticationPrincipal CustomUserDetails customUserDetails,
+        @RequestParam(required = false)ApplyStatus applyStatus,
+        @RequestParam(defaultValue = "0") int page){
+        ApplyDTO applyList = authenticationService.getApplyList(customUserDetails.getUser().getId(),
+            applyStatus, page);
+
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,applyList));
     }
 
 }

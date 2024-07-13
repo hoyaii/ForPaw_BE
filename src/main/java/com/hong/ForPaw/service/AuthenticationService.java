@@ -4,6 +4,7 @@ import com.hong.ForPaw.controller.DTO.AuthenticationResponse;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse.UserDTO;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Authentication.Visit;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.User.UserRole;
@@ -222,7 +223,7 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public void UnSuspend(Long id, Long userId){
+    public void unSuspend(Long id, Long userId){
         checkAdminAuthority(id);
 
         userRepository.findById(userId).orElseThrow(
@@ -236,13 +237,20 @@ public class AuthenticationService {
 
     }
     @Transactional
-    public void DeleteUser(Long id, Long userId){
+    public void deleteUser(Long id, Long userId){
         checkSuperAuthority(id);
 
         userRepository.findById(userId).orElseThrow(
             () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
         userRepository.deleteByUserId(userId);
+    }
+
+    @Transactional
+    public AuthenticationResponse.ApplyDTO getApplyList(Long id, ApplyStatus applyStatus, int page){
+        checkAdminAuthority(id);
+
+
     }
 
     private String getPreviousHourKey() {

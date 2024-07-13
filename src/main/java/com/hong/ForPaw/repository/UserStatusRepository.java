@@ -20,7 +20,7 @@ public interface UserStatusRepository extends JpaRepository<UserStatus, Long> {
     Page<UserStatus> findByAdminRole(Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT u FROM UserStatus u WHERE u.user.role = 'USER' or u.user.role = 'ADMIN'")
+    @Query("SELECT u FROM UserStatus u WHERE u.user.role = 'USER' or u.user.role = 'ADMIN' AND u.user.removedAt IS NULL")
     Page<UserStatus> findBySuperRole(Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})

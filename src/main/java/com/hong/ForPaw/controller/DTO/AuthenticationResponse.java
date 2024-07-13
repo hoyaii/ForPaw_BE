@@ -1,5 +1,6 @@
 package com.hong.ForPaw.controller.DTO;
 
+import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.User.UserRole;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -48,5 +49,21 @@ public class AuthenticationResponse {
     public record UserRoleDTO(Long userId, UserRole role){}
 
     public record UserBanDTO(Long userId, Long duration, String reason){};
+
+    public record GetApplyDTO(List<ApplyDTO> applyDTOS){};
+
+    public record ApplyDTO(Long applyId,
+                           LocalDateTime applyDate,
+                           Long animalId,
+                           String kind,
+                           String gender,
+                           String age,
+                           String userName,
+                           String tel,
+                           String residence,
+                           String careName,
+                           String careTel,
+                           ApplyStatus status
+    ){};
 
 }
