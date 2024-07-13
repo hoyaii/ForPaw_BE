@@ -45,4 +45,6 @@ public class AuthenticationResponse {
                           String suspensionReason
     ){}
 
+    public record UserRoleDTO(Long userId, UserRole role){}
+
 }

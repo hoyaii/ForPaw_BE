@@ -152,6 +152,8 @@ public class AuthenticationService {
     public AuthenticationResponse.findUserList findUserList(Long userId, UserRole userRole, int page) {
         PageRequest pageRequest = PageRequest.of(page, 5);
 
+        checkAdminAuthority(userId);
+
         Page<UserStatus> userStatusPage = userStatusRepository.findByUserId(userId, pageRequest);
         List<UserDTO> userDTOS = userStatusPage.getContent().stream()
             .map(userStatus -> new UserDTO(
@@ -172,6 +174,17 @@ public class AuthenticationService {
         return new AuthenticationResponse.findUserList(userDTOS);
     }
 
+    @Transactional
+    public AuthenticationResponse.UserRoleDTO changeUserRole(Long id,
+        AuthenticationResponse.UserRoleDTO userRoleDTO){
+        checkSuperAuthority(id);
+        User user = userRepository.findById(userRoleDTO.userId()).orElseThrow(
+            () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+        user.updateRole(userRoleDTO.role());
+        return userRoleDTO;
+    }
+
     private String getPreviousHourKey() {
         LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");
@@ -190,6 +203,16 @@ public class AuthenticationService {
         );
 
         if (!role.equals(UserRole.ADMIN) && !role.equals(UserRole.SUPER)) {
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
+    }
+
+    private void checkSuperAuthority(Long userId) {
+        UserRole role = userRepository.findRoleById(userId).orElseThrow(
+            () -> new CustomException(ExceptionCode.USER_FORBIDDEN)
+        );
+
+        if (!role.equals(UserRole.SUPER)) {
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
     }

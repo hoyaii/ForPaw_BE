@@ -1,6 +1,7 @@
 package com.hong.ForPaw.controller;
 
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse;
+import com.hong.ForPaw.controller.DTO.AuthenticationResponse.UserRoleDTO;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse.findUserList;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.security.JWTProvider;
@@ -16,6 +17,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,7 +36,7 @@ public class AuthenticationController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @GetMapping("/user")
+    @GetMapping("/admin/user")
     public ResponseEntity<?> getUsers(
         @AuthenticationPrincipal CustomUserDetails userDetails,
         @RequestParam(defaultValue = "0") int page) {
@@ -42,4 +45,14 @@ public class AuthenticationController {
 
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,userList));
     }
+
+    @PatchMapping("/admin/user/role")
+    public ResponseEntity<?> ChangeUserRole(@AuthenticationPrincipal CustomUserDetails userDetails,
+        AuthenticationResponse.UserRoleDTO userRoleDTO){
+        UserRoleDTO userRole = authenticationService.changeUserRole(
+            userDetails.getUser().getId(), userRoleDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,userRole));
+    }
+
+
 }
