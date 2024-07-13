@@ -152,5 +152,15 @@ public class AuthenticationService {
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
     }
+
+    private void checkSuperAuthority(Long userId){
+        UserRole role = userRepository.findRoleById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_FORBIDDEN)
+        );
+
+        if(!role.equals(UserRole.SUPER)){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
+    }
 }
 
