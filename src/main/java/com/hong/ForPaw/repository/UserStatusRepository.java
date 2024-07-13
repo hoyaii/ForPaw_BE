@@ -1,6 +1,7 @@
 package com.hong.ForPaw.repository;
 
 import com.hong.ForPaw.domain.User.User;
+import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.UserStatus;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -15,8 +16,12 @@ import org.springframework.stereotype.Repository;
 public interface UserStatusRepository extends JpaRepository<UserStatus, Long> {
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT u FROM UserStatus u WHERE u.user.id = :id")
-    Page<UserStatus> findByUserId(@Param("id") Long id, Pageable pageable);
+    @Query("SELECT u FROM UserStatus u WHERE u.user.role = 'USER'")
+    Page<UserStatus> findByAdminRole(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT u FROM UserStatus u WHERE u.user.role = 'USER' or u.user.role = 'ADMIN'")
+    Page<UserStatus> findBySuperRole(Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})
     @Query("SELECT u FROM UserStatus u WHERE u.user.id = :id")

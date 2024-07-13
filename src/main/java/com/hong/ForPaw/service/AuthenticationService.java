@@ -144,27 +144,54 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public AuthenticationResponse.findUserList findUserList(Long userId, UserRole userRole, int page) {
+    public AuthenticationResponse.findUserList findUserList(Long Id, UserRole Role, int page) {
         PageRequest pageRequest = PageRequest.of(page, 5);
 
-        checkAdminAuthority(userId);
+        checkAdminAuthority(Id);
 
-        Page<UserStatus> userStatusPage = userStatusRepository.findByUserId(userId, pageRequest);
-        List<UserDTO> userDTOS = userStatusPage.getContent().stream()
-            .map(userStatus -> new UserDTO(
-                userStatus.getUser().getId(),
-                userStatus.getUser().getNickName(),
-                userStatus.getUser().getEmail(),
-                userStatus.getUser().getCreatedDate(),
-                userStatus.getVisit().getDate(),
-                applyRepository.countByUserIdProcessed(userStatus.getUser().getId()),
-                applyRepository.countByUserIdProcessing(userStatus.getUser().getId()),
-                userStatus.getUser().getRole(),
-                userStatus.isActive(),
-                userStatus.getSuspensionStart(),
-                userStatus.getSuspensionDays(),
-                userStatus.getSuspensionReason())
-            ).toList();
+        userRepository.findById(Id).orElseThrow(
+            () -> new CustomException(ExceptionCode.ADMIN_NOT_FOUND)
+        );
+
+        List<UserDTO> userDTOS = null;
+
+        if (Role.equals(UserRole.SUPER)){
+            Page<UserStatus> userStatusPage = userStatusRepository.findBySuperRole(pageRequest);
+            userDTOS = userStatusPage.getContent().stream()
+                .map(userStatus -> new UserDTO(
+                    userStatus.getUser().getId(),
+                    userStatus.getUser().getNickName(),
+                    userStatus.getUser().getEmail(),
+                    userStatus.getUser().getCreatedDate(),
+                    userStatus.getVisit().getDate(),
+                    applyRepository.countByUserIdProcessed(userStatus.getUser().getId()),
+                    applyRepository.countByUserIdProcessing(userStatus.getUser().getId()),
+                    userStatus.getUser().getRole(),
+                    userStatus.isActive(),
+                    userStatus.getSuspensionStart(),
+                    userStatus.getSuspensionDays(),
+                    userStatus.getSuspensionReason())
+                ).toList();
+        }
+        if (Role.equals(UserRole.ADMIN)){
+            Page<UserStatus> userStatusPage = userStatusRepository.findByAdminRole(pageRequest);
+            userDTOS = userStatusPage.getContent().stream()
+                .map(userStatus -> new UserDTO(
+                    userStatus.getUser().getId(),
+                    userStatus.getUser().getNickName(),
+                    userStatus.getUser().getEmail(),
+                    userStatus.getUser().getCreatedDate(),
+                    userStatus.getVisit().getDate(),
+                    applyRepository.countByUserIdProcessed(userStatus.getUser().getId()),
+                    applyRepository.countByUserIdProcessing(userStatus.getUser().getId()),
+                    userStatus.getUser().getRole(),
+                    userStatus.isActive(),
+                    userStatus.getSuspensionStart(),
+                    userStatus.getSuspensionDays(),
+                    userStatus.getSuspensionReason())
+                ).toList();
+        }
+
 
         return new AuthenticationResponse.findUserList(userDTOS);
     }
@@ -172,7 +199,7 @@ public class AuthenticationService {
     @Transactional
     public AuthenticationResponse.UserRoleDTO changeUserRole(Long id,
         AuthenticationResponse.UserRoleDTO userRoleDTO){
-        checkSuperAuthority(id);
+        checkAdminAuthority(id);
         User user = userRepository.findById(userRoleDTO.userId()).orElseThrow(
             () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
@@ -182,21 +209,21 @@ public class AuthenticationService {
 
     @Transactional
     public void BanUser(Long id, AuthenticationResponse.UserBanDTO userBanDTO){
-        checkSuperAuthority(id);
+        checkAdminAuthority(id);
 
         userRepository.findById(userBanDTO.userId()).orElseThrow(
             () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
         UserStatus byUserIdone = userStatusRepository.findByUserIdOne(userBanDTO.userId());
         byUserIdone.UpdateisActive(false);
-        byUserIdone.UpdatesuspensionStart(LocalDateTime.now().minusHours(1));
+        byUserIdone.UpdatesuspensionStart(LocalDateTime.now());
         byUserIdone.UpdatesuspensionDays(userBanDTO.duration());
         byUserIdone.UpdatesuspensionReason(userBanDTO.reason());
     }
 
     @Transactional
     public void UnSuspend(Long id, Long userId){
-        checkSuperAuthority(id);
+        checkAdminAuthority(id);
 
         userRepository.findById(userId).orElseThrow(
             () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
@@ -215,7 +242,7 @@ public class AuthenticationService {
         userRepository.findById(userId).orElseThrow(
             () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
-        userRepository.deleteById(userId);
+        userRepository.deleteByUserId(userId);
     }
 
     private String getPreviousHourKey() {

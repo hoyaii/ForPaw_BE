@@ -63,4 +63,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Modifying
     @Query("DELETE FROM User u WHERE u.removedAt <= :cutoffDate")
     void deleteAllWithRemovedBefore(LocalDateTime cutoffDate);
+
+    @Query("UPDATE User u SET u.removedAt = CURRENT_TIMESTAMP WHERE u.id = :id")
+    void deleteByUserId(@Param("id") Long id);
 }
