@@ -1,6 +1,10 @@
 package com.hong.ForPaw.repository;
 
 import com.hong.ForPaw.domain.Apply.Apply;
+import com.hong.ForPaw.domain.Apply.ApplyStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -49,4 +53,11 @@ public interface ApplyRepository extends JpaRepository<Apply, Long> {
     Long findAnimalIdById(@Param("applyId") Long applyId);
 
     void deleteAllByUserId(Long userId);
+    @EntityGraph(attributePaths = {"animal"})
+    @Query("SELECT a From Apply a WHERE a.removedAt IS NULL")
+    Page<Apply> findAllApply(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"animal"})
+    @Query("SELECT a From Apply a WHERE a.status = :applyStatus AND a.removedAt IS NULL")
+    Page<Apply> findProcessApply(Pageable pageable, @Param("applyStatus") ApplyStatus applyStatus);
 }

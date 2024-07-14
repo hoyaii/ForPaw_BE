@@ -74,4 +74,8 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
 
     @Query("SELECT COUNT(a) FROM Animal a WHERE a.shelter.id = :shelterId AND a.removedAt IS NULL")
     Long countByShelterId(@Param("shelterId") Long shelterId);
+
+    @EntityGraph(attributePaths = {"shelter"})
+    @Query("SELECT a FROM Animal a WHERE a.id = :id")
+    Animal animalShelter(@Param("id")Long id);
 }

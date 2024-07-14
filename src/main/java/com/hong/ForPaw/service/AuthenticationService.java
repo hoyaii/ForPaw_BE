@@ -1,9 +1,11 @@
 package com.hong.ForPaw.service;
 
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse;
+import com.hong.ForPaw.controller.DTO.AuthenticationResponse.ApplyDTO;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse.UserDTO;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Apply.Apply;
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Authentication.Visit;
 import com.hong.ForPaw.domain.User.User;
@@ -14,6 +16,7 @@ import com.hong.ForPaw.repository.ApplyRepository;
 import com.hong.ForPaw.repository.Authentication.VisitRepository;
 import com.hong.ForPaw.repository.Post.CommentRepository;
 import com.hong.ForPaw.repository.Post.PostRepository;
+import com.hong.ForPaw.repository.ShelterRepository;
 import com.hong.ForPaw.repository.UserRepository;
 import com.hong.ForPaw.repository.UserStatusRepository;
 import jakarta.persistence.EntityManager;
@@ -247,9 +250,54 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public AuthenticationResponse.ApplyDTO getApplyList(Long id, ApplyStatus applyStatus, int page){
+    public List<AuthenticationResponse.ApplyDTO> getApplyList(Long id, ApplyStatus applyStatus, int page){
         checkAdminAuthority(id);
+        PageRequest pageRequest = PageRequest.of(page, 5);
 
+        List<ApplyDTO> list = null;
+
+        if (applyStatus == null){
+            Page<Apply> allApply = applyRepository.findAllApply(pageRequest);
+            list = allApply.getContent().stream()
+                .map(apply -> new ApplyDTO(
+                    apply.getId(),
+                    apply.getCreatedDate(),
+                    apply.getAnimal().getId(),
+                    apply.getAnimal().getKind(),
+                    apply.getAnimal().getGender(),
+                    apply.getAnimal().getAge(),
+                    apply.getName(),
+                    apply.getTel(),
+                    apply.getResidence(),
+                    animalRepository.animalShelter(apply.getAnimal().getId()).getShelter()
+                        .getName(),
+                    animalRepository.animalShelter(apply.getAnimal().getId()).getShelter()
+                        .getCareTel(),
+                    apply.getStatus()
+                )).toList();
+        }
+        if (applyStatus != null){
+            Page<Apply> allApply = applyRepository.findProcessApply(pageRequest,applyStatus);
+            list = allApply.getContent().stream()
+                .map(apply -> new ApplyDTO(
+                    apply.getId(),
+                    apply.getCreatedDate(),
+                    apply.getAnimal().getId(),
+                    apply.getAnimal().getKind(),
+                    apply.getAnimal().getGender(),
+                    apply.getAnimal().getAge(),
+                    apply.getName(),
+                    apply.getTel(),
+                    apply.getResidence(),
+                    animalRepository.animalShelter(apply.getAnimal().getId()).getShelter()
+                        .getName(),
+                    animalRepository.animalShelter(apply.getAnimal().getId()).getShelter()
+                        .getCareTel(),
+                    apply.getStatus()
+                )).toList();
+        }
+
+        return list;
 
     }
 
