@@ -416,13 +416,13 @@ public class UserService {
     }
 
     @Transactional
-    public Map<String, String> updateAccessToken(UserRequest.UpdateAccessTokenDTO requestDTO){
+    public Map<String, String> updateAccessToken(String refreshToken){
         // 잘못된 토큰 형식인지 체크
-        if(!JWTProvider.validateToken(requestDTO.refreshToken())) {
+        if(!JWTProvider.validateToken(refreshToken)) {
             throw new CustomException(ExceptionCode.TOKEN_WRONG);
         }
 
-        Long userId = JWTProvider.getUserIdFromToken(requestDTO.refreshToken());
+        Long userId = JWTProvider.getUserIdFromToken(refreshToken);
 
         // 토큰 만료 여부 체크
         if(!redisService.isDateExist("refreshToken", String.valueOf(userId)))

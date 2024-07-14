@@ -32,7 +32,7 @@ public class UserController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
                         .httpOnly(true)
-                        .secure(false)
+                        //.secure(false)
                         .sameSite("None")
                         .maxAge(JWTProvider.REFRESH_EXP)
                         .build().toString())
@@ -152,13 +152,13 @@ public class UserController {
     }
 
     @PatchMapping("/auth/access")
-    public ResponseEntity<?> updateAccessToken(@RequestBody @Valid UserRequest.UpdateAccessTokenDTO requestDTO){
-        Map<String, String> tokens = userService.updateAccessToken(requestDTO);
+    public ResponseEntity<?> updateAccessToken(@CookieValue String refreshToken){
+        Map<String, String> tokens = userService.updateAccessToken(refreshToken);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
                         .httpOnly(true)
-                        .secure(false)
+                        //.secure(false)
                         .sameSite("None")
                         .maxAge(JWTProvider.REFRESH_EXP)
                         .build().toString())
