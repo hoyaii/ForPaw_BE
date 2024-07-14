@@ -301,6 +301,16 @@ public class AuthenticationService {
 
     }
 
+    @Transactional
+    public void ChangeApplyStatus(Long id,Long applyId,ApplyStatus applyStatus){
+        checkAdminAuthority(id);
+        Apply apply = applyRepository.findById(applyId).orElseThrow(
+            () -> new CustomException(ExceptionCode.APPLY_NOT_FOUND)
+        );
+        apply.updateApplyStatus(applyStatus);
+    }
+
+
     private String getPreviousHourKey() {
         LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");

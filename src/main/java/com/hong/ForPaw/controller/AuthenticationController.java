@@ -10,6 +10,7 @@ import com.hong.ForPaw.core.security.JWTProvider;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.service.AuthenticationService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -84,10 +85,20 @@ public class AuthenticationController {
     public ResponseEntity<?> GetApply(@AuthenticationPrincipal CustomUserDetails customUserDetails,
         @RequestParam(required = false)ApplyStatus applyStatus,
         @RequestParam(defaultValue = "0") int page){
-        ApplyDTO applyList = authenticationService.getApplyList(customUserDetails.getUser().getId(),
+        List<ApplyDTO> applyList = authenticationService.getApplyList(customUserDetails.getUser().getId(),
             applyStatus, page);
 
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,applyList));
     }
+
+    @PatchMapping("/admin/adoption")
+    public ResponseEntity<?> ChangeApplyStatus(@AuthenticationPrincipal CustomUserDetails customUserDetails,
+       @RequestParam("id")Long id, @RequestParam("status")ApplyStatus applyStatus){
+        authenticationService.ChangeApplyStatus(customUserDetails.getUser().getId(),id,applyStatus);
+
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
+    }
+
+
 
 }

@@ -62,4 +62,8 @@ public class Apply extends TimeStamp {
         this.tel = tel;
         this.residence = residence;
     }
+
+    public void updateApplyStatus(ApplyStatus applyStatus){
+        this.status = applyStatus;
+    }
 }
