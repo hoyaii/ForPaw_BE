@@ -574,6 +574,20 @@ public class UserService {
         return new UserResponse.FindInquiryByIdDTO(inquiry.getTitle(), inquiry.getDescription(), inquiry.getStatus(), inquiry.getCreatedDate(), answerDTOS);
     }
 
+    @Transactional
+    public void validateAccessToken(UserRequest.ValidateAccessTokenDTO requestDTO){
+        // 잘못된 토큰 형식인지 체크
+        if(!JWTProvider.validateToken(requestDTO.accessToken())) {
+            throw new CustomException(ExceptionCode.TOKEN_WRONG);
+        }
+
+        Long userId = JWTProvider.getUserIdFromToken(requestDTO.accessToken());
+
+        if(!requestDTO.userId().equals(userId)){
+            throw new CustomException(ExceptionCode.ACCESS_TOKEN_WRONG);
+        }
+    }
+
     private String sendCodeByMail(String toEmail){
         String verificationCode = generateVerificationCode();
         String subject = "[ForPaw] 이메일 인증 코드입니다.";

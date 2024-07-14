@@ -128,4 +128,7 @@ public class UserRequest {
             @Pattern(regexp = "^[\\w._%+-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$", message = "올바른 이메일 형식을 입력해주세요.")
             String contactMail) {}
 
+    public record ValidateAccessTokenDTO(
+            @NotNull(message = "userId를 입력해주세요.") Long userId,
+            @NotBlank(message="토큰이 존재하지 않습니다.") String accessToken){}
 }
