@@ -40,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hong.ForPaw.core.security.JWTProvider;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -575,17 +576,15 @@ public class UserService {
     }
 
     @Transactional
-    public void validateAccessToken(UserRequest.ValidateAccessTokenDTO requestDTO){
+    public void validateAccessToken(@CookieValue String accessToken){
         // 잘못된 토큰 형식인지 체크
-        if(!JWTProvider.validateToken(requestDTO.accessToken())) {
+        if(!JWTProvider.validateToken(accessToken)) {
             throw new CustomException(ExceptionCode.TOKEN_WRONG);
         }
 
-        Long userId = JWTProvider.getUserIdFromToken(requestDTO.accessToken());
+        Long userIdFromToken = JWTProvider.getUserIdFromToken(accessToken);
 
-        if(!requestDTO.userId().equals(userId)){
-            throw new CustomException(ExceptionCode.ACCESS_TOKEN_WRONG);
-        }
+        redisService.validateData("accessToken", String.valueOf(userIdFromToken), accessToken);
     }
 
     private String sendCodeByMail(String toEmail){

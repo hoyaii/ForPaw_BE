@@ -32,8 +32,8 @@ public class UserController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
                         .httpOnly(true)
-                        //.secure(false)
-                        .sameSite("None")
+                        .secure(false)
+                        .sameSite("Strict")
                         .maxAge(JWTProvider.REFRESH_EXP)
                         .build().toString())
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokens.get("accessToken"))));
@@ -158,8 +158,8 @@ public class UserController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
                         .httpOnly(true)
-                        //.secure(false)
-                        .sameSite("None")
+                        .secure(false)
+                        .sameSite("Strict")
                         .maxAge(JWTProvider.REFRESH_EXP)
                         .build().toString())
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(tokens.get("accessToken"))));
@@ -200,5 +200,11 @@ public class UserController {
     public ResponseEntity<?> findInquiryById(@PathVariable Long inquiryId, @AuthenticationPrincipal CustomUserDetails userDetails){
         UserResponse.FindInquiryByIdDTO responseDTO = userService.findInquiryById(userDetails.getUser().getId(), inquiryId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
+    @PostMapping("/validate/accessToken")
+    public ResponseEntity<?> validateAccessToken(@CookieValue String accessToken){
+        userService.validateAccessToken(accessToken);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }
