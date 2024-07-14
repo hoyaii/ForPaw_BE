@@ -2,6 +2,8 @@ package com.hong.ForPaw.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.ForPaw.controller.DTO.UserRequest;
+import com.hong.ForPaw.domain.District;
+import com.hong.ForPaw.domain.Province;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -58,7 +60,7 @@ class UserControllerTest {
     public void 회원가입_성공() throws Exception {
 
         // given
-        UserRequest.JoinDTO requestDTO = new UserRequest.JoinDTO("hoyai@naver.com", "한홍", "호얘이", "대구", "수성구", "pnu1234!", "pnu1234!", "www.s3.1234.com");
+        UserRequest.JoinDTO requestDTO = new UserRequest.JoinDTO("hoyai@naver.com", "한홍", "호얘이", Province.DAEGU, District.SUSEONG, "두산동","pnu1234!", "pnu1234!", "www.s3.1234.com");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -366,7 +368,7 @@ class UserControllerTest {
     public void 프로필_수정_성공() throws Exception {
 
         // given
-        UserRequest.UpdateProfileDTO requestDTO = new UserRequest.UpdateProfileDTO("hayaii", "대구", "수성구", "www.naver.com");
+        UserRequest.UpdateProfileDTO requestDTO = new UserRequest.UpdateProfileDTO("hayaii", Province.DAEGU, District.SUSEONG,"두산동", "www.naver.com");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
