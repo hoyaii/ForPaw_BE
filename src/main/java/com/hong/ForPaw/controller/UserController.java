@@ -158,7 +158,7 @@ public class UserController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
                         .httpOnly(true)
-                        .secure(true)
+                        //.secure(true)
                         .sameSite("None")
                         .maxAge(JWTProvider.REFRESH_EXP)
                         .build().toString())
