@@ -1,9 +1,12 @@
 package com.hong.ForPaw.domain.User;
 
+import com.hong.ForPaw.domain.Authentication.Visit;
 import com.hong.ForPaw.domain.District;
 import com.hong.ForPaw.domain.Province;
 import com.hong.ForPaw.domain.TimeStamp;
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,6 +28,9 @@ public class User extends TimeStamp {
 
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
     private UserStatus status;
+
+    @OneToMany(mappedBy = "user")
+    private List<Visit> visit = new ArrayList<>();
 
     @Column
     private String name;

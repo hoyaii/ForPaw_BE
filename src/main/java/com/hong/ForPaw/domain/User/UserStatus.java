@@ -1,5 +1,6 @@
 package com.hong.ForPaw.domain.User;
 
+import com.hong.ForPaw.controller.DTO.AuthenticationResponse;
 import com.hong.ForPaw.domain.Authentication.Visit;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -8,9 +9,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import lombok.Setter;
-import org.joda.time.DateTime;
-import org.springframework.stereotype.Service;
 
 @Entity
 @Table(name = "user_status_tb")
@@ -26,9 +24,6 @@ public class UserStatus {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "visit_id")
-    private Visit visit;
 
     @Column
     private boolean isActive;
@@ -51,18 +46,18 @@ public class UserStatus {
         this.suspensionReason = suspensionReason;
     }
 
-    public void UpdatesuspensionReason(String suspensionReason){
-        this.suspensionReason = suspensionReason;
+
+    public void updateForSuspend(AuthenticationResponse.UserBanDTO userBanDTO){
+        this.isActive = false;
+        this.suspensionStart = LocalDateTime.now();
+        this.suspensionDays = userBanDTO.duration();
+        this.suspensionReason = userBanDTO.reason();
     }
 
-    public void UpdatesuspensionDays(Long suspensionDays){
-        this.suspensionDays = suspensionDays;
-    }
-
-    public void UpdatesuspensionStart(LocalDateTime suspensionStart){
-        this.suspensionStart = suspensionStart;
-    }
-    public void UpdateisActive(Boolean isActive){
-        this.isActive = isActive;
+    public void updateForUnSuspend(){
+        this.isActive = true;
+        this.suspensionStart = null;
+        this.suspensionDays = null;
+        this.suspensionReason = null;
     }
 }

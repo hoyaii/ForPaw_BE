@@ -30,7 +30,7 @@ public class AuthenticationResponse {
                                   Long newComment,
                                   Long newAdoptApplication) {}
 
-    public record findUserList(List<UserDTO> users){}
+    public record findUserListDTO(List<UserDTO> users){}
 
     public record UserDTO(Long id,
                           String nickname,

@@ -55,7 +55,7 @@ public interface ApplyRepository extends JpaRepository<Apply, Long> {
     void deleteAllByUserId(Long userId);
     @EntityGraph(attributePaths = {"animal"})
     @Query("SELECT a From Apply a WHERE a.removedAt IS NULL")
-    Page<Apply> findAllApply(Pageable pageable);
+    Page<Apply> findAllWithAnimal(Pageable pageable);
 
     @EntityGraph(attributePaths = {"animal"})
     @Query("SELECT a From Apply a WHERE a.status = :applyStatus AND a.removedAt IS NULL")

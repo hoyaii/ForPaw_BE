@@ -3,6 +3,7 @@ package com.hong.ForPaw.service;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse.ApplyDTO;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse.UserDTO;
+import com.hong.ForPaw.controller.DTO.AuthenticationResponse.findUserListDTO;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Apply.Apply;
@@ -16,13 +17,13 @@ import com.hong.ForPaw.repository.ApplyRepository;
 import com.hong.ForPaw.repository.Authentication.VisitRepository;
 import com.hong.ForPaw.repository.Post.CommentRepository;
 import com.hong.ForPaw.repository.Post.PostRepository;
-import com.hong.ForPaw.repository.ShelterRepository;
 import com.hong.ForPaw.repository.UserRepository;
 import com.hong.ForPaw.repository.UserStatusRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -148,8 +149,8 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public AuthenticationResponse.findUserList findUserList(Long Id, UserRole Role, int page) {
-        PageRequest pageRequest = PageRequest.of(page, 5);
+    public findUserListDTO findUserList(Long Id, UserRole Role, int page) {
+        Pageable pageable = PageRequest.of(page, 5);
 
         checkAdminAuthority(Id);
 
@@ -159,45 +160,61 @@ public class AuthenticationService {
 
         List<UserDTO> userDTOS = null;
 
+        userDTOS = userRepository.findUserWithLatestVisit().stream().map(
+            list -> new UserDTO(
+                list.getId(),
+                list.getNickName(),
+                list.getEmail(),
+                list.getCreatedDate(),
+                list.getVisit().get(0).getDate(),
+                applyRepository.countByUserIdProcessed(list.getId()),
+                applyRepository.countByUserIdProcessing(list.getId()),
+                list.getRole(),
+                list.getStatus().isActive(),
+                list.getStatus().getSuspensionStart(),
+                list.getStatus().getSuspensionDays(),
+                list.getStatus().getSuspensionReason()
+            )
+        ).toList();
+
         if (Role.equals(UserRole.SUPER)){
-            Page<UserStatus> userStatusPage = userStatusRepository.findBySuperRole(pageRequest);
-            userDTOS = userStatusPage.getContent().stream()
-                .map(userStatus -> new UserDTO(
-                    userStatus.getUser().getId(),
-                    userStatus.getUser().getNickName(),
-                    userStatus.getUser().getEmail(),
-                    userStatus.getUser().getCreatedDate(),
-                    userStatus.getVisit().getDate(),
-                    applyRepository.countByUserIdProcessed(userStatus.getUser().getId()),
-                    applyRepository.countByUserIdProcessing(userStatus.getUser().getId()),
-                    userStatus.getUser().getRole(),
-                    userStatus.isActive(),
-                    userStatus.getSuspensionStart(),
-                    userStatus.getSuspensionDays(),
-                    userStatus.getSuspensionReason())
-                ).toList();
+            userDTOS = userRepository.findUserWithLatestVisit().stream().map(
+                list -> new UserDTO(
+                    list.getId(),
+                    list.getNickName(),
+                    list.getEmail(),
+                    list.getCreatedDate(),
+                    list.getVisit().get(0).getDate(),
+                    applyRepository.countByUserIdProcessed(list.getId()),
+                    applyRepository.countByUserIdProcessing(list.getId()),
+                    list.getRole(),
+                    list.getStatus().isActive(),
+                    list.getStatus().getSuspensionStart(),
+                    list.getStatus().getSuspensionDays(),
+                    list.getStatus().getSuspensionReason()
+                )
+            ).toList();
         }
         if (Role.equals(UserRole.ADMIN)){
-            Page<UserStatus> userStatusPage = userStatusRepository.findByAdminRole(pageRequest);
-            userDTOS = userStatusPage.getContent().stream()
-                .map(userStatus -> new UserDTO(
-                    userStatus.getUser().getId(),
-                    userStatus.getUser().getNickName(),
-                    userStatus.getUser().getEmail(),
-                    userStatus.getUser().getCreatedDate(),
-                    userStatus.getVisit().getDate(),
-                    applyRepository.countByUserIdProcessed(userStatus.getUser().getId()),
-                    applyRepository.countByUserIdProcessing(userStatus.getUser().getId()),
-                    userStatus.getUser().getRole(),
-                    userStatus.isActive(),
-                    userStatus.getSuspensionStart(),
-                    userStatus.getSuspensionDays(),
-                    userStatus.getSuspensionReason())
-                ).toList();
+            userDTOS = userRepository.findUserWithLatestVisit().stream().map(
+                list -> new UserDTO(
+                    list.getId(),
+                    list.getNickName(),
+                    list.getEmail(),
+                    list.getCreatedDate(),
+                    list.getVisit().get(0).getDate(),
+                    applyRepository.countByUserIdProcessed(list.getId()),
+                    applyRepository.countByUserIdProcessing(list.getId()),
+                    list.getRole(),
+                    list.getStatus().isActive(),
+                    list.getStatus().getSuspensionStart(),
+                    list.getStatus().getSuspensionDays(),
+                    list.getStatus().getSuspensionReason()
+                )
+            ).toList();
         }
 
-
-        return new AuthenticationResponse.findUserList(userDTOS);
+        return new findUserListDTO(userDTOS);
     }
 
     @Transactional
@@ -212,31 +229,25 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public void BanUser(Long id, AuthenticationResponse.UserBanDTO userBanDTO){
+    public void suspendUser(Long id, AuthenticationResponse.UserBanDTO userBanDTO){
         checkAdminAuthority(id);
 
         userRepository.findById(userBanDTO.userId()).orElseThrow(
             () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
-        UserStatus byUserIdone = userStatusRepository.findByUserIdOne(userBanDTO.userId());
-        byUserIdone.UpdateisActive(false);
-        byUserIdone.UpdatesuspensionStart(LocalDateTime.now());
-        byUserIdone.UpdatesuspensionDays(userBanDTO.duration());
-        byUserIdone.UpdatesuspensionReason(userBanDTO.reason());
+        UserStatus byUserIdone = userStatusRepository.findByUserId(userBanDTO.userId());
+        byUserIdone.updateForSuspend(userBanDTO);
     }
 
     @Transactional
-    public void unSuspend(Long id, Long userId){
+    public void unSuspendUser(Long id, Long userId){
         checkAdminAuthority(id);
 
         userRepository.findById(userId).orElseThrow(
             () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
-        UserStatus byUserIdone = userStatusRepository.findByUserIdOne(userId);
-        byUserIdone.UpdateisActive(true);
-        byUserIdone.UpdatesuspensionStart(null);
-        byUserIdone.UpdatesuspensionDays(null);
-        byUserIdone.UpdatesuspensionReason(null);
+        UserStatus byUserIdone = userStatusRepository.findByUserId(userId);
+        byUserIdone.updateForUnSuspend();
 
     }
     @Transactional
@@ -246,7 +257,7 @@ public class AuthenticationService {
         userRepository.findById(userId).orElseThrow(
             () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
-        userRepository.deleteByUserId(userId);
+        userRepository.deleteById(userId);
     }
 
     @Transactional
@@ -257,7 +268,7 @@ public class AuthenticationService {
         List<ApplyDTO> list = null;
 
         if (applyStatus == null){
-            Page<Apply> allApply = applyRepository.findAllApply(pageRequest);
+            Page<Apply> allApply = applyRepository.findAllWithAnimal(pageRequest);
             list = allApply.getContent().stream()
                 .map(apply -> new ApplyDTO(
                     apply.getId(),
@@ -302,7 +313,7 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public void ChangeApplyStatus(Long id,Long applyId,ApplyStatus applyStatus){
+    public void changeApplyStatus(Long id,Long applyId,ApplyStatus applyStatus){
         checkAdminAuthority(id);
         Apply apply = applyRepository.findById(applyId).orElseThrow(
             () -> new CustomException(ExceptionCode.APPLY_NOT_FOUND)

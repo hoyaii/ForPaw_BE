@@ -64,6 +64,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("DELETE FROM User u WHERE u.removedAt <= :cutoffDate")
     void deleteAllWithRemovedBefore(LocalDateTime cutoffDate);
 
-    @Query("UPDATE User u SET u.removedAt = CURRENT_TIMESTAMP WHERE u.id = :id")
-    void deleteByUserId(@Param("id") Long id);
+    @Query(value =
+        "SELECT u.* " +
+            "FROM user u " +
+            "INNER JOIN user_status us ON u.id = us.user_id " +
+            "LEFT JOIN ( " +
+            "    SELECT user_id, MAX(date) AS latest_visit " +
+            "    FROM visit " +
+            "    GROUP BY user_id " +
+            ") v ON u.id = v.user_id ", nativeQuery = true)
+    List<User> findUserWithLatestVisit();
 }
