@@ -42,7 +42,7 @@ public class UserController {
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", tokens.get("accessToken"))
                 .httpOnly(true)
                 .secure(false)
-                .sameSite("None")
+                .sameSite("Strict")
                 .maxAge(JWTProvider.ACCESS_EXP_SEC) // 액세스 토큰의 만료 시간에 맞게 설정
                 .path("/")
                 .build();

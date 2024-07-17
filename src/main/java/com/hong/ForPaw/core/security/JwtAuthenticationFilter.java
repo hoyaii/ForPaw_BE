@@ -1,8 +1,10 @@
 package com.hong.ForPaw.core.security;
 
+import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.exceptions.SignatureVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.hong.ForPaw.core.utils.CookieUtils;
 import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.service.RedisService;
@@ -40,48 +42,49 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
         String authorizationHeader = request.getHeader(JWTProvider.AUTHORIZATION);
 
-        String refreshToken = getCookieFromRequest(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, request);
+        String refreshToken = CookieUtils.getCookieFromRequest(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, request);
         String accessToken = (authorizationHeader != null && authorizationHeader.startsWith(JWTProvider.TOKEN_PREFIX)) ?
                 authorizationHeader.replace(JWTProvider.TOKEN_PREFIX, "")  : null;
 
-        if (authorizationHeader == null && (refreshToken == null || refreshToken.trim().isEmpty())) {
+        // access/refresh 토큰이 모두 null
+        if ((accessToken == null || accessToken.trim().isEmpty()) && (refreshToken == null || refreshToken.trim().isEmpty())) {
             chain.doFilter(request, response);
             return;
         }
 
         User user = null;
 
-        // accessToken 검증
+        // accessToken 체크
         if(accessToken != null) {
             user = getUserFromToken(accessToken);
         }
 
-        // refreshToken 검증
+        // accessToken에 인증 정보가 없으면, refreshToken 체크
         if (user == null && refreshToken != null) {
             user = getUserFromToken(refreshToken);
 
+            // 토큰에 인증 정보 존재
             if (user != null) {
                 accessToken = JWTProvider.createAccessToken(user);
                 refreshToken = JWTProvider.createRefreshToken(user);
 
-                setCookieToResponse(JWTProvider.ACCESS_TOKEN_COOKIE_KEY, accessToken, JWTProvider.ACCESS_EXP_SEC, false, true, response);
-                setCookieToResponse(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, refreshToken, JWTProvider.REFRESH_EXP_SEC, false, true, response);
+                CookieUtils.setCookieToResponse(JWTProvider.ACCESS_TOKEN_COOKIE_KEY, accessToken, JWTProvider.ACCESS_EXP_SEC, false, true, response);
+                CookieUtils. setCookieToResponse(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, refreshToken, JWTProvider.REFRESH_EXP_SEC, false, true, response);
             }
         }
 
-        // accessToken과 refreshToken을 모두 거쳤음에도 null
+        // accessToken과 refreshToken 모두 인증 정보가 없음 (만료 됐거나 잘못된 형식)
         if (user == null) {
             chain.doFilter(request, response);
             return;
         }
 
-        // 로그인 진행
+        // 권한 부여 (로그인된 상태)
         authenticateUser(user);
+        redisService.addSetElement(createVisitKey(), user.getId());
 
         // Request 쿠키와 Response 쿠키 동기화
-        syncHttpResponseCookiesFromHttpRequest(request, response,
-                JWTProvider.ACCESS_TOKEN_COOKIE_KEY,
-                JWTProvider.REFRESH_TOKEN_COOKIE_KEY);
+        CookieUtils.syncHttpResponseCookiesFromHttpRequest(request, response, JWTProvider.ACCESS_TOKEN_COOKIE_KEY, JWTProvider.REFRESH_TOKEN_COOKIE_KEY);
 
         // ACCESS 토큰은 HTTP Header로 리턴
         response.setHeader(HttpHeaders.AUTHORIZATION, JWTProvider.TOKEN_PREFIX + accessToken);
@@ -98,8 +101,6 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
                         myUserDetails.getAuthorities()
                 );
 
-        redisService.addSetElement(createVisitKey(), user.getId());
-
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
@@ -114,7 +115,10 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
             log.error("토큰 검증 실패");
         } catch (TokenExpiredException tee) {
             log.error("토큰 만료됨");
+        } catch (JWTDecodeException jde) {
+            log.error("잘못된 형태의 토큰값이 입력으로 들어와서 디코딩 실패");
         }
+
         return null;
     }
 
@@ -123,58 +127,5 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");
 
         return "visit" + ":" + now.format(formatter);
-    }
-
-    private String getCookieFromRequest(String cookieKey, HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-
-        if (cookies == null) {
-            return null;
-        }
-
-        return Arrays.stream(cookies)
-                .filter(cookie -> cookieKey.equals(cookie.getName()))
-                .map(Cookie::getValue)
-                .findFirst()
-                .orElse(null);
-    }
-
-    private void setCookieToResponse(String cookieKey, String cookieValue, Long maxAgeSec, boolean secureCookie, boolean isHttpOnly, HttpServletResponse response) {
-        ResponseCookie cookie = ResponseCookie.from(cookieKey, cookieValue)
-                .httpOnly(isHttpOnly)
-                .secure(secureCookie)
-                .maxAge(maxAgeSec)
-                .path("/")
-                .sameSite("None")
-                .build();
-
-        // 쿠키를 응답 헤더에 추가 (기존에 쿠키가 있더라도 새로 추가)
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-    }
-
-    private HttpServletResponse syncHttpResponseCookiesFromHttpRequest(HttpServletRequest request, HttpServletResponse response, String... exceptionKeys) {
-        Cookie[] cookies = request.getCookies();
-
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                String cookieKey = cookie.getName();
-
-                // exceptionKey 배열에 포함된 쿠키 키는 제외
-                if (Arrays.asList(exceptionKeys).contains(cookieKey)) {
-                    continue;
-                }
-
-                ResponseCookie responseCookie = ResponseCookie.from(cookieKey, cookie.getValue())
-                        .httpOnly(cookie.isHttpOnly())
-                        .secure(cookie.getSecure())
-                        .maxAge(cookie.getMaxAge())
-                        .path("/")
-                        .sameSite("None")
-                        .build();
-
-                response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
-            }
-        }
-        return response;
     }
 }
