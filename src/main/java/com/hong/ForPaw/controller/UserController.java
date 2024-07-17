@@ -29,14 +29,26 @@ public class UserController {
     public ResponseEntity<?> login(@RequestBody @Valid UserRequest.LoginDTO requestDTO, HttpServletRequest request) {
         Map<String, String> tokens = userService.login(requestDTO, request);
 
+        // Refresh Token 쿠키 설정
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Strict")
+                .maxAge(JWTProvider.REFRESH_EXP_SEC)
+                .build();
+
+        // Access Token 쿠키 설정
+        ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", tokens.get("accessToken"))
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Strict")
+                .maxAge(JWTProvider.ACCESS_EXP_SEC) // 액세스 토큰의 만료 시간에 맞게 설정
+                .build();
+
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
-                        .httpOnly(true)
-                        .secure(false)
-                        .sameSite("Strict")
-                        .maxAge(JWTProvider.REFRESH_EXP)
-                        .build().toString())
-                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokens.get("accessToken"))));
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
+                .body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @GetMapping("/auth/login/kakao")
@@ -54,7 +66,7 @@ public class UserController {
                         .httpOnly(true)
                         .secure(true)
                         .sameSite("None")
-                        .maxAge(JWTProvider.REFRESH_EXP)
+                        .maxAge(JWTProvider.REFRESH_EXP_MILLI)
                         .build().toString())
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.KakaoLoginDTO(tokenOrEmail.get("accessToken"), "")));
     }
@@ -74,7 +86,7 @@ public class UserController {
                         .httpOnly(true)
                         .secure(true)
                         .sameSite("None")
-                        .maxAge(JWTProvider.REFRESH_EXP)
+                        .maxAge(JWTProvider.REFRESH_EXP_MILLI)
                         .build().toString())
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.GoogleLoginDTO(tokenOrEmail.get("accessToken"), "")));
     }
@@ -155,13 +167,25 @@ public class UserController {
     public ResponseEntity<?> updateAccessToken(@CookieValue String refreshToken){
         Map<String, String> tokens = userService.updateAccessToken(refreshToken);
 
+        // Refresh Token 쿠키 설정
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Strict")
+                .maxAge(JWTProvider.REFRESH_EXP_SEC)
+                .build();
+
+        // Access Token 쿠키 설정
+        ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", tokens.get("accessToken"))
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Strict")
+                .maxAge(JWTProvider.ACCESS_EXP_SEC) // 액세스 토큰의 만료 시간에 맞게 설정
+                .build();
+
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
-                        .httpOnly(true)
-                        .secure(false)
-                        .sameSite("Strict")
-                        .maxAge(JWTProvider.REFRESH_EXP)
-                        .build().toString())
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(tokens.get("accessToken"))));
     }
 

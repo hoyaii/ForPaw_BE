@@ -42,4 +42,8 @@ public class UserStatus {
         this.suspensionDays = suspensionDays;
         this.suspensionReason = suspensionReason;
     }
+
+    public void updateIsActive(boolean isActive){
+        this.isActive = isActive;
+    }
 }

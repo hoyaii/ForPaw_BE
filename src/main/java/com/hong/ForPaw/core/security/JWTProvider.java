@@ -15,8 +15,11 @@ import java.util.Date;
 @Component
 public class JWTProvider {
 
-    public static final Long ACCESS_EXP = 1000L * 60 * 60 * 24; // 1시간
-    public static final Long REFRESH_EXP = 1000L * 60 * 60 * 24 * 7; // 일주일
+    public static final Long ACCESS_EXP_MILLI = 1000L * 60 * 60 * 24; // 1시간
+    public static final Long REFRESH_EXP_MILLI = 1000L * 60 * 60 * 24 * 7; // 일주일
+
+    public static final Long ACCESS_EXP_SEC = 60L * 60 * 24; // 1시간
+    public static final Long REFRESH_EXP_SEC = 60L * 60 * 24 * 7; // 일주일
 
     public static final String TOKEN_PREFIX = "Bearer ";
     public static final String HEADER = "Authorization";
@@ -24,13 +27,13 @@ public class JWTProvider {
 
     // access token 생성
     public static String createAccessToken(User user) {
-        String jwt = create(user, ACCESS_EXP);
+        String jwt = create(user, ACCESS_EXP_MILLI);
         return jwt;
     }
 
     // refresh token 생성
     public static String createRefreshToken(User user) {
-        String jwt = create(user, REFRESH_EXP);
+        String jwt = create(user, REFRESH_EXP_MILLI);
         return jwt;
     }
 

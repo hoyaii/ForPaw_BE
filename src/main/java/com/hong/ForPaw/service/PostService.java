@@ -346,19 +346,19 @@ public class PostService {
         }
 
         // S3에 저장된 이미지 삭제
-        post.getPostImages().forEach(
+        /*post.getPostImages().forEach(
                 postImage -> {
                     String objectKey = s3Service.extractObjectKeyFromUri(postImage.getImageURL());
                     s3Service.deleteImage(objectKey);
                 }
-        );
+        );*/
 
         postLikeRepository.deleteAllByPostId(postId);
         postReadStatusRepository.deleteAllByPostId(postId);
         commentLikeRepository.deleteAllByPostId(postId);
         popularPostRepository.deleteByPostId(postId);
         commentRepository.deleteAllByPostId(postId); // soft-delete
-        postRepository.deleteById(postId); // soft-delete
+        postRepository.delete(post); // soft-delete
     }
 
     @Transactional
@@ -533,8 +533,8 @@ public class PostService {
         Long childNum = Long.valueOf(comment.getChildren().size());
 
         // 댓글 및 관련 대댓글 삭제 (CascadeType.ALL에 의해 처리됨)
-        commentRepository.deleteById(commentId);
         commentLikeRepository.deleteAllByCommentId(commentId);
+        commentRepository.deleteById(commentId);
 
         // 게시글의 댓글 수 감소
         postRepository.decrementCommentNum(postId, 1L + childNum);

@@ -22,4 +22,6 @@ public interface FavoriteAnimalRepository extends JpaRepository<FavoriteAnimal, 
 
     @Query("SELECT fa.animal.id FROM FavoriteAnimal fa WHERE fa.user.id = :userId")
     List<Long> findLikedAnimalIdsByUserId(@Param("userId") Long userId);
+
+    void deleteAllByUserId(Long userId);
 }

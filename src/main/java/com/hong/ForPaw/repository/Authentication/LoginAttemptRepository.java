@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface LoginAttemptRepository extends JpaRepository<LoginAttempt, Long> {
+
+    void deleteAllByUserId(Long userId);
 }
