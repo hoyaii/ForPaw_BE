@@ -22,8 +22,11 @@ public class JWTProvider {
     public static final Long REFRESH_EXP_SEC = 60L * 60 * 24 * 7; // 일주일
 
     public static final String TOKEN_PREFIX = "Bearer ";
-    public static final String HEADER = "Authorization";
+    public static final String AUTHORIZATION = "Authorization";
     public static final String SECRET = "MySecretKey";
+    public static final String REFRESH_TOKEN_COOKIE_KEY = "refreshToken";
+    public static final String ACCESS_TOKEN_COOKIE_KEY = "accessToken";
+
 
     // access token 생성
     public static String createAccessToken(User user) {
@@ -49,6 +52,7 @@ public class JWTProvider {
     }
 
     public static DecodedJWT verify(String jwt) throws SignatureVerificationException, TokenExpiredException {
+        // "Bearer " 접두사가 있다면 제거
         jwt = jwt.replace(JWTProvider.TOKEN_PREFIX, "");
         DecodedJWT decodedJWT = JWT.require(Algorithm.HMAC512(SECRET))
                 .build().verify(jwt);

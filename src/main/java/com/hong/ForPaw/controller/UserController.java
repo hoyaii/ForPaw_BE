@@ -33,16 +33,18 @@ public class UserController {
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
                 .httpOnly(true)
                 .secure(false)
-                .sameSite("Strict")
+                .sameSite("None")
                 .maxAge(JWTProvider.REFRESH_EXP_SEC)
+                .path("/")
                 .build();
 
         // Access Token 쿠키 설정
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", tokens.get("accessToken"))
                 .httpOnly(true)
                 .secure(false)
-                .sameSite("Strict")
+                .sameSite("None")
                 .maxAge(JWTProvider.ACCESS_EXP_SEC) // 액세스 토큰의 만료 시간에 맞게 설정
+                .path("/")
                 .build();
 
         return ResponseEntity.ok()
@@ -173,6 +175,7 @@ public class UserController {
                 .secure(false)
                 .sameSite("Strict")
                 .maxAge(JWTProvider.REFRESH_EXP_SEC)
+                .path("/")
                 .build();
 
         // Access Token 쿠키 설정
@@ -181,6 +184,7 @@ public class UserController {
                 .secure(false)
                 .sameSite("Strict")
                 .maxAge(JWTProvider.ACCESS_EXP_SEC) // 액세스 토큰의 만료 시간에 맞게 설정
+                .path("/")
                 .build();
 
         return ResponseEntity.ok()
