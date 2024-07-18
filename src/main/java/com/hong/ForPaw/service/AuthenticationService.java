@@ -199,33 +199,39 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public void changeUserRole(AuthenticationRequest.ChangeUserRoleDTO requestDTO, Long adminId){
+    public void changeUserRole(AuthenticationRequest.ChangeUserRoleDTO requestDTO, Long adminId, UserRole adminRole){
         checkAdminAuthority(adminId);
 
         User user = userRepository.findById(requestDTO.userId()).orElseThrow(
             () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
+
+        // Admin이 Super의 역할을 변경할 수 없다.
+        checkAdminPrivileges(adminRole, user.getRole());
         user.updateRole(requestDTO.role());
     }
 
     @Transactional
-    public void suspendUser(AuthenticationRequest.SuspendUserDTO requestDTO, Long adminId){
+    public void suspendUser(AuthenticationRequest.SuspendUserDTO requestDTO, Long adminId, UserRole adminRole){
         Long userId = requestDTO.userId();
 
         checkAdminAuthority(adminId);
         checkIsMember(userId);
 
         UserStatus userStatus = userStatusRepository.findByUserId(userId);
-        LocalDateTime now = LocalDateTime.now();
-        userStatus.updateForSuspend(now, requestDTO.suspensionDays(), requestDTO.suspensionReason());
+
+        checkAdminPrivileges(adminRole, userStatus.getUser().getRole());
+        userStatus.updateForSuspend(LocalDateTime.now(), requestDTO.suspensionDays(), requestDTO.suspensionReason());
     }
 
     @Transactional
-    public void unSuspendUser(Long userId, Long adminId){
+    public void unSuspendUser(Long userId, Long adminId, UserRole adminRole){
         checkAdminAuthority(adminId);
         checkIsMember(userId);
 
         UserStatus userStatus = userStatusRepository.findByUserId(userId);
+
+        checkAdminPrivileges(adminRole, userStatus.getUser().getRole());
         userStatus.updateForUnSuspend();
     }
 
@@ -318,5 +324,11 @@ public class AuthenticationService {
 
     private Pageable createPageable(int page, int size, String sortProperty) {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
+    }
+
+    private void checkAdminPrivileges(UserRole adminRole, UserRole userRole) {
+        if(adminRole.equals(UserRole.ADMIN) && userRole.equals(UserRole.SUPER)){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
     }
 }

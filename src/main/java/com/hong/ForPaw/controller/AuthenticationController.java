@@ -40,38 +40,38 @@ public class AuthenticationController {
 
     @PatchMapping("/admin/user/role")
     public ResponseEntity<?> changeUserRole(@RequestBody @Valid AuthenticationRequest.ChangeUserRoleDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
-        authenticationService.changeUserRole(requestDTO, userDetails.getUser().getId());
+        authenticationService.changeUserRole(requestDTO, userDetails.getUser().getId(), userDetails.getUser().getRole());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/admin/user/suspend")
-    public ResponseEntity<?> suspendUser(@RequestBody @Valid AuthenticationRequest.SuspendUserDTO requestDTO, @AuthenticationPrincipal CustomUserDetails customUserDetails){
-        authenticationService.suspendUser(requestDTO, customUserDetails.getUser().getId());
+    public ResponseEntity<?> suspendUser(@RequestBody @Valid AuthenticationRequest.SuspendUserDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+        authenticationService.suspendUser(requestDTO, userDetails.getUser().getId(), userDetails.getUser().getRole());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
     }
 
     @PostMapping("/admin/user/unsuspend")
-    public ResponseEntity<?> unSuspendUser(@RequestBody @Valid AuthenticationResponse.UnSuspendUserDTO requestDTO, @AuthenticationPrincipal CustomUserDetails customUserDetails){
-        authenticationService.unSuspendUser(requestDTO.userId(), customUserDetails.getUser().getId());
+    public ResponseEntity<?> unSuspendUser(@RequestBody @Valid AuthenticationResponse.UnSuspendUserDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+        authenticationService.unSuspendUser(requestDTO.userId(), userDetails.getUser().getId(), userDetails.getUser().getRole());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
     }
 
     @DeleteMapping("/admin/user")
-    public ResponseEntity<?> withdrawUser(@RequestBody @Valid AuthenticationResponse.WithdrawUserDTO requestDTO ,@AuthenticationPrincipal CustomUserDetails customUserDetails){
-        authenticationService.checkAdminAuthority(customUserDetails.getUser().getId());
+    public ResponseEntity<?> withdrawUser(@RequestBody @Valid AuthenticationResponse.WithdrawUserDTO requestDTO ,@AuthenticationPrincipal CustomUserDetails userDetails){
+        authenticationService.checkAdminAuthority(userDetails.getUser().getId());
         userService.withdrawMember(requestDTO.userId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
     }
 
     @GetMapping("/admin/adoption")
-    public ResponseEntity<?> findApplyList(@AuthenticationPrincipal CustomUserDetails customUserDetails, @RequestParam ApplyStatus applyStatus, @RequestParam int page){
-        AuthenticationResponse.FindApplyListDTO responseDTO = authenticationService.findApplyList(customUserDetails.getUser().getId(), applyStatus, page);
+    public ResponseEntity<?> findApplyList(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam ApplyStatus applyStatus, @RequestParam int page){
+        AuthenticationResponse.FindApplyListDTO responseDTO = authenticationService.findApplyList(userDetails.getUser().getId(), applyStatus, page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PatchMapping("/admin/adoption")
-    public ResponseEntity<?> changeApplyStatus(@RequestBody @Valid AuthenticationRequest.ChangeApplyStatusDTO requestDTO, @AuthenticationPrincipal CustomUserDetails customUserDetails){
-        authenticationService.changeApplyStatus(requestDTO, customUserDetails.getUser().getId());
+    public ResponseEntity<?> changeApplyStatus(@RequestBody @Valid AuthenticationRequest.ChangeApplyStatusDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+        authenticationService.changeApplyStatus(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
     }
 }
