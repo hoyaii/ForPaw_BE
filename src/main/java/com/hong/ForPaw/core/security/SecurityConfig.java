@@ -27,6 +27,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
@@ -101,6 +104,8 @@ public class SecurityConfig {
         configuration.addAllowedOriginPattern("*");
         configuration.setAllowCredentials(true);
         configuration.addExposedHeader("Authorization");
+        configuration.addAllowedOrigin("http://localhost:3000");
+        configuration.setExposedHeaders(Arrays.asList("accessToken", "refreshToken"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
