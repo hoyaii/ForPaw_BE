@@ -14,6 +14,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,7 +32,7 @@ import java.util.Arrays;
 @Slf4j
 public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
-    private RedisService redisService;
+    private final RedisService redisService;
 
     public JwtAuthenticationFilter(AuthenticationManager authenticationManager, RedisService redisService) {
         super(authenticationManager);
@@ -40,13 +41,15 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
+        // 엑시스 토큰은 헤더에서 추출
         String authorizationHeader = request.getHeader(JWTProvider.AUTHORIZATION);
-
-        String refreshToken = CookieUtils.getCookieFromRequest(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, request);
         String accessToken = (authorizationHeader != null && authorizationHeader.startsWith(JWTProvider.TOKEN_PREFIX)) ?
-                authorizationHeader.replace(JWTProvider.TOKEN_PREFIX, "")  : null;
+                authorizationHeader.replace(JWTProvider.TOKEN_PREFIX, "") : null;
 
-        // access/refresh 토큰이 모두 null
+        // 리프레쉬 토큰은 쿠키에서 추출
+        String refreshToken = CookieUtils.getCookieFromRequest(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, request);
+
+        // 엑세스와 리프레쉬 토큰이 모두 null
         if ((accessToken == null || accessToken.trim().isEmpty()) && (refreshToken == null || refreshToken.trim().isEmpty())) {
             chain.doFilter(request, response);
             return;
@@ -54,26 +57,26 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
         User user = null;
 
-        // accessToken 체크
+        // 엑세스 토큰 검증
         if(accessToken != null) {
             user = getUserFromToken(accessToken);
         }
 
-        // accessToken에 인증 정보가 없으면, refreshToken 체크
+        // accessToken에 인증 정보가 없음 => 리프레쉬 토큰 검증
         if (user == null && refreshToken != null) {
             user = getUserFromToken(refreshToken);
 
-            // 토큰에 인증 정보 존재
+            // 토큰에 인증 정보 존재 => 리프레쉬 토큰을 바탕으로 토큰 재발급
             if (user != null) {
                 accessToken = JWTProvider.createAccessToken(user);
                 refreshToken = JWTProvider.createRefreshToken(user);
 
-                CookieUtils.setCookieToResponse(JWTProvider.ACCESS_TOKEN_COOKIE_KEY, accessToken, JWTProvider.ACCESS_EXP_SEC, false, true, response);
-                CookieUtils. setCookieToResponse(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, refreshToken, JWTProvider.REFRESH_EXP_SEC, false, true, response);
+                // CookieUtils.setCookieToResponse(JWTProvider.ACCESS_TOKEN_COOKIE_KEY, accessToken, JWTProvider.ACCESS_EXP_SEC, false, true, response);
+                CookieUtils.setCookieToResponse(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, refreshToken, JWTProvider.REFRESH_EXP_SEC, false, true, response);
             }
         }
 
-        // accessToken과 refreshToken 모두 인증 정보가 없음 (만료 됐거나 잘못된 형식)
+        // accessToken과 refreshToken 모두 검증 실패 (만료 됐거나 잘못된 형식)
         if (user == null) {
             chain.doFilter(request, response);
             return;
@@ -86,7 +89,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         // Request 쿠키와 Response 쿠키 동기화
         CookieUtils.syncHttpResponseCookiesFromHttpRequest(request, response, JWTProvider.ACCESS_TOKEN_COOKIE_KEY, JWTProvider.REFRESH_TOKEN_COOKIE_KEY);
 
-        // ACCESS 토큰은 HTTP Header로 리턴
+        // 엑세스 토큰은 HTTP Header로 리턴
         response.setHeader(HttpHeaders.AUTHORIZATION, JWTProvider.TOKEN_PREFIX + accessToken);
 
         chain.doFilter(request, response);
@@ -118,7 +121,6 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         } catch (JWTDecodeException jde) {
             log.error("잘못된 형태의 토큰값이 입력으로 들어와서 디코딩 실패");
         }
-
         return null;
     }
 

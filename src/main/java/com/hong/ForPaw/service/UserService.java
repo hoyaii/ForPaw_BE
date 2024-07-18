@@ -249,11 +249,11 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
 
         // 비정상 경로를 통한 요청을 대비해, 이메일/닉네임 다시 체크
-        if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
-            throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
+        //if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
+        //    throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
 
-        if(userRepository.existsByNickWithRemoved(requestDTO.nickName()))
-            throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
+        //if(userRepository.existsByNickWithRemoved(requestDTO.nickName()))
+        //    throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
 
         User user = User.builder()
                 .name(requestDTO.name())
@@ -307,8 +307,8 @@ public class UserService {
     @Transactional
     public void checkEmailAndSendCode(UserRequest.EmailDTO requestDTO){
         // 가입한 이메일이 존재 한다면
-        if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
-            throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
+        //if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
+        //    throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
 
         // 계속 이메일을 보내는 건 방지. 5분 후에 다시 시도할 수 있다
         //if(redisService.isDateExist("emailCode", requestDTO.email())){
@@ -330,8 +330,8 @@ public class UserService {
 
     @Transactional
     public void checkNick(UserRequest.CheckNickDTO requestDTO){
-        if(userRepository.existsByNickWithRemoved(requestDTO.nickName()))
-            throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
+        //if(userRepository.existsByNickWithRemoved(requestDTO.nickName()))
+        //    throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
     }
 
     @Transactional

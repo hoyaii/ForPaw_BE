@@ -103,9 +103,10 @@ public class SecurityConfig {
         configuration.addAllowedMethod("*");
         configuration.addAllowedOriginPattern("*");
         configuration.setAllowCredentials(true);
-        configuration.addExposedHeader("Authorization");
         configuration.addAllowedOrigin("http://localhost:3000");
+        configuration.addExposedHeader("Authorization");
         configuration.setExposedHeaders(Arrays.asList("accessToken", "refreshToken"));
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
