@@ -4,6 +4,7 @@ package com.hong.ForPaw.controller.DTO;
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
 import com.hong.ForPaw.domain.District;
 import com.hong.ForPaw.domain.Province;
+import com.hong.ForPaw.domain.User.UserRole;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,7 +18,8 @@ public class UserResponse {
 
     public record AccessTokenDTO(String accessToken) {}
 
-    public record ProfileDTO(String name,
+    public record ProfileDTO(String email,
+                             String name,
                              String nickName,
                              Province province,
                              District district,

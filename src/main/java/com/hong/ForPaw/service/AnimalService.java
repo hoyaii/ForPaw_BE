@@ -197,7 +197,7 @@ public class AnimalService {
         // sort 파라미터를 AnimalType으로 변환
         AnimalType animalType = converStringToAnimalType(sort);
 
-        Pageable pageable =createPageable(page, 5, SORT_BY_CREATED_DATE);
+        Pageable pageable = createPageable(page, 5, SORT_BY_CREATED_DATE);
         Page<Animal> animalPage = animalRepository.findAllByAnimalType(animalType, pageable);
         boolean isLastPage = !animalPage.hasNext();
 

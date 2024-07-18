@@ -13,4 +13,6 @@ public interface VisitRepository extends JpaRepository<Visit, Long> {
 
     @Query("SELECT v FROM Visit v WHERE v.date >= :date")
     List<Visit> findALlWithinDate(LocalDateTime date);
+
+    void deleteAllByUserId(Long userId);
 }

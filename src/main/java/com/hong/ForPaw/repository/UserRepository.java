@@ -29,7 +29,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @EntityGraph(attributePaths = {"userStatus"})
     @Query("SELECT u FROM User u WHERE (u.role = 'ADMIN' OR u.role = 'USER') AND u.removedAt IS NULL")
-    Page<User> findAllAdminAndUserWithStatus(Pageable pageable);
+    Page<User> findAllAdminAndUserWithUserStatus(Pageable pageable);
 
     @Query("SELECT u FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
     Optional<User> findById(@Param("id") Long id);
@@ -85,4 +85,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
             "    GROUP BY user_id " +
             ") v ON u.id = v.user_id ", nativeQuery = true)
     List<User> findUserWithLatestVisit();
+
+    // Spring Data JPA 메서드는 외래키 제약 조건 때문에 작동하지 않음 => Post나 Comment를 남겨둬야 하기 때문에 Spring Data JPA 말고 직접 업데이트 쿼리를 날린다
+    @Modifying
+    @Query("UPDATE User u SET u.removedAt = NOW() WHERE u.id= :id")
+    void deleteById(@Param("id") Long id);
 }

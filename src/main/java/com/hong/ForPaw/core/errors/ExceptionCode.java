@@ -25,6 +25,7 @@ public enum ExceptionCode {
     LOGIN_ATTEMPT_EXCEEDED(HttpStatus.FORBIDDEN, "로그인 횟수를 초과했습니다."),
     ACCOUNT_LOCKED(HttpStatus.FORBIDDEN, "로그인 횟수를 초과하여 계정이 비활성화 되었습니다."),
     ADMIN_NOT_FOUND(HttpStatus.NOT_FOUND,"해당 관리자를 찾을 수 없습니다."),
+    ACCESS_TOKEN_WRONG(HttpStatus.BAD_REQUEST, "엑세스 토큰 검증에 실패하였습니다."),
 
     // 고객 문의 관련 에러
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, "문의 내역이 존재하지 않습니다"),

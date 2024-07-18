@@ -32,9 +32,9 @@ public class UserController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
                         .httpOnly(true)
-                        .secure(true)
+                        .secure(false)
                         .sameSite("None")
-                        .maxAge(JWTProvider.REFRESH_EXP)
+                        .maxAge(JWTProvider.REFRESH_EXP_SEC)
                         .build().toString())
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokens.get("accessToken"))));
     }
@@ -54,7 +54,7 @@ public class UserController {
                         .httpOnly(true)
                         .secure(true)
                         .sameSite("None")
-                        .maxAge(JWTProvider.REFRESH_EXP)
+                        .maxAge(JWTProvider.REFRESH_EXP_MILLI)
                         .build().toString())
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.KakaoLoginDTO(tokenOrEmail.get("accessToken"), "")));
     }
@@ -74,7 +74,7 @@ public class UserController {
                         .httpOnly(true)
                         .secure(true)
                         .sameSite("None")
-                        .maxAge(JWTProvider.REFRESH_EXP)
+                        .maxAge(JWTProvider.REFRESH_EXP_MILLI)
                         .build().toString())
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.GoogleLoginDTO(tokenOrEmail.get("accessToken"), "")));
     }
@@ -152,9 +152,17 @@ public class UserController {
     }
 
     @PatchMapping("/auth/access")
-    public ResponseEntity<?> updateAccessToken(@RequestBody @Valid UserRequest.UpdateAccessTokenDTO requestDTO){
-        UserResponse.AccessTokenDTO responseDTO = userService.updateAccessToken(requestDTO);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    public ResponseEntity<?> updateAccessToken(@CookieValue String refreshToken){
+        Map<String, String> tokens = userService.updateAccessToken(refreshToken);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
+                        .httpOnly(true)
+                        .secure(false)
+                        .sameSite("None")
+                        .maxAge(JWTProvider.REFRESH_EXP_SEC)
+                        .build().toString())
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(tokens.get("accessToken"))));
     }
 
     // 관리자 페이지용
@@ -192,5 +200,11 @@ public class UserController {
     public ResponseEntity<?> findInquiryById(@PathVariable Long inquiryId, @AuthenticationPrincipal CustomUserDetails userDetails){
         UserResponse.FindInquiryByIdDTO responseDTO = userService.findInquiryById(userDetails.getUser().getId(), inquiryId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
+    @PostMapping("/validate/accessToken")
+    public ResponseEntity<?> validateAccessToken(@CookieValue String accessToken){
+        userService.validateAccessToken(accessToken);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }

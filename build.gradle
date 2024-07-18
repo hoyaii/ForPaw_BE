@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.2.0'
 	id 'io.spring.dependency-management' version '1.1.4'
+	id("org.sonarqube") version "4.1.0.3113"
 }
 
 group = 'com.hong'
@@ -69,6 +70,14 @@ dependencies {
 	// AWS
 	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.638'
 	implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
+}
+
+sonarqube {
+	properties {
+		property "sonar.projectKey", "ForPaw_BE"
+		property "sonar.host.url", "http://172.17.0.3:9000"
+		property "sonar.login", "squ_7e46351e9303458c74fff5351a52d1e0179babf9"
+	}
 }
 
 tasks.named('test') {

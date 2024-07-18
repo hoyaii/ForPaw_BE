@@ -23,4 +23,6 @@ public interface UserStatusRepository extends JpaRepository<UserStatus, Long> {
     @EntityGraph(attributePaths = {"user"})
     @Query("SELECT u FROM UserStatus u WHERE u.user.id = :id")
     UserStatus findByUserId(@Param("id") Long id);
+
+    void deleteAllByUserId(Long userId);
 }

@@ -15,10 +15,6 @@ import java.util.List;
 @Repository
 public interface ShelterRepository extends JpaRepository<Shelter, Long> {
 
-    @Modifying
-    @Query("DELETE FROM Shelter s WHERE s.animalCnt = 0")
-    void deleteZeroShelter();
-
     @Query("SELECT s.id FROM Shelter s")
     List<Long> findAllIds();
 

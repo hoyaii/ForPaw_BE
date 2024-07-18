@@ -46,7 +46,6 @@ public class UserStatus {
         this.suspensionReason = suspensionReason;
     }
 
-
     public void updateForSuspend(AuthenticationResponse.UserBanDTO userBanDTO){
         this.isActive = false;
         this.suspensionStart = LocalDateTime.now();
@@ -59,5 +58,8 @@ public class UserStatus {
         this.suspensionStart = null;
         this.suspensionDays = null;
         this.suspensionReason = null;
+
+    public void updateIsActive(boolean isActive){
+        this.isActive = isActive;
     }
 }

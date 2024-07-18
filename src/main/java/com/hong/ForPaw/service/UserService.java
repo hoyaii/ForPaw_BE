@@ -15,17 +15,21 @@ import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.UserStatus;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
+import com.hong.ForPaw.repository.Animal.FavoriteAnimalRepository;
 import com.hong.ForPaw.repository.ApplyRepository;
 import com.hong.ForPaw.repository.Authentication.LoginAttemptRepository;
+import com.hong.ForPaw.repository.Authentication.VisitRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
+import com.hong.ForPaw.repository.Group.FavoriteGroupRepository;
 import com.hong.ForPaw.repository.Group.GroupUserRepository;
 import com.hong.ForPaw.repository.Group.MeetingUserRepository;
 import com.hong.ForPaw.repository.Inquiry.AnswerRepository;
 import com.hong.ForPaw.repository.Inquiry.InquiryRepository;
+import com.hong.ForPaw.repository.Post.CommentLikeRepository;
+import com.hong.ForPaw.repository.Post.PostLikeRepository;
 import com.hong.ForPaw.repository.Post.PostReadStatusRepository;
 import com.hong.ForPaw.repository.UserRepository;
 import com.hong.ForPaw.repository.UserStatusRepository;
-import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hong.ForPaw.core.security.JWTProvider;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -68,10 +73,15 @@ public class UserService {
     private final MeetingUserRepository meetingUserRepository;
     private final PostReadStatusRepository postReadStatusRepository;
     private final ChatUserRepository chatUserRepository;
+    private final PostLikeRepository postLikeRepository;
+    private final CommentLikeRepository commentLikeRepository;
     private final InquiryRepository inquiryRepository;
     private final AnswerRepository answerRepository;
     private final LoginAttemptRepository loginAttemptRepository;
     private final UserStatusRepository userStatusRepository;
+    private final VisitRepository visitRepository;
+    private final FavoriteAnimalRepository favoriteAnimalRepository;
+    private final FavoriteGroupRepository favoriteGroupRepository;
     private final RedisService redisService;
     private final JavaMailSender mailSender;
     private final WebClient webClient;
@@ -301,9 +311,9 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
 
         // 계속 이메일을 보내는 건 방지. 5분 후에 다시 시도할 수 있다
-        if(redisService.isDateExist("emailCode", requestDTO.email())){
-            throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
-        }
+        //if(redisService.isDateExist("emailCode", requestDTO.email())){
+        //    throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
+        //}
 
         // 인증 코드 전송 및 레디스에 저장
         String verificationCode = sendCodeByMail(requestDTO.email());
@@ -401,7 +411,7 @@ public class UserService {
     @Transactional
     public UserResponse.ProfileDTO findProfile(Long userId){
         User user = userRepository.findById(userId).get();
-        return new UserResponse.ProfileDTO(user.getName(), user.getNickName(), user.getProvince(), user.getDistrict(), user.getSubDistrict(), user.getProfileURL());
+        return new UserResponse.ProfileDTO(user.getEmail(), user.getName(), user.getNickName(), user.getProvince(), user.getDistrict(), user.getSubDistrict(), user.getProfileURL());
     }
 
     @Transactional
@@ -416,13 +426,13 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse.AccessTokenDTO updateAccessToken(UserRequest.UpdateAccessTokenDTO requestDTO){
+    public Map<String, String> updateAccessToken(String refreshToken){
         // 잘못된 토큰 형식인지 체크
-        if(!JWTProvider.validateToken(requestDTO.refreshToken())) {
+        if(!JWTProvider.validateToken(refreshToken)) {
             throw new CustomException(ExceptionCode.TOKEN_WRONG);
         }
 
-        Long userId =JWTProvider.getUserIdFromToken(requestDTO.refreshToken());
+        Long userId = JWTProvider.getUserIdFromToken(refreshToken);
 
         // 토큰 만료 여부 체크
         if(!redisService.isDateExist("refreshToken", String.valueOf(userId)))
@@ -433,7 +443,7 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        return new UserResponse.AccessTokenDTO(JWTProvider.createAccessToken(user));
+        return createAccessToken(user);
     }
 
     // 관지라 API
@@ -451,14 +461,14 @@ public class UserService {
     // 게시글, 댓글, 좋아요은 남겨둔다. (정책에 따라 변경 가능)
     @Transactional
     public void withdrawMember(Long userId){
+        User user = userRepository.findByIdWithRemoved(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+
         // 이미 탈퇴한 회원이면 예외
-        userRepository.findByIdWithRemoved(userId)
-                .map(user -> {
-                    if(user.getRemovedAt() != null){
-                        throw new CustomException(ExceptionCode.USER_ALREADY_EXIT);
-                    }
-                    return null;
-                });
+        if(user.getRemovedAt() != null){
+            throw new CustomException(ExceptionCode.USER_ALREADY_EXIT);
+        };
 
         // 그룹장 상태에서는 탈퇴 불가능
         groupUserRepository.findAllByUserId(userId)
@@ -470,10 +480,17 @@ public class UserService {
         // 알람 삭제
         alarmRepository.deleteAllByUserId(userId);
 
-        // 지원서 삭제
-        applyRepository.deleteAllByUserId(userId);
+        // 방문 기록 삭제
+        visitRepository.deleteAllByUserId(userId);
 
-        // 유저와 연관 데이터 삭제
+        // 로그인 기록 삭제
+        loginAttemptRepository.deleteAllByUserId(userId);
+
+        // 중간 테이블 역할의 엔티티 삭제
+        postLikeRepository.deleteAllByUserId(userId);
+        commentLikeRepository.deleteAllByUserId(userId);
+        favoriteAnimalRepository.deleteAllByUserId(userId);
+        favoriteGroupRepository.deleteAllByGroupId(userId);
         postReadStatusRepository.deleteAllByUserId(userId);
         chatUserRepository.deleteAllByUserId(userId);
         groupUserRepository.findAllByUserIdWithGroup(userId).forEach(
@@ -482,7 +499,6 @@ public class UserService {
                     groupUserRepository.delete(groupUser);
                 }
         );
-
         meetingUserRepository.findAllByUserIdWithMeeting(userId).forEach(
                 meetingUser -> {
                     redisService.decrementCnt("meetingParticipantNum", meetingUser.getMeeting().getId().toString(), 1L);
@@ -490,7 +506,10 @@ public class UserService {
                 }
         );
 
-        // 유저 삭제 (soft delete 처리)
+        // 유저 상태 변경
+        user.getStatus().updateIsActive(false);
+
+        // 유저 삭제 (soft delete 처리) => soft delete의 side effect 고려 해야함
         userRepository.deleteById(userId);
     }
 
@@ -572,6 +591,18 @@ public class UserService {
                 .toList();
 
         return new UserResponse.FindInquiryByIdDTO(inquiry.getTitle(), inquiry.getDescription(), inquiry.getStatus(), inquiry.getCreatedDate(), answerDTOS);
+    }
+
+    @Transactional
+    public void validateAccessToken(@CookieValue String accessToken){
+        // 잘못된 토큰 형식인지 체크
+        if(!JWTProvider.validateToken(accessToken)) {
+            throw new CustomException(ExceptionCode.TOKEN_WRONG);
+        }
+
+        Long userIdFromToken = JWTProvider.getUserIdFromToken(accessToken);
+
+        redisService.validateData("accessToken", String.valueOf(userIdFromToken), accessToken);
     }
 
     private String sendCodeByMail(String toEmail){
@@ -665,13 +696,26 @@ public class UserService {
         String refreshToken = JWTProvider.createRefreshToken(user);
 
         // Access Token 세션에 저장 (중복 로그인 방지)
-        redisService.storeValue("accessToken", String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP);
+        redisService.storeValue("accessToken", String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP_MILLI);
 
         // Refresh Token 갱신
         redisService.removeData("refreshToken", String.valueOf(user.getId()));
-        redisService.storeValue("refreshToken", String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP);
+        redisService.storeValue("refreshToken", String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP_MILLI);
 
         // Map으로 토큰들을 담아 반환
+        Map<String, String> tokens = new HashMap<>();
+        tokens.put("accessToken", accessToken);
+        tokens.put("refreshToken", refreshToken);
+
+        return tokens;
+    }
+
+    private Map<String, String> createAccessToken(User user){
+        String accessToken = JWTProvider.createAccessToken(user);
+        String refreshToken = redisService.getDataInStr("refreshToken", String.valueOf(user.getId()));
+
+        redisService.storeValue("accessToken", String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP_MILLI);
+
         Map<String, String> tokens = new HashMap<>();
         tokens.put("accessToken", accessToken);
         tokens.put("refreshToken", refreshToken);

@@ -1,16 +1,21 @@
 package com.hong.ForPaw.core.security;
 
+import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.exceptions.SignatureVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.hong.ForPaw.core.utils.CookieUtils;
 import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.service.RedisService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -21,6 +26,7 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 
 @Slf4j
 public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
@@ -34,39 +40,86 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
-        String jwt = request.getHeader(JWTProvider.HEADER);
+        String authorizationHeader = request.getHeader(JWTProvider.AUTHORIZATION);
 
-        if (jwt == null) {
+        String refreshToken = CookieUtils.getCookieFromRequest(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, request);
+        String accessToken = (authorizationHeader != null && authorizationHeader.startsWith(JWTProvider.TOKEN_PREFIX)) ?
+                authorizationHeader.replace(JWTProvider.TOKEN_PREFIX, "")  : null;
+
+        // access/refresh 토큰이 모두 null
+        if ((accessToken == null || accessToken.trim().isEmpty()) && (refreshToken == null || refreshToken.trim().isEmpty())) {
             chain.doFilter(request, response);
             return;
         }
 
-        try {
-            DecodedJWT decodedJWT = JWTProvider.verify(jwt);
+        User user = null;
 
+        // accessToken 체크
+        if(accessToken != null) {
+            user = getUserFromToken(accessToken);
+        }
+
+        // accessToken에 인증 정보가 없으면, refreshToken 체크
+        if (user == null && refreshToken != null) {
+            user = getUserFromToken(refreshToken);
+
+            // 토큰에 인증 정보 존재
+            if (user != null) {
+                accessToken = JWTProvider.createAccessToken(user);
+                refreshToken = JWTProvider.createRefreshToken(user);
+
+                CookieUtils.setCookieToResponse(JWTProvider.ACCESS_TOKEN_COOKIE_KEY, accessToken, JWTProvider.ACCESS_EXP_SEC, false, true, response);
+                CookieUtils. setCookieToResponse(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, refreshToken, JWTProvider.REFRESH_EXP_SEC, false, true, response);
+            }
+        }
+
+        // accessToken과 refreshToken 모두 인증 정보가 없음 (만료 됐거나 잘못된 형식)
+        if (user == null) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        // 권한 부여 (로그인된 상태)
+        authenticateUser(user);
+        redisService.addSetElement(createVisitKey(), user.getId());
+
+        // Request 쿠키와 Response 쿠키 동기화
+        CookieUtils.syncHttpResponseCookiesFromHttpRequest(request, response, JWTProvider.ACCESS_TOKEN_COOKIE_KEY, JWTProvider.REFRESH_TOKEN_COOKIE_KEY);
+
+        // ACCESS 토큰은 HTTP Header로 리턴
+        response.setHeader(HttpHeaders.AUTHORIZATION, JWTProvider.TOKEN_PREFIX + accessToken);
+
+        chain.doFilter(request, response);
+    }
+
+    private void authenticateUser(User user) {
+        CustomUserDetails myUserDetails = new CustomUserDetails(user);
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        myUserDetails,
+                        myUserDetails.getPassword(),
+                        myUserDetails.getAuthorities()
+                );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+
+    private User getUserFromToken(String token) {
+        try {
+            DecodedJWT decodedJWT = JWTProvider.verify(token);
             Long id = decodedJWT.getClaim("id").asLong();
             UserRole userRole = decodedJWT.getClaim("role").as(UserRole.class);
             String nickName = decodedJWT.getClaim("nickName").asString();
-            User user = User.builder().id(id).role(userRole).nickName(nickName).build();
-
-            CustomUserDetails myUserDetails = new CustomUserDetails(user);
-            Authentication authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            myUserDetails,
-                            myUserDetails.getPassword(),
-                            myUserDetails.getAuthorities()
-                    );
-
-            redisService.addSetElement(createVisitKey(), id);
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            return User.builder().id(id).role(userRole).nickName(nickName).build();
         } catch (SignatureVerificationException sve) {
             log.error("토큰 검증 실패");
         } catch (TokenExpiredException tee) {
             log.error("토큰 만료됨");
-        } finally {
-            chain.doFilter(request, response);
+        } catch (JWTDecodeException jde) {
+            log.error("잘못된 형태의 토큰값이 입력으로 들어와서 디코딩 실패");
         }
+
+        return null;
     }
 
     private String createVisitKey() {
