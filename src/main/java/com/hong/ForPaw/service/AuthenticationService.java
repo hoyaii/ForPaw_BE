@@ -1,19 +1,29 @@
 package com.hong.ForPaw.service;
 
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse;
+import com.hong.ForPaw.controller.DTO.AuthenticationResponse.ApplyDTO;
+import com.hong.ForPaw.controller.DTO.AuthenticationResponse.UserDTO;
+import com.hong.ForPaw.controller.DTO.AuthenticationResponse.findUserListDTO;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Apply.Apply;
+import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Authentication.Visit;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.User.UserRole;
+import com.hong.ForPaw.domain.User.UserStatus;
 import com.hong.ForPaw.repository.Animal.AnimalRepository;
 import com.hong.ForPaw.repository.ApplyRepository;
 import com.hong.ForPaw.repository.Authentication.VisitRepository;
 import com.hong.ForPaw.repository.Post.CommentRepository;
 import com.hong.ForPaw.repository.Post.PostRepository;
 import com.hong.ForPaw.repository.UserRepository;
+import com.hong.ForPaw.repository.UserStatusRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,10 +49,11 @@ public class AuthenticationService {
     private final ApplyRepository applyRepository;
     private final EntityManager entityManager;
     private final RedisService redisService;
+    private final UserStatusRepository userStatusRepository;
 
     @Transactional
     @Scheduled(cron = "0 3 * * * *") // 매 시간 3분에 실행
-    public void syncVisits(){
+    public void syncVisits() {
         String key = getPreviousHourKey();
         LocalDateTime visitTime = parseDateTimeFromKey(key);
 
@@ -50,9 +61,9 @@ public class AuthenticationService {
         visitSet.forEach(visitorId -> {
             User userRef = entityManager.getReference(User.class, visitorId);
             Visit visit = Visit.builder()
-                    .user(userRef)
-                    .date(visitTime)
-                    .build();
+                .user(userRef)
+                .date(visitTime)
+                .build();
 
             visitRepository.save(visit);
         });
@@ -61,7 +72,7 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public AuthenticationResponse.FindDashboardStatsDTO findDashboardStats(Long userId){
+    public AuthenticationResponse.FindDashboardStatsDTO findDashboardStats(Long userId) {
         // 권한 체크
         checkAdminAuthority(userId);
 
@@ -71,7 +82,8 @@ public class AuthenticationService {
         Long activeUsersNum = userRepository.countActiveUsers();
         Long inActiveUsersNum = userRepository.countInActiveUsers();
 
-        AuthenticationResponse.UserStatsDTO userStatsDTO = new AuthenticationResponse.UserStatsDTO(activeUsersNum, inActiveUsersNum);
+        AuthenticationResponse.UserStatsDTO userStatsDTO = new AuthenticationResponse.UserStatsDTO(
+            activeUsersNum, inActiveUsersNum);
 
         // 유기 동물 통계
         Long waitingForAdoptionNum = animalRepository.countAnimal();
@@ -80,10 +92,10 @@ public class AuthenticationService {
         Long adoptedTotalNum = applyRepository.countProcessed();
 
         AuthenticationResponse.AnimalStatsDTO animalStatsDTO = new AuthenticationResponse.AnimalStatsDTO(
-                waitingForAdoptionNum,
-                adoptionProcessingNum,
-                adoptedRecentlyNum,
-                adoptedTotalNum
+            waitingForAdoptionNum,
+            adoptionProcessingNum,
+            adoptedRecentlyNum,
+            adoptedTotalNum
         );
 
         // 일주일 전까지의 Vist 엔티티 불러오기
@@ -92,28 +104,32 @@ public class AuthenticationService {
 
         // 일별 방문자 수 집계
         Map<LocalDate, Long> dailyVisitors = visits.stream()
-                .collect(Collectors.groupingBy(
-                        visit -> visit.getDate().toLocalDate(),
-                        Collectors.counting()
-                ));
+            .collect(Collectors.groupingBy(
+                visit -> visit.getDate().toLocalDate(),
+                Collectors.counting()
+            ));
 
-        List<AuthenticationResponse.DailyVisitorDTO> dailyVisitorDTOS = dailyVisitors.entrySet().stream()
-                .map(entry -> new AuthenticationResponse.DailyVisitorDTO(entry.getKey(), entry.getValue()))
-                .sorted(Comparator.comparing(AuthenticationResponse.DailyVisitorDTO::date))
-                .collect(Collectors.toList());
+        List<AuthenticationResponse.DailyVisitorDTO> dailyVisitorDTOS = dailyVisitors.entrySet()
+            .stream()
+            .map(entry -> new AuthenticationResponse.DailyVisitorDTO(entry.getKey(),
+                entry.getValue()))
+            .sorted(Comparator.comparing(AuthenticationResponse.DailyVisitorDTO::date))
+            .collect(Collectors.toList());
 
         // 시간별 방문자 수 집계 (오늘 날짜)
         Map<LocalTime, Long> hourlyVisitors = visits.stream()
-                .filter(visit -> visit.getDate().toLocalDate().isEqual(LocalDate.now()))
-                .collect(Collectors.groupingBy(
-                        visit -> visit.getDate().toLocalTime().truncatedTo(ChronoUnit.HOURS),
-                        Collectors.counting()
-                ));
+            .filter(visit -> visit.getDate().toLocalDate().isEqual(LocalDate.now()))
+            .collect(Collectors.groupingBy(
+                visit -> visit.getDate().toLocalTime().truncatedTo(ChronoUnit.HOURS),
+                Collectors.counting()
+            ));
 
-        List<AuthenticationResponse.HourlyVisitorDTO> hourlyVisitorDTOS = hourlyVisitors.entrySet().stream()
-                .map(entry -> new AuthenticationResponse.HourlyVisitorDTO(LocalDateTime.of(LocalDate.now(), entry.getKey()), entry.getValue()))
-                .sorted(Comparator.comparing(AuthenticationResponse.HourlyVisitorDTO::hour))
-                .collect(Collectors.toList());
+        List<AuthenticationResponse.HourlyVisitorDTO> hourlyVisitorDTOS = hourlyVisitors.entrySet()
+            .stream()
+            .map(entry -> new AuthenticationResponse.HourlyVisitorDTO(
+                LocalDateTime.of(LocalDate.now(), entry.getKey()), entry.getValue()))
+            .sorted(Comparator.comparing(AuthenticationResponse.HourlyVisitorDTO::hour))
+            .collect(Collectors.toList());
 
         // 오늘 발생한 이벤트 요약
         Long entryNum = userRepository.countALlWithinDate(nowDateOnly);
@@ -122,14 +138,189 @@ public class AuthenticationService {
         Long newAdoptApplicationNum = applyRepository.countProcessingWithinDate(nowDateOnly);
 
         AuthenticationResponse.DailySummaryDTO dailySummaryDTO = new AuthenticationResponse.DailySummaryDTO(
-                entryNum,
-                newPostNum,
-                newCommentNum,
-                newAdoptApplicationNum
+            entryNum,
+            newPostNum,
+            newCommentNum,
+            newAdoptApplicationNum
         );
 
-        return new AuthenticationResponse.FindDashboardStatsDTO(userStatsDTO, animalStatsDTO, dailyVisitorDTOS, hourlyVisitorDTOS, dailySummaryDTO);
+        return new AuthenticationResponse.FindDashboardStatsDTO(userStatsDTO, animalStatsDTO,
+            dailyVisitorDTOS, hourlyVisitorDTOS, dailySummaryDTO);
     }
+
+    @Transactional
+    public findUserListDTO findUserList(Long Id, UserRole Role, int page) {
+        Pageable pageable = PageRequest.of(page, 5);
+
+        checkAdminAuthority(Id);
+
+        userRepository.findById(Id).orElseThrow(
+            () -> new CustomException(ExceptionCode.ADMIN_NOT_FOUND)
+        );
+
+        List<UserDTO> userDTOS = null;
+
+        userDTOS = userRepository.findUserWithLatestVisit().stream().map(
+            list -> new UserDTO(
+                list.getId(),
+                list.getNickName(),
+                list.getEmail(),
+                list.getCreatedDate(),
+                list.getVisit().get(0).getDate(),
+                applyRepository.countByUserIdProcessed(list.getId()),
+                applyRepository.countByUserIdProcessing(list.getId()),
+                list.getRole(),
+                list.getStatus().isActive(),
+                list.getStatus().getSuspensionStart(),
+                list.getStatus().getSuspensionDays(),
+                list.getStatus().getSuspensionReason()
+            )
+        ).toList();
+
+        if (Role.equals(UserRole.SUPER)){
+            userDTOS = userRepository.findUserWithLatestVisit().stream().map(
+                list -> new UserDTO(
+                    list.getId(),
+                    list.getNickName(),
+                    list.getEmail(),
+                    list.getCreatedDate(),
+                    list.getVisit().get(0).getDate(),
+                    applyRepository.countByUserIdProcessed(list.getId()),
+                    applyRepository.countByUserIdProcessing(list.getId()),
+                    list.getRole(),
+                    list.getStatus().isActive(),
+                    list.getStatus().getSuspensionStart(),
+                    list.getStatus().getSuspensionDays(),
+                    list.getStatus().getSuspensionReason()
+                )
+            ).toList();
+        }
+        if (Role.equals(UserRole.ADMIN)){
+            userDTOS = userRepository.findUserWithLatestVisit().stream().map(
+                list -> new UserDTO(
+                    list.getId(),
+                    list.getNickName(),
+                    list.getEmail(),
+                    list.getCreatedDate(),
+                    list.getVisit().get(0).getDate(),
+                    applyRepository.countByUserIdProcessed(list.getId()),
+                    applyRepository.countByUserIdProcessing(list.getId()),
+                    list.getRole(),
+                    list.getStatus().isActive(),
+                    list.getStatus().getSuspensionStart(),
+                    list.getStatus().getSuspensionDays(),
+                    list.getStatus().getSuspensionReason()
+                )
+            ).toList();
+        }
+
+        return new findUserListDTO(userDTOS);
+    }
+
+    @Transactional
+    public AuthenticationResponse.UserRoleDTO changeUserRole(Long id,
+        AuthenticationResponse.UserRoleDTO userRoleDTO){
+        checkAdminAuthority(id);
+        User user = userRepository.findById(userRoleDTO.userId()).orElseThrow(
+            () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+        user.updateRole(userRoleDTO.role());
+        return userRoleDTO;
+    }
+
+    @Transactional
+    public void suspendUser(Long id, AuthenticationResponse.UserBanDTO userBanDTO){
+        checkAdminAuthority(id);
+
+        userRepository.findById(userBanDTO.userId()).orElseThrow(
+            () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+        UserStatus byUserIdone = userStatusRepository.findByUserId(userBanDTO.userId());
+        byUserIdone.updateForSuspend(userBanDTO);
+    }
+
+    @Transactional
+    public void unSuspendUser(Long id, Long userId){
+        checkAdminAuthority(id);
+
+        userRepository.findById(userId).orElseThrow(
+            () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+        UserStatus byUserIdone = userStatusRepository.findByUserId(userId);
+        byUserIdone.updateForUnSuspend();
+
+    }
+    @Transactional
+    public void deleteUser(Long id, Long userId){
+        checkSuperAuthority(id);
+
+        userRepository.findById(userId).orElseThrow(
+            () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+        userRepository.deleteById(userId);
+    }
+
+    @Transactional
+    public List<AuthenticationResponse.ApplyDTO> getApplyList(Long id, ApplyStatus applyStatus, int page){
+        checkAdminAuthority(id);
+        PageRequest pageRequest = PageRequest.of(page, 5);
+
+        List<ApplyDTO> list = null;
+
+        if (applyStatus == null){
+            Page<Apply> allApply = applyRepository.findAllWithAnimal(pageRequest);
+            list = allApply.getContent().stream()
+                .map(apply -> new ApplyDTO(
+                    apply.getId(),
+                    apply.getCreatedDate(),
+                    apply.getAnimal().getId(),
+                    apply.getAnimal().getKind(),
+                    apply.getAnimal().getGender(),
+                    apply.getAnimal().getAge(),
+                    apply.getName(),
+                    apply.getTel(),
+                    apply.getResidence(),
+                    animalRepository.animalShelter(apply.getAnimal().getId()).getShelter()
+                        .getName(),
+                    animalRepository.animalShelter(apply.getAnimal().getId()).getShelter()
+                        .getCareTel(),
+                    apply.getStatus()
+                )).toList();
+        }
+        if (applyStatus != null){
+            Page<Apply> allApply = applyRepository.findProcessApply(pageRequest,applyStatus);
+            list = allApply.getContent().stream()
+                .map(apply -> new ApplyDTO(
+                    apply.getId(),
+                    apply.getCreatedDate(),
+                    apply.getAnimal().getId(),
+                    apply.getAnimal().getKind(),
+                    apply.getAnimal().getGender(),
+                    apply.getAnimal().getAge(),
+                    apply.getName(),
+                    apply.getTel(),
+                    apply.getResidence(),
+                    animalRepository.animalShelter(apply.getAnimal().getId()).getShelter()
+                        .getName(),
+                    animalRepository.animalShelter(apply.getAnimal().getId()).getShelter()
+                        .getCareTel(),
+                    apply.getStatus()
+                )).toList();
+        }
+
+        return list;
+
+    }
+
+    @Transactional
+    public void changeApplyStatus(Long id,Long applyId,ApplyStatus applyStatus){
+        checkAdminAuthority(id);
+        Apply apply = applyRepository.findById(applyId).orElseThrow(
+            () -> new CustomException(ExceptionCode.APPLY_NOT_FOUND)
+        );
+        apply.updateApplyStatus(applyStatus);
+    }
+
 
     private String getPreviousHourKey() {
         LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
@@ -143,12 +334,22 @@ public class AuthenticationService {
         return LocalDateTime.parse(key.substring(lastColon + 1), formatter); // 마지막 ':' 이후부터 문자열을 파싱
     }
 
-    private void checkAdminAuthority(Long userId){
+    private void checkAdminAuthority(Long userId) {
         UserRole role = userRepository.findRoleById(userId).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_FORBIDDEN)
+            () -> new CustomException(ExceptionCode.USER_FORBIDDEN)
         );
 
-        if(!role.equals(UserRole.ADMIN) && !role.equals(UserRole.SUPER)){
+        if (!role.equals(UserRole.ADMIN) && !role.equals(UserRole.SUPER)) {
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
+    }
+
+    private void checkSuperAuthority(Long userId) {
+        UserRole role = userRepository.findRoleById(userId).orElseThrow(
+            () -> new CustomException(ExceptionCode.USER_FORBIDDEN)
+        );
+
+        if (!role.equals(UserRole.SUPER)) {
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
     }
