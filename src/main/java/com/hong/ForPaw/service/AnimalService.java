@@ -239,7 +239,7 @@ public class AnimalService {
         List<Long> recommendedAnimalIds = getRecommendedAnimalIdList(userId);
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
 
-        List<AnimalResponse.AnimalDTO> animalDTOS =animalRepository.findAllByIdList(recommendedAnimalIds).stream()
+        List<AnimalResponse.AnimalDTO> animalDTOS =animalRepository.findAllByIds(recommendedAnimalIds).stream()
                 .map(animal -> {
                     Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
 

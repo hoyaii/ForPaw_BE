@@ -1,11 +1,11 @@
 package com.hong.ForPaw.service;
 
+import com.hong.ForPaw.controller.DTO.AuthenticationRequest;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse.ApplyDTO;
-import com.hong.ForPaw.controller.DTO.AuthenticationResponse.UserDTO;
-import com.hong.ForPaw.controller.DTO.AuthenticationResponse.findUserListDTO;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Apply.Apply;
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Authentication.Visit;
@@ -51,6 +51,7 @@ public class AuthenticationService {
     private final EntityManager entityManager;
     private final RedisService redisService;
     private final UserStatusRepository userStatusRepository;
+    private static final String SORT_BY_CREATED_DATE = "createdDate";
 
     @Transactional
     @Scheduled(cron = "0 3 * * * *") // 매 시간 3분에 실행
@@ -150,178 +151,132 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public findUserListDTO findUserList(Long Id, UserRole Role, int page) {
-        Pageable pageable = PageRequest.of(page, 5);
+    public AuthenticationResponse.FindUserListDTO findUserList(Long adminId, int page){
+        checkAdminAuthority(adminId);
 
-        checkAdminAuthority(Id);
+        List<Visit> visits = visitRepository.findAll();
+        Map<Long, Visit> latestVisitMap = visits.stream()
+                .collect(Collectors.toMap(
+                        visit -> visit.getUser().getId(),
+                        visit -> visit,
+                        (visit1, visit2) -> visit1.getDate().isAfter(visit2.getDate()) ? visit1 : visit2
+                ));
 
-        userRepository.findById(Id).orElseThrow(
-            () -> new CustomException(ExceptionCode.ADMIN_NOT_FOUND)
-        );
+        List<Apply> processingApplies = applyRepository.findAllProcessing();
+        Map<Long, Long> processingApplyMap = processingApplies.stream()
+                .collect(Collectors.groupingBy(
+                        apply -> apply.getUser().getId(),
+                        Collectors.counting()
+                ));
 
-        List<UserDTO> userDTOS = null;
+        List<Apply> processedApplies = applyRepository.findAllProcessing();
+        Map<Long, Long> processedApplyMap = processedApplies.stream()
+                .collect(Collectors.groupingBy(
+                        apply -> apply.getUser().getId(),
+                        Collectors.counting()
+                ));
 
-        userDTOS = userRepository.findUserWithLatestVisit().stream().map(
-            list -> new UserDTO(
-                list.getId(),
-                list.getNickName(),
-                list.getEmail(),
-                list.getCreatedDate(),
-                list.getVisit().get(0).getDate(),
-                applyRepository.countByUserIdProcessed(list.getId()),
-                applyRepository.countByUserIdProcessing(list.getId()),
-                list.getRole(),
-                list.getStatus().isActive(),
-                list.getStatus().getSuspensionStart(),
-                list.getStatus().getSuspensionDays(),
-                list.getStatus().getSuspensionReason()
-            )
-        ).toList();
+        Pageable pageable =createPageable(page, 5, SORT_BY_CREATED_DATE);
+        Page<User> users = userRepository.findAll(pageable);
 
-        if (Role.equals(UserRole.SUPER)){
-            userDTOS = userRepository.findUserWithLatestVisit().stream().map(
-                list -> new UserDTO(
-                    list.getId(),
-                    list.getNickName(),
-                    list.getEmail(),
-                    list.getCreatedDate(),
-                    list.getVisit().get(0).getDate(),
-                    applyRepository.countByUserIdProcessed(list.getId()),
-                    applyRepository.countByUserIdProcessing(list.getId()),
-                    list.getRole(),
-                    list.getStatus().isActive(),
-                    list.getStatus().getSuspensionStart(),
-                    list.getStatus().getSuspensionDays(),
-                    list.getStatus().getSuspensionReason()
-                )
-            ).toList();
-        }
-        if (Role.equals(UserRole.ADMIN)){
-            userDTOS = userRepository.findUserWithLatestVisit().stream().map(
-                list -> new UserDTO(
-                    list.getId(),
-                    list.getNickName(),
-                    list.getEmail(),
-                    list.getCreatedDate(),
-                    list.getVisit().get(0).getDate(),
-                    applyRepository.countByUserIdProcessed(list.getId()),
-                    applyRepository.countByUserIdProcessing(list.getId()),
-                    list.getRole(),
-                    list.getStatus().isActive(),
-                    list.getStatus().getSuspensionStart(),
-                    list.getStatus().getSuspensionDays(),
-                    list.getStatus().getSuspensionReason()
-                )
-            ).toList();
-        }
+        List<AuthenticationResponse.UserDTO> userDTOS = users.getContent().stream()
+                .map(user -> new AuthenticationResponse.UserDTO(
+                        user.getId(),
+                        user.getNickName(),
+                        user.getCreatedDate(),
+                        latestVisitMap.get(user.getId()).getDate(),
+                        processingApplyMap.get(user.getId()),
+                        processedApplyMap.get(user.getId()),
+                        user.getRole(),
+                        user.getStatus().isActive(),
+                        user.getStatus().getSuspensionStart(),
+                        user.getStatus().getSuspensionDays(),
+                        user.getStatus().getSuspensionReason()
+                ))
+                .toList();
 
-        return new findUserListDTO(userDTOS);
+        return new AuthenticationResponse.FindUserListDTO(userDTOS);
     }
 
     @Transactional
-    public AuthenticationResponse.UserRoleDTO changeUserRole(Long id,
-        AuthenticationResponse.UserRoleDTO userRoleDTO){
-        checkAdminAuthority(id);
-        User user = userRepository.findById(userRoleDTO.userId()).orElseThrow(
+    public void changeUserRole(AuthenticationRequest.ChangeUserRoleDTO requestDTO, Long adminId){
+        checkAdminAuthority(adminId);
+
+        User user = userRepository.findById(requestDTO.userId()).orElseThrow(
             () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
-        user.updateRole(userRoleDTO.role());
-        return userRoleDTO;
+        user.updateRole(requestDTO.role());
     }
 
     @Transactional
-    public void suspendUser(Long id, AuthenticationResponse.UserBanDTO userBanDTO){
-        checkAdminAuthority(id);
+    public void suspendUser(AuthenticationRequest.SuspendUserDTO requestDTO, Long adminId){
+        Long userId = requestDTO.userId();
 
-        userRepository.findById(userBanDTO.userId()).orElseThrow(
-            () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
-        );
-        UserStatus byUserIdone = userStatusRepository.findByUserId(userBanDTO.userId());
-        byUserIdone.updateForSuspend(userBanDTO);
+        checkAdminAuthority(adminId);
+        checkIsMember(userId);
+
+        UserStatus userStatus = userStatusRepository.findByUserId(userId);
+        LocalDateTime now = LocalDateTime.now();
+        userStatus.updateForSuspend(now, requestDTO.suspensionDays(), requestDTO.suspensionReason());
     }
 
     @Transactional
-    public void unSuspendUser(Long id, Long userId){
-        checkAdminAuthority(id);
+    public void unSuspendUser(Long userId, Long adminId){
+        checkAdminAuthority(adminId);
+        checkIsMember(userId);
 
-        userRepository.findById(userId).orElseThrow(
-            () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
-        );
-        UserStatus byUserIdone = userStatusRepository.findByUserId(userId);
-        byUserIdone.updateForUnSuspend();
-
-    }
-    @Transactional
-    public void deleteUser(Long id, Long userId){
-        checkSuperAuthority(id);
-
-        userRepository.findById(userId).orElseThrow(
-            () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
-        );
-        userRepository.deleteById(userId);
+        UserStatus userStatus = userStatusRepository.findByUserId(userId);
+        userStatus.updateForUnSuspend();
     }
 
     @Transactional
-    public List<AuthenticationResponse.ApplyDTO> getApplyList(Long id, ApplyStatus applyStatus, int page){
-        checkAdminAuthority(id);
-        PageRequest pageRequest = PageRequest.of(page, 5);
+    public AuthenticationResponse.FindApplyListDTO findApplyList(Long adminId, ApplyStatus applyStatus, int page){
+        checkAdminAuthority(adminId);
 
-        List<ApplyDTO> list = null;
+        Pageable pageable = createPageable(page, 5, SORT_BY_CREATED_DATE);
+        Page<Apply> applyPage = applyRepository.findAllByStatusWithAnimal(applyStatus, pageable);
 
-        if (applyStatus == null){
-            Page<Apply> allApply = applyRepository.findAllWithAnimal(pageRequest);
-            list = allApply.getContent().stream()
-                .map(apply -> new ApplyDTO(
-                    apply.getId(),
-                    apply.getCreatedDate(),
-                    apply.getAnimal().getId(),
-                    apply.getAnimal().getKind(),
-                    apply.getAnimal().getGender(),
-                    apply.getAnimal().getAge(),
-                    apply.getName(),
-                    apply.getTel(),
-                    apply.getResidence(),
-                    animalRepository.animalShelter(apply.getAnimal().getId()).getShelter()
-                        .getName(),
-                    animalRepository.animalShelter(apply.getAnimal().getId()).getShelter()
-                        .getCareTel(),
-                    apply.getStatus()
-                )).toList();
-        }
-        if (applyStatus != null){
-            Page<Apply> allApply = applyRepository.findProcessApply(pageRequest,applyStatus);
-            list = allApply.getContent().stream()
-                .map(apply -> new ApplyDTO(
-                    apply.getId(),
-                    apply.getCreatedDate(),
-                    apply.getAnimal().getId(),
-                    apply.getAnimal().getKind(),
-                    apply.getAnimal().getGender(),
-                    apply.getAnimal().getAge(),
-                    apply.getName(),
-                    apply.getTel(),
-                    apply.getResidence(),
-                    animalRepository.animalShelter(apply.getAnimal().getId()).getShelter()
-                        .getName(),
-                    animalRepository.animalShelter(apply.getAnimal().getId()).getShelter()
-                        .getCareTel(),
-                    apply.getStatus()
-                )).toList();
-        }
+        // Apply의 animalId를 리스트로 만듦 => shleter와 fetch 조인해서 Animal 객체를 조회 => <animalId, Anmal 객체> 맵 생성
+        List<Long> animalIds = applyPage.getContent().stream()
+                .map(apply -> apply.getAnimal().getId())
+                .collect(Collectors.toList());
 
-        return list;
+        List<Animal> animals = animalRepository.findAllByIdsWithShelter(animalIds);
+        Map<Long, Animal> animalMap = animals.stream()
+                .collect(Collectors.toMap(Animal::getId, animal -> animal));
 
+        List<ApplyDTO> applyDTOS = applyPage.getContent().stream()
+                .map(apply -> {
+                    Animal animal = animalMap.get(apply.getAnimal().getId());
+                    return new ApplyDTO(
+                            apply.getId(),
+                            apply.getCreatedDate(),
+                            animal.getId(),
+                            animal.getKind(),
+                            animal.getGender(),
+                            animal.getAge(),
+                            apply.getName(),
+                            apply.getTel(),
+                            apply.getResidence(),
+                            animal.getShelter().getName(),
+                            animal.getShelter().getCareTel(),
+                            apply.getStatus()
+                    );
+                }).toList();
+
+        return new AuthenticationResponse.FindApplyListDTO(applyDTOS);
     }
 
     @Transactional
-    public void changeApplyStatus(Long id,Long applyId,ApplyStatus applyStatus){
-        checkAdminAuthority(id);
-        Apply apply = applyRepository.findById(applyId).orElseThrow(
+    public void changeApplyStatus(AuthenticationRequest.ChangeApplyStatusDTO requestDTO, Long adminId){
+        checkAdminAuthority(adminId);
+
+        Apply apply = applyRepository.findById(requestDTO.id()).orElseThrow(
             () -> new CustomException(ExceptionCode.APPLY_NOT_FOUND)
         );
-        apply.updateApplyStatus(applyStatus);
-    }
 
+        apply.updateApplyStatus(requestDTO.status());
+    }
 
     private String getPreviousHourKey() {
         LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
@@ -335,7 +290,7 @@ public class AuthenticationService {
         return LocalDateTime.parse(key.substring(lastColon + 1), formatter); // 마지막 ':' 이후부터 문자열을 파싱
     }
 
-    private void checkAdminAuthority(Long userId) {
+    public void checkAdminAuthority(Long userId) {
         UserRole role = userRepository.findRoleById(userId).orElseThrow(
             () -> new CustomException(ExceptionCode.USER_FORBIDDEN)
         );
@@ -355,24 +310,13 @@ public class AuthenticationService {
         }
     }
 
-    private void checkSuperAuthority(Long userId){
-        UserRole role = userRepository.findRoleById(userId).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_FORBIDDEN)
+    private void checkIsMember(Long userId){
+        userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
-
-        if(!role.equals(UserRole.SUPER)){
-            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        }
     }
 
-    private void checkSuperAuthority(Long userId){
-        UserRole role = userRepository.findRoleById(userId).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_FORBIDDEN)
-        );
-
-        if(!role.equals(UserRole.SUPER)){
-            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        }
+    private Pageable createPageable(int page, int size, String sortProperty) {
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 }
-

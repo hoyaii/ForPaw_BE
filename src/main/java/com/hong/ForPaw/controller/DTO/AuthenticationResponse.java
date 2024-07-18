@@ -31,11 +31,10 @@ public class AuthenticationResponse {
                                   Long newComment,
                                   Long newAdoptApplication) {}
 
-    public record findUserListDTO(List<UserDTO> users){}
+    public record FindUserListDTO(List<UserDTO> users){}
 
     public record UserDTO(Long id,
-                          String nickname,
-                          String email,
+                          String nickName,
                           LocalDateTime signUpDate,
                           LocalDateTime lastLogin,
                           Long applicationsSubmitted,
@@ -44,14 +43,11 @@ public class AuthenticationResponse {
                           boolean isActive,
                           LocalDateTime suspensionStart,
                           Long suspensionDays,
-                          String suspensionReason
-    ){}
+                          String suspensionReason) {}
 
-    public record UserRoleDTO(Long userId, UserRole role){}
+    public record UnSuspendUserDTO(Long userId){};
 
-    public record UserBanDTO(Long userId, Long duration, String reason){};
-
-    public record GetApplyDTO(List<ApplyDTO> applyDTOS){};
+    public record WithdrawUserDTO(Long userId){};
 
     public record ApplyDTO(Long applyId,
                            LocalDateTime applyDate,
@@ -67,4 +63,5 @@ public class AuthenticationResponse {
                            ApplyStatus status
     ){};
 
+    public record FindApplyListDTO(List<ApplyDTO> applies){}
 }

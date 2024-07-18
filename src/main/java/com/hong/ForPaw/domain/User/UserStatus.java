@@ -1,7 +1,6 @@
 package com.hong.ForPaw.domain.User;
 
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse;
-import com.hong.ForPaw.domain.Authentication.Visit;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -46,18 +45,19 @@ public class UserStatus {
         this.suspensionReason = suspensionReason;
     }
 
-    public void updateForSuspend(AuthenticationResponse.UserBanDTO userBanDTO){
+    public void updateForSuspend(LocalDateTime suspensionStart, Long suspensionDays, String suspensionReason){
         this.isActive = false;
-        this.suspensionStart = LocalDateTime.now();
-        this.suspensionDays = userBanDTO.duration();
-        this.suspensionReason = userBanDTO.reason();
+        this.suspensionStart = suspensionStart;
+        this.suspensionDays = suspensionDays;
+        this.suspensionReason = suspensionReason;
     }
 
-    public void updateForUnSuspend(){
+    public void updateForUnSuspend() {
         this.isActive = true;
         this.suspensionStart = null;
         this.suspensionDays = null;
         this.suspensionReason = null;
+    }
 
     public void updateIsActive(boolean isActive){
         this.isActive = isActive;

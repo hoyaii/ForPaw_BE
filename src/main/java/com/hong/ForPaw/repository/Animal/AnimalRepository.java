@@ -36,7 +36,11 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
     Optional<Animal> findById(@Param("id") Long id);
 
     @Query("SELECT a FROM Animal a WHERE a.id IN :ids AND a.removedAt IS NULL")
-    List<Animal> findAllByIdList(List<Long> ids);
+    List<Animal> findAllByIds(@Param("ids") List<Long> ids);
+
+    @EntityGraph(attributePaths = {"shelter"})
+    @Query("SELECT a FROM Animal a WHERE a.id IN :ids AND a.removedAt IS NULL")
+    List<Animal> findAllByIdsWithShelter(@Param("ids") List<Long> ids);
     
     @Query("SELECT a FROM Animal a WHERE (:category IS NULL OR a.category = :category) AND a.shelter.id = :careRegNo AND a.removedAt IS NULL")
     Page<Animal> findByShelterIdAndType(@Param("category") AnimalType category, @Param("careRegNo") Long careRegNo, Pageable pageable);
@@ -74,8 +78,4 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
 
     @Query("SELECT COUNT(a) FROM Animal a WHERE a.shelter.id = :shelterId AND a.removedAt IS NULL")
     Long countByShelterId(@Param("shelterId") Long shelterId);
-
-    @EntityGraph(attributePaths = {"shelter"})
-    @Query("SELECT a FROM Animal a WHERE a.id = :id")
-    Animal animalShelter(@Param("id")Long id);
 }

@@ -32,7 +32,7 @@ public class HomeService {
         // 1. 추천 동물
         List<Long> recommendedAnimalIds = animalService.getRecommendedAnimalIdList(userId);
 
-        List<HomeResponse.AnimalDTO> animalDTOS = animalRepository.findAllByIdList(recommendedAnimalIds).stream()
+        List<HomeResponse.AnimalDTO> animalDTOS = animalRepository.findAllByIds(recommendedAnimalIds).stream()
                 .map(animal -> {
                     Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
 

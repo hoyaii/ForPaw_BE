@@ -1,25 +1,22 @@
 package com.hong.ForPaw.controller;
 
+import com.hong.ForPaw.controller.DTO.AuthenticationRequest;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse;
 import com.hong.ForPaw.controller.DTO.AuthenticationResponse.ApplyDTO;
-import com.hong.ForPaw.controller.DTO.AuthenticationResponse.UserRoleDTO;
-import com.hong.ForPaw.controller.DTO.AuthenticationResponse.findUserListDTO;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.service.AuthenticationService;
 import java.util.List;
+
+import com.hong.ForPaw.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequiredArgsConstructor
@@ -27,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
+    private final UserService userService;
 
     @GetMapping("/admin/dashboard")
     public ResponseEntity<?> findDashboardStats(@AuthenticationPrincipal CustomUserDetails userDetails){
@@ -35,62 +33,45 @@ public class AuthenticationController {
     }
 
     @GetMapping("/admin/user")
-    public ResponseEntity<?> getUsers(
-        @AuthenticationPrincipal CustomUserDetails userDetails,
-        @RequestParam(defaultValue = "0") int page) {
-        findUserListDTO responseDTO = authenticationService.findUserList(userDetails.getUser().getId(),
-            userDetails.getUser().getRole(), page);
-
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,responseDTO));
+    public ResponseEntity<?> findUserList(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam(defaultValue = "0") int page) {
+        AuthenticationResponse.FindUserListDTO responseDTO = authenticationService.findUserList(userDetails.getUser().getId(), page);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PatchMapping("/admin/user/role")
-    public ResponseEntity<?> changeUserRole(@AuthenticationPrincipal CustomUserDetails userDetails,
-        AuthenticationResponse.UserRoleDTO userRoleDTO){
-        UserRoleDTO responseDTO = authenticationService.changeUserRole(
-            userDetails.getUser().getId(), userRoleDTO);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,responseDTO));
+    public ResponseEntity<?> changeUserRole(@RequestBody @Valid AuthenticationRequest.ChangeUserRoleDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+        authenticationService.changeUserRole(requestDTO, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/admin/user/suspend")
-    public ResponseEntity<?> suspendUser(@AuthenticationPrincipal CustomUserDetails customUserDetails,
-        AuthenticationResponse.UserBanDTO userBanDTO){
-        authenticationService.suspendUser(customUserDetails.getUser().getId(),userBanDTO);
+    public ResponseEntity<?> suspendUser(@RequestBody @Valid AuthenticationRequest.SuspendUserDTO requestDTO, @AuthenticationPrincipal CustomUserDetails customUserDetails){
+        authenticationService.suspendUser(requestDTO, customUserDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
     }
 
     @PostMapping("/admin/user/unsuspend")
-    public ResponseEntity<?> unSuspendUser(@AuthenticationPrincipal CustomUserDetails customUserDetails,
-        Long userId){
-        authenticationService.unSuspendUser(customUserDetails.getUser().getId(),userId);
+    public ResponseEntity<?> unSuspendUser(@RequestBody @Valid AuthenticationResponse.UnSuspendUserDTO requestDTO, @AuthenticationPrincipal CustomUserDetails customUserDetails){
+        authenticationService.unSuspendUser(requestDTO.userId(), customUserDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
     }
 
     @DeleteMapping("/admin/user")
-    public ResponseEntity<?> deleteUser(@AuthenticationPrincipal CustomUserDetails customUserDetails,
-        Long userId){
-        authenticationService.deleteUser(customUserDetails.getUser().getId(),userId);
+    public ResponseEntity<?> withdrawUser(@RequestBody @Valid AuthenticationResponse.WithdrawUserDTO requestDTO ,@AuthenticationPrincipal CustomUserDetails customUserDetails){
+        authenticationService.checkAdminAuthority(customUserDetails.getUser().getId());
+        userService.withdrawMember(requestDTO.userId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
     }
 
     @GetMapping("/admin/adoption")
-    public ResponseEntity<?> getApply(@AuthenticationPrincipal CustomUserDetails customUserDetails,
-        @RequestParam(required = false)ApplyStatus applyStatus,
-        @RequestParam(defaultValue = "0") int page){
-        List<ApplyDTO> responseDTO = authenticationService.getApplyList(customUserDetails.getUser().getId(),
-            applyStatus, page);
-
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,responseDTO));
+    public ResponseEntity<?> findApplyList(@AuthenticationPrincipal CustomUserDetails customUserDetails, @RequestParam ApplyStatus applyStatus, @RequestParam int page){
+        AuthenticationResponse.FindApplyListDTO responseDTO = authenticationService.findApplyList(customUserDetails.getUser().getId(), applyStatus, page);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PatchMapping("/admin/adoption")
-    public ResponseEntity<?> changeApplyStatus(@AuthenticationPrincipal CustomUserDetails customUserDetails,
-       @RequestParam("id")Long id, @RequestParam("status")ApplyStatus applyStatus){
-        authenticationService.changeApplyStatus(customUserDetails.getUser().getId(),id,applyStatus);
-
+    public ResponseEntity<?> changeApplyStatus(@RequestBody @Valid AuthenticationRequest.ChangeApplyStatusDTO requestDTO, @AuthenticationPrincipal CustomUserDetails customUserDetails){
+        authenticationService.changeApplyStatus(requestDTO, customUserDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
     }
-
-
-
 }
