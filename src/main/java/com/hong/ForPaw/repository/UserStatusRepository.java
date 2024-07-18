@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface UserStatusRepository extends JpaRepository<UserStatus, Long> {
 
@@ -22,7 +24,7 @@ public interface UserStatusRepository extends JpaRepository<UserStatus, Long> {
 
     @EntityGraph(attributePaths = {"user"})
     @Query("SELECT u FROM UserStatus u WHERE u.user.id = :id")
-    UserStatus findByUserId(@Param("id") Long id);
+    Optional<UserStatus> findByUserId(@Param("id") Long id);
 
     void deleteAllByUserId(Long userId);
 }

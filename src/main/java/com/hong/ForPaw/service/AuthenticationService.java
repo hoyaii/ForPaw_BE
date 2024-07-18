@@ -213,12 +213,11 @@ public class AuthenticationService {
 
     @Transactional
     public void suspendUser(AuthenticationRequest.SuspendUserDTO requestDTO, Long adminId, UserRole adminRole){
-        Long userId = requestDTO.userId();
-
         checkAdminAuthority(adminId);
-        checkIsMember(userId);
 
-        UserStatus userStatus = userStatusRepository.findByUserId(userId);
+        UserStatus userStatus = userStatusRepository.findByUserId(requestDTO.userId()).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
 
         checkAdminPrivileges(adminRole, userStatus.getUser().getRole());
         userStatus.updateForSuspend(LocalDateTime.now(), requestDTO.suspensionDays(), requestDTO.suspensionReason());
@@ -227,9 +226,10 @@ public class AuthenticationService {
     @Transactional
     public void unSuspendUser(Long userId, Long adminId, UserRole adminRole){
         checkAdminAuthority(adminId);
-        checkIsMember(userId);
 
-        UserStatus userStatus = userStatusRepository.findByUserId(userId);
+        UserStatus userStatus = userStatusRepository.findByUserId(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
 
         checkAdminPrivileges(adminRole, userStatus.getUser().getRole());
         userStatus.updateForUnSuspend();
@@ -314,12 +314,6 @@ public class AuthenticationService {
         if (!role.equals(UserRole.SUPER)) {
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
-    }
-
-    private void checkIsMember(Long userId){
-        userRepository.findById(userId).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
-        );
     }
 
     private Pageable createPageable(int page, int size, String sortProperty) {
