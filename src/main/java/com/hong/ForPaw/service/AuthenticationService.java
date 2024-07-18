@@ -154,6 +154,7 @@ public class AuthenticationService {
     public AuthenticationResponse.FindUserListDTO findUserList(Long adminId, int page){
         checkAdminAuthority(adminId);
 
+        // <userId, 가장 최근의 Visit 객체> 맵
         List<Visit> visits = visitRepository.findAll();
         Map<Long, Visit> latestVisitMap = visits.stream()
                 .collect(Collectors.toMap(
@@ -162,6 +163,7 @@ public class AuthenticationService {
                         (visit1, visit2) -> visit1.getDate().isAfter(visit2.getDate()) ? visit1 : visit2
                 ));
 
+        // 진행중인 지원서
         List<Apply> processingApplies = applyRepository.findAllProcessing();
         Map<Long, Long> processingApplyMap = processingApplies.stream()
                 .collect(Collectors.groupingBy(
@@ -169,6 +171,7 @@ public class AuthenticationService {
                         Collectors.counting()
                 ));
 
+        // 처리 완료된 지원서
         List<Apply> processedApplies = applyRepository.findAllProcessing();
         Map<Long, Long> processedApplyMap = processedApplies.stream()
                 .collect(Collectors.groupingBy(
@@ -179,8 +182,8 @@ public class AuthenticationService {
         Pageable pageable =createPageable(page, 5, SORT_BY_CREATED_DATE);
         Page<User> users = userRepository.findAll(pageable);
 
-        List<AuthenticationResponse.UserDTO> userDTOS = users.getContent().stream()
-                .map(user -> new AuthenticationResponse.UserDTO(
+        List<AuthenticationResponse.ApplicantDTO> applicantDTOS = users.getContent().stream()
+                .map(user -> new AuthenticationResponse.ApplicantDTO(
                         user.getId(),
                         user.getNickName(),
                         user.getCreatedDate(),
@@ -195,7 +198,7 @@ public class AuthenticationService {
                 ))
                 .toList();
 
-        return new AuthenticationResponse.FindUserListDTO(userDTOS);
+        return new AuthenticationResponse.FindUserListDTO(applicantDTOS);
     }
 
     @Transactional

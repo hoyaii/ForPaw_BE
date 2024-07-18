@@ -31,19 +31,19 @@ public class AuthenticationResponse {
                                   Long newComment,
                                   Long newAdoptApplication) {}
 
-    public record FindUserListDTO(List<UserDTO> users){}
+    public record FindUserListDTO(List<ApplicantDTO> users){}
 
-    public record UserDTO(Long id,
-                          String nickName,
-                          LocalDateTime signUpDate,
-                          LocalDateTime lastLogin,
-                          Long applicationsSubmitted,
-                          Long applicationsCompleted,
-                          UserRole role,
-                          boolean isActive,
-                          LocalDateTime suspensionStart,
-                          Long suspensionDays,
-                          String suspensionReason) {}
+    public record ApplicantDTO(Long id,
+                               String nickName,
+                               LocalDateTime signUpDate,
+                               LocalDateTime lastLogin,
+                               Long applicationsSubmitted,
+                               Long applicationsCompleted,
+                               UserRole role,
+                               boolean isActive,
+                               LocalDateTime suspensionStart,
+                               Long suspensionDays,
+                               String suspensionReason) {}
 
     public record UnSuspendUserDTO(Long userId){};
 
