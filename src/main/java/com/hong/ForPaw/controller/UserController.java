@@ -132,8 +132,8 @@ public class UserController {
 
     @PostMapping("/accounts/password/verify")
     public ResponseEntity<?> verifyPassword(@RequestBody @Valid UserRequest.CurPasswordDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
-        userService.verifyPassword(requestDTO, userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+        UserResponse.VerifyPasswordDTO responseDTO = userService.verifyPassword(requestDTO, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PatchMapping("/accounts/password")

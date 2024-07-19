@@ -45,4 +45,6 @@ public class UserResponse {
                             String content,
                             LocalDateTime answeredDate,
                             String answeredBy){}
+
+    public record VerifyPasswordDTO(boolean isMatching){}
 }

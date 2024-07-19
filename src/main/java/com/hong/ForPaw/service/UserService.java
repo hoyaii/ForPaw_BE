@@ -383,14 +383,16 @@ public class UserService {
 
     // 재설정 화면에서 실시간으로 일치여부를 확인하기 위해 사용
     @Transactional
-    public void verifyPassword(UserRequest.CurPasswordDTO requestDTO, Long userId){
+    public UserResponse.VerifyPasswordDTO verifyPassword(UserRequest.CurPasswordDTO requestDTO, Long userId){
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
         if(!passwordEncoder.matches(requestDTO.password(), user.getPassword())){
-            throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
+            return new UserResponse.VerifyPasswordDTO(false);
         }
+
+        return new UserResponse.VerifyPasswordDTO(true);
     }
 
     @Transactional
