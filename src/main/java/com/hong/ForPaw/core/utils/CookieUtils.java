@@ -29,7 +29,7 @@ public class CookieUtils {
                 .httpOnly(isHttpOnly)
                 .secure(secureCookie)
                 .path("/")
-                .sameSite("None")
+                .sameSite("Lax")
                 .maxAge(maxAgeSec)
                 .domain("localhost")
                 .build();
