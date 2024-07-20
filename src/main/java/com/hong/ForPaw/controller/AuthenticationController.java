@@ -6,6 +6,7 @@ import com.hong.ForPaw.controller.DTO.AuthenticationResponse.ApplyDTO;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
+import com.hong.ForPaw.domain.Report.ReportStatus;
 import com.hong.ForPaw.service.AuthenticationService;
 import java.util.List;
 
@@ -73,5 +74,11 @@ public class AuthenticationController {
     public ResponseEntity<?> changeApplyStatus(@RequestBody @Valid AuthenticationRequest.ChangeApplyStatusDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
         authenticationService.changeApplyStatus(requestDTO, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK,null));
+    }
+
+    @GetMapping("/admin/reports")
+    public ResponseEntity<?> findReportList(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam(required = false) ReportStatus reportStatus, @RequestParam int page){
+        AuthenticationResponse.FindReportListDTO responseDTO = authenticationService.findReportList(userDetails.getUser().getId(), reportStatus, page);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }
