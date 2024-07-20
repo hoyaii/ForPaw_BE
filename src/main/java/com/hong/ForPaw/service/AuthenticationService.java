@@ -187,7 +187,9 @@ public class AuthenticationService {
                         user.getId(),
                         user.getNickName(),
                         user.getCreatedDate(),
-                        latestVisitMap.get(user.getId()).getDate(),
+                        Optional.ofNullable(latestVisitMap.get(user.getId()))
+                                .map(Visit::getDate)
+                                .orElse(null),
                         processingApplyMap.get(user.getId()),
                         processedApplyMap.get(user.getId()),
                         user.getRole(),
