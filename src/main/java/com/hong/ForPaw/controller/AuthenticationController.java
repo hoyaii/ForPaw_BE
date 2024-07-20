@@ -81,4 +81,10 @@ public class AuthenticationController {
         AuthenticationResponse.FindReportListDTO responseDTO = authenticationService.findReportList(userDetails.getUser().getId(), reportStatus, page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
+
+    @PatchMapping("/admin/reports")
+    public ResponseEntity<?> processReport(@RequestBody @Valid AuthenticationRequest.ProcessReportDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+        authenticationService.processReport(requestDTO, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
 }
