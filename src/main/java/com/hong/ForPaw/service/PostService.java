@@ -14,6 +14,7 @@ import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Post.*;
 import com.hong.ForPaw.repository.ReportRepository;
+import com.hong.ForPaw.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -47,6 +48,7 @@ public class PostService {
     private final CommentLikeRepository commentLikeRepository;
     private final ReportRepository reportRepository;
     private final PopularPostRepository popularPostRepository;
+    private final UserRepository userRepository;
     private final RedisService redisService;
     private final S3Service s3Service;
     private final BrokerService brokerService;
@@ -364,7 +366,7 @@ public class PostService {
     @Transactional
     public void likePost(Long postId, Long userId){
         // 존재하지 않는 글이면 에러
-        Long postWriterId = postRepository.findUserIdByPostId(postId).orElseThrow(
+        Long postWriterId = postRepository.findUserIdById(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
@@ -411,12 +413,12 @@ public class PostService {
     @Transactional
     public PostResponse.CreateCommentDTO createComment(PostRequest.CreateCommentDTO requestDTO, Long userId, Long postId){
         // 존재하지 않는 글이면 에러
-        Long writerId = postRepository.findUserIdByPostId(postId).orElseThrow(
+        Long writerId = postRepository.findUserIdById(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
         // 질문글에는 댓글을 달 수 없다 (댓글 대신 답변이 달리니)
-        if(postRepository.findPostTypeByPostId(postId).get().equals(PostType.QUESTION)){
+        if(postRepository.findPostTypeById(postId).get().equals(PostType.QUESTION)){
             throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
         }
 
@@ -543,7 +545,7 @@ public class PostService {
     @Transactional
     public void likeComment(Long commentId, Long userId){
         // 존재하지 않는 댓글인지 체크
-        Long commentWriterId = commentRepository.findUserIdByCommentId(commentId).orElseThrow(
+        Long commentWriterId = commentRepository.findUserIdById(commentId).orElseThrow(
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
 
@@ -574,41 +576,39 @@ public class PostService {
 
     @Transactional
     public void submitReport(@RequestBody PostRequest.SubmitReport requestDTO, Long userId){
-        // 프록시 객체
-        User reporter = entityManager.getReference(User.class, userId);
+        User reporter = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
 
-        Post post = null;
-        Comment comment = null;
-
-        if (requestDTO.targetType() == ContentType.POST && requestDTO.postId() != null) {
-            post = postRepository.findById(requestDTO.postId())
-                    .orElseThrow(() -> new CustomException(ExceptionCode.POST_NOT_FOUND));
-
-            // 이미 신고했거나 자신의 컨텐츠에 대해 신고하려고 하면 에러 발생
-            if(reportRepository.existsByUserIdAndPostId(userId, requestDTO.postId()))
-                throw new CustomException(ExceptionCode.ALREADY_REPORTED);
-            else if(userId.equals(post.getUser().getId()))
-                throw new CustomException(ExceptionCode.CANNOT_REPORT_OWN_CONTENT);
-
-        } else if (requestDTO.targetType() == ContentType.COMMENT && requestDTO.commentId() != null) {
-            comment = commentRepository.findById(requestDTO.commentId())
-                    .orElseThrow(() -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND));
-
-            if(reportRepository.existsByUserIdAndCommentId(userId, requestDTO.commentId()))
-                throw new CustomException(ExceptionCode.ALREADY_REPORTED);
-            else if(userId.equals(comment.getUser().getId()))
-                throw new CustomException(ExceptionCode.CANNOT_REPORT_OWN_CONTENT);
+        // 이미 신고함
+        if(reportRepository.existsByReporterIdAndContent(userId, requestDTO.contentId(), requestDTO.contentType())){
+            throw new CustomException(ExceptionCode.ALREADY_REPORTED);
         }
-        else{ // postId와 commentId 모두 null인 경우
-            throw new CustomException(ExceptionCode.REPORT_TARGET_MISSING);
+
+        User offender = null;
+        if(requestDTO.contentType() == ContentType.POST) {
+            offender = postRepository.findUserById(requestDTO.contentId()).orElseThrow(
+                    () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
+            );
+        } else if (requestDTO.contentType() == ContentType.COMMENT) {
+            offender = commentRepository.findUserById(requestDTO.contentId()).orElseThrow(
+                    () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
+            );
+        } else{ // 잘못된 컨텐츠 타입
+            throw new CustomException(ExceptionCode.WRONG_REPORT_TARGET);
+        }
+
+        // 자신의 컨텐츠에는 신고할 수 없음
+        if(offender.getId().equals(userId)){
+            throw new CustomException(ExceptionCode.CANNOT_REPORT_OWN_CONTENT);
         }
 
         Report report = Report.builder()
                 .reporter(reporter)
-                .post(post)
-                .comment(comment)
-                .contentType(requestDTO.type())
-                .targetType(requestDTO.targetType())
+                .offender(offender)
+                .contentType(requestDTO.contentType())
+                .contentId(requestDTO.contentId())
+                .reportType(requestDTO.reportType())
                 .status(ReportStatus.PROCESSING)
                 .reason(requestDTO.reason())
                 .build();

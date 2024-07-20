@@ -2,6 +2,7 @@ package com.hong.ForPaw.repository;
 
 import com.hong.ForPaw.domain.Apply.Apply;
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
+import com.hong.ForPaw.domain.Report.ContentType;
 import com.hong.ForPaw.domain.Report.Report;
 import com.hong.ForPaw.domain.Report.ReportStatus;
 import org.springframework.data.domain.Page;
@@ -15,12 +16,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ReportRepository extends JpaRepository<Report, Long> {
 
-    @Query("SELECT COUNT(r) > 0 FROM Report r WHERE r.reporter.id = :userId AND r.post.id = :postId")
-    boolean existsByUserIdAndPostId(@Param("userId") Long userId, @Param("postId") Long postId);
-
-    @Query("SELECT COUNT(r) > 0 FROM Report r WHERE r.reporter.id = :userId AND r.comment.id = :commentId")
-    boolean existsByUserIdAndCommentId(@Param("userId") Long userId, @Param("commentId") Long commentId);
-
+    @Query("SELECT COUNT(r) > 0 FROM Report r WHERE r.reporter.id = :reporterId AND r.contentId = :contentId AND r.contentType = :contentType")
+    boolean existsByReporterIdAndContent(@Param("reporterId") Long reporterId, @Param("contentId") Long contentId, @Param("contentType") ContentType contentType);
 
     @EntityGraph(attributePaths = {"user"})
     @Query("SELECT r From Report r WHERE (:reportStatus IS NULL OR r.reportStatus = :reportStatus)")

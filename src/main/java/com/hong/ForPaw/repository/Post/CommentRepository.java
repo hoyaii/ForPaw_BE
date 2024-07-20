@@ -1,6 +1,7 @@
 package com.hong.ForPaw.repository.Post;
 
 import com.hong.ForPaw.domain.Post.Comment;
+import com.hong.ForPaw.domain.User.User;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -25,8 +26,11 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     @EntityGraph(attributePaths = {"user"})
     Optional<Comment> findByIdWithUser(@Param("commentId") Long commentId);
 
+    @Query("SELECT c.user FROM Comment c WHERE c.id = :commentId AND c.removedAt IS NULL")
+    Optional<User> findUserById(@Param("commentId") Long commentId);
+
     @Query("SELECT c.user.id FROM Comment c WHERE c.id = :commentId AND c.removedAt IS NULL")
-    Optional<Long> findUserIdByCommentId(@Param("commentId") Long commentId);
+    Optional<Long> findUserIdById(@Param("commentId") Long commentId);
 
     // 모든 댓글과 대댓글을 한 번에 가져오기
     @Query("SELECT c FROM Comment c WHERE c.post.id = :postId AND c.removedAt IS NULL")

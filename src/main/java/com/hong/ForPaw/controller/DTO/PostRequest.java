@@ -37,12 +37,12 @@ public class PostRequest {
     public record UpdateCommentDTO(@NotBlank(message = "본문을 입력해주세요.") String content) {}
 
     public record SubmitReport(
-            Long postId,
-            Long commentId,
-            @NotNull(message = "신고 유형을 선택해주세요.")
-            ReportType type,
             @NotNull(message = "신고 하려는 컨텐츠의 유형을 선택해주세요.")
-            ContentType targetType,
+            ContentType contentType,
+            @NotNull(message = "신고 하려는 컨텐츠의 ID를 입력해주세요.")
+            Long contentId,
+            @NotNull(message = "신고 유형을 선택해주세요.")
+            ReportType reportType,
             @NotBlank(message = "신고 사유를 입력해주세요.")
             String reason
     ) {}

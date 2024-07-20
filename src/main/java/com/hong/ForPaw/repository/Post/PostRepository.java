@@ -12,7 +12,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -32,13 +31,13 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Optional<Post> findById(@Param("id") Long id);
 
     @Query("SELECT p.user FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
-    Optional<User> findUserByPostId(@Param("postId") Long postId);
+    Optional<User> findUserById(@Param("postId") Long postId);
 
     @Query("SELECT p.postType FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
-    Optional<PostType> findPostTypeByPostId(@Param("postId") Long postId);
+    Optional<PostType> findPostTypeById(@Param("postId") Long postId);
 
     @Query("SELECT p.user.id FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
-    Optional<Long> findUserIdByPostId(@Param("postId") Long postId);
+    Optional<Long> findUserIdById(@Param("postId") Long postId);
 
     @EntityGraph(attributePaths = {"user"})
     @Query("SELECT p FROM Post p WHERE p.group.id = :groupId AND p.removedAt IS NULL")
