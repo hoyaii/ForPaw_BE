@@ -33,7 +33,7 @@ public class AuthenticationController {
     }
 
     @GetMapping("/admin/user")
-    public ResponseEntity<?> findUserList(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam(defaultValue = "0") int page) {
+    public ResponseEntity<?> findUserList(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam int page) {
         AuthenticationResponse.FindUserListDTO responseDTO = authenticationService.findUserList(userDetails.getUser().getId(), page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }

@@ -211,7 +211,12 @@ public class AuthenticationService {
             () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        // Admin이 Super의 역할을 변경할 수 없다.
+        // Supser로의 권한 변경은 불가능
+        if(requestDTO.role().equals(UserRole.SUPER)){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
+
+        // Admin은 Super를 건들일 수 없음
         checkAdminPrivileges(adminRole, user.getRole());
         user.updateRole(requestDTO.role());
     }
@@ -326,6 +331,7 @@ public class AuthenticationService {
     }
 
     private void checkAdminPrivileges(UserRole adminRole, UserRole userRole) {
+        // ADMIN 권한의 관리자가 SUPER 권한의 유저를 변경 방지
         if(adminRole.equals(UserRole.ADMIN) && userRole.equals(UserRole.SUPER)){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
