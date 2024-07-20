@@ -608,7 +608,7 @@ public class PostService {
                 .offender(offender)
                 .contentType(requestDTO.contentType())
                 .contentId(requestDTO.contentId())
-                .reportType(requestDTO.reportType())
+                .type(requestDTO.reportType())
                 .status(ReportStatus.PROCESSING)
                 .reason(requestDTO.reason())
                 .build();

@@ -529,7 +529,7 @@ public class UserService {
         User user = entityManager.getReference(User.class, userId);
 
         Inquiry inquiry = Inquiry.builder()
-                .user(user)
+                .questioner(user)
                 .title(requestDTO.title())
                 .description(requestDTO.description())
                 .contactMail(requestDTO.contactMail())
@@ -556,7 +556,7 @@ public class UserService {
 
     @Transactional
     public UserResponse.FindInquiryListDTO findInquiryList(Long userId){
-        List<Inquiry> customerInquiries = inquiryRepository.findAllByUserId(userId);
+        List<Inquiry> customerInquiries = inquiryRepository.findAllByQuestionerId(userId);
 
         List<UserResponse.InquiryDTO> inquiryDTOS = customerInquiries.stream()
                 .map(inquiry -> new UserResponse.InquiryDTO(

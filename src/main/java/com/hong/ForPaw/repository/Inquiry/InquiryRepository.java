@@ -15,7 +15,7 @@ import java.util.List;
 @Repository
 public interface InquiryRepository extends JpaRepository<Inquiry, Long> {
 
-    List<Inquiry> findAllByUserId(Long userId);
+    List<Inquiry> findAllByQuestionerId(Long questionerId);
 
     @EntityGraph(attributePaths = {"questioner"})
     @Query("SELECT i From Inquiry i WHERE (:status IS NULL OR i.status = :status)")

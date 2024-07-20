@@ -19,7 +19,7 @@ public class Inquiry extends TimeStamp {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "questioner_id")
     private User questioner;
 
     @Column
