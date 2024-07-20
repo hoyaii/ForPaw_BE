@@ -27,6 +27,8 @@ public enum ExceptionCode {
     ADMIN_NOT_FOUND(HttpStatus.NOT_FOUND,"해당 관리자를 찾을 수 없습니다."),
     ACCESS_TOKEN_WRONG(HttpStatus.BAD_REQUEST, "엑세스 토큰 검증에 실패하였습니다."),
     CANNOT_CHANGE_TO_SUPER(HttpStatus.BAD_REQUEST, "SUPER 권한으로의 변경은 불가능합니다."),
+    USER_ALREADY_SUSPENDED(HttpStatus.BAD_REQUEST, "이미 정지된 상태입니다."),
+    USER_NOT_SUSPENDED(HttpStatus.BAD_REQUEST, "정지된 유저가 아닙니다."),
 
     // 고객 문의 관련 에러
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, "문의 내역이 존재하지 않습니다"),
@@ -51,6 +53,7 @@ public enum ExceptionCode {
     ANIMAL_ALREADY_APPLY(HttpStatus.BAD_REQUEST, "이미 지원하였습니다."),
     APPLY_NOT_FOUND(HttpStatus.BAD_REQUEST, "지원서가 존재하지 않습니다."),
     SHELTER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 보호소를 찾을 수 없습니다."),
+    APPLY_STATUS_SAME(HttpStatus.BAD_REQUEST, "현재 상태와 동일합니다."),
 
     // 그룹 관련 에러
     GROUP_NAME_EXIST(HttpStatus.BAD_REQUEST, "이미 존재하는 이름입니다."),

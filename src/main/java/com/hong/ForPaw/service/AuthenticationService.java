@@ -229,6 +229,11 @@ public class AuthenticationService {
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
+        // 이미 정지되어 있음
+        if(!userStatus.isActive()){
+            throw new CustomException(ExceptionCode.USER_ALREADY_SUSPENDED);
+        }
+
         checkAdminPrivileges(adminRole, userStatus.getUser().getRole());
         userStatus.updateForSuspend(LocalDateTime.now(), requestDTO.suspensionDays(), requestDTO.suspensionReason());
     }
@@ -240,6 +245,11 @@ public class AuthenticationService {
         UserStatus userStatus = userStatusRepository.findByUserId(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
+
+        // 이미 활성화된 상태
+        if(userStatus.isActive()){
+            throw new CustomException(ExceptionCode.USER_ALREADY_SUSPENDED);
+        }
 
         checkAdminPrivileges(adminRole, userStatus.getUser().getRole());
         userStatus.updateForUnSuspend();
@@ -290,6 +300,10 @@ public class AuthenticationService {
         Apply apply = applyRepository.findById(requestDTO.id()).orElseThrow(
             () -> new CustomException(ExceptionCode.APPLY_NOT_FOUND)
         );
+
+        if(requestDTO.status().equals(apply.getStatus())){
+            throw new CustomException(ExceptionCode.APPLY_STATUS_SAME);
+        }
 
         apply.updateApplyStatus(requestDTO.status());
     }
