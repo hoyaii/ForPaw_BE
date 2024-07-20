@@ -340,6 +340,7 @@ public class AuthenticationService {
         return new AuthenticationResponse.FindReportListDTO(reportDTOS);
     }
 
+
     private String getPreviousHourKey() {
         LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");
