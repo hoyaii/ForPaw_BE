@@ -549,7 +549,7 @@ public class UserService {
         );
 
         // 권한 체크
-        checkInquiryAuthority(userId, inquiry.getUser());
+        checkInquiryAuthority(userId, inquiry.getQuestioner());
 
         inquiry.updateCustomerInquiry(requestDTO.title(), requestDTO.description(), requestDTO.contactMail());
     }
@@ -580,7 +580,7 @@ public class UserService {
         );
 
         // 권한 체크
-        checkInquiryAuthority(userId, inquiry.getUser());
+        checkInquiryAuthority(userId, inquiry.getQuestioner());
 
         // 답변
         List<Answer> answers = answerRepository.findAllByInquiryId(inquiryId);

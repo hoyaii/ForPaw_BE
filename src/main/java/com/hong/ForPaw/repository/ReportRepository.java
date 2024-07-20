@@ -26,7 +26,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     @Query("SELECT COUNT(r) > 0 FROM Report r WHERE r.reporter.id = :reporterId AND r.contentId = :contentId AND r.contentType = :contentType")
     boolean existsByReporterIdAndContent(@Param("reporterId") Long reporterId, @Param("contentId") Long contentId, @Param("contentType") ContentType contentType);
 
-    @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT r From Report r WHERE (:reportStatus IS NULL OR r.reportStatus = :reportStatus)")
-    Page<Report> findAllByStatus(@Param("reportStatus") ReportStatus reportStatus, Pageable pageable);
+    @EntityGraph(attributePaths = {"reporter"})
+    @Query("SELECT r From Report r WHERE (:status IS NULL OR r.status = :status)")
+    Page<Report> findAllByStatus(@Param("status") ReportStatus status, Pageable pageable);
 }

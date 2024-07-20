@@ -2,6 +2,8 @@ package com.hong.ForPaw.controller.DTO;
 
 
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
+import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
+import com.hong.ForPaw.domain.Inquiry.InquiryType;
 import com.hong.ForPaw.domain.Report.ContentType;
 import com.hong.ForPaw.domain.Report.ReportStatus;
 import com.hong.ForPaw.domain.Report.ReportType;
@@ -74,10 +76,19 @@ public class AuthenticationResponse {
                             LocalDateTime reportDate,
                             ContentType contentType,
                             Long contentId,
-                            ReportType reportType,
+                            ReportType type,
                             String reason,
                             String reporterNickName,
                             Long offenderId,
                             String offenderNickName,
-                            ReportStatus reportStatus){}
+                            ReportStatus status){}
+
+    public record FindSupportListDTO(List<InquiryDTO> inquiries){}
+
+    public record InquiryDTO(Long id,
+                             LocalDateTime date,
+                             String questionerNick,
+                             InquiryType type,
+                             String title,
+                             InquiryStatus status){}
 }

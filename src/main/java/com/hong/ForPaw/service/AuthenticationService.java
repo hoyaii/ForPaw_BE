@@ -9,6 +9,7 @@ import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Apply.Apply;
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Authentication.Visit;
+import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
 import com.hong.ForPaw.domain.Report.Report;
 import com.hong.ForPaw.domain.Report.ReportStatus;
 import com.hong.ForPaw.domain.User.User;
@@ -17,6 +18,7 @@ import com.hong.ForPaw.domain.User.UserStatus;
 import com.hong.ForPaw.repository.Animal.AnimalRepository;
 import com.hong.ForPaw.repository.ApplyRepository;
 import com.hong.ForPaw.repository.Authentication.VisitRepository;
+import com.hong.ForPaw.repository.Inquiry.InquiryRepository;
 import com.hong.ForPaw.repository.Post.CommentRepository;
 import com.hong.ForPaw.repository.Post.PostRepository;
 import com.hong.ForPaw.repository.ReportRepository;
@@ -52,6 +54,7 @@ public class AuthenticationService {
     private final AnimalRepository animalRepository;
     private final ReportRepository reportRepository;
     private final ApplyRepository applyRepository;
+    private final InquiryRepository inquiryRepository;
     private final EntityManager entityManager;
     private final RedisService redisService;
     private final UserStatusRepository userStatusRepository;
@@ -265,11 +268,11 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public AuthenticationResponse.FindApplyListDTO findApplyList(Long adminId, ApplyStatus applyStatus, int page){
+    public AuthenticationResponse.FindApplyListDTO findApplyList(Long adminId, ApplyStatus status, int page){
         checkAdminAuthority(adminId);
 
         Pageable pageable = createPageable(page, 5, SORT_BY_CREATED_DATE);
-        Page<Apply> applyPage = applyRepository.findAllByStatusWithAnimal(applyStatus, pageable);
+        Page<Apply> applyPage = applyRepository.findAllByStatusWithAnimal(status, pageable);
 
         // Apply의 animalId를 리스트로 만듦 => shleter와 fetch 조인해서 Animal 객체를 조회 => <animalId, Anmal 객체> 맵 생성
         List<Long> animalIds = applyPage.getContent().stream()
@@ -319,23 +322,22 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public AuthenticationResponse.FindReportListDTO findReportList(Long adminId, ReportStatus reportStatus, int page){
+    public AuthenticationResponse.FindReportListDTO findReportList(Long adminId, ReportStatus status, int page){
         checkAdminAuthority(adminId);
 
         Pageable pageable =createPageable(page, 5, SORT_BY_CREATED_DATE);
-
-        List<AuthenticationResponse.ReportDTO> reportDTOS = reportRepository.findAllByStatus(reportStatus, pageable).getContent().stream()
+        List<AuthenticationResponse.ReportDTO> reportDTOS = reportRepository.findAllByStatus(status, pageable).getContent().stream()
                 .map(report -> new AuthenticationResponse.ReportDTO(
                         report.getId(),
                         report.getCreatedDate(),
                         report.getContentType(),
                         report.getContentId(),
-                        report.getReportType(),
+                        report.getType(),
                         report.getReason(),
                         report.getReporter().getNickName(),
                         report.getOffender().getId(),
                         report.getOffender().getNickName(),
-                        report.getReportStatus())
+                        report.getStatus())
                 ).toList();
 
         return new AuthenticationResponse.FindReportListDTO(reportDTOS);
@@ -361,6 +363,25 @@ public class AuthenticationService {
 
         // 신고 내역 완료 처리
         report.updateStatus(ReportStatus.PROCESSED);
+    }
+
+    @Transactional
+    public AuthenticationResponse.FindSupportListDTO findSupportList(Long adminId, InquiryStatus status, int page){
+        checkAdminAuthority(adminId);
+
+        Pageable pageable =createPageable(page, 5, SORT_BY_CREATED_DATE);
+        List<AuthenticationResponse.InquiryDTO> inquiryDTOS = inquiryRepository.findByStatusWithUser(status, pageable).getContent().stream()
+                .map(inquiry -> new AuthenticationResponse.InquiryDTO(
+                        inquiry.getId(),
+                        inquiry.getCreatedDate(),
+                        inquiry.getQuestioner().getNickName(),
+                        inquiry.getType(),
+                        inquiry.getTitle(),
+                        inquiry.getStatus())
+                )
+                .toList();
+
+        return new AuthenticationResponse.FindSupportListDTO(inquiryDTOS);
     }
 
     private String getPreviousHourKey() {

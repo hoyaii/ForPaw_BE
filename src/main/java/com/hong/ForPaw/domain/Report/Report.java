@@ -35,27 +35,27 @@ public class Report extends TimeStamp {
 
     @Column
     @Enumerated(EnumType.STRING)
-    private ReportType reportType;
+    private ReportType type;
 
     @Column
     @Enumerated(EnumType.STRING)
-    private ReportStatus reportStatus;
+    private ReportStatus status;
 
     @Column
     private String reason;
 
     @Builder
-    public Report(User reporter, User offender,ContentType contentType, Long contentId, ReportType reportType, ReportStatus status, String reason) {
+    public Report(User reporter, User offender, ContentType contentType, Long contentId, ReportType type, ReportStatus status, String reason) {
         this.reporter = reporter;
         this.offender = offender;
         this.contentType = contentType;
         this.contentId = contentId;
-        this.reportType = reportType;
-        this.reportStatus = status;
+        this.type = type;
+        this.status = status;
         this.reason = reason;
     }
 
-    public void updateStatus(ReportStatus reportStatus){
-        this.reportStatus = reportStatus;
+    public void updateStatus(ReportStatus status){
+        this.status = status;
     }
 }

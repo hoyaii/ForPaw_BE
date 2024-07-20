@@ -20,7 +20,15 @@ public class Inquiry extends TimeStamp {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    private User user;
+    private User questioner;
+
+    @Column
+    @Enumerated(EnumType.STRING)
+    private InquiryType type;
+
+    @Column
+    @Enumerated(EnumType.STRING)
+    private InquiryStatus status;
 
     @Column
     private String title;
@@ -31,17 +39,14 @@ public class Inquiry extends TimeStamp {
     @Column
     private String contactMail;
 
-    @Column
-    @Enumerated(EnumType.STRING)
-    private InquiryStatus status;
-
     @Builder
-    public Inquiry(User user, String title, String description, String contactMail, InquiryStatus status) {
-        this.user = user;
+    public Inquiry(User questioner, InquiryType type, InquiryStatus status, String title, String description, String contactMail) {
+        this.questioner = questioner;
+        this.type = type;
+        this.status = status;
         this.title = title;
         this.description = description;
         this.contactMail = contactMail;
-        this.status = status;
     }
 
     public void updateCustomerInquiry(String title, String description, String contactMail){
