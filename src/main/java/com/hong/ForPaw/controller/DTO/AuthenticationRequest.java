@@ -1,6 +1,7 @@
 package com.hong.ForPaw.controller.DTO;
 
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
+import com.hong.ForPaw.domain.Report.ContentType;
 import com.hong.ForPaw.domain.User.UserRole;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -26,4 +27,12 @@ public class AuthenticationRequest {
             Long id,
             @NotNull(message = "변경하려는 상태를 입력해주세요.")
             ApplyStatus status){}
+
+    public record ProcessReportDTO(
+            @NotNull(message = "신고 내역의 ID를 입력해주세요.")
+            Long id,
+            @NotNull(message = "정지 여부를 입력해주세요.")
+            Boolean hasSuspension,
+            @NotNull(message = "정지 기간을 입력해주세요.")
+            Long suspensionDays){}
 }

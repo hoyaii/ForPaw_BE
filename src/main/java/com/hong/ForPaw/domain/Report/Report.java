@@ -54,4 +54,8 @@ public class Report extends TimeStamp {
         this.reportStatus = status;
         this.reason = reason;
     }
+
+    public void updateStatus(ReportStatus reportStatus){
+        this.reportStatus = reportStatus;
+    }
 }

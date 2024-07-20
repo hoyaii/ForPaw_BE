@@ -9,6 +9,7 @@ import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Apply.Apply;
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Authentication.Visit;
+import com.hong.ForPaw.domain.Report.Report;
 import com.hong.ForPaw.domain.Report.ReportStatus;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.User.UserRole;
@@ -340,6 +341,27 @@ public class AuthenticationService {
         return new AuthenticationResponse.FindReportListDTO(reportDTOS);
     }
 
+    @Transactional
+    public void processReport(AuthenticationRequest.ProcessReportDTO requestDTO, Long adminId){
+        checkAdminAuthority(adminId);
+
+        Report report = reportRepository.findById(requestDTO.id()).orElseThrow(
+                () -> new CustomException(ExceptionCode.REPORT_NOT_FOUND)
+        );
+
+        if(requestDTO.hasSuspension()){
+            // SUPER를 정지 시킬 수는 없다 (악용 방지)
+            if(report.getOffender().getRole().equals(UserRole.SUPER)){
+                throw new CustomException(ExceptionCode.REPORT_NOT_APPLY_TO_SUPER);
+            }
+
+            report.getOffender().getStatus()
+                    .updateForSuspend(LocalDateTime.now(), requestDTO.suspensionDays(), report.getReason());
+        }
+
+        // 신고 내역 완료 처리
+        report.updateStatus(ReportStatus.PROCESSED);
+    }
 
     private String getPreviousHourKey() {
         LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);

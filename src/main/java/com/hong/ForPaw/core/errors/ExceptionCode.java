@@ -37,6 +37,8 @@ public enum ExceptionCode {
     WRONG_REPORT_TARGET(HttpStatus.BAD_REQUEST, "잘못된 컨텐츠 타입 입니다."),
     ALREADY_REPORTED(HttpStatus.BAD_REQUEST, "이미 신고하셨습니다."),
     CANNOT_REPORT_OWN_CONTENT(HttpStatus.BAD_REQUEST, "자신의 컨텐츠에는 신고할 수 없습니다"),
+    REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 신고 내역입니다."),
+    REPORT_NOT_APPLY_TO_SUPER(HttpStatus.BAD_REQUEST, "관리자는 정지시킬 수 없습니다."),
 
     // 이메일 코드 관련 에러
     CODE_EXPIRED(HttpStatus.BAD_REQUEST, "유효기간이 만료되었습니다."),

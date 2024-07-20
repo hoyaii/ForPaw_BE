@@ -90,7 +90,7 @@ public class Post extends TimeStamp {
 
     // 연관관계 메서드
     public void addImage(PostImage postImage){
-        postImages.add(postImage);
+        this.postImages.add(postImage);
         postImage.updatePost(this);
     }
 

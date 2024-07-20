@@ -34,6 +34,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
     Optional<User> findById(@Param("id") Long id);
 
+    @EntityGraph(attributePaths = {"userStatus"})
+    @Query("SELECT u FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
+    Optional<User> findByIdWithUserStatus(@Param("id") Long id);
+
     @Query("SELECT u.role FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
     Optional<UserRole> findRoleById(@Param("id") Long id);
 
