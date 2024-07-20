@@ -2,6 +2,9 @@ package com.hong.ForPaw.controller.DTO;
 
 
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
+import com.hong.ForPaw.domain.Report.ContentType;
+import com.hong.ForPaw.domain.Report.ReportStatus;
+import com.hong.ForPaw.domain.Report.ReportType;
 import com.hong.ForPaw.domain.User.UserRole;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,9 +48,9 @@ public class AuthenticationResponse {
                                Long suspensionDays,
                                String suspensionReason) {}
 
-    public record UnSuspendUserDTO(Long userId){};
+    public record UnSuspendUserDTO(Long userId){}
 
-    public record WithdrawUserDTO(Long userId){};
+    public record WithdrawUserDTO(Long userId){}
 
     public record ApplyDTO(Long applyId,
                            LocalDateTime applyDate,
@@ -64,4 +67,17 @@ public class AuthenticationResponse {
     ){};
 
     public record FindApplyListDTO(List<ApplyDTO> applies){}
+
+    public record FindReportListDTO(List<ReportDTO> reports){}
+
+    public record ReportDTO(Long id,
+                            LocalDateTime reportDate,
+                            ContentType contentType,
+                            Long contentId,
+                            ReportType reportType,
+                            String reason,
+                            String reporterNickName,
+                            Long offenderId,
+                            String offenderNickName,
+                            ReportStatus reportStatus){}
 }

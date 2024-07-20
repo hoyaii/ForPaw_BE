@@ -1,7 +1,5 @@
 package com.hong.ForPaw.domain.Report;
 
-import com.hong.ForPaw.domain.Post.Comment;
-import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.TimeStamp;
 import com.hong.ForPaw.domain.User.User;
 import jakarta.persistence.*;
@@ -25,36 +23,35 @@ public class Report extends TimeStamp {
     private User reporter;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id")
-    private Post post;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "comment_id")
-    private Comment comment;
+    @JoinColumn(name = "user_id")
+    private User offender;
 
     @Column
     @Enumerated(EnumType.STRING)
-    private ReportType type;
+    private ContentType contentType;
+
+    @Column
+    private Long contentId;
 
     @Column
     @Enumerated(EnumType.STRING)
-    private ReportTargetType targetType;
+    private ReportType reportType;
 
     @Column
     @Enumerated(EnumType.STRING)
-    private RepostStatus status;
+    private ReportStatus reportStatus;
 
     @Column
     private String reason;
 
     @Builder
-    public Report(User reporter, Post post, Comment comment, ReportTargetType targetType, ReportType type, RepostStatus status, String reason) {
+    public Report(User reporter, User offender,ContentType contentType, Long contentId, ReportType reportType, ReportStatus status, String reason) {
         this.reporter = reporter;
-        this.post = post;
-        this.comment = comment;
-        this.targetType = targetType;
-        this.type = type;
-        this.status = status;
+        this.offender = offender;
+        this.contentType = contentType;
+        this.contentId = contentId;
+        this.reportType = reportType;
+        this.reportStatus = status;
         this.reason = reason;
     }
 }

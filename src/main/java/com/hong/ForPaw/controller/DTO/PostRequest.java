@@ -2,7 +2,7 @@ package com.hong.ForPaw.controller.DTO;
 
 
 import com.hong.ForPaw.domain.Post.PostType;
-import com.hong.ForPaw.domain.Report.ReportTargetType;
+import com.hong.ForPaw.domain.Report.ContentType;
 import com.hong.ForPaw.domain.Report.ReportType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -42,7 +42,7 @@ public class PostRequest {
             @NotNull(message = "신고 유형을 선택해주세요.")
             ReportType type,
             @NotNull(message = "신고 하려는 컨텐츠의 유형을 선택해주세요.")
-            ReportTargetType targetType,
+            ContentType targetType,
             @NotBlank(message = "신고 사유를 입력해주세요.")
             String reason
     ) {}

@@ -53,7 +53,6 @@ public enum ExceptionCode {
     ANIMAL_ALREADY_APPLY(HttpStatus.BAD_REQUEST, "이미 지원하였습니다."),
     APPLY_NOT_FOUND(HttpStatus.BAD_REQUEST, "지원서가 존재하지 않습니다."),
     SHELTER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 보호소를 찾을 수 없습니다."),
-    APPLY_STATUS_SAME(HttpStatus.BAD_REQUEST, "현재 상태와 동일합니다."),
 
     // 그룹 관련 에러
     GROUP_NAME_EXIST(HttpStatus.BAD_REQUEST, "이미 존재하는 이름입니다."),
@@ -88,6 +87,7 @@ public enum ExceptionCode {
     // 잘못된 접근
     BAD_APPROACH(HttpStatus.BAD_REQUEST, "잘못된 접근입니다."),
     EXCEED_REQUEST_NUM(HttpStatus.BAD_REQUEST, "가능한 요청 횟수를 초과하였습니다."),
+    SAME_STATUS(HttpStatus.BAD_REQUEST, "현재 상태와 동일합니다."),
 
     // 검색
     SEARCH_NOT_FOUND(HttpStatus.NOT_FOUND, "검색 결과값이 존재하지 않습니다"),

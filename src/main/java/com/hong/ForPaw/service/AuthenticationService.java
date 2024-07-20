@@ -9,6 +9,7 @@ import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Apply.Apply;
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Authentication.Visit;
+import com.hong.ForPaw.domain.Report.ReportStatus;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.UserStatus;
@@ -17,6 +18,7 @@ import com.hong.ForPaw.repository.ApplyRepository;
 import com.hong.ForPaw.repository.Authentication.VisitRepository;
 import com.hong.ForPaw.repository.Post.CommentRepository;
 import com.hong.ForPaw.repository.Post.PostRepository;
+import com.hong.ForPaw.repository.ReportRepository;
 import com.hong.ForPaw.repository.UserRepository;
 import com.hong.ForPaw.repository.UserStatusRepository;
 import jakarta.persistence.EntityManager;
@@ -47,6 +49,7 @@ public class AuthenticationService {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final AnimalRepository animalRepository;
+    private final ReportRepository reportRepository;
     private final ApplyRepository applyRepository;
     private final EntityManager entityManager;
     private final RedisService redisService;
@@ -211,6 +214,11 @@ public class AuthenticationService {
             () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
+        // 현재 유저의 Role과 동일한 값이 요청으로 들어옴
+        if(user.getRole().equals(user.getRole())){
+            throw new CustomException(ExceptionCode.SAME_STATUS);
+        }
+
         // Supser로의 권한 변경은 불가능
         if(requestDTO.role().equals(UserRole.SUPER)){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
@@ -301,11 +309,35 @@ public class AuthenticationService {
             () -> new CustomException(ExceptionCode.APPLY_NOT_FOUND)
         );
 
+        // 현재 상태와 동일한 값이 요청으로 들어옴
         if(requestDTO.status().equals(apply.getStatus())){
-            throw new CustomException(ExceptionCode.APPLY_STATUS_SAME);
+            throw new CustomException(ExceptionCode.SAME_STATUS);
         }
 
         apply.updateApplyStatus(requestDTO.status());
+    }
+
+    @Transactional
+    public AuthenticationResponse.FindReportListDTO findReportList(Long adminId, ReportStatus reportStatus, int page){
+        checkAdminAuthority(adminId);
+
+        Pageable pageable =createPageable(page, 5, SORT_BY_CREATED_DATE);
+
+        List<AuthenticationResponse.ReportDTO> reportDTOS = reportRepository.findAllByStatus(reportStatus, pageable).getContent().stream()
+                .map(report -> new AuthenticationResponse.ReportDTO(
+                        report.getId(),
+                        report.getCreatedDate(),
+                        report.getContentType(),
+                        report.getContentId(),
+                        report.getReportType(),
+                        report.getReason(),
+                        report.getReporter().getNickName(),
+                        report.getOffender().getId(),
+                        report.getOffender().getNickName(),
+                        report.getReportStatus())
+                ).toList();
+
+        return new AuthenticationResponse.FindReportListDTO(reportDTOS);
     }
 
     private String getPreviousHourKey() {

@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public enum RepostStatus {
+public enum ReportStatus {
 
     PROCESSING("진행중"),
     PROCESSED("완료됨");

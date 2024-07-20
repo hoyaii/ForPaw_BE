@@ -7,9 +7,9 @@ import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Post.*;
+import com.hong.ForPaw.domain.Report.ContentType;
 import com.hong.ForPaw.domain.Report.Report;
-import com.hong.ForPaw.domain.Report.ReportTargetType;
-import com.hong.ForPaw.domain.Report.RepostStatus;
+import com.hong.ForPaw.domain.Report.ReportStatus;
 import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Post.*;
@@ -580,7 +580,7 @@ public class PostService {
         Post post = null;
         Comment comment = null;
 
-        if (requestDTO.targetType() == ReportTargetType.POST && requestDTO.postId() != null) {
+        if (requestDTO.targetType() == ContentType.POST && requestDTO.postId() != null) {
             post = postRepository.findById(requestDTO.postId())
                     .orElseThrow(() -> new CustomException(ExceptionCode.POST_NOT_FOUND));
 
@@ -590,7 +590,7 @@ public class PostService {
             else if(userId.equals(post.getUser().getId()))
                 throw new CustomException(ExceptionCode.CANNOT_REPORT_OWN_CONTENT);
 
-        } else if (requestDTO.targetType() == ReportTargetType.COMMENT && requestDTO.commentId() != null) {
+        } else if (requestDTO.targetType() == ContentType.COMMENT && requestDTO.commentId() != null) {
             comment = commentRepository.findById(requestDTO.commentId())
                     .orElseThrow(() -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND));
 
@@ -607,9 +607,9 @@ public class PostService {
                 .reporter(reporter)
                 .post(post)
                 .comment(comment)
-                .type(requestDTO.type())
+                .contentType(requestDTO.type())
                 .targetType(requestDTO.targetType())
-                .status(RepostStatus.PROCESSING)
+                .status(ReportStatus.PROCESSING)
                 .reason(requestDTO.reason())
                 .build();
 

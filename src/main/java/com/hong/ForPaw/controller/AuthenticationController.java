@@ -64,7 +64,7 @@ public class AuthenticationController {
     }
 
     @GetMapping("/admin/adoption")
-    public ResponseEntity<?> findApplyList(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam ApplyStatus applyStatus, @RequestParam int page){
+    public ResponseEntity<?> findApplyList(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam(required = false) ApplyStatus applyStatus, @RequestParam int page){
         AuthenticationResponse.FindApplyListDTO responseDTO = authenticationService.findApplyList(userDetails.getUser().getId(), applyStatus, page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
