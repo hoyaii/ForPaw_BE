@@ -200,7 +200,7 @@ async def generate_animal_introduction(animal_id):
         "3. Start with a strong, attention-grabbing sentence that includes a metaphor or simile.\n"
         "4. Avoid repetition.\n"
         "5. Use punctuation marks and emoticons where appropriate to add enthusiasm, friendliness, and enhance the emotional appeal. Not all sentences need them.\n"
-        "6. Please write a response using between 250 and 350 characters."
+        "6. Please write a response using between 300 and 400 characters."
     )
 
     llm = OpenAI(api_key=settings.OPENAI_API_KEY)

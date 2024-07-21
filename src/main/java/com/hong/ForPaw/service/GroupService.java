@@ -188,7 +188,6 @@ public class GroupService {
         Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
 
         Page<Group> localGroups = groupRepository.findByDistrictAndSubDistrict(province, district, pageable);
-
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroups.getContent().stream()
                 .filter(group -> !joinedGroupIdSet.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> {
@@ -218,8 +217,8 @@ public class GroupService {
 
         // province가 null로 들어오면 => 디폴트 값은 유저가 입력한 province 값
         province = province != null ? province : userRepository.findProvinceById(userId).orElse(DEFAULT_PROVINCE);
-        Page<Group> newGroups = groupRepository.findByProvince(province, pageable);
 
+        Page<Group> newGroups = groupRepository.findByProvince(province, pageable);
         List<GroupResponse.NewGroupDTO> newGroupDTOS = newGroups.getContent().stream()
                 .filter(group -> !joinedGroupIdSet.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> new GroupResponse.NewGroupDTO(
