@@ -169,30 +169,47 @@ public class GroupService {
         List<Long> likedGroupIds = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
 
         // 추천 그룹 찾기
-        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = getRecommendGroupDTOS(userId, province, likedGroupIds);
+        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = findRecommendGroupList(userId, province, likedGroupIds);
 
         // 지역 그룹 찾기
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, province, district, likedGroupIds, pageable);
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = findLocalGroupList(userId, province, district, likedGroupIds, pageable);
 
         // 새 그룹 찾기
-        List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, province, pageable);
+        List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroupList(userId, province, pageable);
 
         // 내 그룹 찾기, 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
-        List<GroupResponse.MyGroupDTO> myGroupDTOS = userId != null ? getMyGroupDTOS(userId, likedGroupIds, pageable) : new ArrayList<>();
+        List<GroupResponse.MyGroupDTO> myGroupDTOS = userId != null ? findMyGroupList(userId, likedGroupIds, pageable) : new ArrayList<>();
 
         return new GroupResponse.FindAllGroupListDTO(recommendGroupDTOS, newGroupDTOS, localGroupDTOS, myGroupDTOS);
     }
 
-    // 지역 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindLocalGroupListDTO findLocalGroupList(Long userId, Province province, District district, Integer page){
-        // 좋아요 한 그룹
-        List<Long> likedGroupIds = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
+    public List<GroupResponse.LocalGroupDTO> findLocalGroupList(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable){
+        // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
+        Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
 
-        Pageable pageable = createPageable(page, 5, SORT_BY_ID);
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = getLocalGroupDTOS(userId, province, district, likedGroupIds, pageable);
+        Page<Group> localGroups = groupRepository.findByDistrictAndSubDistrict(province, district, pageable);
 
-        return new GroupResponse.FindLocalGroupListDTO(localGroupDTOS);
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroups.getContent().stream()
+                .filter(group -> !joinedGroupIdSet.contains(group.getId())) // 내가 가입한 그룹을 제외
+                .map(group -> {
+                    Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
+
+                    return new GroupResponse.LocalGroupDTO(
+                            group.getId(),
+                            group.getName(),
+                            group.getDescription(),
+                            group.getParticipantNum(),
+                            group.getCategory(),
+                            group.getProvince(),
+                            group.getDistrict(),
+                            group.getProfileURL(),
+                            likeNum,
+                            likedGroupIds.contains(group.getId()));
+                })
+                .collect(Collectors.toList());
+
+        return localGroupDTOS;
     }
 
     // 새 그룹 추가 조회
@@ -204,7 +221,7 @@ public class GroupService {
                 .orElseGet(() -> userRepository.findProvinceById(userId).orElse(Province.DAEGU));
 
         Pageable pageable = createPageable(page, 5, SORT_BY_ID);
-        List<GroupResponse.NewGroupDTO> newGroupDTOS = getNewGroupDTOS(userId, province, pageable);
+        List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroupList(userId, province, pageable);
 
         return new GroupResponse.FindNewGroupListDTO(newGroupDTOS);
     }
@@ -216,7 +233,7 @@ public class GroupService {
         List<Long> likedGroupIds = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
 
         Pageable pageable = createPageable(page, 5, SORT_BY_ID);
-        List<GroupResponse.MyGroupDTO> myGroupDTOS = getMyGroupDTOS(userId, likedGroupIds, pageable);
+        List<GroupResponse.MyGroupDTO> myGroupDTOS = findMyGroupList(userId, likedGroupIds, pageable);
 
         return new GroupResponse.FindMyGroupListDTO(myGroupDTOS);
     }
@@ -232,13 +249,13 @@ public class GroupService {
         Pageable pageable = createPageable(0, 5, SORT_BY_ID);
 
         // 정기 모임
-        List<GroupResponse.MeetingDTO> meetingDTOS = getMeetingDTOS(groupId, pageable);
+        List<GroupResponse.MeetingDTO> meetingDTOS = findMeetingList(groupId, pageable);
 
         // 공지사항
-        List<GroupResponse.NoticeDTO> noticeDTOS = getNoticeDTOS(userId, groupId, pageable);
+        List<GroupResponse.NoticeDTO> noticeDTOS = findNoticeList(userId, groupId, pageable);
 
         // 가입자
-        List<GroupResponse.MemberDTO> memberDTOS = getMemberDTOS(groupId);
+        List<GroupResponse.MemberDTO> memberDTOS = findMemberList(groupId);
 
         return new GroupResponse.FindGroupDetailByIdDTO(group.getProfileURL(), group.getName(),group.getDescription(), noticeDTOS, meetingDTOS, memberDTOS);
     }
@@ -253,7 +270,7 @@ public class GroupService {
         checkIsMember(groupId, userId);
 
         Pageable pageable = createPageable(page, 5, SORT_BY_ID);
-        List<GroupResponse.NoticeDTO> noticeDTOS = getNoticeDTOS(userId, groupId, pageable);
+        List<GroupResponse.NoticeDTO> noticeDTOS = findNoticeList(userId, groupId, pageable);
 
         return new GroupResponse.FindNoticeListDTO(noticeDTOS);
     }
@@ -268,7 +285,7 @@ public class GroupService {
         checkIsMember(groupId, userId);
 
         Pageable pageable = createPageable(page, 5, SORT_BY_ID);
-        List<GroupResponse.MeetingDTO> meetingsDTOS = getMeetingDTOS(groupId, pageable);
+        List<GroupResponse.MeetingDTO> meetingsDTOS = findMeetingList(groupId, pageable);
 
         return new GroupResponse.FindMeetingListDTO(meetingsDTOS);
     }
@@ -650,7 +667,12 @@ public class GroupService {
         meetingRepository.deleteById(meetingId);
     }
 
-    public List<GroupResponse.RecommendGroupDTO> getRecommendGroupDTOS(Long userId, Province province, List<Long> likedGroupIds){
+    @Transactional
+    public List<Long> getLikedGroupIdList(Long userId){
+        return userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
+    }
+
+    public List<GroupResponse.RecommendGroupDTO> findRecommendGroupList(Long userId, Province province, List<Long> likedGroupIds){
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
 
@@ -688,35 +710,9 @@ public class GroupService {
         return recommendGroupDTOS;
     }
 
-    private List<GroupResponse.LocalGroupDTO> getLocalGroupDTOS(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable){
-        // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
-        Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
 
-        Page<Group> localGroups = groupRepository.findByDistrictAndSubDistrict(province, district, pageable);
 
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroups.getContent().stream()
-                .filter(group -> !joinedGroupIdSet.contains(group.getId())) // 내가 가입한 그룹을 제외
-                .map(group -> {
-                    Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
-
-                    return new GroupResponse.LocalGroupDTO(
-                            group.getId(),
-                            group.getName(),
-                            group.getDescription(),
-                            group.getParticipantNum(),
-                            group.getCategory(),
-                            group.getProvince(),
-                            group.getDistrict(),
-                            group.getProfileURL(),
-                            likeNum,
-                            likedGroupIds.contains(group.getId()));
-                })
-                .collect(Collectors.toList());
-
-        return localGroupDTOS;
-    }
-
-    private List<GroupResponse.NewGroupDTO> getNewGroupDTOS(Long userId, Province province, Pageable pageable){
+    private List<GroupResponse.NewGroupDTO> findNewGroupList(Long userId, Province province, Pageable pageable){
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
 
@@ -736,7 +732,7 @@ public class GroupService {
         return newGroupDTOS;
     }
 
-    private List<GroupResponse.MyGroupDTO> getMyGroupDTOS(Long userId, List<Long> likedGroupIds, Pageable pageable){
+    private List<GroupResponse.MyGroupDTO> findMyGroupList(Long userId, List<Long> likedGroupIds, Pageable pageable){
         List<Group> joinedGroups = groupUserRepository.findAllGroupByUserId(userId, pageable).getContent();
 
         List<GroupResponse.MyGroupDTO> myGroupDTOS = joinedGroups.stream()
@@ -815,7 +811,7 @@ public class GroupService {
         }
     }
 
-    private List<GroupResponse.NoticeDTO> getNoticeDTOS(Long userId, Long groupId, Pageable pageable){
+    private List<GroupResponse.NoticeDTO> findNoticeList(Long userId, Long groupId, Pageable pageable){
         // user를 패치조인 해서 조회
         Page<Post> notices = postRepository.findByGroupId(groupId, pageable);
         // 해당 유저가 읽은 post의 id 목록
@@ -833,7 +829,7 @@ public class GroupService {
         return noticeDTOS;
     }
 
-    private List<GroupResponse.MeetingDTO> getMeetingDTOS(Long groupId, Pageable pageable){
+    private List<GroupResponse.MeetingDTO> findMeetingList(Long groupId, Pageable pageable){
         Page<Meeting> meetings = meetingRepository.findByGroupId(groupId, pageable);
 
         List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
@@ -859,7 +855,7 @@ public class GroupService {
         return meetingDTOS;
     }
 
-    private List<GroupResponse.MemberDTO> getMemberDTOS(Long groupId){
+    private List<GroupResponse.MemberDTO> findMemberList(Long groupId){
         // user를 패치조인 해서 조회
         List<GroupUser> groupUsers = groupUserRepository.findByGroupIdWithUser(groupId);
 

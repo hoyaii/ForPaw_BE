@@ -10,12 +10,14 @@ import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.service.GroupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @Controller
@@ -45,19 +47,16 @@ public class GroupController {
 
     @GetMapping("/groups")
     public ResponseEntity<?> findGroupList(@AuthenticationPrincipal CustomUserDetails userDetails){
-        Long userId = Optional.ofNullable(userDetails)
-                .map(CustomUserDetails::getUser)
-                .map(User::getId)
-                .orElse(null);
-
+        Long userId = getUserIdFromDetails(userDetails);
         GroupResponse.FindAllGroupListDTO responseDTO = groupService.findGroupList(userId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/groups/local")
-    public ResponseEntity<?> findLocalGroupList(@RequestParam("province") Province province, @RequestParam("district") District district, @RequestParam("page") Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
-        GroupResponse.FindLocalGroupListDTO responseDTO = groupService.findLocalGroupList(userDetails.getUser().getId(), province, district, page);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    public ResponseEntity<?> findLocalGroupList(@RequestParam("province") Province province, @RequestParam("district") District district, Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+        List<Long> likedGroupIdList = groupService.getLikedGroupIdList(userDetails.getUser().getId());
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = groupService.findLocalGroupList(userDetails.getUser().getId(), province, district, likedGroupIdList, pageable);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, new GroupResponse.FindLocalGroupListDTO(localGroupDTOS)));
     }
 
     @GetMapping("/groups/new")
@@ -172,5 +171,12 @@ public class GroupController {
     public ResponseEntity<?> deleteMeeting(@PathVariable Long groupId, @PathVariable Long meetingId, @AuthenticationPrincipal CustomUserDetails userDetails){
         groupService.deleteMeeting(groupId, meetingId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
+    private Long getUserIdFromDetails(CustomUserDetails userDetails) {
+        return Optional.ofNullable(userDetails)
+                .map(CustomUserDetails::getUser)
+                .map(User::getId)
+                .orElse(null);
     }
 }

@@ -54,7 +54,7 @@ public class HomeService {
 
         // 3. 추천 그룹
         List<Long> likedGroupIds = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
-        List<GroupResponse.RecommendGroupDTO> groupDTOS = groupService.getRecommendGroupDTOS(userId, DEFAULT_PROVINCE, likedGroupIds);
+        List<GroupResponse.RecommendGroupDTO> groupDTOS = groupService.findRecommendGroupList(userId, DEFAULT_PROVINCE, likedGroupIds);
 
         return new HomeResponse.FindHomeDTO(animalDTOS, groupDTOS, postDTOS);
     }

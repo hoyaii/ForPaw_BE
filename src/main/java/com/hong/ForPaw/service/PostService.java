@@ -55,7 +55,7 @@ public class PostService {
     private final EntityManager entityManager;
     public static final Long POST_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
     private static final String SORT_BY_CREATED_DATE = "createdDate";
-    private static final String SORT_BY_LIKE_NUM = "likeNum";
+    private static final String SORT_BY_POPULARITY = "likeNum";
 
     @Transactional
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId){
@@ -144,7 +144,7 @@ public class PostService {
 
         if(sort.equals(SORT_BY_CREATED_DATE)) {
             postDTOS = findPostListByType(PostType.ADOPTION, page);
-        } else if(sort.equals(SORT_BY_LIKE_NUM)){
+        } else if(sort.equals(SORT_BY_POPULARITY)){
             postDTOS = findPopularPostListByType(PostType.ADOPTION, page);
         } else{
             throw new CustomException(ExceptionCode.POST_TYPE_INCORRECT);
@@ -159,7 +159,7 @@ public class PostService {
 
         if(sort.equals(SORT_BY_CREATED_DATE)) {
             postDTOS = findPostListByType(PostType.FOSTERING, page);
-        } else if(sort.equals(SORT_BY_LIKE_NUM)){
+        } else if(sort.equals(SORT_BY_POPULARITY)){
             postDTOS = findPopularPostListByType(PostType.FOSTERING, page);
         } else{
             throw new CustomException(ExceptionCode.POST_TYPE_INCORRECT);
