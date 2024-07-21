@@ -164,7 +164,7 @@ public class GroupService {
             }
         }
 
-        // 이 API의 페이지네이션은 0페이지인 5개만 보내줄 것이다.
+        // 이 API의 페이지네이션은 고정적으로 0페이지/5개만 보내줄 것이다.
         Pageable pageable = createPageable(0, 5, SORT_BY_ID);
 
         // 추천 그룹 찾기

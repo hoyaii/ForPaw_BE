@@ -11,6 +11,8 @@ import com.hong.ForPaw.service.GroupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -54,7 +56,7 @@ public class GroupController {
     }
 
     @GetMapping("/groups/local")
-    public ResponseEntity<?> findLocalGroupList(@RequestParam("province") Province province, @RequestParam("district") District district, Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findLocalGroupList(@RequestParam("province") Province province, @RequestParam("district") District district, @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         Long userId = getUserIdSafely(userDetails);
         List<Long> likedGroupIdList = groupService.getLikedGroupIdList(userId);
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = groupService.findLocalGroupList(userId, province, district, likedGroupIdList, pageable);
@@ -62,16 +64,16 @@ public class GroupController {
     }
 
     @GetMapping("/groups/new")
-    public ResponseEntity<?> findNewGroupList(@RequestParam(value = "province", required = false) Province province, Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findNewGroupList(@RequestParam(value = "province", required = false) Province province, @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         List<GroupResponse.NewGroupDTO> newGroupDTOS = groupService.findNewGroupList(userDetails.getUser().getId(), province, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, new GroupResponse.FindNewGroupListDTO(newGroupDTOS)));
     }
 
     @GetMapping("/groups/my")
-    public ResponseEntity<?> findMyGroupList(Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findMyGroupList(@PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         Long userId = getUserIdSafely(userDetails);
         List<Long> likedGroupIdList = groupService.getLikedGroupIdList(userId);
-        List<GroupResponse.MyGroupDTO> myGroupDTOS = groupService.findMyGroupList(userDetails.getUser().getId(), likedGroupIdList, pageable);
+        List<GroupResponse.MyGroupDTO> myGroupDTOS = groupService.findMyGroupList(userId, likedGroupIdList, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, new GroupResponse.FindMyGroupListDTO(myGroupDTOS)));
     }
 
