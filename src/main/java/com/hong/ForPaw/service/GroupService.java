@@ -150,7 +150,7 @@ public class GroupService {
     }
 
     @Transactional
-    public GroupResponse.FindAllGroupListDTO findGroupList(Long userId){
+    public GroupResponse.FindAllGroupListDTO findGroupList(Long userId, List<Long> likedGroupIdList){
         Province province = DEFAULT_PROVINCE;
         District district = DEFAULT_DISTRICT;
 
@@ -165,20 +165,17 @@ public class GroupService {
         // 이 API의 페이지네이션은 0페이지인 5개만 보내줄 것이다.
         Pageable pageable = createPageable(0, 5, SORT_BY_ID);
 
-        // 좋아요 한 그룹
-        List<Long> likedGroupIds = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
-
         // 추천 그룹 찾기
-        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = findRecommendGroupList(userId, province, likedGroupIds);
+        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = findRecommendGroupList(userId, province, likedGroupIdList);
 
         // 지역 그룹 찾기
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = findLocalGroupList(userId, province, district, likedGroupIds, pageable);
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = findLocalGroupList(userId, province, district, likedGroupIdList, pageable);
 
         // 새 그룹 찾기
         List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroupList(userId, province, pageable);
 
         // 내 그룹 찾기, 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
-        List<GroupResponse.MyGroupDTO> myGroupDTOS = userId != null ? findMyGroupList(userId, likedGroupIds, pageable) : new ArrayList<>();
+        List<GroupResponse.MyGroupDTO> myGroupDTOS = userId != null ? findMyGroupList(userId, likedGroupIdList, pageable) : new ArrayList<>();
 
         return new GroupResponse.FindAllGroupListDTO(recommendGroupDTOS, newGroupDTOS, localGroupDTOS, myGroupDTOS);
     }
@@ -214,16 +211,29 @@ public class GroupService {
 
     // 새 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindNewGroupListDTO findNewGroupList(Long userId, Province province, Integer page){
+    public List<GroupResponse.NewGroupDTO> findNewGroupList(Long userId, Province province, Pageable pageable){
+        // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
+        Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
+
         // 디폴트 값은 유저가 입력한 province 값
         province = Optional.ofNullable(province)
                 .filter(d -> !d.getValue().isEmpty())
                 .orElseGet(() -> userRepository.findProvinceById(userId).orElse(Province.DAEGU));
 
-        Pageable pageable = createPageable(page, 5, SORT_BY_ID);
-        List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroupList(userId, province, pageable);
+        Page<Group> newGroups = groupRepository.findByProvince(province, pageable);
 
-        return new GroupResponse.FindNewGroupListDTO(newGroupDTOS);
+        List<GroupResponse.NewGroupDTO> newGroupDTOS = newGroups.getContent().stream()
+                .filter(group -> !joinedGroupIdSet.contains(group.getId())) // 내가 가입한 그룹을 제외
+                .map(group -> new GroupResponse.NewGroupDTO(
+                        group.getId(),
+                        group.getName(),
+                        group.getCategory(),
+                        group.getProvince(),
+                        group.getDistrict(),
+                        group.getProfileURL()))
+                .collect(Collectors.toList());
+
+        return newGroupDTOS;
     }
 
     // 내 그룹 추가 조회
@@ -708,28 +718,6 @@ public class GroupService {
                 .collect(Collectors.toList());
 
         return recommendGroupDTOS;
-    }
-
-
-
-    private List<GroupResponse.NewGroupDTO> findNewGroupList(Long userId, Province province, Pageable pageable){
-        // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
-        Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
-
-        Page<Group> newGroups = groupRepository.findByProvince(province, pageable);
-
-        List<GroupResponse.NewGroupDTO> newGroupDTOS = newGroups.getContent().stream()
-                .filter(group -> !joinedGroupIdSet.contains(group.getId())) // 내가 가입한 그룹을 제외
-                .map(group -> new GroupResponse.NewGroupDTO(
-                        group.getId(),
-                        group.getName(),
-                        group.getCategory(),
-                        group.getProvince(),
-                        group.getDistrict(),
-                        group.getProfileURL()))
-                .collect(Collectors.toList());
-
-        return newGroupDTOS;
     }
 
     private List<GroupResponse.MyGroupDTO> findMyGroupList(Long userId, List<Long> likedGroupIds, Pageable pageable){
