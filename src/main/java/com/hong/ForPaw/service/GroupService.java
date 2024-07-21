@@ -214,14 +214,10 @@ public class GroupService {
     // 새 그룹 추가 조회
     @Transactional
     public List<GroupResponse.NewGroupDTO> findNewGroupList(Long userId, Province province, Pageable pageable){
-        // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
 
-        // province가 null로 들어옴 => 디폴트 값은 유저가 입력한 province 값
-        province = Optional.ofNullable(province)
-                .filter(p -> !p.getValue().isEmpty())
-                .orElseGet(() -> userRepository.findProvinceById(userId).orElse(DEFAULT_PROVINCE));
-
+        // province가 null로 들어오면 => 디폴트 값은 유저가 입력한 province 값
+        province = province != null ? province : userRepository.findProvinceById(userId).orElse(DEFAULT_PROVINCE);
         Page<Group> newGroups = groupRepository.findByProvince(province, pageable);
 
         List<GroupResponse.NewGroupDTO> newGroupDTOS = newGroups.getContent().stream()
