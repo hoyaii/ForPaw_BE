@@ -68,9 +68,11 @@ public class GroupController {
     }
 
     @GetMapping("/groups/my")
-    public ResponseEntity<?> findMyGroupList(@RequestParam("page") Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
-        GroupResponse.FindMyGroupListDTO responseDTO = groupService.findMyGroupList(userDetails.getUser().getId(), page);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    public ResponseEntity<?> findMyGroupList(Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+        Long userId = getUserIdSafely(userDetails);
+        List<Long> likedGroupIdList = groupService.getLikedGroupIdList(userId);
+        List<GroupResponse.MyGroupDTO> myGroupDTOS = groupService.findMyGroupList(userDetails.getUser().getId(), likedGroupIdList, pageable);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, new GroupResponse.FindMyGroupListDTO(myGroupDTOS)));
     }
 
     @GetMapping("/groups/{groupId}/detail")

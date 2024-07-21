@@ -154,12 +154,14 @@ public class GroupService {
         Province province = DEFAULT_PROVINCE;
         District district = DEFAULT_DISTRICT;
 
-        // 로그인이 되어 있으면, 가입 시 기재한 주소를 바탕으로 그룹 조회
+        // 로그인이 되어 있어서 userId를 받는다면 => 가입 시 기재한 주소를 바탕으로 그룹 조회
         if (userId != null) {
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new CustomException(ExceptionCode.USER_UNAUTHORIZED));
-            province = user.getProvince();
-            district = user.getDistrict();
+            Optional<User> userOptional = userRepository.findById(userId);
+            if (userOptional.isPresent()) {
+                User user = userOptional.get();
+                province = user.getProvince();
+                district = user.getDistrict();
+            }
         }
 
         // 이 API의 페이지네이션은 0페이지인 5개만 보내줄 것이다.
@@ -215,10 +217,10 @@ public class GroupService {
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
 
-        // 디폴트 값은 유저가 입력한 province 값
+        // province가 null로 들어옴 => 디폴트 값은 유저가 입력한 province 값
         province = Optional.ofNullable(province)
-                .filter(d -> !d.getValue().isEmpty())
-                .orElseGet(() -> userRepository.findProvinceById(userId).orElse(Province.DAEGU));
+                .filter(p -> !p.getValue().isEmpty())
+                .orElseGet(() -> userRepository.findProvinceById(userId).orElse(DEFAULT_PROVINCE));
 
         Page<Group> newGroups = groupRepository.findByProvince(province, pageable);
 
@@ -238,14 +240,28 @@ public class GroupService {
 
     // 내 그룹 추가 조회
     @Transactional
-    public GroupResponse.FindMyGroupListDTO findMyGroupList(Long userId, Integer page){
-        // 좋아요 한 그룹
-        List<Long> likedGroupIds = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
+    public List<GroupResponse.MyGroupDTO> findMyGroupList(Long userId, List<Long> likedGroupIds, Pageable pageable){
+        List<Group> joinedGroups = groupUserRepository.findAllGroupByUserId(userId, pageable).getContent();
 
-        Pageable pageable = createPageable(page, 5, SORT_BY_ID);
-        List<GroupResponse.MyGroupDTO> myGroupDTOS = findMyGroupList(userId, likedGroupIds, pageable);
+        List<GroupResponse.MyGroupDTO> myGroupDTOS = joinedGroups.stream()
+                .map(group -> {
+                    Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
 
-        return new GroupResponse.FindMyGroupListDTO(myGroupDTOS);
+                    return new GroupResponse.MyGroupDTO(
+                            group.getId(),
+                            group.getName(),
+                            group.getDescription(),
+                            group.getParticipantNum(),
+                            group.getCategory(),
+                            group.getProvince(),
+                            group.getDistrict(),
+                            group.getProfileURL(),
+                            likeNum,
+                            likedGroupIds.contains(group.getId()));
+                })
+                .collect(Collectors.toList());
+
+        return myGroupDTOS;
     }
 
     @Transactional
@@ -682,6 +698,7 @@ public class GroupService {
         return userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
     }
 
+    @Transactional
     public List<GroupResponse.RecommendGroupDTO> findRecommendGroupList(Long userId, Province province, List<Long> likedGroupIds){
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
@@ -718,30 +735,6 @@ public class GroupService {
                 .collect(Collectors.toList());
 
         return recommendGroupDTOS;
-    }
-
-    private List<GroupResponse.MyGroupDTO> findMyGroupList(Long userId, List<Long> likedGroupIds, Pageable pageable){
-        List<Group> joinedGroups = groupUserRepository.findAllGroupByUserId(userId, pageable).getContent();
-
-        List<GroupResponse.MyGroupDTO> myGroupDTOS = joinedGroups.stream()
-                .map(group -> {
-                    Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
-
-                    return new GroupResponse.MyGroupDTO(
-                            group.getId(),
-                            group.getName(),
-                            group.getDescription(),
-                            group.getParticipantNum(),
-                            group.getCategory(),
-                            group.getProvince(),
-                            group.getDistrict(),
-                            group.getProfileURL(),
-                            likeNum,
-                            likedGroupIds.contains(group.getId()));
-                })
-                .collect(Collectors.toList());
-
-        return myGroupDTOS;
     }
 
     private Set<Long> getAllGroupIdSet(Long userId){
