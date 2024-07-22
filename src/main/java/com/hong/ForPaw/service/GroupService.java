@@ -284,12 +284,6 @@ public class GroupService {
     // 공지사항 추가조회
     @Transactional
     public List<GroupResponse.NoticeDTO> findNoticeList(Long userId, Long groupId, Pageable pageable){
-        // 그룹 존재 여부 체크
-        checkGroupExist(groupId);
-
-        // 맴버인지 체크
-        checkIsMember(groupId, userId);
-
         // 해당 유저가 읽은 post의 id 목록
         List<Long> postIds = postRepository.findAllPostIdByUserId(userId);
 
@@ -306,19 +300,31 @@ public class GroupService {
         return noticeDTOS;
     }
 
-    // 정기모임 추가조회
     @Transactional
-    public GroupResponse.FindMeetingListDTO findMeetingList(Long userId, Long groupId, Integer page){
-        // 그룹 존재 여부 체크
-        checkGroupExist(groupId);
+    public List<GroupResponse.MeetingDTO> findMeetingList(Long groupId, Pageable pageable){
+        Page<Meeting> meetings = meetingRepository.findByGroupId(groupId, pageable);
 
-        // 맴버인지 체크
-        checkIsMember(groupId, userId);
+        List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
+                .map(meeting -> {
+                    List<GroupResponse.ParticipantDTO> participantDTOS = meeting.getMeetingUsers().stream()
+                            .map(meetingUser -> new GroupResponse.ParticipantDTO(meetingUser.getProfileURL()))
+                            .toList();
 
-        Pageable pageable = createPageable(page, 5, SORT_BY_ID);
-        List<GroupResponse.MeetingDTO> meetingsDTOS = findMeetingList(groupId, pageable);
+                    return new GroupResponse.MeetingDTO(
+                            meeting.getId(),
+                            meeting.getName(),
+                            meeting.getDate(),
+                            meeting.getLocation(),
+                            meeting.getCost(),
+                            meeting.getParticipantNum(),
+                            meeting.getMaxNum(),
+                            meeting.getProfileURL(),
+                            meeting.getDescription(),
+                            participantDTOS);
+                })
+                .toList();
 
-        return new GroupResponse.FindMeetingListDTO(meetingsDTOS);
+        return meetingDTOS;
     }
 
     @Transactional
@@ -742,6 +748,15 @@ public class GroupService {
         return recommendGroupDTOS;
     }
 
+    @Transactional
+    public void checkGroupAndMember(Long groupId, Long userId){
+        // 그룹 존재 여부 체크
+        checkGroupExist(groupId);
+
+        // 맴버인지 체크
+        checkIsMember(groupId, userId);
+    }
+
     private Set<Long> getAllGroupIdSet(Long userId){
         List<Group> groups = groupUserRepository.findAllGroupByUserId(userId);
 
@@ -795,32 +810,6 @@ public class GroupService {
         if(!meetingRepository.existsById(meetingId)){
             throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
         }
-    }
-
-    private List<GroupResponse.MeetingDTO> findMeetingList(Long groupId, Pageable pageable){
-        Page<Meeting> meetings = meetingRepository.findByGroupId(groupId, pageable);
-
-        List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
-                .map(meeting -> {
-                    List<GroupResponse.ParticipantDTO> participantDTOS = meeting.getMeetingUsers().stream()
-                            .map(meetingUser -> new GroupResponse.ParticipantDTO(meetingUser.getProfileURL()))
-                            .toList();
-
-                    return new GroupResponse.MeetingDTO(
-                            meeting.getId(),
-                            meeting.getName(),
-                            meeting.getDate(),
-                            meeting.getLocation(),
-                            meeting.getCost(),
-                            meeting.getParticipantNum(),
-                            meeting.getMaxNum(),
-                            meeting.getProfileURL(),
-                            meeting.getDescription(),
-                            participantDTOS);
-                })
-                .toList();
-
-        return meetingDTOS;
     }
 
     private List<GroupResponse.MemberDTO> findMemberList(Long groupId){
