@@ -211,7 +211,8 @@ async def generate_animal_introduction(animal_id):
     response = llm.invoke(
         formatted_prompt,
         max_tokens=max_response_tokens,
-        temperature=0.3
+        temperature=0.3,
+        model="gpt-4o-mini"
     ) 
     
     # 타이틀만 추출

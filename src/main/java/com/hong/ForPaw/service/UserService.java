@@ -157,35 +157,17 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
         );
 
-        // 하루 동안 5분 잠금이 세 번을 초과하면, 24시간 동안 로그인이 불가
-        Long loginFailNumDaily = redisService.getDataInLong("loginFailDaily", user.getId().toString());
-        if (loginFailNumDaily >= 3L) {
-            throw new CustomException(ExceptionCode.ACCOUNT_LOCKED);
-        }
+        // 계정 정지 상태 체크
+        checkAccountSuspension(user);
 
-        // 로그이 실패 횟수가 3회 이상이면, 5분 동안 로그인 불가
-        Long loginFailNum = redisService.getDataInLong("loginFail", user.getId().toString());
-        if(loginFailNum >= 3L) {
-            loginFailNumDaily++;
-            redisService.storeValue("loginFailDaily", user.getId().toString(), loginFailNumDaily.toString(), 86400000L);  // 24시간
-
-            if(loginFailNumDaily == 3L){
-                sendAccountSuspensionByMail(user.getEmail());
-            }
-
-            throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
-        }
+        // 로그인 횟수 체크 => 실패 회수 초과 시 에러 던짐
+        Long loginFailNum = checkLoginFailures(user);
 
         // 비밀번호가 일치하지 않음
         if(!passwordEncoder.matches(requestDTO.password(), user.getPassword())){
-            loginFailNum++;
-            redisService.storeValue("loginFail", user.getId().toString(), loginFailNum.toString(), 300000L); // 5분
-
+            redisService.storeValue("loginFail", user.getId().toString(), Long.toString(++loginFailNum), 300000L); // 5분
             throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
         }
-
-        // 계정 정지 상태 체크
-        checkAccountSuspension(user);
 
         // 로그인 IP 로깅
         recordLoginAttempt(user, request);
@@ -608,6 +590,29 @@ public class UserService {
         redisService.validateData("accessToken", String.valueOf(userIdFromToken), accessToken);
     }
 
+    private Long checkLoginFailures(User user){
+        // 하루 동안 5분 잠금이 세 번을 초과하면, 24시간 동안 로그인이 불가
+        Long loginFailNumDaily = redisService.getDataInLong("loginFailDaily", user.getId().toString());
+        if (loginFailNumDaily >= 3L) {
+            throw new CustomException(ExceptionCode.ACCOUNT_LOCKED);
+        }
+
+        // 로그이 실패 횟수가 3회 이상이면, 5분 동안 로그인 불가
+        Long loginFailNum = redisService.getDataInLong("loginFail", user.getId().toString());
+        if(loginFailNum >= 3L) {
+            loginFailNumDaily++;
+            redisService.storeValue("loginFailDaily", user.getId().toString(), loginFailNumDaily.toString(), 86400000L);  // 24시간
+
+            if(loginFailNumDaily == 3L){
+                sendAccountSuspensionByMail(user.getEmail());
+            }
+
+            throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
+        }
+
+        return loginFailNum;
+    }
+
     public String sendCodeByMail(String toEmail) {
         String verificationCode = generateVerificationCode();
         sendMail(toEmail, MailTemplate.VERIFICATION_CODE, verificationCode);
@@ -807,10 +812,13 @@ public class UserService {
     }
 
     private User processLogin(String email){
-        User user = userRepository.findByEmailWithUserStatus(email).get();
+        User user = userRepository.findByEmailWithUserStatus(email).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
 
         // 정지 상태 체크
         checkAccountSuspension(user);
+
         // 기존에 로그인 된 세션 삭제
         invalidateDuplicateSession(user);
 
