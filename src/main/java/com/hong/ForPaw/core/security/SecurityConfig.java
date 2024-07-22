@@ -87,6 +87,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/accounts/profile", "/api/accounts/password/**", "/api/accounts/role", "/api/accounts/withdraw", "/api/shelters/import", "/api/animals/like").authenticated()
                         .requestMatchers(new AntPathRequestMatcher("/api/animals/*/like")).authenticated()
                         .requestMatchers(new AntPathRequestMatcher("/api/animals/*/apply")).authenticated()
+                        .requestMatchers(new AntPathRequestMatcher("/api/groups/*/detail")).permitAll()
                         .requestMatchers("/api/auth/**", "/api/accounts/**", "/api/animals/**", "/api/shelters/**", "/api/groups", "/api/home", "/api/search/**", "/api/validate/accessToken", "/api/posts/adoption", "/api/posts/fostering", "/api/posts/question").permitAll()
                         .anyRequest().authenticated()
                 )

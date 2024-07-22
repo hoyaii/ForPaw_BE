@@ -82,7 +82,8 @@ public class GroupController {
 
     @GetMapping("/groups/{groupId}/detail")
     public ResponseEntity<?> findGroupDetailById(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
-        GroupResponse.FindGroupDetailByIdDTO responseDTO = groupService.findGroupDetailById(userDetails.getUser().getId(), groupId);
+        Long userId = getUserIdSafely(userDetails);
+        GroupResponse.FindGroupDetailByIdDTO responseDTO = groupService.findGroupDetailById(userId, groupId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

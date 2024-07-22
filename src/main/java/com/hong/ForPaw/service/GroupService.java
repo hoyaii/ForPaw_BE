@@ -285,7 +285,7 @@ public class GroupService {
     @Transactional
     public List<GroupResponse.NoticeDTO> findNoticeList(Long userId, Long groupId, Pageable pageable){
         // 해당 유저가 읽은 post의 id 목록
-        List<Long> postIds = postRepository.findAllPostIdByUserId(userId);
+        List<Long> postIds = userId != null ? postRepository.findAllPostIdByUserId(userId) : Collections.emptyList();
 
         Page<Post> notices = postRepository.findByGroupId(groupId, pageable);
         List<GroupResponse.NoticeDTO> noticeDTOS = notices.getContent().stream()
