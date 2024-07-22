@@ -351,11 +351,7 @@ public class GroupService {
         checkGroupExist(groupId);
 
         // 이미 가입했거나 신청한 회원이면 에러 처리
-        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
-                .filter(groupUser -> groupUser.getGroupRole().equals(GroupRole.USER) || groupUser.getGroupRole().equals(GroupRole.ADMIN) || groupUser.getGroupRole().equals(GroupRole.CREATOR) || groupUser.getGroupRole().equals(GroupRole.TEMP))
-                .ifPresent(groupUser -> {
-                    throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
-                });
+        checkAlreadyMemberOrApplier(groupId, userId);
 
         Group groupRef = entityManager.getReference(Group.class, groupId);
         User userRef = entityManager.getReference(User.class, userId);
@@ -372,20 +368,17 @@ public class GroupService {
 
     @Transactional
     public void withdrawGroup(Long userId, Long groupId){
-        // 존재하지 않는 그룹이면 에러 처리
-        checkGroupExist(groupId);
+        Group group = groupRepository.findById(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
+        );
 
         // 가입한 회원이 아니면 에러
-        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
-                .filter(groupUser -> groupUser.getGroupRole().equals(GroupRole.USER) || groupUser.getGroupRole().equals(GroupRole.ADMIN) || groupUser.getGroupRole().equals(GroupRole.CREATOR))
-                .orElseThrow(
-                        () -> new CustomException(ExceptionCode.GROUP_NOT_MEMBER)
-                );
-
-        groupUserRepository.deleteByGroupIdAndUserId(groupId, userId);
+        checkIsMember(groupId, userId);
 
         // 그룹 참가자 수 감소
-        groupRepository.decrementParticipantNum(groupId);
+        group.decrementParticipantNum();
+
+        groupUserRepository.deleteByGroupIdAndUserId(groupId, userId);
 
         // 그룹 채팅방에서 탈퇴
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
@@ -407,8 +400,9 @@ public class GroupService {
         GroupUser groupUser =  groupUserRepository.findByGroupIdAndUserId(groupId, applicantId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_APPLY)
         );
-        checkAlreadyApplyOrMember(groupUser);
+        checkAlreadyJoin(groupUser);
 
+        // '임시' => '유저'로 역할 변경
         groupUser.updateRole(GroupRole.USER);
 
         // 그룹 참가자 수 증가
@@ -443,7 +437,7 @@ public class GroupService {
         GroupUser groupUser =  groupUserRepository.findByGroupIdAndUserId(groupId, applicantId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_APPLY)
         );
-        checkAlreadyApplyOrMember(groupUser);
+        checkAlreadyJoin(groupUser);
 
         groupUserRepository.delete(groupUser);
 
@@ -777,15 +771,27 @@ public class GroupService {
     }
 
     public void checkIsMember(Long groupId, Long userId){
+        Set<GroupRole> roles = EnumSet.of(GroupRole.USER, GroupRole.ADMIN, GroupRole.CREATOR);
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
-                .filter(groupUser -> groupUser.getGroupRole().equals(GroupRole.USER) || groupUser.getGroupRole().equals(GroupRole.ADMIN) || groupUser.getGroupRole().equals(GroupRole.CREATOR))
-                .orElseThrow( () -> new CustomException(ExceptionCode.GROUP_NOT_MEMBER));
+                .filter(groupUser -> roles.contains(groupUser.getGroupRole()))
+                .orElseThrow(
+                        () -> new CustomException(ExceptionCode.GROUP_NOT_MEMBER)
+                );
+    }
+
+    public void checkAlreadyMemberOrApplier(Long groupId, Long userId){
+        Set<GroupRole> roles = EnumSet.of(GroupRole.USER, GroupRole.ADMIN, GroupRole.CREATOR, GroupRole.TEMP);
+        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
+                .filter(groupUser -> roles.contains(groupUser.getGroupRole()))
+                .ifPresent(groupUser -> {
+                    throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
+                });
     }
 
     private void checkAdminAuthority(Long groupId, Long userId){
-        // 권한 체크, 엔티티 사이즈가 크지 않으니 그냥 불러오자
+        Set<GroupRole> roles = EnumSet.of(GroupRole.ADMIN, GroupRole.CREATOR);
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
-                .filter(groupUser -> groupUser.getGroupRole().equals(GroupRole.ADMIN) || groupUser.getGroupRole().equals(GroupRole.CREATOR)) // ADMIN인 경우에만 통과 (ADMIN이 아니면 null이 되어 orElseThrow 실행)
+                .filter(groupUser -> roles.contains(groupUser.getGroupRole())) // ADMIN인 경우에만 통과 (ADMIN이 아니면 null이 되어 orElseThrow 실행)
                 .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN)); // ADMIN이 아니거나 그룹과 관련없는 사람이면 에러 보냄
     }
 
@@ -795,8 +801,8 @@ public class GroupService {
                 .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
     }
 
-    private void checkAlreadyApplyOrMember(GroupUser groupUser){
-         if(groupUser.getGroupRole().equals(GroupRole.USER) || groupUser.getGroupRole().equals(GroupRole.ADMIN)){
+    private void checkAlreadyJoin(GroupUser groupUser){
+         if(groupUser.getGroupRole().equals(GroupRole.USER) || groupUser.getGroupRole().equals(GroupRole.ADMIN) || groupUser.getGroupRole().equals(GroupRole.CREATOR)){
             throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
         }
     }
