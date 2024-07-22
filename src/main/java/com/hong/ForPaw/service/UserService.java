@@ -341,9 +341,9 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND);
 
         // 계속 이메일을 보내는 건 방지. 5분 후에 다시 시도할 수 있다
-        if(redisService.isDateExist("emailCode", requestDTO.email())){
-            throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
-        }
+        //if(redisService.isDateExist("emailCode", requestDTO.email())){
+        //    throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
+        //}
 
         // 인증 코드 전송 및 레디스에 저장
         String verificationCode = sendCodeByMail(requestDTO.email());

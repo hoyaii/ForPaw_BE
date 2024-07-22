@@ -283,17 +283,27 @@ public class GroupService {
 
     // 공지사항 추가조회
     @Transactional
-    public GroupResponse.FindNoticeListDTO findNoticeList(Long userId, Long groupId, Integer page){
+    public List<GroupResponse.NoticeDTO> findNoticeList(Long userId, Long groupId, Pageable pageable){
         // 그룹 존재 여부 체크
         checkGroupExist(groupId);
 
         // 맴버인지 체크
         checkIsMember(groupId, userId);
 
-        Pageable pageable = createPageable(page, 5, SORT_BY_ID);
-        List<GroupResponse.NoticeDTO> noticeDTOS = findNoticeList(userId, groupId, pageable);
+        // 해당 유저가 읽은 post의 id 목록
+        List<Long> postIds = postRepository.findAllPostIdByUserId(userId);
 
-        return new GroupResponse.FindNoticeListDTO(noticeDTOS);
+        Page<Post> notices = postRepository.findByGroupId(groupId, pageable);
+        List<GroupResponse.NoticeDTO> noticeDTOS = notices.getContent().stream()
+                .map(notice -> new GroupResponse.NoticeDTO(
+                        notice.getId(),
+                        notice.getUser().getNickName(),
+                        notice.getCreatedDate(),
+                        notice.getTitle(),
+                        postIds.contains(notice.getId())))
+                .collect(Collectors.toList());
+
+        return noticeDTOS;
     }
 
     // 정기모임 추가조회
@@ -785,24 +795,6 @@ public class GroupService {
         if(!meetingRepository.existsById(meetingId)){
             throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
         }
-    }
-
-    private List<GroupResponse.NoticeDTO> findNoticeList(Long userId, Long groupId, Pageable pageable){
-        // user를 패치조인 해서 조회
-        Page<Post> notices = postRepository.findByGroupId(groupId, pageable);
-        // 해당 유저가 읽은 post의 id 목록
-        List<Long> postIds = postRepository.findAllPostIdByUserId(userId);
-
-        List<GroupResponse.NoticeDTO> noticeDTOS = notices.getContent().stream()
-                .map(notice -> new GroupResponse.NoticeDTO(
-                            notice.getId(),
-                            notice.getUser().getNickName(),
-                            notice.getCreatedDate(),
-                            notice.getTitle(),
-                            postIds.contains(notice.getId())))
-                .collect(Collectors.toList());
-
-        return noticeDTOS;
     }
 
     private List<GroupResponse.MeetingDTO> findMeetingList(Long groupId, Pageable pageable){
