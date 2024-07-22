@@ -150,7 +150,7 @@ public class GroupService {
     }
 
     @Transactional
-    public GroupResponse.FindAllGroupListDTO findGroupList(Long userId, List<Long> likedGroupIdList){
+    public GroupResponse.FindAllGroupListDTO findGroupList(Long userId){
         Province province = DEFAULT_PROVINCE;
         District district = DEFAULT_DISTRICT;
 
@@ -167,6 +167,9 @@ public class GroupService {
         // 이 API의 페이지네이션은 고정적으로 0페이지/5개만 보내줄 것이다.
         Pageable pageable = createPageable(0, 5, SORT_BY_ID);
 
+        // 좋아요한 그룹 리스트 (로그인 하지 않았으면 빈 리스트)
+        List<Long> likedGroupIdList = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : Collections.emptyList();
+
         // 추천 그룹 찾기
         List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = findRecommendGroupList(userId, province, likedGroupIdList);
 
@@ -177,7 +180,7 @@ public class GroupService {
         List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroupList(userId, province, pageable);
 
         // 내 그룹 찾기, 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
-        List<GroupResponse.MyGroupDTO> myGroupDTOS = userId != null ? findMyGroupList(userId, likedGroupIdList, pageable) : new ArrayList<>();
+        List<GroupResponse.MyGroupDTO> myGroupDTOS = userId != null ? findMyGroupList(userId, likedGroupIdList, pageable) : Collections.emptyList();
 
         return new GroupResponse.FindAllGroupListDTO(recommendGroupDTOS, newGroupDTOS, localGroupDTOS, myGroupDTOS);
     }
@@ -186,6 +189,10 @@ public class GroupService {
     public List<GroupResponse.LocalGroupDTO> findLocalGroupList(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable){
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
+
+        // likedGroupIds가 비어있으면 새로 조회 => 새로 조회 시 userId가 null이라면 emptyList로! (스트림 사용을 위해 final로 만듦)
+        List<Long> finalLikedGroupIds = likedGroupIds.isEmpty() ? likedGroupIds :
+                (userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : Collections.emptyList());
 
         Page<Group> localGroups = groupRepository.findByDistrictAndSubDistrict(province, district, pageable);
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroups.getContent().stream()
@@ -203,7 +210,7 @@ public class GroupService {
                             group.getDistrict(),
                             group.getProfileURL(),
                             likeNum,
-                            likedGroupIds.contains(group.getId()));
+                            finalLikedGroupIds.contains(group.getId()));
                 })
                 .collect(Collectors.toList());
 
@@ -238,6 +245,9 @@ public class GroupService {
     public List<GroupResponse.MyGroupDTO> findMyGroupList(Long userId, List<Long> likedGroupIds, Pageable pageable){
         List<Group> joinedGroups = groupUserRepository.findAllGroupByUserId(userId, pageable).getContent();
 
+        List<Long> finalLikedGroupIds = likedGroupIds.isEmpty() ? likedGroupIds :
+                (userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : Collections.emptyList());
+
         List<GroupResponse.MyGroupDTO> myGroupDTOS = joinedGroups.stream()
                 .map(group -> {
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
@@ -252,7 +262,7 @@ public class GroupService {
                             group.getDistrict(),
                             group.getProfileURL(),
                             likeNum,
-                            likedGroupIds.contains(group.getId()));
+                            finalLikedGroupIds.contains(group.getId()));
                 })
                 .collect(Collectors.toList());
 
@@ -704,11 +714,6 @@ public class GroupService {
     }
 
     @Transactional
-    public List<Long> getLikedGroupIdList(Long userId){
-        return userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
-    }
-
-    @Transactional
     public List<GroupResponse.RecommendGroupDTO> findRecommendGroupList(Long userId, Province province, List<Long> likedGroupIds){
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
@@ -774,9 +779,7 @@ public class GroupService {
         Set<GroupRole> roles = EnumSet.of(GroupRole.USER, GroupRole.ADMIN, GroupRole.CREATOR);
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(groupUser -> roles.contains(groupUser.getGroupRole()))
-                .orElseThrow(
-                        () -> new CustomException(ExceptionCode.GROUP_NOT_MEMBER)
-                );
+                .orElseThrow(() -> new CustomException(ExceptionCode.GROUP_NOT_MEMBER));
     }
 
     public void checkAlreadyMemberOrApplier(Long groupId, Long userId){

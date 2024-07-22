@@ -19,6 +19,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,16 +51,14 @@ public class GroupController {
     @GetMapping("/groups")
     public ResponseEntity<?> findGroupList(@AuthenticationPrincipal CustomUserDetails userDetails){
         Long userId = getUserIdSafely(userDetails);
-        List<Long> likedGroupIdList = groupService.getLikedGroupIdList(userId);
-        GroupResponse.FindAllGroupListDTO responseDTO = groupService.findGroupList(userId, likedGroupIdList);
+        GroupResponse.FindAllGroupListDTO responseDTO = groupService.findGroupList(userId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/groups/local")
     public ResponseEntity<?> findLocalGroupList(@RequestParam("province") Province province, @RequestParam("district") District district, @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         Long userId = getUserIdSafely(userDetails);
-        List<Long> likedGroupIdList = groupService.getLikedGroupIdList(userId);
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = groupService.findLocalGroupList(userId, province, district, likedGroupIdList, pageable);
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = groupService.findLocalGroupList(userId, province, district, Collections.emptyList(), pageable);
         GroupResponse.FindLocalGroupListDTO responseDTO = new GroupResponse.FindLocalGroupListDTO(localGroupDTOS);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
@@ -74,8 +73,7 @@ public class GroupController {
     @GetMapping("/groups/my")
     public ResponseEntity<?> findMyGroupList(@PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         Long userId = getUserIdSafely(userDetails);
-        List<Long> likedGroupIdList = groupService.getLikedGroupIdList(userId);
-        List<GroupResponse.MyGroupDTO> myGroupDTOS = groupService.findMyGroupList(userId, likedGroupIdList, pageable);
+        List<GroupResponse.MyGroupDTO> myGroupDTOS = groupService.findMyGroupList(userId, Collections.emptyList(), pageable);
         GroupResponse.FindMyGroupListDTO responseDTO = new GroupResponse.FindMyGroupListDTO(myGroupDTOS);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
