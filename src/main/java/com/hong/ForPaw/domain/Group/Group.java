@@ -68,4 +68,8 @@ public class Group extends TimeStamp {
         this.category = category;
         this.profileURL = profileURL;
     }
+
+    public void incrementParticipantNum(){
+        this.participantNum = this.participantNum + 1;
+    }
 }

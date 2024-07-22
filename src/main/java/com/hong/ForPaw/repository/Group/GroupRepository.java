@@ -34,10 +34,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     List<Long> findGroupIds();
 
     @Modifying
-    @Query("UPDATE Group g SET g.participantNum = g.participantNum + 1 WHERE g.id = :groupId")
-    void incrementParticipantNum(@Param("groupId") Long groupId);
-
-    @Modifying
     @Query("UPDATE Group g SET g.participantNum = g.participantNum - 1 WHERE g.id = :groupId AND g.participantNum > 0")
     void decrementParticipantNum(@Param("groupId") Long groupId);
 

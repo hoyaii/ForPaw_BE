@@ -92,7 +92,7 @@ public class GroupService {
         groupUserRepository.save(groupUser);
 
         // 그룹 참여자 수 증가 (그룹장 참여)
-        groupRepository.incrementParticipantNum(group.getId());
+        group.incrementParticipantNum();
 
         // 그룹 채팅방 생성
         ChatRoom chatRoom = ChatRoom.builder()
@@ -303,7 +303,6 @@ public class GroupService {
     @Transactional
     public List<GroupResponse.MeetingDTO> findMeetingList(Long groupId, Pageable pageable){
         Page<Meeting> meetings = meetingRepository.findByGroupId(groupId, pageable);
-
         List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
                 .map(meeting -> {
                     List<GroupResponse.ParticipantDTO> participantDTOS = meeting.getMeetingUsers().stream()
@@ -395,21 +394,25 @@ public class GroupService {
     }
 
     @Transactional
-    public void approveJoin(Long userId, Long applicantId, Long groupId){
+    public void approveJoin(Long managerId, Long applicantId, Long groupId){
         // 존재하지 않는 그룹이면 에러
-        checkGroupExist(groupId);
+        Group group = groupRepository.findById(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
+        );
 
         // 권한 체크
-        checkAdminAuthority(groupId, userId);
+        checkAdminAuthority(groupId, managerId);
 
         // 신청한 적이 없거나 이미 가입했는지 체크
-        Optional<GroupUser> groupApplicantOP = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId);
-        checkAlreadyApplyOrMember(groupApplicantOP);
+        GroupUser groupUser =  groupUserRepository.findByGroupIdAndUserId(groupId, applicantId).orElseThrow(
+                () -> new CustomException(ExceptionCode.GROUP_NOT_APPLY)
+        );
+        checkAlreadyApplyOrMember(groupUser);
 
-        groupApplicantOP.get().updateRole(GroupRole.USER);
+        groupUser.updateRole(GroupRole.USER);
 
         // 그룹 참가자 수 증가
-        groupRepository.incrementParticipantNum(groupId);
+        group.incrementParticipantNum();
 
         // 알람 생성
         String content = "가입이 승인 되었습니다!";
@@ -437,10 +440,12 @@ public class GroupService {
         checkAdminAuthority(groupId, userId);
 
         // 신청한 적이 없거나 이미 가입했는지 체크
-        Optional<GroupUser> groupUserOP = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId);
-        checkAlreadyApplyOrMember(groupUserOP);
+        GroupUser groupUser =  groupUserRepository.findByGroupIdAndUserId(groupId, applicantId).orElseThrow(
+                () -> new CustomException(ExceptionCode.GROUP_NOT_APPLY)
+        );
+        checkAlreadyApplyOrMember(groupUser);
 
-        groupUserRepository.delete(groupUserOP.get());
+        groupUserRepository.delete(groupUser);
 
         // 알람 생성
         String content = "가입이 거절 되었습니다.";
@@ -790,12 +795,8 @@ public class GroupService {
                 .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
     }
 
-    private void checkAlreadyApplyOrMember(Optional<GroupUser> groupApplicantOP){
-        // 가입 신청한 적이 없음
-        if(groupApplicantOP.isEmpty()){
-            throw new CustomException(ExceptionCode.GROUP_NOT_APPLY);
-        } // 이미 승인된 회원
-        else if(groupApplicantOP.get().getGroupRole().equals(GroupRole.USER) || groupApplicantOP.get().getGroupRole().equals(GroupRole.ADMIN)){
+    private void checkAlreadyApplyOrMember(GroupUser groupUser){
+         if(groupUser.getGroupRole().equals(GroupRole.USER) || groupUser.getGroupRole().equals(GroupRole.ADMIN)){
             throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
         }
     }
