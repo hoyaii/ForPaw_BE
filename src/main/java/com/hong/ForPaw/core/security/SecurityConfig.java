@@ -8,9 +8,7 @@ import com.hong.ForPaw.service.RedisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.SecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -18,16 +16,12 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.stereotype.Component;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 @Configuration
@@ -61,7 +55,7 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
 
                 // CORS 설정
-                .cors(cors -> cors.configurationSource(configurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                 // 세션 정책 설정
                 .sessionManagement(sessionManagement ->
@@ -98,13 +92,12 @@ public class SecurityConfig {
         return http.build();
     }
 
-    public CorsConfigurationSource configurationSource() {
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.addAllowedHeader("*");
         configuration.addAllowedMethod("*");
         configuration.addAllowedOriginPattern("*");
         configuration.setAllowCredentials(true);
-        configuration.addAllowedOrigin("http://localhost:3000");
         configuration.addExposedHeader("Authorization");
         configuration.setExposedHeaders(Arrays.asList("accessToken", "refreshToken"));
 

@@ -62,21 +62,19 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
             user = getUserFromToken(accessToken);
         }
 
-        // accessToken에 인증 정보가 없음 => 리프레쉬 토큰 검증
+        // 엑세스 토큰에 인증 정보가 없음 => 리프레쉬 토큰 검증
         if (user == null && refreshToken != null) {
             user = getUserFromToken(refreshToken);
 
-            // 토큰에 인증 정보 존재 => 리프레쉬 토큰을 바탕으로 토큰 재발급
+            // 리프레쉬 토큰에 인증 정보 존재 => 리프레쉬 토큰을 바탕으로 토큰 재발급
             if (user != null) {
                 accessToken = JWTProvider.createAccessToken(user);
                 refreshToken = JWTProvider.createRefreshToken(user);
-
-                // CookieUtils.setCookieToResponse(JWTProvider.ACCESS_TOKEN_COOKIE_KEY, accessToken, JWTProvider.ACCESS_EXP_SEC, false, true, response);
                 CookieUtils.setCookieToResponse(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, refreshToken, JWTProvider.REFRESH_EXP_SEC, false, true, response);
             }
         }
 
-        // accessToken과 refreshToken 모두 검증 실패 (만료 됐거나 잘못된 형식)
+        // 엑세스 토큰과 리프레쉬 토큰 모두 검증 실패 (만료 됐거나 잘못된 형식)
         if (user == null) {
             chain.doFilter(request, response);
             return;
@@ -97,12 +95,11 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
     private void authenticateUser(User user) {
         CustomUserDetails myUserDetails = new CustomUserDetails(user);
-        Authentication authentication =
-                new UsernamePasswordAuthenticationToken(
-                        myUserDetails,
-                        myUserDetails.getPassword(),
-                        myUserDetails.getAuthorities()
-                );
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                myUserDetails,
+                myUserDetails.getPassword(),
+                myUserDetails.getAuthorities()
+        );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }
