@@ -6,6 +6,7 @@ import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.core.utils.MailTemplate;
 import com.hong.ForPaw.domain.Authentication.LoginAttempt;
 import com.hong.ForPaw.domain.Group.GroupRole;
 import com.hong.ForPaw.domain.Inquiry.Answer;
@@ -607,28 +608,25 @@ public class UserService {
         redisService.validateData("accessToken", String.valueOf(userIdFromToken), accessToken);
     }
 
-    private String sendCodeByMail(String toEmail){
+    public String sendCodeByMail(String toEmail) {
         String verificationCode = generateVerificationCode();
-        String subject = "[ForPaw] 이메일 인증 코드입니다.";
-        String text = "인증 코드는 다음과 같습니다: " + verificationCode + "\n이 코드를 입력하여 이메일을 인증해 주세요.";
-        sendMail(fromEmail, toEmail, subject, text);
-
+        sendMail(toEmail, MailTemplate.VERIFICATION_CODE, verificationCode);
         return verificationCode;
     }
 
-    private void sendPasswordByMail(String toEmail, String password){
-        String subject = "[ForPaw] 임시 비밀번호 입니다.";
-        String text = "임시 비밀번호: " + password + "\n로그인 후 비밀번호를 변경해 주세요.";
-        sendMail(fromEmail, toEmail, subject, text);
+    public void sendPasswordByMail(String toEmail, String password) {
+        sendMail(toEmail, MailTemplate.TEMPORARY_PASSWORD, password);
     }
 
-    private void sendAccountSuspensionByMail(String toEmail){
-        String subject = "[ForPaw] 로그인 횟수를 초과하여 계정이 비활성화 되었습니다.";
-        String text = "계정 보안을 위해 24시간 후에 로그인을 시도하실 수 있습니다. 보안을 위해 비밀번호를 변경해주세요";
-        sendMail(fromEmail, toEmail, subject, text);
+    public void sendAccountSuspensionByMail(String toEmail) {
+        sendMail(toEmail, MailTemplate.ACCOUNT_SUSPENSION);
     }
 
-    private void sendMail(String fromEmail, String toEmail, String subject, String text){
+    private void sendMail(String toEmail, MailTemplate template, String... args) {
+        // template에서 subject와 text 추출
+        String subject = template.getSubject();
+        String text = template.formatText(args);
+
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(toEmail);
