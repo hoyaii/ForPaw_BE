@@ -51,4 +51,10 @@ public class Shelter {
     public void updateAnimalCnt(Long animalCnt){
         this.animalCnt = animalCnt;
     }
+
+    public void updateByAnimalData(String careTel, String careAddr, Long animalCnt){
+        this.careTel = careTel;
+        this.careAddr = careAddr;
+        this.animalCnt = animalCnt;
+    }
 }

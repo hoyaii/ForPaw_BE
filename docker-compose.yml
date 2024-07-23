@@ -26,6 +26,7 @@ services:
     ports:
       - "3306:3306"
     environment:
+        TZ: Asia/Seoul
         MYSQL_HOST: mysql
         MYSQL_PORT: 3306
         MYSQL_ROOT_PASSWORD: 0623

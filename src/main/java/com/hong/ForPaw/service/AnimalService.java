@@ -97,7 +97,7 @@ public class AnimalService {
         List<Shelter> shelters = shelterRepository.findAllWithRegionCode();
 
         Flux.fromIterable(shelters)
-                .delayElements(Duration.ofMillis(50)) // 각 요청 사이에 0.05초 지연
+                .delayElements(Duration.ofMillis(75)) // 각 요청 사이에 0.075초 지연
                 .flatMap(shelter -> {
                     Long careRegNo = shelter.getId();
                     URI uri = buildAnimalURI(serviceKey, careRegNo);
@@ -483,6 +483,7 @@ public class AnimalService {
                     .map(j -> j.response().body().items().item())
                     .filter(items -> !items.isEmpty())
                     .map(items -> items.get(0))
+                    //.ifPresent(itemDTO -> shelter.updateByAnimalData(itemDTO.careTel(), itemDTO.careAddr(), countActiveAnimals(json))); // 영속성 컨텍스트 적용이 안됨
                     .ifPresent(itemDTO -> shelterRepository.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), countActiveAnimals(json), shelter.getId()));
             return Mono.empty();
         }).then();
