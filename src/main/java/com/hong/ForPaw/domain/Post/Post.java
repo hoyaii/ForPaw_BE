@@ -83,7 +83,7 @@ public class Post extends TimeStamp {
         this.content = content;
     }
 
-    public void updatePost(String title, String content){
+    public void updateTitleAndContent(String title, String content){
         this.title = title;
         this.content = content;
     }

@@ -52,7 +52,7 @@ public class GroupRequest {
 
     public record CreateMeetingDTO(
             @NotBlank(message = "정기모임의 이름을 입력해주세요.")
-            @Pattern(regexp = "^[a-zA-Z0-9가-힣]+$", message = "모임 이름에는 띄어쓰기를 사용할 수 없습니다.")
+            //@Pattern(regexp = "^[a-zA-Z0-9가-힣]+$", message = "모임 이름에는 띄어쓰기를 사용할 수 없습니다.")
             String name,
             @NotNull(message = "모임 날짜를 입력해주세요.")
             LocalDateTime date,
@@ -69,7 +69,7 @@ public class GroupRequest {
 
     public record UpdateMeetingDTO(
             @NotBlank(message = "정기모임의 이름을 입력해주세요.")
-            @Pattern(regexp = "^[a-zA-Z0-9가-힣]+$", message = "모임 이름에는 띄어쓰기를 사용할 수 없습니다.")
+            //@Pattern(regexp = "^[a-zA-Z0-9가-힣]+$", message = "모임 이름에는 띄어쓰기를 사용할 수 없습니다.")
             String name,
             @NotNull(message = "모임 날짜를 입력해주세요.")
             LocalDateTime date,

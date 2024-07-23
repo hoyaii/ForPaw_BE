@@ -78,6 +78,7 @@ public enum ExceptionCode {
     NOT_POSTS_COMMENT(HttpStatus.BAD_REQUEST, "게시글의 댓글이 아닙니다."),
     CANT_LIKE_MY_COMMENT(HttpStatus.BAD_REQUEST, "자신의 댓글에는 좋아요를 할 수 없습니다."),
     POST_LIKE_EXPIRED(HttpStatus.BAD_REQUEST, "오래된 글은 공감할 수 없습니다."),
+    SCREENED_POST(HttpStatus.BAD_REQUEST, "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다."),
 
     // 알람 관련 에러
     ALARM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 알람입니다."),

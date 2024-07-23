@@ -12,6 +12,9 @@ import com.hong.ForPaw.domain.Authentication.Visit;
 import com.hong.ForPaw.domain.Inquiry.Inquiry;
 import com.hong.ForPaw.domain.Inquiry.InquiryAnswer;
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
+import com.hong.ForPaw.domain.Post.Comment;
+import com.hong.ForPaw.domain.Post.Post;
+import com.hong.ForPaw.domain.Report.ContentType;
 import com.hong.ForPaw.domain.Report.Report;
 import com.hong.ForPaw.domain.Report.ReportStatus;
 import com.hong.ForPaw.domain.User.User;
@@ -22,17 +25,14 @@ import com.hong.ForPaw.repository.ApplyRepository;
 import com.hong.ForPaw.repository.Authentication.VisitRepository;
 import com.hong.ForPaw.repository.Inquiry.InquiryAnswerRepository;
 import com.hong.ForPaw.repository.Inquiry.InquiryRepository;
-import com.hong.ForPaw.repository.Post.CommentRepository;
-import com.hong.ForPaw.repository.Post.PostRepository;
+import com.hong.ForPaw.repository.Post.*;
 import com.hong.ForPaw.repository.ReportRepository;
 import com.hong.ForPaw.repository.UserRepository;
 import com.hong.ForPaw.repository.UserStatusRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,7 +62,9 @@ public class AuthenticationService {
     private final EntityManager entityManager;
     private final RedisService redisService;
     private final UserStatusRepository userStatusRepository;
-    private static final String SORT_BY_CREATED_DATE = "createdDate";
+
+    private static final String POST_SCREENED = "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.";
+    private static final String COMMENT_SCREENED = "커뮤니티 규정을 위반하여 가려진 댓글입니다.";
 
     @Transactional
     @Scheduled(cron = "0 3 * * * *") // 매 시간 3분에 실행
@@ -352,6 +354,7 @@ public class AuthenticationService {
                 () -> new CustomException(ExceptionCode.REPORT_NOT_FOUND)
         );
 
+        // 유저 정지 처리
         if(requestDTO.hasSuspension()){
             // SUPER를 정지 시킬 수는 없다 (악용 방지)
             if(report.getOffender().getRole().equals(UserRole.SUPER)){
@@ -360,6 +363,11 @@ public class AuthenticationService {
 
             report.getOffender().getStatus()
                     .updateForSuspend(LocalDateTime.now(), requestDTO.suspensionDays(), report.getReason());
+        }
+
+        // 가림 처리
+        if(requestDTO.hasBlocking()){
+            processBlocking(report);
         }
 
         // 신고 내역 완료 처리
@@ -458,6 +466,26 @@ public class AuthenticationService {
         // ADMIN 권한의 관리자가 SUPER 권한의 유저를 변경 방지
         if(adminRole.equals(UserRole.ADMIN) && userRole.equals(UserRole.SUPER)){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
+    }
+
+    private void processBlocking(Report report) {
+        // 게시글은 가림 처리
+        if(report.getContentType() == ContentType.POST) {
+            Post post = postRepository.findById(report.getContentId()).orElseThrow(
+                    () -> new CustomException(ExceptionCode.BAD_APPROACH)
+            );
+            post.updateTitleAndContent(POST_SCREENED, POST_SCREENED);
+        }
+        // 댓글은 가림 처리
+        else if (report.getContentType() == ContentType.COMMENT) {
+            Comment comment = commentRepository.findById(report.getContentId()).orElseThrow(
+                    () -> new CustomException(ExceptionCode.BAD_APPROACH)
+            );
+            comment.updateComment(COMMENT_SCREENED);
+        }
+        else{
+            throw new CustomException(ExceptionCode.BAD_APPROACH);
         }
     }
 }

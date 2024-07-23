@@ -56,6 +56,7 @@ public class PostService {
     public static final Long POST_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
     private static final String SORT_BY_CREATED_DATE = "createdDate";
     private static final String SORT_BY_POPULARITY = "likeNum";
+    private static final String POST_SCREENED = "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.";
 
     @Transactional
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId){
@@ -144,9 +145,11 @@ public class PostService {
 
         if(sort.equals(SORT_BY_CREATED_DATE)) {
             postDTOS = findPostListByType(PostType.ADOPTION, page);
-        } else if(sort.equals(SORT_BY_POPULARITY)){
+        }
+        else if(sort.equals(SORT_BY_POPULARITY)){
             postDTOS = findPopularPostListByType(PostType.ADOPTION, page);
-        } else{
+        }
+        else{
             throw new CustomException(ExceptionCode.POST_TYPE_INCORRECT);
         }
 
@@ -159,9 +162,11 @@ public class PostService {
 
         if(sort.equals(SORT_BY_CREATED_DATE)) {
             postDTOS = findPostListByType(PostType.FOSTERING, page);
-        } else if(sort.equals(SORT_BY_POPULARITY)){
+        }
+        else if(sort.equals(SORT_BY_POPULARITY)){
             postDTOS = findPopularPostListByType(PostType.FOSTERING, page);
-        } else{
+        }
+        else{
             throw new CustomException(ExceptionCode.POST_TYPE_INCORRECT);
         }
 
@@ -195,8 +200,14 @@ public class PostService {
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
+        // 질문글을 조회하기 위한 API 아님 => 질문글이면 에러 리턴
         if(post.getPostType().equals(PostType.QUESTION)){
             throw new CustomException(ExceptionCode.IS_QUESTION_TYPE);
+        }
+
+        // 가림 처리된 게시글이면 에러 리턴
+        if(post.getTitle().equals(POST_SCREENED)){
+            throw new CustomException(ExceptionCode.SCREENED_POST);
         }
 
         // 게시글 이미지 DTO
@@ -267,6 +278,11 @@ public class PostService {
             throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
         }
 
+        // 가림 처리된 게시글이면 에러 리턴
+        if(post.getTitle().equals(POST_SCREENED)){
+            throw new CustomException(ExceptionCode.SCREENED_POST);
+        }
+
         // 게시글 이미지 DTO
         List<PostResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
                 .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
@@ -302,7 +318,7 @@ public class PostService {
         checkPostAuthority(post.getUser().getId(), user);
 
         // 제목, 본문 업데이트
-        post.updatePost(requestDTO.title(), requestDTO.content());
+        post.updateTitleAndContent(requestDTO.title(), requestDTO.content());
 
         // 유지할 이미지를 제외한 모든 이미지 DB와 S3에서 삭제
         List<PostImage> postImages = post.getPostImages();
@@ -727,7 +743,7 @@ public class PostService {
 
     private void checkPostAuthority(Long writerId, User accessor){
         // 관리자면 수정 가능
-        if(accessor.getRole().equals(UserRole.ADMIN)){
+        if(accessor.getRole().equals(UserRole.ADMIN) || accessor.getRole().equals(UserRole.SUPER)){
             return;
         }
 
@@ -738,7 +754,7 @@ public class PostService {
 
     private void checkCommentAuthority(Long writerId, User accessor) {
         // 관리자면 수정 가능
-        if(accessor.getRole().equals(UserRole.ADMIN)){
+        if(accessor.getRole().equals(UserRole.ADMIN) || accessor.getRole().equals(UserRole.SUPER)){
             return;
         }
 
