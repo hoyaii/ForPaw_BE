@@ -1,5 +1,5 @@
 # services.py
-from langchain_openai import OpenAI 
+from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import PCA
@@ -203,20 +203,22 @@ async def generate_animal_introduction(animal_id):
         "6. Please write a response using between 300 and 400 characters."
     )
 
-    llm = OpenAI(api_key=settings.OPENAI_API_KEY)
+    chatmodel = ChatOpenAI(
+        model="gpt-4o-mini", 
+        temperature=0.3, 
+        max_tokens=750, 
+        openai_api_key = settings.OPENAI_API_KEY
+        )
+    
     prompt_template = PromptTemplate(input_variables=["prompt"], template="{prompt}")
     formatted_prompt = prompt_template.format(prompt=prompt)
-    max_response_tokens = 750
 
-    response = llm.invoke(
-        formatted_prompt,
-        max_tokens=max_response_tokens,
-        temperature=0.3,
-        model="gpt-4o-mini"
-    ) 
+    # response.content 사용하여 메시지 내용 추출
+    response = chatmodel.invoke(formatted_prompt)
+    response_text = response.content 
     
     # 타이틀만 추출
-    response_lines = response.strip().split('\n')
+    response_lines = response_text.strip().split('\n')
     title = response_lines[0].replace("Title: ", "").strip()
     introduction = '\n'.join(response_lines[1:]).strip()
 
