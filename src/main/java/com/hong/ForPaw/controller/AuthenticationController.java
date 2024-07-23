@@ -101,4 +101,10 @@ public class AuthenticationController {
         AuthenticationResponse.FindSupportByIdDTO responseDTO = authenticationService.findSupportById(userDetails.getUser().getId(), inquiryId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
+
+    @PostMapping("/admin/supports/{inquiryId}/answer")
+    public ResponseEntity<?> answerInquiry(@RequestBody @Valid AuthenticationRequest.AnswerInquiryDTO requestDTO, @PathVariable Long inquiryId, @AuthenticationPrincipal CustomUserDetails userDetails){
+        AuthenticationResponse.AnswerInquiryDTO responseDTO = authenticationService.answerInquiry(requestDTO, userDetails.getUser().getId(), inquiryId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
 }

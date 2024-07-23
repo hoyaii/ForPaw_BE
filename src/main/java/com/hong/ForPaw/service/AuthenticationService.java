@@ -403,7 +403,7 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public void answerInquiry(AuthenticationRequest.AnswerInquiryDTO requestDTO, Long adminId, Long inquiryId){
+    public AuthenticationResponse.AnswerInquiryDTO answerInquiry(AuthenticationRequest.AnswerInquiryDTO requestDTO, Long adminId, Long inquiryId){
         checkAdminAuthority(adminId);
 
         Inquiry inquiry = inquiryRepository.findById(inquiryId).orElseThrow(
@@ -418,6 +418,8 @@ public class AuthenticationService {
                 .build();
 
         inquiryAnswerRepository.save(answer);
+
+        return new AuthenticationResponse.AnswerInquiryDTO(inquiryId);
     }
 
     private String getPreviousHourKey() {
@@ -450,10 +452,6 @@ public class AuthenticationService {
         if (!role.equals(UserRole.SUPER)) {
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
-    }
-
-    private Pageable createPageable(int page, int size, String sortProperty) {
-        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 
     private void checkAdminPrivileges(UserRole adminRole, UserRole userRole) {

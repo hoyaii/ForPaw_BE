@@ -8,6 +8,8 @@ import com.hong.ForPaw.domain.Report.ContentType;
 import com.hong.ForPaw.domain.Report.ReportStatus;
 import com.hong.ForPaw.domain.Report.ReportType;
 import com.hong.ForPaw.domain.User.UserRole;
+import jakarta.validation.constraints.NotBlank;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -96,4 +98,6 @@ public class AuthenticationResponse {
                                      String questionerNick,
                                      String title,
                                      String description){}
+
+    public record AnswerInquiryDTO(Long id){}
 }
