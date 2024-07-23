@@ -19,7 +19,7 @@ public class AlarmRequest {
     public record AlarmDTO(Long receiverId,
                            String content,
                            String redirectURL,
-                           @JsonProperty("date")
+                           @JsonProperty("meetDate")
                            @JsonSerialize(using = LocalDateTimeSerializer.class)
                            @JsonDeserialize(using = LocalDateTimeDeserializer.class)
                            @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS")

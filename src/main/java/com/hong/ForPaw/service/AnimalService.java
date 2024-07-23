@@ -610,9 +610,9 @@ public class AnimalService {
         return animalIds;
     }
 
-    // sort가 date, dog, cat, other이 아니면 에러 발생
+    // sort가 meetDate, dog, cat, other이 아니면 에러 발생
     private AnimalType converStringToAnimalType(String sort) {
-        if(sort.equals("date")) {
+        if(sort.equals("meetDate")) {
             return null;
         }
 

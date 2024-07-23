@@ -5,7 +5,6 @@ import com.hong.ForPaw.domain.Group.GroupRole;
 import com.hong.ForPaw.domain.Province;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -72,7 +71,7 @@ public class GroupRequest {
             //@Pattern(regexp = "^[a-zA-Z0-9가-힣]+$", message = "모임 이름에는 띄어쓰기를 사용할 수 없습니다.")
             String name,
             @NotNull(message = "모임 날짜를 입력해주세요.")
-            LocalDateTime date,
+            LocalDateTime meetDate,
             @NotBlank(message = "모임 장소를 입력해주세요.")
             String location,
             @NotNull(message = "모임 비용을 입력해주세요.")

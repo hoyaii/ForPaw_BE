@@ -322,7 +322,7 @@ public class GroupService {
                     return new GroupResponse.MeetingDTO(
                             meeting.getId(),
                             meeting.getName(),
-                            meeting.getDate(),
+                            meeting.getMeetDate(),
                             meeting.getLocation(),
                             meeting.getCost(),
                             meeting.getParticipantNum(),
@@ -352,7 +352,7 @@ public class GroupService {
                 .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL()))
                 .toList();
 
-        return new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
+        return new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getMeetDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
     }
 
     @Transactional
@@ -594,6 +594,11 @@ public class GroupService {
         // 존재하지 않는 그룹이면 에러
         checkGroupExist(groupId);
 
+        // 이름 중복 체크
+        if(meetingRepository.existsByNameAndGroupId(requestDTO.name(), groupId)){
+            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
+        }
+
         // 권한 체크 (메니저급만 생성 가능)
         checkAdminAuthority(groupId, userId);
 
@@ -648,7 +653,7 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
         );
 
-        meeting.updateMeeting(requestDTO.name(), requestDTO.date(), requestDTO.location(), requestDTO.cost(), requestDTO.maxNum(), requestDTO.description(), requestDTO.profileURL());
+        meeting.updateMeeting(requestDTO.name(), requestDTO.meetDate(), requestDTO.location(), requestDTO.cost(), requestDTO.maxNum(), requestDTO.description(), requestDTO.profileURL());
     }
 
     @Transactional

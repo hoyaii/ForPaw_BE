@@ -40,7 +40,7 @@ public class Meeting extends TimeStamp {
     private String name;
 
     @Column
-    private LocalDateTime date;
+    private LocalDateTime meetDate;
 
     @Column
     private String location;
@@ -65,7 +65,7 @@ public class Meeting extends TimeStamp {
         this.group = group;
         this.creator = creator;
         this.name = name;
-        this.date = date;
+        this.meetDate = date;
         this.location = location;
         this.cost = cost;
         this.maxNum = maxNum;
@@ -75,7 +75,7 @@ public class Meeting extends TimeStamp {
 
     public void updateMeeting(String name, LocalDateTime date, String location, Long cost, Integer maxNum, String description, String profileURL){
         this.name = name;
-        this.date = date;
+        this.meetDate = date;
         this.location = location;
         this.cost = cost;
         this.maxNum = maxNum;
