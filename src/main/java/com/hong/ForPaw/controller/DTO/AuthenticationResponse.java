@@ -91,4 +91,9 @@ public class AuthenticationResponse {
                              InquiryType type,
                              String title,
                              InquiryStatus status){}
+
+    public record FindSupportByIdDTO(Long id,
+                                     String questionerNick,
+                                     String title,
+                                     String description){}
 }

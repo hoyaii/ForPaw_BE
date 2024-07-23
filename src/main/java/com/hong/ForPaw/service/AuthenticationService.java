@@ -9,6 +9,7 @@ import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Apply.Apply;
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Authentication.Visit;
+import com.hong.ForPaw.domain.Inquiry.Inquiry;
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
 import com.hong.ForPaw.domain.Report.Report;
 import com.hong.ForPaw.domain.Report.ReportStatus;
@@ -378,6 +379,24 @@ public class AuthenticationService {
                 .toList();
 
         return new AuthenticationResponse.FindSupportListDTO(inquiryDTOS);
+    }
+
+    @Transactional
+    public AuthenticationResponse.FindSupportByIdDTO findSupportById(Long adminId, Long inquiryId){
+        checkAdminAuthority(adminId);
+
+        Inquiry inquiry = inquiryRepository.findById(inquiryId).orElseThrow(
+                () -> new CustomException(ExceptionCode.INQUIRY_NOT_FOUND)
+        );
+
+        AuthenticationResponse.FindSupportByIdDTO inquiryDTO = new AuthenticationResponse.FindSupportByIdDTO(
+                inquiry.getId(),
+                inquiry.getQuestioner().getNickName(),
+                inquiry.getTitle(),
+                inquiry.getDescription()
+        );
+
+        return inquiryDTO;
     }
 
     private String getPreviousHourKey() {
