@@ -35,4 +35,8 @@ public class AuthenticationRequest {
             Boolean hasSuspension,
             @NotNull(message = "정지 기간을 입력해주세요.")
             Long suspensionDays){}
+
+    public record AnswerInquiryDTO(
+            @NotBlank(message = "답변 내용을 입력해주세요.")
+            String content){}
 }

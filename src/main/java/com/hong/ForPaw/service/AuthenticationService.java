@@ -10,6 +10,7 @@ import com.hong.ForPaw.domain.Apply.Apply;
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Authentication.Visit;
 import com.hong.ForPaw.domain.Inquiry.Inquiry;
+import com.hong.ForPaw.domain.Inquiry.InquiryAnswer;
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
 import com.hong.ForPaw.domain.Report.Report;
 import com.hong.ForPaw.domain.Report.ReportStatus;
@@ -19,6 +20,7 @@ import com.hong.ForPaw.domain.User.UserStatus;
 import com.hong.ForPaw.repository.Animal.AnimalRepository;
 import com.hong.ForPaw.repository.ApplyRepository;
 import com.hong.ForPaw.repository.Authentication.VisitRepository;
+import com.hong.ForPaw.repository.Inquiry.InquiryAnswerRepository;
 import com.hong.ForPaw.repository.Inquiry.InquiryRepository;
 import com.hong.ForPaw.repository.Post.CommentRepository;
 import com.hong.ForPaw.repository.Post.PostRepository;
@@ -56,6 +58,7 @@ public class AuthenticationService {
     private final ReportRepository reportRepository;
     private final ApplyRepository applyRepository;
     private final InquiryRepository inquiryRepository;
+    private final InquiryAnswerRepository inquiryAnswerRepository;
     private final EntityManager entityManager;
     private final RedisService redisService;
     private final UserStatusRepository userStatusRepository;
@@ -397,6 +400,24 @@ public class AuthenticationService {
         );
 
         return findSupportByIdDTO;
+    }
+
+    @Transactional
+    public void answerInquiry(AuthenticationRequest.AnswerInquiryDTO requestDTO, Long adminId, Long inquiryId){
+        checkAdminAuthority(adminId);
+
+        Inquiry inquiry = inquiryRepository.findById(inquiryId).orElseThrow(
+                () -> new CustomException(ExceptionCode.INQUIRY_NOT_FOUND)
+        );
+
+        User adminRef = entityManager.getReference(User.class, adminId);
+        InquiryAnswer answer = InquiryAnswer.builder()
+                .answerer(adminRef)
+                .inquiry(inquiry)
+                .content(requestDTO.content())
+                .build();
+
+        inquiryAnswerRepository.save(answer);
     }
 
     private String getPreviousHourKey() {

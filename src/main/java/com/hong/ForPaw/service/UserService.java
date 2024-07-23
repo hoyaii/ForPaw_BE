@@ -9,7 +9,7 @@ import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.core.utils.MailTemplate;
 import com.hong.ForPaw.domain.Authentication.LoginAttempt;
 import com.hong.ForPaw.domain.Group.GroupRole;
-import com.hong.ForPaw.domain.Inquiry.Answer;
+import com.hong.ForPaw.domain.Inquiry.InquiryAnswer;
 import com.hong.ForPaw.domain.Inquiry.Inquiry;
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
 import com.hong.ForPaw.domain.User.User;
@@ -24,7 +24,7 @@ import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Group.FavoriteGroupRepository;
 import com.hong.ForPaw.repository.Group.GroupUserRepository;
 import com.hong.ForPaw.repository.Group.MeetingUserRepository;
-import com.hong.ForPaw.repository.Inquiry.AnswerRepository;
+import com.hong.ForPaw.repository.Inquiry.InquiryAnswerRepository;
 import com.hong.ForPaw.repository.Inquiry.InquiryRepository;
 import com.hong.ForPaw.repository.Post.CommentLikeRepository;
 import com.hong.ForPaw.repository.Post.PostLikeRepository;
@@ -77,7 +77,7 @@ public class UserService {
     private final PostLikeRepository postLikeRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final InquiryRepository inquiryRepository;
-    private final AnswerRepository answerRepository;
+    private final InquiryAnswerRepository answerRepository;
     private final LoginAttemptRepository loginAttemptRepository;
     private final UserStatusRepository userStatusRepository;
     private final VisitRepository visitRepository;
@@ -566,13 +566,13 @@ public class UserService {
         checkInquiryAuthority(userId, inquiry.getQuestioner());
 
         // 답변
-        List<Answer> answers = answerRepository.findAllByInquiryId(inquiryId);
+        List<InquiryAnswer> answers = answerRepository.findAllByInquiryId(inquiryId);
         List<UserResponse.AnswerDTO> answerDTOS = answers.stream()
                 .map(answer -> new UserResponse.AnswerDTO(
                         answer.getId(),
                         answer.getContent(),
                         answer.getCreatedDate(),
-                        answer.getUser().getName()))
+                        answer.getAnswerer().getName()))
                 .toList();
 
         return new UserResponse.FindInquiryByIdDTO(inquiry.getTitle(), inquiry.getDescription(), inquiry.getStatus(), inquiry.getCreatedDate(), answerDTOS);
