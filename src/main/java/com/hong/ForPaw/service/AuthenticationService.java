@@ -158,7 +158,7 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public AuthenticationResponse.FindUserListDTO findUserList(Long adminId, int page){
+    public AuthenticationResponse.FindUserListDTO findUserList(Long adminId, Pageable pageable){
         checkAdminAuthority(adminId);
 
         // <userId, 가장 최근의 Visit 객체> 맵
@@ -186,7 +186,6 @@ public class AuthenticationService {
                         Collectors.counting()
                 ));
 
-        Pageable pageable =createPageable(page, 5, SORT_BY_CREATED_DATE);
         Page<User> users = userRepository.findAll(pageable);
 
         List<AuthenticationResponse.ApplicantDTO> applicantDTOS = users.getContent().stream()
@@ -268,10 +267,9 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public AuthenticationResponse.FindApplyListDTO findApplyList(Long adminId, ApplyStatus status, int page){
+    public AuthenticationResponse.FindApplyListDTO findApplyList(Long adminId, ApplyStatus status, Pageable pageable){
         checkAdminAuthority(adminId);
 
-        Pageable pageable = createPageable(page, 5, SORT_BY_CREATED_DATE);
         Page<Apply> applyPage = applyRepository.findAllByStatusWithAnimal(status, pageable);
 
         // Apply의 animalId를 리스트로 만듦 => shleter와 fetch 조인해서 Animal 객체를 조회 => <animalId, Anmal 객체> 맵 생성
@@ -322,10 +320,9 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public AuthenticationResponse.FindReportListDTO findReportList(Long adminId, ReportStatus status, int page){
+    public AuthenticationResponse.FindReportListDTO findReportList(Long adminId, ReportStatus status, Pageable pageable){
         checkAdminAuthority(adminId);
 
-        Pageable pageable =createPageable(page, 5, SORT_BY_CREATED_DATE);
         List<AuthenticationResponse.ReportDTO> reportDTOS = reportRepository.findAllByStatus(status, pageable).getContent().stream()
                 .map(report -> new AuthenticationResponse.ReportDTO(
                         report.getId(),
@@ -366,10 +363,9 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public AuthenticationResponse.FindSupportListDTO findSupportList(Long adminId, InquiryStatus status, int page){
+    public AuthenticationResponse.FindSupportListDTO findSupportList(Long adminId, InquiryStatus status, Pageable pageable){
         checkAdminAuthority(adminId);
 
-        Pageable pageable =createPageable(page, 5, SORT_BY_CREATED_DATE);
         List<AuthenticationResponse.InquiryDTO> inquiryDTOS = inquiryRepository.findByStatusWithUser(status, pageable).getContent().stream()
                 .map(inquiry -> new AuthenticationResponse.InquiryDTO(
                         inquiry.getId(),

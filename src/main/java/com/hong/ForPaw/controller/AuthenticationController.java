@@ -12,6 +12,9 @@ import com.hong.ForPaw.service.AuthenticationService;
 import com.hong.ForPaw.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -33,8 +36,8 @@ public class AuthenticationController {
     }
 
     @GetMapping("/admin/user")
-    public ResponseEntity<?> findUserList(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam int page) {
-        AuthenticationResponse.FindUserListDTO responseDTO = authenticationService.findUserList(userDetails.getUser().getId(), page);
+    public ResponseEntity<?> findUserList(@PageableDefault(size = 5, sort = "id", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        AuthenticationResponse.FindUserListDTO responseDTO = authenticationService.findUserList(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -64,8 +67,8 @@ public class AuthenticationController {
     }
 
     @GetMapping("/admin/adoption")
-    public ResponseEntity<?> findApplyList(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam(required = false) ApplyStatus status, @RequestParam int page){
-        AuthenticationResponse.FindApplyListDTO responseDTO = authenticationService.findApplyList(userDetails.getUser().getId(), status, page);
+    public ResponseEntity<?> findApplyList(@RequestParam(required = false) ApplyStatus status, @PageableDefault(size = 5, sort = "id", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+        AuthenticationResponse.FindApplyListDTO responseDTO = authenticationService.findApplyList(userDetails.getUser().getId(), status, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -76,8 +79,8 @@ public class AuthenticationController {
     }
 
     @GetMapping("/admin/reports")
-    public ResponseEntity<?> findReportList(@RequestParam(required = false) ReportStatus status, @RequestParam int page, @AuthenticationPrincipal CustomUserDetails userDetails){
-        AuthenticationResponse.FindReportListDTO responseDTO = authenticationService.findReportList(userDetails.getUser().getId(), status, page);
+    public ResponseEntity<?> findReportList(@RequestParam(required = false) ReportStatus status, @PageableDefault(size = 5, sort = "id", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+        AuthenticationResponse.FindReportListDTO responseDTO = authenticationService.findReportList(userDetails.getUser().getId(), status, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -88,8 +91,8 @@ public class AuthenticationController {
     }
 
     @GetMapping("/admin/supports")
-    public ResponseEntity<?> findSupportList(@RequestParam(required = false) InquiryStatus status, @RequestParam int page, @AuthenticationPrincipal CustomUserDetails userDetails){
-        AuthenticationResponse.FindSupportListDTO responseDTO = authenticationService.findSupportList(userDetails.getUser().getId(), status, page);
+    public ResponseEntity<?> findSupportList(@RequestParam(required = false) InquiryStatus status, @PageableDefault(size = 5, sort = "id", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+        AuthenticationResponse.FindSupportListDTO responseDTO = authenticationService.findSupportList(userDetails.getUser().getId(), status, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }
