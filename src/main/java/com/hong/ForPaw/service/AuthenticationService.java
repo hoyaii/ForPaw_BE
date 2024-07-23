@@ -389,14 +389,14 @@ public class AuthenticationService {
                 () -> new CustomException(ExceptionCode.INQUIRY_NOT_FOUND)
         );
 
-        AuthenticationResponse.FindSupportByIdDTO inquiryDTO = new AuthenticationResponse.FindSupportByIdDTO(
+        AuthenticationResponse.FindSupportByIdDTO findSupportByIdDTO = new AuthenticationResponse.FindSupportByIdDTO(
                 inquiry.getId(),
                 inquiry.getQuestioner().getNickName(),
                 inquiry.getTitle(),
                 inquiry.getDescription()
         );
 
-        return inquiryDTO;
+        return findSupportByIdDTO;
     }
 
     private String getPreviousHourKey() {

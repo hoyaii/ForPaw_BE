@@ -95,4 +95,10 @@ public class AuthenticationController {
         AuthenticationResponse.FindSupportListDTO responseDTO = authenticationService.findSupportList(userDetails.getUser().getId(), status, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
+
+    @GetMapping("/admin/supports/{inquiryId}")
+    public ResponseEntity<?> findSupportById(@PathVariable Long inquiryId, @AuthenticationPrincipal CustomUserDetails userDetails){
+        AuthenticationResponse.FindSupportByIdDTO responseDTO = authenticationService.findSupportById(userDetails.getUser().getId(), inquiryId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
 }
