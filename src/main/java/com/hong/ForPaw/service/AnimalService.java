@@ -609,14 +609,14 @@ public class AnimalService {
         return animalIds;
     }
 
-    // sort가 meetDate, dog, cat, other이 아니면 에러 발생
+    // sort가 date, dog, cat, other이 아니면 에러 발생
     private AnimalType converStringToAnimalType(String sort) {
-        if(sort.equals("meetDate")) {
+        if(sort.equals("date")) {
             return null;
         }
 
         return Optional.ofNullable(ANIMAL_TYPE_MAP.get(sort))
-                .orElseThrow(() -> new CustomException(ExceptionCode.BAD_APPROACH));
+                .orElseThrow(() -> new CustomException(ExceptionCode.WRONG_ANIMAL_TYPE));
     }
 
     private Long countActiveAnimals(AnimalDTO json) {

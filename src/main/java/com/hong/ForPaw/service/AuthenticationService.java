@@ -86,7 +86,7 @@ public class AuthenticationService {
         redisService.removeData(key);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public AuthenticationResponse.FindDashboardStatsDTO findDashboardStats(Long userId) {
         // 권한 체크
         checkAdminAuthority(userId);
@@ -163,7 +163,7 @@ public class AuthenticationService {
             dailyVisitorDTOS, hourlyVisitorDTOS, dailySummaryDTO);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public AuthenticationResponse.FindUserListDTO findUserList(Long adminId, Pageable pageable){
         checkAdminAuthority(adminId);
 
@@ -272,7 +272,7 @@ public class AuthenticationService {
         userStatus.updateForUnSuspend();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public AuthenticationResponse.FindApplyListDTO findApplyList(Long adminId, ApplyStatus status, Pageable pageable){
         checkAdminAuthority(adminId);
 
@@ -325,7 +325,7 @@ public class AuthenticationService {
         apply.updateApplyStatus(requestDTO.status());
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public AuthenticationResponse.FindReportListDTO findReportList(Long adminId, ReportStatus status, Pageable pageable){
         checkAdminAuthority(adminId);
 
@@ -374,7 +374,7 @@ public class AuthenticationService {
         report.updateStatus(ReportStatus.PROCESSED);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public AuthenticationResponse.FindSupportListDTO findSupportList(Long adminId, InquiryStatus status, Pageable pageable){
         checkAdminAuthority(adminId);
 
@@ -392,7 +392,7 @@ public class AuthenticationService {
         return new AuthenticationResponse.FindSupportListDTO(inquiryDTOS);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public AuthenticationResponse.FindSupportByIdDTO findSupportById(Long adminId, Long inquiryId){
         checkAdminAuthority(adminId);
 
