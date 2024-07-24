@@ -55,7 +55,7 @@ public enum ExceptionCode {
     ANIMAL_ALREADY_APPLY(HttpStatus.BAD_REQUEST, "이미 지원하였습니다."),
     APPLY_NOT_FOUND(HttpStatus.BAD_REQUEST, "지원서가 존재하지 않습니다."),
     SHELTER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 보호소를 찾을 수 없습니다."),
-    WRONG_ANIMAL_TYPE(HttpStatus.BAD_REQUEST, "잘못된 sort 타입 입니다. (meetDate, dog, cat, other)"),
+    WRONG_ANIMAL_TYPE(HttpStatus.BAD_REQUEST, "잘못된 sort 타입 입니다. (date, dog, cat, other)"),
 
     // 그룹 관련 에러
     GROUP_NAME_EXIST(HttpStatus.BAD_REQUEST, "이미 존재하는 그룹 이름입니다."),

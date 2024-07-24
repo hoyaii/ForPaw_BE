@@ -37,6 +37,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -68,7 +69,6 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final AlarmRepository alarmRepository;
-    private final ApplyRepository applyRepository;
     private final GroupUserRepository groupUserRepository;
     private final MeetingUserRepository meetingUserRepository;
     private final ChatUserRepository chatUserRepository;
@@ -286,6 +286,7 @@ public class UserService {
 
     // 중복 여부 확인 => 만약 사용 가능한 메일이면, 코드 전송
     @Transactional
+    @Async
     public void checkEmailAndSendCode(UserRequest.EmailDTO requestDTO){
         // 가입한 이메일이 존재 한다면
         //if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
@@ -311,11 +312,12 @@ public class UserService {
 
     @Transactional
     public void checkNick(UserRequest.CheckNickDTO requestDTO){
-        //if(userRepository.existsByNickWithRemoved(requestDTO.nickName()))
-        //    throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
+        if(userRepository.existsByNickWithRemoved(requestDTO.nickName()))
+            throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
     }
 
     @Transactional
+    @Async
     public void sendRecoveryCode(UserRequest.EmailDTO requestDTO){
         // 가입된 계정이 아니라면
         if(userRepository.findByEmail(requestDTO.email()).isEmpty())
@@ -610,21 +612,25 @@ public class UserService {
         return loginFailNum;
     }
 
+    @Async
     public String sendCodeByMail(String toEmail) {
         String verificationCode = generateVerificationCode();
         sendMail(toEmail, MailTemplate.VERIFICATION_CODE, verificationCode);
         return verificationCode;
     }
 
+    @Async
     public void sendPasswordByMail(String toEmail, String password) {
         sendMail(toEmail, MailTemplate.TEMPORARY_PASSWORD, password);
     }
 
+    //@Async
     public void sendAccountSuspensionByMail(String toEmail) {
         sendMail(toEmail, MailTemplate.ACCOUNT_SUSPENSION);
     }
 
-    private void sendMail(String toEmail, MailTemplate template, String... args) {
+    @Async
+    public void sendMail(String toEmail, MailTemplate template, String... args) {
         // template에서 subject와 text 추출
         String subject = template.getSubject();
         String text = template.formatText(args);
