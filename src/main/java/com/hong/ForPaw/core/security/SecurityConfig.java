@@ -41,11 +41,6 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(AuthenticationManager authenticationManager) {
-        return new JwtAuthenticationFilter(authenticationManager, redisService);
-    }
-
-    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 // CSRF 해제
@@ -87,7 +82,7 @@ public class SecurityConfig {
                 )
 
                 // 필터 추가
-                .addFilter(jwtAuthenticationFilter(authenticationManager(http)));
+                .addFilter(new JwtAuthenticationFilter(authenticationManager(http), redisService));
 
         return http.build();
     }
