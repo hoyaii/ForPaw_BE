@@ -23,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -139,7 +140,7 @@ public class PostService {
         return new PostResponse.CreateAnswerDTO(post.getId());
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PostResponse.FindAdoptionPostListDTO findAdoptionPostList(Integer page, String sort) {
         List<PostResponse.PostDTO> postDTOS;
 
@@ -156,7 +157,7 @@ public class PostService {
         return new PostResponse.FindAdoptionPostListDTO(postDTOS);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PostResponse.FindFosteringPostListDTO findFosteringPostList(Integer page, String sort) {
         List<PostResponse.PostDTO> postDTOS;
 
@@ -173,7 +174,7 @@ public class PostService {
         return new PostResponse.FindFosteringPostListDTO(postDTOS);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PostResponse.FindQnaPostListDTO findQuestionPostList(Integer page){
         Pageable pageable = createPageable(page, 5, SORT_BY_CREATED_DATE);
 
@@ -193,7 +194,7 @@ public class PostService {
         return new PostResponse.FindQnaPostListDTO(qnaDTOS);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PostResponse.FindPostByIdDTO findPostById(Long postId, Long userId){
         // user, postImages를 패치조인 해서 조회
         Post post = postRepository.findById(postId).orElseThrow(
@@ -254,19 +255,13 @@ public class PostService {
             likeNum = post.getLikeNum();
         }
 
-        // 게시글 읽음 처리
-        User userRef = entityManager.getReference(User.class, userId);
-        PostReadStatus postReadStatus = PostReadStatus.builder()
-                .post(post)
-                .user(userRef)
-                .build();
-
-        postReadStatusRepository.save(postReadStatus);
+        // 게시글 읽음 처리 (새로운 트랜잭션)
+        updatePostReadStatus(post, userId);
 
         return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, postImageDTOS, commentDTOS);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PostResponse.FIndQnaByIdDTO findQnaById(Long postId){
         // user, postImages를 패치조인 해서 조회
         Post post = postRepository.findById(postId).orElseThrow(
@@ -646,6 +641,17 @@ public class PostService {
         // 인기 임시보호 글 업데이트
         List<Post> fosteringPosts = postRepository.findAllByDate(startOfToday, endOfToday, PostType.FOSTERING);
         processPopularPosts(fosteringPosts, PostType.FOSTERING);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    private void updatePostReadStatus(Post post, Long userId) {
+        User userRef = entityManager.getReference(User.class, userId);
+        PostReadStatus postReadStatus = PostReadStatus.builder()
+                .post(post)
+                .user(userRef)
+                .build();
+
+        postReadStatusRepository.save(postReadStatus);
     }
 
     private void processPopularPosts(List<Post> posts, PostType postType){
