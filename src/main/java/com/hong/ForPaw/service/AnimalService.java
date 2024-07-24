@@ -192,7 +192,7 @@ public class AnimalService {
                 .subscribe();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public AnimalResponse.FindAnimalListDTO findAnimalList(Integer page, String sort, Long userId){
         // sort 파라미터를 AnimalType으로 변환
         AnimalType animalType = converStringToAnimalType(sort);
@@ -233,13 +233,13 @@ public class AnimalService {
         return new AnimalResponse.FindAnimalListDTO(animalDTOS, isLastPage);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public AnimalResponse.FindRecommendedAnimalList findRecommendedAnimalList(Long userId){
         // 추천 동물 ID 목록
         List<Long> recommendedAnimalIds = getRecommendedAnimalIdList(userId);
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
 
-        List<AnimalResponse.AnimalDTO> animalDTOS =animalRepository.findAllByIds(recommendedAnimalIds).stream()
+        List<AnimalResponse.AnimalDTO> animalDTOS = animalRepository.findAllByIds(recommendedAnimalIds).stream()
                 .map(animal -> {
                     Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
 
@@ -264,7 +264,7 @@ public class AnimalService {
         return new AnimalResponse.FindRecommendedAnimalList(animalDTOS);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public AnimalResponse.FindLikeAnimalListDTO findLikeAnimalList(Integer page, Long userId){
         Pageable pageable = createPageable(page, 5, SORT_BY_ID);
         Page<Animal> animalPage = favoriteAnimalRepository.findFavoriteAnimalByUserId(userId, pageable);
@@ -299,7 +299,7 @@ public class AnimalService {
         return new AnimalResponse.FindLikeAnimalListDTO(animalDTOS, isLastPage);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public AnimalResponse.FindAnimalByIdDTO findAnimalById(Long animalId, Long userId){
         // 로그인을 한 경우, 추천을 위해 검색한 동물의 id 저장 (5개까지만 저장된다)
         if(userId != null){
@@ -406,7 +406,7 @@ public class AnimalService {
         return new AnimalResponse.CreateApplyDTO(apply.getId());
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public AnimalResponse.FindApplyListDTO findApplyList(Long userId){
         List<Apply> applies = applyRepository.findAllByUserId(userId);
 
