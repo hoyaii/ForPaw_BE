@@ -610,7 +610,7 @@ public class GroupService {
                 .group(groupRef)
                 .creator(userRef)
                 .name(requestDTO.name())
-                .date(requestDTO.date())
+                .meetDate(requestDTO.meetDate())
                 .location(requestDTO.location())
                 .cost(requestDTO.cost())
                 .maxNum(requestDTO.maxNum())
@@ -640,6 +640,18 @@ public class GroupService {
         }
         
         return new GroupResponse.CreateMeetingDTO(meeting.getId());
+    }
+
+    @Scheduled(cron = "0 0 0 * * *") // 매일 자정에 실행
+    @Transactional
+    public void deleteExpiredMeetings() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Meeting> expiredMeetings = meetingRepository.findAllByMeetDateBefore(now);
+
+        expiredMeetings.forEach(meeting -> {
+            meetingUserRepository.deleteAllByMeetingId(meeting.getId());
+            meetingRepository.deleteById(meeting.getId());
+        });
     }
 
     @Transactional

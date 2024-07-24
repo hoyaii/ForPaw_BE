@@ -61,11 +61,11 @@ public class Meeting extends TimeStamp {
     private Long participantNum = 0L;
 
     @Builder
-    public Meeting(Group group, User creator, String name, LocalDateTime date, String location, Long cost, Integer maxNum, String description, String profileURL) {
+    public Meeting(Group group, User creator, String name, LocalDateTime meetDate, String location, Long cost, Integer maxNum, String description, String profileURL) {
         this.group = group;
         this.creator = creator;
         this.name = name;
-        this.meetDate = date;
+        this.meetDate = meetDate;
         this.location = location;
         this.cost = cost;
         this.maxNum = maxNum;
@@ -73,9 +73,9 @@ public class Meeting extends TimeStamp {
         this.profileURL = profileURL;
     }
 
-    public void updateMeeting(String name, LocalDateTime date, String location, Long cost, Integer maxNum, String description, String profileURL){
+    public void updateMeeting(String name, LocalDateTime meetDate, String location, Long cost, Integer maxNum, String description, String profileURL){
         this.name = name;
-        this.meetDate = date;
+        this.meetDate = meetDate;
         this.location = location;
         this.cost = cost;
         this.maxNum = maxNum;

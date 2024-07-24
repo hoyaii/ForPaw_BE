@@ -97,8 +97,7 @@ public class AuthenticationService {
         Long activeUsersNum = userRepository.countActiveUsers();
         Long inActiveUsersNum = userRepository.countInActiveUsers();
 
-        AuthenticationResponse.UserStatsDTO userStatsDTO = new AuthenticationResponse.UserStatsDTO(
-            activeUsersNum, inActiveUsersNum);
+        AuthenticationResponse.UserStatsDTO userStatsDTO = new AuthenticationResponse.UserStatsDTO(activeUsersNum, inActiveUsersNum);
 
         // 유기 동물 통계
         Long waitingForAdoptionNum = animalRepository.countAnimal();
@@ -124,12 +123,10 @@ public class AuthenticationService {
                 Collectors.counting()
             ));
 
-        List<AuthenticationResponse.DailyVisitorDTO> dailyVisitorDTOS = dailyVisitors.entrySet()
-            .stream()
-            .map(entry -> new AuthenticationResponse.DailyVisitorDTO(entry.getKey(),
-                entry.getValue()))
-            .sorted(Comparator.comparing(AuthenticationResponse.DailyVisitorDTO::date))
-            .collect(Collectors.toList());
+        List<AuthenticationResponse.DailyVisitorDTO> dailyVisitorDTOS = dailyVisitors.entrySet().stream()
+                .map(entry -> new AuthenticationResponse.DailyVisitorDTO(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparing(AuthenticationResponse.DailyVisitorDTO::date))
+                .collect(Collectors.toList());
 
         // 시간별 방문자 수 집계 (오늘 날짜)
         Map<LocalTime, Long> hourlyVisitors = visits.stream()
@@ -139,12 +136,10 @@ public class AuthenticationService {
                 Collectors.counting()
             ));
 
-        List<AuthenticationResponse.HourlyVisitorDTO> hourlyVisitorDTOS = hourlyVisitors.entrySet()
-            .stream()
-            .map(entry -> new AuthenticationResponse.HourlyVisitorDTO(
-                LocalDateTime.of(LocalDate.now(), entry.getKey()), entry.getValue()))
-            .sorted(Comparator.comparing(AuthenticationResponse.HourlyVisitorDTO::hour))
-            .collect(Collectors.toList());
+        List<AuthenticationResponse.HourlyVisitorDTO> hourlyVisitorDTOS = hourlyVisitors.entrySet().stream()
+                .map(entry -> new AuthenticationResponse.HourlyVisitorDTO(LocalDateTime.of(LocalDate.now(), entry.getKey()), entry.getValue()))
+                .sorted(Comparator.comparing(AuthenticationResponse.HourlyVisitorDTO::hour))
+                .collect(Collectors.toList());
 
         // 오늘 발생한 이벤트 요약
         Long entryNum = userRepository.countALlWithinDate(nowDateOnly);
@@ -153,14 +148,13 @@ public class AuthenticationService {
         Long newAdoptApplicationNum = applyRepository.countProcessingWithinDate(nowDateOnly);
 
         AuthenticationResponse.DailySummaryDTO dailySummaryDTO = new AuthenticationResponse.DailySummaryDTO(
-            entryNum,
-            newPostNum,
-            newCommentNum,
-            newAdoptApplicationNum
+                entryNum,
+                newPostNum,
+                newCommentNum,
+                newAdoptApplicationNum
         );
 
-        return new AuthenticationResponse.FindDashboardStatsDTO(userStatsDTO, animalStatsDTO,
-            dailyVisitorDTOS, hourlyVisitorDTOS, dailySummaryDTO);
+        return new AuthenticationResponse.FindDashboardStatsDTO(userStatsDTO, animalStatsDTO, dailyVisitorDTOS, hourlyVisitorDTOS, dailySummaryDTO);
     }
 
     @Transactional(readOnly = true)

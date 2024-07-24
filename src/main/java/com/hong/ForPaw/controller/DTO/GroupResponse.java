@@ -87,7 +87,7 @@ public class GroupResponse {
 
     public record MeetingDTO(Long id,
                              String name,
-                             LocalDateTime date,
+                             LocalDateTime meetDate,
                              String location,
                              Long cost,
                              Long participantNum,

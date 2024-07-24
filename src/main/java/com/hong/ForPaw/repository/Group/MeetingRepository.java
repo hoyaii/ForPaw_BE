@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -32,4 +33,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
     @Query("SELECT COUNT(m) > 0 FROM Meeting m WHERE m.name = :name AND m.group.id = :groupId")
     boolean existsByNameAndGroupId(@Param("name") String name, @Param("groupId") Long groupId);
+
+    @Query("SELECT m FROM Meeting m WHERE m.meetDate < :date")
+    List<Meeting> findAllByMeetDateBefore(@Param("date") LocalDateTime date);
 }
