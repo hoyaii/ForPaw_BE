@@ -194,7 +194,7 @@ public class PostService {
         return new PostResponse.FindQnaPostListDTO(qnaDTOS);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PostResponse.FindPostByIdDTO findPostById(Long postId, Long userId){
         // user, postImages를 패치조인 해서 조회
         Post post = postRepository.findById(postId).orElseThrow(

@@ -120,7 +120,7 @@ public class GroupService {
     }
 
     // 수정 화면에서 사용하는 API
-    @Transactional
+    @Transactional(readOnly = true)
     public GroupResponse.FindGroupByIdDTO findGroupById(Long groupId, Long userId){
         // 조회 권한 체크
         checkAdminAuthority(groupId, userId);
@@ -149,7 +149,7 @@ public class GroupService {
         group.updateInfo(requestDTO.name(), requestDTO.province(), requestDTO.district(), group.getSubDistrict(), requestDTO.description(), requestDTO.category(), requestDTO.profileURL());
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public GroupResponse.FindAllGroupListDTO findGroupList(Long userId){
         Province province = DEFAULT_PROVINCE;
         District district = DEFAULT_DISTRICT;
@@ -185,7 +185,7 @@ public class GroupService {
         return new GroupResponse.FindAllGroupListDTO(recommendGroupDTOS, newGroupDTOS, localGroupDTOS, myGroupDTOS);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<GroupResponse.LocalGroupDTO> findLocalGroupList(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable){
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
@@ -218,7 +218,7 @@ public class GroupService {
     }
 
     // 새 그룹 추가 조회
-    @Transactional
+    @Transactional(readOnly = true)
     public List<GroupResponse.NewGroupDTO> findNewGroupList(Long userId, Province province, Pageable pageable){
         Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
 
@@ -241,7 +241,7 @@ public class GroupService {
     }
 
     // 내 그룹 추가 조회
-    @Transactional
+    @Transactional(readOnly = true)
     public List<GroupResponse.MyGroupDTO> findMyGroupList(Long userId, List<Long> likedGroupIds, Pageable pageable){
         List<Group> joinedGroups = groupUserRepository.findAllGroupByUserId(userId, pageable).getContent();
 
@@ -269,7 +269,7 @@ public class GroupService {
         return myGroupDTOS;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public GroupResponse.FindGroupDetailByIdDTO findGroupDetailById(Long userId, Long groupId){
         // 그룹이 존재하지 않으면 에러
         Group group = groupRepository.findById(groupId).orElseThrow(
@@ -292,7 +292,7 @@ public class GroupService {
     }
 
     // 공지사항 추가조회
-    @Transactional
+    @Transactional(readOnly = true)
     public List<GroupResponse.NoticeDTO> findNoticeList(Long userId, Long groupId, Pageable pageable){
         // 해당 유저가 읽은 post의 id 목록
         String key = POST_READ_KEY_PREFIX + userId;
@@ -312,7 +312,7 @@ public class GroupService {
         return noticeDTOS;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<GroupResponse.MeetingDTO> findMeetingList(Long groupId, Pageable pageable){
         Page<Meeting> meetings = meetingRepository.findByGroupId(groupId, pageable);
         List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
@@ -338,7 +338,7 @@ public class GroupService {
         return meetingDTOS;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public GroupResponse.MeetingDTO findMeetingById(Long meetingId, Long groupId, Long userId){
         // 그룹 존재 여부 체크
         checkGroupExist(groupId);
@@ -719,7 +719,7 @@ public class GroupService {
         meetingRepository.deleteById(meetingId);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<GroupResponse.RecommendGroupDTO> findRecommendGroupList(Long userId, Province province, List<Long> likedGroupIds){
         // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
         Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
