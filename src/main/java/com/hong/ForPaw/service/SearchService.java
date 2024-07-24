@@ -25,7 +25,7 @@ public class SearchService {
     private final PostRepository postRepository;
     private final GroupRepository groupRepository;
 
-    @Transactional
+    @Transactional(readOnly = true)
     public SearchResponse.SearchAllDTO searchAll(String keyword){
         checkKeywordEmpty(keyword);
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
@@ -42,7 +42,7 @@ public class SearchService {
         return new SearchResponse.SearchAllDTO(shelterDTOS, postDTOS, groupDTOS);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public SearchResponse.SearchShelterListDTO searchShelterList(String keyword){
         checkKeywordEmpty(keyword);
 
@@ -52,7 +52,7 @@ public class SearchService {
         return new SearchResponse.SearchShelterListDTO(shelterDTOS);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public SearchResponse.SearchPostListDTO searchPostList(String keyword){
         checkKeywordEmpty(keyword);
 
@@ -62,7 +62,7 @@ public class SearchService {
         return new SearchResponse.SearchPostListDTO(postDTOS);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public SearchResponse.SearchGroupListDTO searchGroupList(String keyword){
         checkKeywordEmpty(keyword);
 
