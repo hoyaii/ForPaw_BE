@@ -103,7 +103,6 @@ public class Post extends TimeStamp {
         this.parent =parent;
     }
 
-    public void updateReadCnt() { this.readCnt++; }
 
     public void updateHotPoint(Double hotPoint) { this.hotPoint = hotPoint;}
 }
