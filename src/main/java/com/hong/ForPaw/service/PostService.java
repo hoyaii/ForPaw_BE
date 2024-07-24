@@ -194,7 +194,6 @@ public class PostService {
         return new PostResponse.FindQnaPostListDTO(qnaDTOS);
     }
 
-    @Transactional(readOnly = true)
     public PostResponse.FindPostByIdDTO findPostById(Long postId, Long userId){
         // user, postImages를 패치조인 해서 조회
         Post post = postRepository.findById(postId).orElseThrow(
@@ -255,7 +254,7 @@ public class PostService {
             likeNum = post.getLikeNum();
         }
 
-        // 게시글 읽음 처리 (새로운 트랜잭션)
+        // 게시글 읽음 처리
         updatePostReadStatus(post, userId);
 
         return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, postImageDTOS, commentDTOS);
@@ -643,7 +642,6 @@ public class PostService {
         processPopularPosts(fosteringPosts, PostType.FOSTERING);
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     private void updatePostReadStatus(Post post, Long userId) {
         User userRef = entityManager.getReference(User.class, userId);
         PostReadStatus postReadStatus = PostReadStatus.builder()

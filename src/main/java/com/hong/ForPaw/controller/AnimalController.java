@@ -8,6 +8,9 @@ import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.service.AnimalService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -31,39 +34,27 @@ public class AnimalController {
 
     @GetMapping("/animals/recommend")
     public ResponseEntity<?> findRecommendedAnimalList(@AuthenticationPrincipal CustomUserDetails userDetails){
-        Long userId = Optional.ofNullable(userDetails)
-                .map(CustomUserDetails::getUser)
-                .map(User::getId)
-                .orElse(null);
-
+        Long userId = getUserIdSafely(userDetails);
         AnimalResponse.FindRecommendedAnimalList responseDTO = animalService.findRecommendedAnimalList(userId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/animals")
     public ResponseEntity<?> findAnimalList(@RequestParam("page") Integer page, @RequestParam("sort") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
-        Long userId = Optional.ofNullable(userDetails)
-                .map(CustomUserDetails::getUser)
-                .map(User::getId)
-                .orElse(null);
-
+        Long userId = getUserIdSafely(userDetails);
         AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(page, sort, userId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/animals/like")
-    public ResponseEntity<?> findLikeAnimalList(@RequestParam("page") Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
-        AnimalResponse.FindLikeAnimalListDTO responseDTO = animalService.findLikeAnimalList(page, userDetails.getUser().getId());
+    public ResponseEntity<?> findLikeAnimalList(@PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+        AnimalResponse.FindLikeAnimalListDTO responseDTO = animalService.findLikeAnimalList(pageable, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/animals/{animalId}")
     public ResponseEntity<?> findAnimalById(@PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails){
-        Long userId = Optional.ofNullable(userDetails)
-                .map(CustomUserDetails::getUser)
-                .map(User::getId)
-                .orElse(null);
-
+        Long userId = getUserIdSafely(userDetails);
         AnimalResponse.FindAnimalByIdDTO responseDTO = animalService.findAnimalById(animalId, userId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
@@ -97,5 +88,12 @@ public class AnimalController {
     public ResponseEntity<?> deleteApply(@PathVariable Long applyId, @AuthenticationPrincipal CustomUserDetails userDetails){
         animalService.deleteApply(applyId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
+    private Long getUserIdSafely(CustomUserDetails userDetails) {
+        return Optional.ofNullable(userDetails)
+                .map(CustomUserDetails::getUser)
+                .map(User::getId)
+                .orElse(null);
     }
 }

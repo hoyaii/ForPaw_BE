@@ -265,8 +265,7 @@ public class AnimalService {
     }
 
     @Transactional(readOnly = true)
-    public AnimalResponse.FindLikeAnimalListDTO findLikeAnimalList(Integer page, Long userId){
-        Pageable pageable = createPageable(page, 5, SORT_BY_ID);
+    public AnimalResponse.FindLikeAnimalListDTO findLikeAnimalList(Pageable pageable, Long userId){
         Page<Animal> animalPage = favoriteAnimalRepository.findFavoriteAnimalByUserId(userId, pageable);
         boolean isLastPage = !animalPage.hasNext();
 
