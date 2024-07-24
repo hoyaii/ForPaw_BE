@@ -45,7 +45,7 @@ public class ShelterController {
                 .map(User::getId)
                 .orElse(null);
 
-        ShelterResponse.FindShelterAnimalsByIdDTO responseDTO = shelterService.findShelterAnimalsById(shelterId, userId, page, sort);
+        ShelterResponse.FindShelterAnimalsByIdDTO responseDTO = shelterService.findShelterAnimalListById(shelterId, userId, page, sort);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }

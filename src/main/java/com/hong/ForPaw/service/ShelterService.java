@@ -102,7 +102,7 @@ public class ShelterService {
         return new ShelterResponse.FindShelterListDTO(shelterDTOS);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public ShelterResponse.FindShelterInfoByIdDTO findShelterInfoById(Long shelterId){
         // 보호소가 존재하지 않으면 에러
         Shelter shelter = shelterRepository.findById(shelterId).orElseThrow(
@@ -120,8 +120,8 @@ public class ShelterService {
         );
     }
 
-    @Transactional
-    public ShelterResponse.FindShelterAnimalsByIdDTO findShelterAnimalsById(Long shelterId, Long userId, Integer page, String sort){
+    @Transactional(readOnly = true)
+    public ShelterResponse.FindShelterAnimalsByIdDTO findShelterAnimalListById(Long shelterId, Long userId, Integer page, String sort){
         AnimalType animalType = converStringToAnimalType(sort);
         Pageable pageable = createPageable(page, 5, SORT_BY_CREATED_DATE);
 
