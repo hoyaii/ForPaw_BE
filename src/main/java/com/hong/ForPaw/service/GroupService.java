@@ -46,7 +46,6 @@ public class GroupService {
     private final MeetingUserRepository meetingUserRepository;
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
-    private final PostReadStatusRepository postReadStatusRepository;
     private final CommentRepository commentRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final ChatRoomRepository chatRoomRepository;
@@ -61,6 +60,7 @@ public class GroupService {
     private static final String SORT_BY_ID = "id";
     private static final String SORT_BY_LIKE_NUM = "likeNum";
     private static final String SORT_BY_PARTICIPANT_NUM = "participantNum";
+    private static final String POST_READ_KEY_PREFIX = "user:readPosts:";
 
     @Transactional
     public GroupResponse.CreateGroupDTO createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId){
@@ -295,7 +295,8 @@ public class GroupService {
     @Transactional
     public List<GroupResponse.NoticeDTO> findNoticeList(Long userId, Long groupId, Pageable pageable){
         // 해당 유저가 읽은 post의 id 목록
-        List<Long> postIds = userId != null ? postRepository.findAllPostIdByUserId(userId) : Collections.emptyList();
+        String key = POST_READ_KEY_PREFIX + userId;
+        Set<String> postIds = userId != null ? redisService.getAllElement(key) : Collections.emptySet();
 
         Page<Post> notices = postRepository.findByGroupId(groupId, pageable);
         List<GroupResponse.NoticeDTO> noticeDTOS = notices.getContent().stream()
@@ -304,7 +305,8 @@ public class GroupService {
                         notice.getUser().getNickName(),
                         notice.getCreatedDate(),
                         notice.getTitle(),
-                        postIds.contains(notice.getId())))
+                        postIds.contains(notice.getId().toString()))
+                )
                 .collect(Collectors.toList());
 
         return noticeDTOS;
@@ -545,7 +547,6 @@ public class GroupService {
 
         // 그룹과 관련된 게시글, 댓글 관련 데이터 삭제
         postLikeRepository.deleteAllByGroupId(groupId);
-        postReadStatusRepository.deleteAllByGroupId(groupId);
         commentLikeRepository.deleteAllByGroupId(groupId);
         commentRepository.deleteAllByGroupId(groupId);
         postRepository.deleteAllByGroupId(groupId);

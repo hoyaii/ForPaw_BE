@@ -26,15 +26,20 @@ public class RedisService {
         redisTemplate.opsForValue().set(buildKey(type, id), value);
     }
 
-    public void addSetElement(String key, Long userId) {
+    public void addSetElement(String key, Long value) {
         SetOperations<String, String> setOps = redisTemplate.opsForSet();
-        setOps.add(key, String.valueOf(userId));
+        setOps.add(key, String.valueOf(value));
     }
 
-    public void addSetElement(String key, Long userId, Long expirationTime) {
+    public void addSetElement(String key, Long value, Long expirationTime) {
         SetOperations<String, String> setOps = redisTemplate.opsForSet();
-        setOps.add(key, String.valueOf(userId));
+        setOps.add(key, String.valueOf(value));
         redisTemplate.expire(key, expirationTime, TimeUnit.SECONDS);
+    }
+
+    public Set<String> getAllElement(String key) {
+        SetOperations<String, String> setOps = redisTemplate.opsForSet();
+        return setOps.members(key);
     }
 
     public void addListElementWithLimit(String key, String value, Long limit) {

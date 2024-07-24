@@ -28,7 +28,6 @@ import com.hong.ForPaw.repository.Inquiry.InquiryAnswerRepository;
 import com.hong.ForPaw.repository.Inquiry.InquiryRepository;
 import com.hong.ForPaw.repository.Post.CommentLikeRepository;
 import com.hong.ForPaw.repository.Post.PostLikeRepository;
-import com.hong.ForPaw.repository.Post.PostReadStatusRepository;
 import com.hong.ForPaw.repository.UserRepository;
 import com.hong.ForPaw.repository.UserStatusRepository;
 import jakarta.persistence.EntityManager;
@@ -72,7 +71,6 @@ public class UserService {
     private final ApplyRepository applyRepository;
     private final GroupUserRepository groupUserRepository;
     private final MeetingUserRepository meetingUserRepository;
-    private final PostReadStatusRepository postReadStatusRepository;
     private final ChatUserRepository chatUserRepository;
     private final PostLikeRepository postLikeRepository;
     private final CommentLikeRepository commentLikeRepository;
@@ -476,7 +474,6 @@ public class UserService {
         commentLikeRepository.deleteAllByUserId(userId);
         favoriteAnimalRepository.deleteAllByUserId(userId);
         favoriteGroupRepository.deleteAllByGroupId(userId);
-        postReadStatusRepository.deleteAllByUserId(userId);
         chatUserRepository.deleteAllByUserId(userId);
         groupUserRepository.findAllByUserIdWithGroup(userId).forEach(
                 groupUser -> {

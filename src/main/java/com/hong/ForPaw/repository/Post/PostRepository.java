@@ -66,9 +66,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
     Optional<Post> findByIdWithUserAndParent(@Param("postId") Long postId);
 
-    @Query("SELECT prs.post.id FROM PostReadStatus prs WHERE prs.user.id = :userId")
-    List<Long> findAllPostIdByUserId(@Param("userId") Long userId);
-
     @Query("SELECT p.id FROM Post p WHERE p.removedAt IS NULL AND p.createdDate > :date")
     List<Long> findPostIdsWithinDate(LocalDateTime date);
 

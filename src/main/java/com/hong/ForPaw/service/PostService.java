@@ -43,7 +43,6 @@ public class PostService {
     private final PostRepository postRepository;
     private final PostImageRepository postImageRepository;
     private final PostLikeRepository postLikeRepository;
-    private final PostReadStatusRepository postReadStatusRepository;
     private final CommentRepository commentRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final ReportRepository reportRepository;
@@ -54,9 +53,11 @@ public class PostService {
     private final BrokerService brokerService;
     private final EntityManager entityManager;
     public static final Long POST_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
+    public static final Long POST_READ_EXP = 60L * 60 * 24 * 360; // 1년
     private static final String SORT_BY_CREATED_DATE = "createdDate";
     private static final String SORT_BY_POPULARITY = "likeNum";
     private static final String POST_SCREENED = "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.";
+    private static final String POST_READ_KEY_PREFIX = "user:readPosts:";
 
     @Transactional
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId){
@@ -225,8 +226,11 @@ public class PostService {
             likeNum = post.getLikeNum();
         }
 
-        // 게시글 읽음 처리
-        updatePostReadStatus(post, userId);
+        // 공지 사항의 경우, 게시글 읽음 여부를 저장 (1년동안)
+        if(post.getPostType().equals(PostType.NOTICE)){
+            String key = POST_READ_KEY_PREFIX + userId;
+            redisService.addSetElement(key, postId, POST_READ_EXP);
+        }
 
         return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, postImageDTOS, commentDTOS);
     }
@@ -337,7 +341,6 @@ public class PostService {
         );*/
 
         postLikeRepository.deleteAllByPostId(postId);
-        postReadStatusRepository.deleteAllByPostId(postId);
         commentLikeRepository.deleteAllByPostId(postId);
         popularPostRepository.deleteByPostId(postId);
         commentRepository.deleteAllByPostId(postId); // soft-delete
@@ -611,16 +614,6 @@ public class PostService {
         // 인기 임시보호 글 업데이트
         List<Post> fosteringPosts = postRepository.findAllByDate(startOfToday, endOfToday, PostType.FOSTERING);
         processPopularPosts(fosteringPosts, PostType.FOSTERING);
-    }
-
-    private void updatePostReadStatus(Post post, Long userId) {
-        User userRef = entityManager.getReference(User.class, userId);
-        PostReadStatus postReadStatus = PostReadStatus.builder()
-                .post(post)
-                .user(userRef)
-                .build();
-
-        postReadStatusRepository.save(postReadStatus);
     }
 
     private void processPopularPosts(List<Post> posts, PostType postType){
