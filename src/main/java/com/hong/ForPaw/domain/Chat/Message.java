@@ -1,11 +1,5 @@
 package com.hong.ForPaw.domain.Chat;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -15,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Document
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -32,17 +27,17 @@ public class Message implements Serializable {
 
     private String content;
 
-    private String imageURL;
+    private List<String> imageURLs;
 
     private LocalDateTime date;
 
     @Builder
-    public Message(Long chatRoomId, Long senderId, String senderName, String content, String imageURL,LocalDateTime date) {
+    public Message(Long chatRoomId, Long senderId, String senderName, String content, List<String> imageURL,LocalDateTime date) {
         this.chatRoomId = chatRoomId;
         this.senderId = senderId;
         this.senderName = senderName;
         this.content = content;
-        this.imageURL = imageURL;
+        this.imageURLs = imageURL;
         this.date = date;
     }
 }

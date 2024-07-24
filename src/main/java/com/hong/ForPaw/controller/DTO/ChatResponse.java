@@ -12,9 +12,10 @@ public class ChatResponse {
     public record MessageDTD(String messageId,
                              String senderName,
                              String content,
-                             String imageURL,
+                             List<ChatImageDTO> images,
                              LocalDateTime date,
                              boolean isMine) {}
+
 
     public record FindChatRoomDrawerDTO(List<ChatImageDTO> images, List<ChatUserDTO> users) {}
 

@@ -96,12 +96,16 @@ public class BrokerService {
             ChatRequest.MessageDTO messageDTO = (ChatRequest.MessageDTO) converter.fromMessage(message);
 
             // 이미지 저장
-            ChatRoom chatRoomRef = entityManager.getReference(ChatRoom.class, messageDTO.chatRoomId());
-            ChatImage chatImage = ChatImage.builder()
-                    .chatRoom(chatRoomRef)
-                    .imageURL(messageDTO.imageURL())
-                    .build();
-            chatImageRepository.save(chatImage);
+            messageDTO.imageURLs().forEach(
+                    imageDTO -> {
+                        ChatRoom chatRoomRef = entityManager.getReference(ChatRoom.class, messageDTO.chatRoomId());
+                        ChatImage chatImage = ChatImage.builder()
+                                .chatRoom(chatRoomRef)
+                                .imageURL(imageDTO.imageURL())
+                                .build();
+                        chatImageRepository.save(chatImage);
+                    }
+            );
 
             // 알람 전송
             chatRoomRepository.findAllUserByChatRoomId(messageDTO.chatRoomId())

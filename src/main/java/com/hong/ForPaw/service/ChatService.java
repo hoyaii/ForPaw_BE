@@ -50,19 +50,23 @@ public class ChatService {
                 senderId,
                 senderName,
                 requestDTO.content(),
-                requestDTO.imageURL() // 프론트에서는 presignedURI를 통해 S3에 업로드 후, 이미지 URI를 서버로 넘겨준다
+                requestDTO.images() // 프론트에서는 presignedURI를 통해 S3에 업로드 후, 이미지 URI를 서버로 넘겨준다
         );
 
         // 메시지 브로커에 전송 (알람과 이미지 비동기 처리)
         brokerService.produceChatToRoom(requestDTO.chatRoomId(), messageDTO);
 
         // 메시지 저장
+        List<String> imageURLs = requestDTO.images().stream()
+                .map(ChatRequest.ChatImageDTO::imageURL)
+                .toList();
+
         Message message = Message.builder()
                 .chatRoomId(requestDTO.chatRoomId())
                 .senderId(senderId)
                 .senderName(senderName)
                 .content(requestDTO.content())
-                .imageURL(requestDTO.imageURL())
+                .imageURL(imageURLs)
                 .date(date)
                 .build();
         messageRepository.save(message);
@@ -114,15 +118,24 @@ public class ChatService {
         while(!isLast) {
             Pageable pageable = createAscSortedPageable(currentPage, 50, SORT_BY_ID);
             Page<Message> messages = messageRepository.findByChatRoomId(chatRoomId, pageable);
-            isLast = messages.isLast(); // 현재 페이지가 마지막 페이지인지 확인
+
+            // 현재 페이지가 마지막 페이지인지 확인
+            isLast = messages.isLast();
 
             List<ChatResponse.MessageDTD> currentMessageDTOS = messages.getContent().stream()
-                    .map(message -> new ChatResponse.MessageDTD(message.getId(),
-                            message.getSenderName(),
-                            message.getContent(),
-                            message.getImageURL(),
-                            message.getDate(),
-                            message.getSenderId().equals(userId)))
+                    .map(message -> {
+                        List<ChatResponse.ChatImageDTO> chatImageDTOS = message.getImageURLs().stream()
+                                .map(ChatResponse.ChatImageDTO::new)
+                                .toList();
+
+                       return new ChatResponse.MessageDTD(
+                               message.getId(),
+                               message.getSenderName(),
+                               message.getContent(),
+                               chatImageDTOS,
+                               message.getDate(),
+                               message.getSenderId().equals(userId));
+                    })
                     .toList();
 
             messageDTOS.addAll(currentMessageDTOS); // 현재 페이지의 데이터를 추가
