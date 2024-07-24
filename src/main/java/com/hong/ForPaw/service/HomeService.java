@@ -27,7 +27,7 @@ public class HomeService {
     private final FavoriteGroupRepository favoriteGroupRepository;
     private static final Province DEFAULT_PROVINCE = Province.DAEGU;
 
-    @Transactional
+    @Transactional(readOnly = true)
     public HomeResponse.FindHomeDTO findHome(Long userId){
         // 1. 추천 동물
         List<Long> recommendedAnimalIds = animalService.getRecommendedAnimalIdList(userId);
