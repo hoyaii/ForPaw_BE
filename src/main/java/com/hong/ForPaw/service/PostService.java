@@ -23,7 +23,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -216,38 +215,9 @@ public class PostService {
                 .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
                 .collect(Collectors.toList());
 
-        // 댓글 DTO (특정 게시글에 대한 모든 댓글 및 대댓글을 들고 있음)
-        List<PostResponse.CommentDTO> commentDTOS = new ArrayList<>();
-        Map<Long, PostResponse.CommentDTO> commentMap = new HashMap<>(); // map을 사용해서 대댓글을 해당 부모 댓글에 추가
-
+        // 댓글과 대댓글을 모두 담고 있는 Comment 리스트를 CommentDTO로 가공하면서, 대댓글이 댓글 밑으로 들어가게 처리
         List<Comment> comments = commentRepository.findAllByPostIdWithUserAndParent(postId);
-        comments.forEach(comment -> {
-            // 부모 댓글이면, CommentDTO로 변환해서 commentDTOS 리스트에 추가
-            if (comment.getParent() == null) {
-                PostResponse.CommentDTO commentDTO = new PostResponse.CommentDTO(
-                        comment.getId(),
-                        comment.getUser().getNickName(),
-                        comment.getContent(),
-                        comment.getCreatedDate(),
-                        comment.getUser().getProvince(),
-                        new ArrayList<>());
-
-                commentDTOS.add(commentDTO);
-                commentMap.put(comment.getId(), commentDTO);
-            }
-            else { // 자식 댓글이면, ReplyDTO로 변환해서 부모 댓글의 replies 리스트에 추가
-                PostResponse.ReplyDTO replyDTO = new PostResponse.ReplyDTO(
-                        comment.getId(),
-                        comment.getParent().getUser().getNickName(),
-                        comment.getUser().getNickName(),
-                        comment.getContent(),
-                        comment.getCreatedDate(),
-                        comment.getUser().getProvince());
-
-                Long parentId = comment.getParent().getId();
-                commentMap.get(parentId).replies().add(replyDTO);
-            }
-        });
+        List<PostResponse.CommentDTO> commentDTOS = converCommentToCommentDTO(comments);
 
         // 좋아요 수
         Long likeNum = redisService.getDataInLongWithNull("postLikeNum", postId.toString());
@@ -785,5 +755,43 @@ public class PostService {
         if(!commentPostId.equals(postId)){
             throw new CustomException(ExceptionCode.NOT_POSTS_COMMENT);
         }
+    }
+
+    private List<PostResponse.CommentDTO> converCommentToCommentDTO(List<Comment> comments) {
+        // CommentDTO는 특정 게시글에 대한 모든 댓글 및 대댓글을 들고 있음
+        List<PostResponse.CommentDTO> commentDTOS = new ArrayList<>();
+
+        // map을 사용해서 대댓글을 해당 부모 댓글에 추가
+        Map<Long, PostResponse.CommentDTO> commentMap = new HashMap<>();
+
+        comments.forEach(comment -> {
+            // 부모 댓글이면, CommentDTO로 변환해서 commentDTOS 리스트에 추가
+            if (comment.getParent() == null) {
+                PostResponse.CommentDTO commentDTO = new PostResponse.CommentDTO(
+                        comment.getId(),
+                        comment.getUser().getNickName(),
+                        comment.getContent(),
+                        comment.getCreatedDate(),
+                        comment.getUser().getProvince(),
+                        new ArrayList<>());
+
+                commentDTOS.add(commentDTO);
+                commentMap.put(comment.getId(), commentDTO);
+            }
+            else { // 자식 댓글이면, ReplyDTO로 변환해서 부모 댓글의 replies 리스트에 추가
+                PostResponse.ReplyDTO replyDTO = new PostResponse.ReplyDTO(
+                        comment.getId(),
+                        comment.getParent().getUser().getNickName(),
+                        comment.getUser().getNickName(),
+                        comment.getContent(),
+                        comment.getCreatedDate(),
+                        comment.getUser().getProvince());
+
+                Long parentId = comment.getParent().getId();
+                commentMap.get(parentId).replies().add(replyDTO);
+            }
+        });
+
+        return commentDTOS;
     }
 }
