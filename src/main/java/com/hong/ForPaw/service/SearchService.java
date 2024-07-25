@@ -17,6 +17,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,11 +31,12 @@ public class SearchService {
     private final GroupRepository groupRepository;
 
     @Transactional(readOnly = true)
-    public SearchResponse.SearchAllDTO searchAll(String keyword, Pageable pageable){
+    public SearchResponse.SearchAllDTO searchAll(String keyword){
         checkKeywordEmpty(keyword);
+        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.ASC, "id"));
 
         // 보호소 검색
-        List<SearchResponse.ShelterDTO> shelterDTOS = searchShelterList(keyword, pageable);
+        List<SearchResponse.ShelterDTO> shelterDTOS = searchShelterList(keyword, 0);
 
         // 게시글 검색
         List<SearchResponse.PostDTO> postDTOS = searchPostList(keyword, pageable);
@@ -46,16 +48,26 @@ public class SearchService {
     }
 
     @Transactional(readOnly = true)
-    public List<SearchResponse.ShelterDTO> searchShelterList(String keyword, Pageable pageable){
+    public List<SearchResponse.ShelterDTO> searchShelterList(String keyword, Integer page) {
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
-        Page<Shelter> shelters = shelterRepository.findByNameContaining(formattedKeyword, pageable);
+        List<Shelter> shelters = shelterRepository.findByNameContaining(formattedKeyword);
 
-        List<SearchResponse.ShelterDTO> shelterDTOS = shelters.getContent().stream()
+        List<SearchResponse.ShelterDTO> shelterDTOS = shelters.stream()
                 .filter(shelter -> shelter.getAnimalCnt() > 0 && shelter.getLatitude() != null)
                 .map(shelter -> new SearchResponse.ShelterDTO(shelter.getId(), shelter.getName()))
                 .collect(Collectors.toList());
 
-        return shelterDTOS;
+        // 쿼리문의 복잡성으로 직접 페이징 (보호 개수가 많지 않아서 속도가 잘 나옴)
+        int pageSize = 3;
+        int startIndex = page * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, shelterDTOS.size());
+
+        // 잘못된 페이지 번호 처리
+        if (startIndex > shelterDTOS.size()) {
+            return Collections.emptyList();
+        }
+
+        return shelterDTOS.subList(startIndex, endIndex);
     }
 
     @Transactional(readOnly = true)

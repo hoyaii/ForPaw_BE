@@ -24,21 +24,21 @@ public class SearchController {
     private final SearchService searchService;
 
     @GetMapping("/search/all")
-    public ResponseEntity<?> searchAll(@RequestParam String keyword, @PageableDefault(sort = "id") Pageable pageable){
-        SearchResponse.SearchAllDTO responseDTO = searchService.searchAll(keyword, pageable);
+    public ResponseEntity<?> searchAll(@RequestParam String keyword){
+        SearchResponse.SearchAllDTO responseDTO = searchService.searchAll(keyword);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/search/shelters")
-    public ResponseEntity<?> searchShelterList(@RequestParam String keyword, @PageableDefault(sort = "id") Pageable pageable){
+    public ResponseEntity<?> searchShelterList(@RequestParam String keyword, @RequestParam Integer page){
         searchService.checkKeywordEmpty(keyword);
-        List<SearchResponse.ShelterDTO> shelterDTOS = searchService.searchShelterList(keyword, pageable);
+        List<SearchResponse.ShelterDTO> shelterDTOS = searchService.searchShelterList(keyword, page);
         SearchResponse.SearchShelterListDTO responseDTO = new SearchResponse.SearchShelterListDTO(shelterDTOS);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/search/posts")
-    public ResponseEntity<?> searchPostList(@RequestParam String keyword, @PageableDefault(sort = "id") Pageable pageable){
+    public ResponseEntity<?> searchPostList(@RequestParam String keyword, @PageableDefault(sort = "id", size = 3) Pageable pageable){
         searchService.checkKeywordEmpty(keyword);
         List<SearchResponse.PostDTO> postDTOS = searchService.searchPostList(keyword, pageable);
         SearchResponse.SearchPostListDTO responseDTO = new SearchResponse.SearchPostListDTO(postDTOS);
@@ -46,7 +46,7 @@ public class SearchController {
     }
 
     @GetMapping("/search/groups")
-    public ResponseEntity<?> searchGroupList(@RequestParam String keyword, @PageableDefault(sort = "id") Pageable pageable){
+    public ResponseEntity<?> searchGroupList(@RequestParam String keyword, @PageableDefault(sort = "id", size = 3) Pageable pageable){
         searchService.checkKeywordEmpty(keyword);
         List<SearchResponse.GroupDTO> groupDTOS = searchService.searchGroupList(keyword, pageable);
         SearchResponse.SearchGroupListDTO responseDTO = new SearchResponse.SearchGroupListDTO(groupDTOS);

@@ -209,7 +209,7 @@ public class UserController {
 
     @PostMapping("/validate/accessToken")
     public ResponseEntity<?> validateAccessToken(@CookieValue String accessToken){
-        userService.validateAccessToken(accessToken);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+        UserResponse.ValidateAccessTokenDTO responseDTO = userService.validateAccessToken(accessToken);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }
