@@ -17,7 +17,6 @@ import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.UserStatus;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
 import com.hong.ForPaw.repository.Animal.FavoriteAnimalRepository;
-import com.hong.ForPaw.repository.ApplyRepository;
 import com.hong.ForPaw.repository.Authentication.LoginAttemptRepository;
 import com.hong.ForPaw.repository.Authentication.VisitRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
@@ -578,15 +577,22 @@ public class UserService {
     }
 
     @Transactional
-    public void validateAccessToken(@CookieValue String accessToken){
+    public UserResponse.ValidateAccessTokenDTO validateAccessToken(@CookieValue String accessToken){
         // 잘못된 토큰 형식인지 체크
         if(!JWTProvider.validateToken(accessToken)) {
             throw new CustomException(ExceptionCode.TOKEN_WRONG);
         }
 
         Long userIdFromToken = JWTProvider.getUserIdFromToken(accessToken);
+        if(redisService.validateData("accessToken", String.valueOf(userIdFromToken), accessToken)){
+            throw new CustomException(ExceptionCode.ACCESS_TOKEN_WRONG);
+        };
 
-        redisService.validateData("accessToken", String.valueOf(userIdFromToken), accessToken);
+        String profile = userRepository.findProfileById(userIdFromToken).orElseThrow(
+                () -> new CustomException(ExceptionCode.ACCESS_TOKEN_WRONG)
+        );
+
+        return new UserResponse.ValidateAccessTokenDTO(profile);
     }
 
     private Long checkLoginFailures(User user){

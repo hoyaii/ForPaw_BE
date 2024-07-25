@@ -47,4 +47,6 @@ public class UserResponse {
                             String answeredBy){}
 
     public record VerifyPasswordDTO(boolean isMatching){}
+
+    public record ValidateAccessTokenDTO(String profile){}
 }
