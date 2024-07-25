@@ -20,7 +20,7 @@ public class ChatRequest {
                              Long senderId,
                              String senderName,
                              String content,
-                             List<ChatImageDTO> imageURLs) {}
+                             List<ChatImageDTO> images) {}
 
     public record ReadMessageDTO(
             @NotNull(message = "채팅방 ID를 입력해주세요.")

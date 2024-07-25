@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -57,7 +58,9 @@ public class ChatService {
         brokerService.produceChatToRoom(requestDTO.chatRoomId(), messageDTO);
 
         // 메시지 저장
-        List<String> imageURLs = requestDTO.images().stream()
+        List<String> imageURLs = Optional.ofNullable(requestDTO.images())
+                .orElse(Collections.emptyList())
+                .stream()
                 .map(ChatRequest.ChatImageDTO::imageURL)
                 .toList();
 

@@ -10,7 +10,6 @@ import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
 import com.hong.ForPaw.repository.Chat.ChatImageRepository;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
-import com.hong.ForPaw.repository.Chat.MessageRepository;
 import com.hong.ForPaw.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -24,12 +23,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class BrokerService {
 
-    private final MessageRepository messageRepository;
     private final AlarmRepository alarmRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
@@ -96,16 +96,19 @@ public class BrokerService {
             ChatRequest.MessageDTO messageDTO = (ChatRequest.MessageDTO) converter.fromMessage(message);
 
             // 이미지 저장
-            messageDTO.imageURLs().forEach(
-                    imageDTO -> {
-                        ChatRoom chatRoomRef = entityManager.getReference(ChatRoom.class, messageDTO.chatRoomId());
-                        ChatImage chatImage = ChatImage.builder()
-                                .chatRoom(chatRoomRef)
-                                .imageURL(imageDTO.imageURL())
-                                .build();
-                        chatImageRepository.save(chatImage);
-                    }
-            );
+            if (messageDTO.images() != null && !messageDTO.images().isEmpty()) {
+                List<ChatImage> chatImages = messageDTO.images().stream()
+                        .map(imageDTO -> {
+                            ChatRoom chatRoomRef = entityManager.getReference(ChatRoom.class, messageDTO.chatRoomId());
+                            return ChatImage.builder()
+                                    .chatRoom(chatRoomRef)
+                                    .imageURL(imageDTO.imageURL())
+                                    .build();
+                        })
+                        .collect(Collectors.toList());
+
+                chatImageRepository.saveAll(chatImages);
+            }
 
             // 알람 전송
             chatRoomRepository.findAllUserByChatRoomId(messageDTO.chatRoomId())
