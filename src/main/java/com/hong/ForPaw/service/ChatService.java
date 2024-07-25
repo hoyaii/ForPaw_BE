@@ -73,13 +73,21 @@ public class ChatService {
         List<ChatResponse.RoomDTO> roomDTOS = chatUsers.stream()
                 .map(chatUser -> {
                     // 마지막으로 읽은 메시지
-                    Optional<Message> lastMessageOP = messageRepository.findById(chatUser.getLastMessageId());
-                    String lastMessageContent = lastMessageOP.map(Message::getContent).orElse(null);
-                    LocalDateTime lastMessageDate = lastMessageOP.map(Message::getDate).orElse(null);
+                    String lastMessageId = chatUser.getLastMessageId();
+                    String lastMessageContent = null;
+                    LocalDateTime lastMessageDate = null;
 
                     // 마지막으로 읽은 페이지 (인덱스/50)
                     Long lastReadMessageIdx = chatUser.getLastMessageIdx();
-                    Long offset = lastReadMessageIdx != 0L ? lastReadMessageIdx / 50 : 0L;
+                    Long offset = 0L;
+
+                    // 채팅방에서 메시지를 읽은 적이 있다면
+                    if (lastMessageId != null) {
+                        Optional<Message> lastMessageOP = messageRepository.findById(lastMessageId);
+                        lastMessageContent = lastMessageOP.map(Message::getContent).orElse(null);
+                        lastMessageDate = lastMessageOP.map(Message::getDate).orElse(null);
+                        offset = lastReadMessageIdx != 0L ? lastReadMessageIdx / 50 : 0L;
+                    }
 
                     return new ChatResponse.RoomDTO(
                             chatUser.getChatRoom().getId(),
