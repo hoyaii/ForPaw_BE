@@ -50,7 +50,7 @@ public class HomeService {
                 .toList();
 
         // 2. 인기 글
-        List<PostResponse.PostDTO> postDTOS = postService.findPopularPostListByType(PostType.ADOPTION, 0);;
+        List<PostResponse.PostDTO> postDTOS = postService.findPopularPostListByType(PostType.ADOPTION, 0);
 
         // 3. 추천 그룹
         List<Long> likedGroupIds = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();

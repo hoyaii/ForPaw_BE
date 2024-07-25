@@ -655,8 +655,9 @@ public class PostService {
         List<PostResponse.PostDTO> postDTOS = popularPostPage.getContent().stream()
                 .map(PopularPost::getPost)
                 .map(post -> {
-                    // 캐싱 기간이 지나 캐싱이 불가능하면, DB에서 조회
+                    String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
                     Long likeNum = redisService.getDataInLongWithNull("postLikeNum", post.getId().toString());
+
                     if (likeNum == null) {
                         likeNum = post.getLikeNum();
                     }
@@ -669,7 +670,7 @@ public class PostService {
                             post.getCreatedDate(),
                             post.getCommentNum(),
                             likeNum,
-                            post.getPostImages().get(0).getImageURL());
+                            imageURL);
                 })
                 .toList();
 
@@ -684,8 +685,9 @@ public class PostService {
 
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
-                    // 캐싱 기간이 지나 캐싱이 불가능하면, DB에서 조회
+                    String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
                     Long likeNum = redisService.getDataInLongWithNull("postLikeNum", post.getId().toString());
+
                     if (likeNum == null) {
                         likeNum = post.getLikeNum();
                     }
@@ -698,7 +700,7 @@ public class PostService {
                             post.getCreatedDate(),
                             post.getCommentNum(),
                             likeNum,
-                            post.getPostImages().get(0).getImageURL());
+                            imageURL);
                 })
                 .toList();
 
