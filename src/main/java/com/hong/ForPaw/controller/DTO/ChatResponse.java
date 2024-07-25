@@ -31,4 +31,6 @@ public class ChatResponse {
                           Long offset) {}
 
     public record FindChatRoomImagesDTO(List<ChatImageDTO> images) {}
+
+    public record ReadMessageDTO(String id) {}
 }

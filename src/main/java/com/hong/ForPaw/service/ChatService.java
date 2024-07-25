@@ -182,11 +182,16 @@ public class ChatService {
     }
 
     @Transactional
-    public void readMessage(ChatRequest.ReadMessageDTO requestDTO, Long userId){
+    public ChatResponse.ReadMessageDTO readMessage(String messageId){
         // 권한 체크
-        ChatUser chatUser = checkChatAuthority(userId, requestDTO.chatRoomId());
+        Message message = messageRepository.findById(messageId).orElseThrow(
+                () -> new CustomException(ExceptionCode.MESSAGE_NOT_FOUND)
+        );
 
-        chatUser.updateLastMessage(requestDTO.messageId(), chatUser.getLastMessageIdx() + 1);
+        ChatUser chatUser = checkChatAuthority(message.getSenderId(), message.getChatRoomId());
+        chatUser.updateLastMessage(message.getId(), chatUser.getLastMessageIdx() + 1);
+
+        return new ChatResponse.ReadMessageDTO(messageId);
     }
 
     private ChatUser checkChatAuthority(Long userId, Long chatRoomId){

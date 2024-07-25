@@ -52,9 +52,9 @@ public class ChatController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    // 테스트 시 MessageMapping => PostMapping으로 바꾸고, 응답이 없는 거 인지하고 있어야 함.
-    @PostMapping("/chat/read")
-    public void readMessage(@RequestBody ChatRequest.ReadMessageDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        chatService.readMessage(requestDTO, userDetails.getUser().getId());
+    @PostMapping("/chat/{chatId}/read")
+    public ResponseEntity<?> readMessage(@PathVariable String chatId) {
+        ChatResponse.ReadMessageDTO responseDTO = chatService.readMessage(chatId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }
