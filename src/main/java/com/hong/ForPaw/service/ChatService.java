@@ -20,10 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,40 +42,27 @@ public class ChatService {
         checkChatAuthority(senderId, requestDTO.chatRoomId());
 
         // 전송을 위한 메시지 DTO
-        LocalDateTime date = LocalDateTime.now();
+        String messageId = UUID.randomUUID().toString();
+        LocalDateTime sendDate = LocalDateTime.now();
+
         ChatRequest.MessageDTO messageDTO = new ChatRequest.MessageDTO(
+                messageId,
                 requestDTO.chatRoomId(),
                 senderId,
                 senderName,
                 requestDTO.content(),
-                requestDTO.images() // 프론트에서는 presignedURI를 통해 S3에 업로드 후, 이미지 URI를 서버로 넘겨준다
+                requestDTO.images(),
+                sendDate
         );
 
-        // 메시지 브로커에 전송 (알람과 이미지 비동기 처리)
+        // 메시지 브로커에 전송 (알람과 이미지는 비동기로 처리)
         brokerService.produceChatToRoom(requestDTO.chatRoomId(), messageDTO);
-
-        // 메시지 저장
-        List<String> imageURLs = Optional.ofNullable(requestDTO.images())
-                .orElse(Collections.emptyList())
-                .stream()
-                .map(ChatRequest.ChatImageDTO::imageURL)
-                .toList();
-
-        Message message = Message.builder()
-                .chatRoomId(requestDTO.chatRoomId())
-                .senderId(senderId)
-                .senderName(senderName)
-                .content(requestDTO.content())
-                .imageURL(imageURLs)
-                .date(date)
-                .build();
-        messageRepository.save(message);
 
         // STOMP 프로토콜을 통한 실시간 메시지 전송
         String destination = "/room/" + requestDTO.chatRoomId();
         messagingTemplate.convertAndSend(destination, messageDTO);
 
-        return new ChatResponse.SendMessageDTO(message.getId());
+        return new ChatResponse.SendMessageDTO(messageId);
     }
 
     @Transactional

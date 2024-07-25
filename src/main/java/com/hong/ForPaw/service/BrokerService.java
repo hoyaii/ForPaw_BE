@@ -6,10 +6,12 @@ import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Chat.ChatImage;
 import com.hong.ForPaw.domain.Chat.ChatRoom;
+import com.hong.ForPaw.domain.Chat.Message;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
 import com.hong.ForPaw.repository.Chat.ChatImageRepository;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
+import com.hong.ForPaw.repository.Chat.MessageRepository;
 import com.hong.ForPaw.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +25,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,6 +38,7 @@ public class BrokerService {
     private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
     private final ChatImageRepository chatImageRepository;
+    private final MessageRepository messageRepository;
     private final RabbitListenerEndpointRegistry rabbitListenerEndpointRegistry;
     private final SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory;
     private final RabbitTemplate rabbitTemplate;
@@ -92,8 +97,26 @@ public class BrokerService {
         SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
         endpoint.setId(listenerId);
         endpoint.setQueueNames(queueName);
-        endpoint.setMessageListener(message -> {
-            ChatRequest.MessageDTO messageDTO = (ChatRequest.MessageDTO) converter.fromMessage(message);
+        endpoint.setMessageListener(m -> {
+            ChatRequest.MessageDTO messageDTO = (ChatRequest.MessageDTO) converter.fromMessage(m);
+
+            // 메시지 저장
+            List<String> imageURLs = Optional.ofNullable(messageDTO.images())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .map(ChatRequest.ChatImageDTO::imageURL)
+                    .toList();
+
+            Message message = Message.builder()
+                    .chatRoomId(messageDTO.chatRoomId())
+                    .senderId(messageDTO.senderId())
+                    .senderName(messageDTO.senderName())
+                    .content(messageDTO.content())
+                    .imageURL(imageURLs)
+                    .date(messageDTO.date())
+                    .build();
+
+            messageRepository.save(message);
 
             // 이미지 저장
             if (messageDTO.images() != null && !messageDTO.images().isEmpty()) {

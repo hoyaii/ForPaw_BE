@@ -1,8 +1,14 @@
 package com.hong.ForPaw.controller.DTO;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class ChatRequest {
@@ -16,11 +22,16 @@ public class ChatRequest {
 
     public record ChatImageDTO(String imageURL){}
 
-    public record MessageDTO(Long chatRoomId,
+    public record MessageDTO(String id,
+                             Long chatRoomId,
                              Long senderId,
                              String senderName,
                              String content,
-                             List<ChatImageDTO> images) {}
+                             List<ChatImageDTO> images,
+                             @JsonSerialize(using = LocalDateTimeSerializer.class)
+                             @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+                             @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS")
+                             LocalDateTime date) {}
 
     public record ReadMessageDTO(
             @NotNull(message = "채팅방 ID를 입력해주세요.")
