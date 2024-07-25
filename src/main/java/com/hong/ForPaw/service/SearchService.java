@@ -10,6 +10,10 @@ import com.hong.ForPaw.repository.Group.GroupRepository;
 import com.hong.ForPaw.repository.Post.PostRepository;
 import com.hong.ForPaw.repository.ShelterRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,27 +30,27 @@ public class SearchService {
     private final GroupRepository groupRepository;
 
     @Transactional(readOnly = true)
-    public SearchResponse.SearchAllDTO searchAll(String keyword){
+    public SearchResponse.SearchAllDTO searchAll(String keyword, Pageable pageable){
         checkKeywordEmpty(keyword);
 
         // 보호소 검색
-        List<SearchResponse.ShelterDTO> shelterDTOS = searchShelterList(keyword);
+        List<SearchResponse.ShelterDTO> shelterDTOS = searchShelterList(keyword, pageable);
 
         // 게시글 검색
-        List<SearchResponse.PostDTO> postDTOS = searchPostList(keyword);
+        List<SearchResponse.PostDTO> postDTOS = searchPostList(keyword, pageable);
 
         // 그룹 검색
-        List<SearchResponse.GroupDTO> groupDTOS = searchGroupList(keyword);
+        List<SearchResponse.GroupDTO> groupDTOS = searchGroupList(keyword, pageable);
 
         return new SearchResponse.SearchAllDTO(shelterDTOS, postDTOS, groupDTOS);
     }
 
     @Transactional(readOnly = true)
-    public List<SearchResponse.ShelterDTO> searchShelterList(String keyword){
+    public List<SearchResponse.ShelterDTO> searchShelterList(String keyword, Pageable pageable){
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
-        List<Shelter> shelters = shelterRepository.findByNameContaining(formattedKeyword);
+        Page<Shelter> shelters = shelterRepository.findByNameContaining(formattedKeyword, pageable);
 
-        List<SearchResponse.ShelterDTO> shelterDTOS = shelters.stream()
+        List<SearchResponse.ShelterDTO> shelterDTOS = shelters.getContent().stream()
                 .filter(shelter -> shelter.getAnimalCnt() > 0 && shelter.getLatitude() != null)
                 .map(shelter -> new SearchResponse.ShelterDTO(shelter.getId(), shelter.getName()))
                 .collect(Collectors.toList());
@@ -55,11 +59,11 @@ public class SearchService {
     }
 
     @Transactional(readOnly = true)
-    public List<SearchResponse.PostDTO> searchPostList(String keyword){
+    public List<SearchResponse.PostDTO> searchPostList(String keyword, Pageable pageable){
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
-        List<Post> posts = postRepository.findByTitleContaining(formattedKeyword);
+        Page<Post> posts = postRepository.findByTitleContaining(formattedKeyword, pageable);
 
-        List<SearchResponse.PostDTO> postDTOS = posts.stream()
+        List<SearchResponse.PostDTO> postDTOS = posts.getContent().stream()
                 .map(post -> new SearchResponse.PostDTO(
                         post.getId(),
                         post.getTitle(),
@@ -72,11 +76,11 @@ public class SearchService {
     }
 
     @Transactional(readOnly = true)
-    public List<SearchResponse.GroupDTO> searchGroupList(String keyword){
+    public List<SearchResponse.GroupDTO> searchGroupList(String keyword, Pageable pageable){
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
-        List<Group> groups = groupRepository.findByNameContaining(formattedKeyword);
+        Page<Group> groups = groupRepository.findByNameContaining(formattedKeyword, pageable);
 
-        List<SearchResponse.GroupDTO> groupDTOS = groups.stream()
+        List<SearchResponse.GroupDTO> groupDTOS = groups.getContent().stream()
                 .map(group -> new SearchResponse.GroupDTO(
                         group.getId(),
                         group.getName(),

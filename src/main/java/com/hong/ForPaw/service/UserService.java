@@ -584,13 +584,11 @@ public class UserService {
         }
 
         Long userIdFromToken = JWTProvider.getUserIdFromToken(accessToken);
-        if(redisService.validateData("accessToken", String.valueOf(userIdFromToken), accessToken)){
+        if(!redisService.validateData("accessToken", String.valueOf(userIdFromToken), accessToken)){
             throw new CustomException(ExceptionCode.ACCESS_TOKEN_WRONG);
-        };
+        }
 
-        String profile = userRepository.findProfileById(userIdFromToken).orElseThrow(
-                () -> new CustomException(ExceptionCode.ACCESS_TOKEN_WRONG)
-        );
+        String profile = userRepository.findProfileById(userIdFromToken).orElse(null);
 
         return new UserResponse.ValidateAccessTokenDTO(profile);
     }
