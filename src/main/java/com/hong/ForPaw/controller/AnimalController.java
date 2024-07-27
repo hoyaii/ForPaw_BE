@@ -40,7 +40,7 @@ public class AnimalController {
     }
 
     @GetMapping("/animals")
-    public ResponseEntity<?> findAnimalList(@RequestParam("page") Integer page, @RequestParam("sort") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findAnimalList(@RequestParam Integer page, @RequestParam String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
         Long userId = getUserIdSafely(userDetails);
         AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(page, sort, userId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));

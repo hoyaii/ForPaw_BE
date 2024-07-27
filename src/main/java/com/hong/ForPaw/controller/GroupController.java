@@ -56,7 +56,7 @@ public class GroupController {
     }
 
     @GetMapping("/groups/local")
-    public ResponseEntity<?> findLocalGroupList(@RequestParam("province") Province province, @RequestParam("district") District district, @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findLocalGroupList(@RequestParam Province province, @RequestParam District district, @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         Long userId = getUserIdSafely(userDetails);
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = groupService.findLocalGroupList(userId, province, district, Collections.emptyList(), pageable);
         GroupResponse.FindLocalGroupListDTO responseDTO = new GroupResponse.FindLocalGroupListDTO(localGroupDTOS);

@@ -33,19 +33,19 @@ public class PostController {
     }
 
     @GetMapping("/posts/adoption")
-    public ResponseEntity<?> findAdoptionPostList(@RequestParam("page") Integer page, @RequestParam("sort") String sort){
+    public ResponseEntity<?> findAdoptionPostList(@RequestParam Integer page, @RequestParam String sort){
         PostResponse.FindAdoptionPostListDTO responseDTO = postService.findAdoptionPostList(page, sort);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/fostering")
-    public ResponseEntity<?> findFosteringPostList(@RequestParam("page") Integer page, @RequestParam("sort") String sort){
+    public ResponseEntity<?> findFosteringPostList(@RequestParam Integer page, @RequestParam String sort){
         PostResponse.FindFosteringPostListDTO responseDTO = postService.findFosteringPostList(page, sort);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/question")
-    public ResponseEntity<?> findQuestionPostList(@RequestParam("page") Integer page){
+    public ResponseEntity<?> findQuestionPostList(@RequestParam Integer page){
         PostResponse.FindQnaPostListDTO responseDTO = postService.findQuestionPostList(page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }

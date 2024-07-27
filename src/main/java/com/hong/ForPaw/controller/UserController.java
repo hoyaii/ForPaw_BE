@@ -37,7 +37,7 @@ public class UserController {
                         .path("/")
                         .sameSite("Lax")
                         .maxAge(JWTProvider.REFRESH_EXP_SEC)
-                        .domain("localhost")
+                        //.domain("localhost")
                         .build().toString())
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokens.get("accessToken"))));
     }
@@ -55,9 +55,11 @@ public class UserController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokenOrEmail.get("refreshToken"))
                         .httpOnly(true)
-                        .secure(true)
-                        .sameSite("None")
-                        .maxAge(JWTProvider.REFRESH_EXP_MILLI)
+                        .secure(false)
+                        .path("/")
+                        .sameSite("Lax")
+                        .maxAge(JWTProvider.REFRESH_EXP_SEC)
+                        //.domain("localhost")
                         .build().toString())
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.KakaoLoginDTO(tokenOrEmail.get("accessToken"), "")));
     }

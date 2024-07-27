@@ -39,7 +39,7 @@ public class ShelterController {
     }
 
     @GetMapping("/shelters/{shelterId}/animals")
-    public ResponseEntity<?> findShelterAnimalsById(@PathVariable Long shelterId, @RequestParam("page") Integer page, @RequestParam(value = "sort", defaultValue = "noticeSdt") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findShelterAnimalsById(@PathVariable Long shelterId, @RequestParam Integer page, @RequestParam(value = "sort", defaultValue = "noticeSdt") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
         Long userId = Optional.ofNullable(userDetails)
                 .map(CustomUserDetails::getUser)
                 .map(User::getId)

@@ -35,7 +35,7 @@ public class ChatController {
     }
 
     @GetMapping("/chatRooms/{chatRoomId}/messages")
-    public ResponseEntity<?> findMessageListInRoom(@PathVariable Long chatRoomId, @RequestParam("page") Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findMessageListInRoom(@PathVariable Long chatRoomId, @RequestParam Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
         ChatResponse.FindMessageListInRoomDTO responseDTO = chatService.findMessageListInRoom(chatRoomId, userDetails.getUser().getId(), page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
@@ -47,7 +47,7 @@ public class ChatController {
     }
 
     @GetMapping("/chatRooms/{chatRoomId}/images")
-    public ResponseEntity<?> findChatRoomImages(@PathVariable Long chatRoomId, @RequestParam("page") Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findChatRoomImages(@PathVariable Long chatRoomId, @RequestParam Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
         ChatResponse.FindChatRoomImagesDTO responseDTO = chatService.findChatRoomImages(chatRoomId, userDetails.getUser().getId(), page);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
