@@ -30,9 +30,9 @@ public class SearchController {
     }
 
     @GetMapping("/search/shelters")
-    public ResponseEntity<?> searchShelterList(@RequestParam String keyword, @RequestParam Integer page){
+    public ResponseEntity<?> searchShelterList(@RequestParam String keyword, @PageableDefault(sort = "id", size = 3) Pageable pageable){
         searchService.checkKeywordEmpty(keyword);
-        List<SearchResponse.ShelterDTO> shelterDTOS = searchService.searchShelterList(keyword, page);
+        List<SearchResponse.ShelterDTO> shelterDTOS = searchService.searchShelterList(keyword, pageable);
         SearchResponse.SearchShelterListDTO responseDTO = new SearchResponse.SearchShelterListDTO(shelterDTOS);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }

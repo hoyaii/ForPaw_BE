@@ -33,10 +33,10 @@ public class SearchService {
     @Transactional(readOnly = true)
     public SearchResponse.SearchAllDTO searchAll(String keyword){
         checkKeywordEmpty(keyword);
-        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.ASC, "id"));
+        Pageable pageable = PageRequest.of(0, 3, Sort.by(Sort.Direction.ASC, "id"));
 
         // 보호소 검색
-        List<SearchResponse.ShelterDTO> shelterDTOS = searchShelterList(keyword, 0);
+        List<SearchResponse.ShelterDTO> shelterDTOS = searchShelterList(keyword, pageable);
 
         // 게시글 검색
         List<SearchResponse.PostDTO> postDTOS = searchPostList(keyword, pageable);
@@ -48,26 +48,15 @@ public class SearchService {
     }
 
     @Transactional(readOnly = true)
-    public List<SearchResponse.ShelterDTO> searchShelterList(String keyword, Integer page) {
+    public List<SearchResponse.ShelterDTO> searchShelterList(String keyword, Pageable pageable) {
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
-        List<Shelter> shelters = shelterRepository.findByNameContaining(formattedKeyword);
+        Page<Shelter> shelters = shelterRepository.findByNameContaining(formattedKeyword, pageable);
 
-        List<SearchResponse.ShelterDTO> shelterDTOS = shelters.stream()
-                .filter(shelter -> shelter.getAnimalCnt() > 0 && shelter.getLatitude() != null)
+        List<SearchResponse.ShelterDTO> shelterDTOS = shelters.getContent().stream()
                 .map(shelter -> new SearchResponse.ShelterDTO(shelter.getId(), shelter.getName()))
                 .collect(Collectors.toList());
 
-        // 쿼리문의 복잡성으로 직접 페이징 (보호 개수가 많지 않아서 속도가 잘 나옴)
-        int pageSize = 3;
-        int startIndex = page * pageSize;
-        int endIndex = Math.min(startIndex + pageSize, shelterDTOS.size());
-
-        // 잘못된 페이지 번호 처리
-        if (startIndex > shelterDTOS.size()) {
-            return Collections.emptyList();
-        }
-
-        return shelterDTOS.subList(startIndex, endIndex);
+        return shelterDTOS;
     }
 
     @Transactional(readOnly = true)
