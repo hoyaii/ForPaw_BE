@@ -82,6 +82,9 @@ public class AnimalService {
     @Value("${recommend.uri}")
     private String animalRecommendURI;
 
+    @Value("${animal.update.uri}")
+    private String updateAnimalIntroduceURI;
+
     private static final String SORT_BY_ID = "id";
     private static final String SORT_BY_CREATED_DATE = "createdDate";
     private static final Map<String, AnimalType> ANIMAL_TYPE_MAP = Map.of(
@@ -169,6 +172,9 @@ public class AnimalService {
         updatedShelters.forEach(shelter ->
                 shelter.updateAnimalCnt(animalRepository.countByShelterId(shelter.getId()))
         );
+
+        // FastAPI에 소개글 업데이트 요청
+        updateAnimalIntroduction();
     }
 
     @Transactional
@@ -564,11 +570,11 @@ public class AnimalService {
     }
 
     public List<Long> getRecommendedAnimalIdList(Long userId){
-        PageRequest pageRequest = PageRequest.of(0, 5);
+        Pageable pageable = PageRequest.of(0, 5);
 
         // 로그인 되지 않았으면, 추천을 할 수 없으니 그냥 최신순 반환
         if (userId == null) {
-            return animalRepository.findAllIds(pageRequest).getContent();
+            return animalRepository.findAllIds(pageable).getContent();
         }
 
         Map<String, Long> requestBody = Map.of("user_id", userId);
@@ -587,6 +593,13 @@ public class AnimalService {
         }
 
         return recommendedAnimalIds;
+    }
+
+    private void updateAnimalIntroduction(){
+        webClient.post()
+                .uri(updateAnimalIntroduceURI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .retrieve();
     }
 
     private List<Long> findAnimalIdListByUserLocation(Long userId) {
