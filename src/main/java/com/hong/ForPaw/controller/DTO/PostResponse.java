@@ -18,7 +18,7 @@ public class PostResponse {
     public record FindQnaPostListDTO(List<QnaDTO> questions) {}
 
     public record PostDTO(Long id,
-                          String name,
+                          String nickName,
                           String title,
                           String content,
                           LocalDateTime date,
@@ -27,7 +27,7 @@ public class PostResponse {
                           String imageURL){}
 
     public record QnaDTO(Long id,
-                         String name,
+                         String nickName,
                          String profileURL,
                          String title,
                          String content,
@@ -36,37 +36,42 @@ public class PostResponse {
 
     public record PostImageDTO(Long id, String imageURL) {}
 
-    public record FindPostByIdDTO(String name,
+    public record FindPostByIdDTO(String nickName,
                                   String title,
                                   String content,
                                   LocalDateTime date,
                                   Long commentNum,
                                   Long likeNum,
                                   List<PostImageDTO> images,
-                                  List<CommentDTO> comments){}
+                                  List<CommentDTO> comments,
+                                  boolean isMine) {}
 
-    public record FIndQnaByIdDTO(String name,
+    public record FindQnaByIdDTO(String nickName,
+                                 String profileURL,
                                  String title,
                                  String content,
                                  LocalDateTime date,
                                  List<PostImageDTO> images,
-                                 List<AnswerDTO> answers) {}
+                                 List<AnswerDTO> answers,
+                                 boolean isMine) {}
 
     public record AnswerDTO(Long id,
-                            String name,
+                            String nickName,
+                            String profileURL,
                             String content,
                             LocalDateTime date,
-                            List<PostImageDTO> images) {}
+                            List<PostImageDTO> images,
+                            boolean isMine) {}
 
     public record CommentDTO(Long id,
-                             String name,
+                             String nickName,
                              String content,
                              LocalDateTime date,
                              Province location,
                              List<ReplyDTO> replies) {}
 
     public record ReplyDTO(Long id,
-                           String name,
+                           String nickName,
                            String replyName,
                            String content,
                            LocalDateTime date,

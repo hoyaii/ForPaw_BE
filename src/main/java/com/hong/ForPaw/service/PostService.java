@@ -202,6 +202,8 @@ public class PostService {
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
+        boolean isMine = post.getUser().getId().equals(userId);
+
         // 질문글을 조회하기 위한 API 아님 => 질문글이면 에러 리턴
         if(post.getPostType().equals(PostType.QUESTION)){
             throw new CustomException(ExceptionCode.IS_QUESTION_TYPE);
@@ -233,15 +235,17 @@ public class PostService {
             redisService.addSetElement(key, postId, POST_READ_EXP);
         }
 
-        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, postImageDTOS, commentDTOS);
+        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, postImageDTOS, commentDTOS, isMine);
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FIndQnaByIdDTO findQnaById(Long postId){
+    public PostResponse.FindQnaByIdDTO findQnaById(Long postId, Long userId){
         // user, postImages를 패치조인 해서 조회
         Post post = postRepository.findById(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
+
+        boolean isMineForQuestion = post.getUser().getId().equals(userId);
 
         // 질문 게시글에 대해서만 조회 가능
         if(!post.getPostType().equals(PostType.QUESTION)){
@@ -265,16 +269,19 @@ public class PostService {
                             .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
                             .collect(Collectors.toList());
 
+                    boolean isMineForAnswer = answer.getUser().getId().equals(userId);
                     return new PostResponse.AnswerDTO(
                             answer.getId(),
                             answer.getUser().getNickName(),
+                            answer.getUser().getProfileURL(),
                             answer.getContent(),
                             answer.getCreatedDate(),
-                            answerImageDTOS);
+                            answerImageDTOS,
+                            isMineForAnswer);
                 })
                 .collect(Collectors.toList());
 
-        return new PostResponse.FIndQnaByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), postImageDTOS, answerDTOS);
+        return new PostResponse.FindQnaByIdDTO(post.getUser().getNickName(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), postImageDTOS, answerDTOS, isMineForQuestion);
     }
 
     @Transactional
@@ -299,12 +306,12 @@ public class PostService {
             postImageRepository.deleteByPostId(postId);
         }
 
-        postImages.stream()
+        /*postImages.stream()
                 .filter(postImage -> !requestDTO.retainedImageIds().contains(postImage.getId()))
                 .forEach(postImage -> {
                     String objectKey = s3Service.extractObjectKeyFromUri(postImage.getImageURL());
                     s3Service.deleteImage(objectKey);
-                });
+                });*/
 
         // 새 이미지 추가
         List<PostImage> newImages = requestDTO.newImages().stream()
