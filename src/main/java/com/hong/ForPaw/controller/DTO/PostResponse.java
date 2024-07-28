@@ -11,8 +11,6 @@ public class PostResponse {
 
     public record CreateAnswerDTO(Long id) {}
 
-    public record FindAllPostDTO(List<PostDTO> adoptions, List<PostDTO> fostering, List<QnaDTO> questions) {}
-
     public record FindAdoptionPostListDTO(List<PostDTO> adoptions) {}
 
     public record FindFosteringPostListDTO(List<PostDTO> fostering) {}
@@ -30,6 +28,7 @@ public class PostResponse {
 
     public record QnaDTO(Long id,
                          String name,
+                         String profileURL,
                          String title,
                          String content,
                          LocalDateTime date,

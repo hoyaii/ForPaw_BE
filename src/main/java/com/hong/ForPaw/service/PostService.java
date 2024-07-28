@@ -185,6 +185,7 @@ public class PostService {
                 .map(post -> new PostResponse.QnaDTO(
                         post.getId(),
                         post.getUser().getNickName(),
+                        post.getUser().getProfileURL(),
                         post.getTitle(),
                         post.getContent(),
                         post.getCreatedDate(),
