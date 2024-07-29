@@ -98,4 +98,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     void decrementCommentNum(@Param("postId") Long postId, @Param("decrementNum") Long decrementNum);
 
     void deleteAllByGroupId(Long groupId);
+
+    @Modifying
+    @Query("DELETE Post p WHERE p.id = :postId AND p.removedAt IS NULL")
+    void deleteById(@Param("postId") Long postId);
 }

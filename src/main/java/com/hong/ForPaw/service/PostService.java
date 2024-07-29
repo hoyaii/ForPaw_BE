@@ -300,7 +300,7 @@ public class PostService {
         // 게시글 이미지 DTO
         List<PostResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
                 .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
-                .collect(Collectors.toList());
+                .toList();
 
         return new PostResponse.FindAnswerByIdDTO(post.getUser().getNickName(), post.getContent(), post.getCreatedDate(), postImageDTOS, isMine);
     }
@@ -355,12 +355,6 @@ public class PostService {
         // 수정 권한 체크
         checkPostAuthority(post.getUser().getId(), user);
 
-        // 답변글이라서 부모(질문글)이 존재한다면, 답변 수 감소
-        Post parent = post.getParent();
-        if(parent != null){
-            postRepository.decrementAnswerNum(parent.getId());
-        }
-
         // S3에 저장된 이미지 삭제
         /*post.getPostImages().forEach(
                 postImage -> {
@@ -372,8 +366,33 @@ public class PostService {
         postLikeRepository.deleteAllByPostId(postId);
         commentLikeRepository.deleteAllByPostId(postId);
         popularPostRepository.deleteByPostId(postId);
+        postImageRepository.deleteByPostId(postId);
         commentRepository.deleteAllByPostId(postId); // soft-delete
         postRepository.delete(post); // soft-delete
+    }
+
+    @Transactional
+    public void deleteAnswer(Long answerId, User user){
+        // 존재하지 않은 포스트면 에러
+        Post post = postRepository.findByIdWithUserAndParent(answerId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
+        );
+
+        if(!post.getPostType().equals(PostType.ANSWER)){
+            throw new CustomException(ExceptionCode.NOT_ANSWER_TYPE);
+        }
+
+        // 수정 권한 체크
+        checkPostAuthority(post.getUser().getId(), user);
+
+        // 답변글이라서 부모(질문글)이 존재한다면, 답변 수 감소
+        Post parent = post.getParent();
+        if(parent != null){
+            postRepository.decrementAnswerNum(parent.getId());
+        }
+
+        postImageRepository.deleteByPostId(answerId);
+        postRepository.deleteById(answerId);
     }
 
     @Transactional

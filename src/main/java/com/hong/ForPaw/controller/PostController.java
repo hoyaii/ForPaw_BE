@@ -62,9 +62,9 @@ public class PostController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @GetMapping("/posts/{postId}/answer")
-    public ResponseEntity<?> findAnswerById(@PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
-        PostResponse.FindAnswerByIdDTO responseDTO = postService.findAnswerById(postId, userDetails.getUser().getId());
+    @GetMapping("/answers/{answerId}")
+    public ResponseEntity<?> findAnswerById(@PathVariable Long answerId, @AuthenticationPrincipal CustomUserDetails userDetails){
+        PostResponse.FindAnswerByIdDTO responseDTO = postService.findAnswerById(answerId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -77,6 +77,12 @@ public class PostController {
     @DeleteMapping("/posts/{postId}")
     public ResponseEntity<?> deletePost(@PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
         postService.deletePost(postId, userDetails.getUser());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
+    @DeleteMapping("/answers/{answerId}")
+    public ResponseEntity<?> deleteAnswer(@PathVariable Long answerId, @AuthenticationPrincipal CustomUserDetails userDetails){
+        postService.deleteAnswer(answerId, userDetails.getUser());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
