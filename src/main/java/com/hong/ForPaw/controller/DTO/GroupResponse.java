@@ -15,7 +15,8 @@ public class GroupResponse {
                                    String subDistrict,
                                    String description,
                                    String category,
-                                   String profileURL) {}
+                                   String profileURL,
+                                   Long maxNum) {}
 
     public record FindAllGroupListDTO(List<RecommendGroupDTO> recommendGroups,
                                       List<NewGroupDTO> newGroups,

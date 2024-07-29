@@ -24,7 +24,8 @@ public class GroupRequest {
             String description,
             String category,
             @NotBlank
-            String profileURL){}
+            String profileURL,
+            Long maxNum){}
 
     public record UpdateGroupDTO(
             @NotBlank(message = "그룹의 이름을 입력해주세요.")
@@ -39,7 +40,8 @@ public class GroupRequest {
             String description,
             String category,
             @NotBlank
-            String profileURL){}
+            String profileURL,
+            Long maxNum){}
 
     public record ApproveJoinDTO(@NotNull(message = "id를 입력해주세요.") Long id) {}
 

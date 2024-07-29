@@ -77,6 +77,7 @@ public class GroupService {
                 .description(requestDTO.description())
                 .category(requestDTO.category())
                 .profileURL(requestDTO.profileURL())
+                .maxNum(requestDTO.maxNum())
                 .build();
 
         groupRepository.save(group);
@@ -129,7 +130,7 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
 
-        return new GroupResponse.FindGroupByIdDTO(group.getName(), group.getProvince(), group.getDistrict(), group.getSubDistrict(), group.getDescription(), group.getCategory(), group.getProfileURL());
+        return new GroupResponse.FindGroupByIdDTO(group.getName(), group.getProvince(), group.getDistrict(), group.getSubDistrict(), group.getDescription(), group.getCategory(), group.getProfileURL(), group.getMaxNum());
     }
 
     @Transactional
@@ -146,7 +147,7 @@ public class GroupService {
             throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
         }
 
-        group.updateInfo(requestDTO.name(), requestDTO.province(), requestDTO.district(), group.getSubDistrict(), requestDTO.description(), requestDTO.category(), requestDTO.profileURL());
+        group.updateInfo(requestDTO.name(), requestDTO.province(), requestDTO.district(), group.getSubDistrict(), requestDTO.description(), requestDTO.category(), requestDTO.profileURL(), requestDTO.maxNum());
     }
 
     @Transactional(readOnly = true)
@@ -359,19 +360,23 @@ public class GroupService {
 
     @Transactional
     public void joinGroup(GroupRequest.JoinGroupDTO requestDTO, Long userId, Long groupId){
-        // 존재하지 않는 그룹이면 에러 처리
-        checkGroupExist(groupId);
+        Group group = groupRepository.findById(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
+        );
+
+        // 그룹 수용 인원 초과
+        if(group.getMaxNum().equals(group.getParticipantNum())){
+            throw new CustomException(ExceptionCode.GROUP_FULL);
+        }
 
         // 이미 가입했거나 신청한 회원이면 에러 처리
         checkAlreadyMemberOrApplier(groupId, userId);
 
-        Group groupRef = entityManager.getReference(Group.class, groupId);
         User userRef = entityManager.getReference(User.class, userId);
-
         GroupUser groupUser = GroupUser.builder()
                 .groupRole(GroupRole.TEMP)
                 .user(userRef)
-                .group(groupRef)
+                .group(group)
                 .greeting(requestDTO.greeting())
                 .build();
 

@@ -43,13 +43,16 @@ public class Group extends TimeStamp {
     private String profileURL;
 
     @Column
+    private Long maxNum;
+
+    @Column
     private Long participantNum = 0L;
 
     @Column
     private Long likeNum = 0L;
 
     @Builder
-    public Group(String name, Province province, District district, String subDistrict, String description, String category, String profileURL) {
+    public Group(String name, Province province, District district, String subDistrict, String description, String category, String profileURL, Long maxNum) {
         this.name = name;
         this.province = province;
         this.district = district;
@@ -57,9 +60,10 @@ public class Group extends TimeStamp {
         this.description = description;
         this.category = category;
         this.profileURL = profileURL;
+        this.maxNum = maxNum;
     }
 
-    public void updateInfo(String name, Province province, District district, String subDistrict, String description, String category, String profileURL){
+    public void updateInfo(String name, Province province, District district, String subDistrict, String description, String category, String profileURL, Long maxNum){
         this.name = name;
         this.province = province;
         this.district = district;
@@ -67,6 +71,7 @@ public class Group extends TimeStamp {
         this.description = description;
         this.category = category;
         this.profileURL = profileURL;
+        this.maxNum = maxNum;
     }
 
     public void incrementParticipantNum(){
