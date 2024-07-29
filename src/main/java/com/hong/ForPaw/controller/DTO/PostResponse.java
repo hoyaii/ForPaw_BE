@@ -55,6 +55,12 @@ public class PostResponse {
                                  List<AnswerDTO> answers,
                                  boolean isMine) {}
 
+    public record FindAnswerByIdDTO(String nickName,
+                                  String content,
+                                  LocalDateTime date,
+                                  List<PostImageDTO> images,
+                                  boolean isMine) {}
+
     public record AnswerDTO(Long id,
                             String nickName,
                             String profileURL,

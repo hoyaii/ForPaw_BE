@@ -284,6 +284,27 @@ public class PostService {
         return new PostResponse.FindQnaByIdDTO(post.getUser().getNickName(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), postImageDTOS, answerDTOS, isMineForQuestion);
     }
 
+    @Transactional(readOnly = true)
+    public PostResponse.FindAnswerByIdDTO findAnswerById(Long postId, Long userId){
+        // user, postImages를 패치조인 해서 조회
+        Post post = postRepository.findById(postId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
+        );
+
+        boolean isMine = post.getUser().getId().equals(userId);
+
+        if(!post.getPostType().equals(PostType.ANSWER)){
+            throw new CustomException(ExceptionCode.NOT_ANSWER_TYPE);
+        }
+
+        // 게시글 이미지 DTO
+        List<PostResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
+                .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
+                .collect(Collectors.toList());
+
+        return new PostResponse.FindAnswerByIdDTO(post.getUser().getNickName(), post.getContent(), post.getCreatedDate(), postImageDTOS, isMine);
+    }
+
     @Transactional
     public void updatePost(PostRequest.UpdatePostDTO requestDTO, User user, Long postId){
         // 존재하지 않는 글이면 에러

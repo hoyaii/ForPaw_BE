@@ -62,6 +62,12 @@ public class PostController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
+    @GetMapping("/posts/{postId}/answer")
+    public ResponseEntity<?> findAnswerById(@PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
+        PostResponse.FindAnswerByIdDTO responseDTO = postService.findAnswerById(postId, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
     @PatchMapping("/posts/{postId}")
     public ResponseEntity<?> updatePost(@RequestBody @Valid PostRequest.UpdatePostDTO requestDTO, @PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails){
         postService.updatePost(requestDTO, userDetails.getUser(), postId);
