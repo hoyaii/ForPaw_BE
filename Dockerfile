@@ -23,4 +23,4 @@ FROM openjdk:17-jdk-slim AS runtime
 COPY --from=builder /project/build/libs/ForPaw-0.0.1-SNAPSHOT.jar /app/ForPaw-0.0.1-SNAPSHOT.jar
 
 # 컨테이너가 시작될 때 JAR 파일을 실행하도록 설정
-CMD ["java", "-jar", "/app/ForPaw-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-jar", "-Duser.timezone=Asia/Seoul", "/app/ForPaw-0.0.1-SNAPSHOT.jar"]
