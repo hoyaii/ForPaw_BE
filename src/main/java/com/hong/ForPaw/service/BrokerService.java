@@ -25,7 +25,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -114,6 +116,7 @@ public class BrokerService {
                     .content(messageDTO.content())
                     .imageURL(imageURLs)
                     .date(messageDTO.date())
+                    .expireAt(calculateExpireAt(messageDTO.date(), 3)) // 3개월 후 만료
                     .build();
 
             messageRepository.save(message);
@@ -189,5 +192,10 @@ public class BrokerService {
         String routingKey = "user." + userId;
 
         rabbitTemplate.convertAndSend(exchangeName, routingKey, alarm);
+    }
+
+    private Date calculateExpireAt(LocalDateTime date, int months) {
+        LocalDateTime expireDateTime = date.plusMonths(months);
+        return Date.from(expireDateTime.atZone(ZoneId.systemDefault()).toInstant());
     }
 }

@@ -5,10 +5,13 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 
 @Document
@@ -31,13 +34,17 @@ public class Message implements Serializable {
 
     private LocalDateTime date;
 
+    @Indexed(expireAfterSeconds = 0)
+    private Date expireAt;  // TTL 인덱스 필드
+
     @Builder
-    public Message(Long chatRoomId, Long senderId, String senderName, String content, List<String> imageURL,LocalDateTime date) {
+    public Message(Long chatRoomId, Long senderId, String senderName, String content, List<String> imageURL, LocalDateTime date, Date expireAt) {
         this.chatRoomId = chatRoomId;
         this.senderId = senderId;
         this.senderName = senderName;
         this.content = content;
         this.imageURLs = imageURL;
         this.date = date;
+        this.expireAt = expireAt;
     }
 }
