@@ -91,6 +91,7 @@ public enum ExceptionCode {
     // 채팅방 관련 에어
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."),
     MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "메시지를 찾을 수 없습니다"),
+    CAN_ACCESS_PREVIOUS_MESSAGE(HttpStatus.BAD_REQUEST, "이전에 조회한 메시지의 페이지만 조회할 수 있습니다."),
 
     // 잘못된 접근
     BAD_APPROACH(HttpStatus.BAD_REQUEST, "잘못된 접근입니다."),

@@ -149,6 +149,40 @@ public class ChatService {
     }
 
     @Transactional
+    public ChatResponse.FindPreviousMessageListInRoom findPreviousMessageListInRoom(Long chatRoomId, Long userId, Integer page){
+        // 권한 체크
+        ChatUser chatUser = checkChatAuthority(userId, chatRoomId);
+
+        Long lastReadMessageIdx = chatUser.getLastMessageIdx();
+        Long offset = lastReadMessageIdx != 0L ? lastReadMessageIdx / 50 : 0L;
+
+        if(offset <= page){
+            throw new CustomException(ExceptionCode.CAN_ACCESS_PREVIOUS_MESSAGE);
+        }
+
+        Pageable pageable = createAscSortedPageable(page, 50, SORT_BY_ID);
+        Page<Message> messages = messageRepository.findByChatRoomId(chatRoomId, pageable);
+
+        List<ChatResponse.MessageDTD> currentMessageDTOS = messages.getContent().stream()
+                .map(message -> {
+                    List<ChatResponse.ChatImageDTO> chatImageDTOS = message.getImageURLs().stream()
+                            .map(ChatResponse.ChatImageDTO::new)
+                            .toList();
+
+                    return new ChatResponse.MessageDTD(
+                            message.getId(),
+                            message.getSenderName(),
+                            message.getContent(),
+                            chatImageDTOS,
+                            message.getDate(),
+                            message.getSenderId().equals(userId));
+                })
+                .toList();
+
+        return new ChatResponse.FindPreviousMessageListInRoom(currentMessageDTOS);
+    }
+
+    @Transactional
     public ChatResponse.FindChatRoomDrawerDTO findChatRoomDrawer(Long chatRoomId, Long userId){
         // 권한 체크
         checkChatAuthority(userId, chatRoomId);

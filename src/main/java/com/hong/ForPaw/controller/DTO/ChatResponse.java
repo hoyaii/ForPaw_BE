@@ -9,6 +9,8 @@ public class ChatResponse {
 
     public record FindMessageListInRoomDTO(String lastMessageId, List<ChatResponse.MessageDTD> messages) {}
 
+    public record FindPreviousMessageListInRoom(List<ChatResponse.MessageDTD> messages) {}
+
     public record MessageDTD(String messageId,
                              String senderName,
                              String content,
