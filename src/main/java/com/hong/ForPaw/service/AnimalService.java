@@ -166,6 +166,7 @@ public class AnimalService {
         }
 
         // 공지가 만료된 유기 동물 삭제
+        favoriteAnimalRepository.deleteByAnimalIn(expiredAnimals);
         animalRepository.deleteAll(expiredAnimals);
 
         // 보호소의 '보호 동물 수' 업데이트

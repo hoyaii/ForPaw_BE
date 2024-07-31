@@ -49,24 +49,21 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
     @Query("SELECT a FROM Animal a WHERE a.noticeEdt < :date AND a.removedAt IS NULL")
     List<Animal> findAllOutOfDateWithShelter(LocalDate date);
 
-    @Query("SELECT a.id FROM Animal a WHERE a.shelter.regionCode.orgName = :district ORDER BY a.id ASC")
+    @Query("SELECT a.id FROM Animal a WHERE a.removedAt IS NULL AND a.shelter.regionCode.orgName = :district ORDER BY a.id ASC")
     List<Long> findAnimalIdsByDistrict(District district, Pageable pageable);
 
-    @Query("SELECT a.id FROM Animal a WHERE a.shelter.regionCode.uprName = :province ORDER BY a.id ASC")
+    @Query("SELECT a.id FROM Animal a WHERE a.removedAt IS NULL AND a.shelter.regionCode.uprName = :province ORDER BY a.id ASC")
     List<Long> findAnimalIdsByProvince(Province province, Pageable pageable);
-
-    @Query("SELECT a.id FROM Animal a WHERE a.introductionTitle IS NULL")
-    List<Long> findAnimalIdsWithNullTitle();
 
     @Query("SELECT COUNT(a) > 0 FROM Animal a WHERE a.id = :animalId AND a.removedAt IS NULL")
     boolean existsById(@Param("animalId") Long animalId);
 
     @Modifying
-    @Query("UPDATE Animal a SET a.inquiryNum = a.inquiryNum + 1 WHERE a.id = :animalId")
+    @Query("UPDATE Animal a SET a.inquiryNum = a.inquiryNum + 1 WHERE a.id = :animalId AND a.removedAt IS NULL")
     void incrementInquiryNumById(@Param("animalId") Long animalId);
 
     @Modifying
-    @Query("UPDATE Animal a SET a.inquiryNum = a.inquiryNum - 1 WHERE a.id = :animalId AND a.inquiryNum > 0")
+    @Query("UPDATE Animal a SET a.inquiryNum = a.inquiryNum - 1 WHERE a.id = :animalId AND a.inquiryNum > 0 AND a.removedAt IS NULL")
     void decrementInquiryNumById(@Param("animalId") Long animalId);
 
     @Query("SELECT COUNT(a) FROM Animal a WHERE a.removedAt IS NULL")

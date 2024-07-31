@@ -5,6 +5,7 @@ import com.hong.ForPaw.domain.Animal.FavoriteAnimal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -17,11 +18,15 @@ public interface FavoriteAnimalRepository extends JpaRepository<FavoriteAnimal, 
 
     Optional<FavoriteAnimal> findByUserIdAndAnimalId(Long userId, Long animalId);
 
-    @Query("SELECT f.animal FROM FavoriteAnimal f WHERE f.user.id = :userId")
+    @Query("SELECT fa.animal FROM FavoriteAnimal fa WHERE fa.user.id = :userId AND fa.animal.removedAt IS NULL")
     Page<Animal> findFavoriteAnimalByUserId(@Param("userId") Long userId, Pageable pageable);
 
     @Query("SELECT fa.animal.id FROM FavoriteAnimal fa WHERE fa.user.id = :userId")
     List<Long> findLikedAnimalIdsByUserId(@Param("userId") Long userId);
 
     void deleteAllByUserId(Long userId);
+
+    @Modifying
+    @Query("DELETE FROM FavoriteAnimal fa WHERE fa.animal IN :animals AND fa.animal.removedAt IS NULL")
+    void deleteByAnimalIn(@Param("animals") List<Animal> animals);
 }
