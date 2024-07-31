@@ -96,7 +96,7 @@ public class GroupController {
     @GetMapping("/groups/{groupId}/meetings")
     public ResponseEntity<?> findMeetingList(@PathVariable Long groupId, @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         groupService.checkGroupAndMember(groupId, userDetails.getUser().getId());
-        List<GroupResponse.MeetingDTO> meetingDTOS = groupService.findMeetingList(userDetails.getUser().getId(), pageable);
+        List<GroupResponse.MeetingDTO> meetingDTOS = groupService.findMeetingList(groupId, pageable);
         GroupResponse.FindMeetingListDTO responseDTO = new GroupResponse.FindMeetingListDTO(meetingDTOS);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
