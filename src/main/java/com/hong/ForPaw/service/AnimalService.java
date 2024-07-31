@@ -205,10 +205,6 @@ public class AnimalService {
         Page<Animal> animalPage = animalRepository.findAllByAnimalType(animalType, pageable);
         boolean isLastPage = !animalPage.hasNext();
 
-        if(animalPage.isEmpty()){
-            throw new CustomException(ExceptionCode.ANIMAL_NOT_EXIST);
-        }
-
         // 사용자가 '좋아요' 표시한 Animal의 ID 목록 => 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
 
@@ -272,10 +268,6 @@ public class AnimalService {
     public AnimalResponse.FindLikeAnimalListDTO findLikeAnimalList(Pageable pageable, Long userId){
         Page<Animal> animalPage = favoriteAnimalRepository.findFavoriteAnimalByUserId(userId, pageable);
         boolean isLastPage = !animalPage.hasNext();
-
-        if(animalPage.isEmpty()){
-            throw new CustomException(ExceptionCode.ANIMAL_NOT_EXIST);
-        }
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
@@ -412,11 +404,6 @@ public class AnimalService {
     @Transactional(readOnly = true)
     public AnimalResponse.FindApplyListDTO findApplyList(Long userId){
         List<Apply> applies = applyRepository.findAllByUserId(userId);
-
-        // 지원서가 존재하지 않음
-        if(applies.isEmpty()){
-            throw new CustomException(ExceptionCode.APPLY_NOT_FOUND);
-        }
 
         List<AnimalResponse.ApplyDTO> applyDTOS = applies.stream()
                 .map(apply -> new AnimalResponse.ApplyDTO(

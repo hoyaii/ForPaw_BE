@@ -441,6 +441,7 @@ public class GroupService {
         GroupUser groupUser =  groupUserRepository.findByGroupIdAndUserId(groupId, applicantId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_APPLY)
         );
+
         checkAlreadyJoin(groupUser);
 
         // '임시' => '유저'로 역할 변경
@@ -475,9 +476,10 @@ public class GroupService {
         checkAdminAuthority(groupId, userId);
 
         // 신청한 적이 없거나 이미 가입했는지 체크
-        GroupUser groupUser =  groupUserRepository.findByGroupIdAndUserId(groupId, applicantId).orElseThrow(
+        GroupUser groupUser = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_APPLY)
         );
+
         checkAlreadyJoin(groupUser);
 
         groupUserRepository.delete(groupUser);
