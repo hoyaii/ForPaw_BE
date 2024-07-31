@@ -43,9 +43,9 @@ public class GroupRequest {
             String profileURL,
             Long maxNum){}
 
-    public record ApproveJoinDTO(@NotNull(message = "id를 입력해주세요.") Long id) {}
+    public record ApproveJoinDTO(@NotNull(message = "id를 입력해주세요.") Long applicantId) {}
 
-    public record RejectJoinDTO(@NotNull(message = "id를 입력해주세요.") Long id) {}
+    public record RejectJoinDTO(@NotNull(message = "id를 입력해주세요.") Long applicantId) {}
 
     public record JoinGroupDTO(@NotBlank(message = "가입 인사말을 입력해주세요.") String greeting) {}
 
