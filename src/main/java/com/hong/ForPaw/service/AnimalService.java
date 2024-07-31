@@ -172,9 +172,6 @@ public class AnimalService {
         updatedShelters.forEach(shelter ->
                 shelter.updateAnimalCnt(animalRepository.countByShelterId(shelter.getId()))
         );
-
-        // FastAPI에 소개글 업데이트 요청
-        updateAnimalIntroduction();
     }
 
     @Transactional

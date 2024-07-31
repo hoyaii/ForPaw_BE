@@ -16,8 +16,13 @@ async def lifespan(app: FastAPI):
     animal_matrix, animal_index = await load_and_vectorize_animal_data()
     group_matrix, group_index = await load_and_vectorize_group_data()
 
-    # 스케줄러 설정, 매일 16시 26분에 update_new_animals 함수를 실행
+    # 스케줄러 설정,
     scheduler = AsyncIOScheduler()
+
+    # 매일 자정 10분에 process_animal_introduction 실행
+    scheduler.add_job(partial(process_animal_introduction, None), 'cron', hour=0, minute=10)
+
+    # 매일 16시 26분에 update_new_animals 실행
     scheduler.add_job(partial(update_new_animals, animal_index, animal_matrix), 'cron', hour=16, minute=26)
     scheduler.add_job(partial(update_new_groups, group_index, group_matrix), 'cron', hour=16, minute=30)
     scheduler.start()

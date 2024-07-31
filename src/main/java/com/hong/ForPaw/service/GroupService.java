@@ -841,7 +841,7 @@ public class GroupService {
     private void checkAdminAuthority(Long groupId, Long userId){
         Set<GroupRole> roles = EnumSet.of(GroupRole.ADMIN, GroupRole.CREATOR);
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
-                .filter(groupUser -> roles.contains(groupUser.getGroupRole())) // ADMIN인 경우에만 통과 (ADMIN이 아니면 null이 되어 orElseThrow 실행)
+                .filter(groupUser -> roles.contains(groupUser.getGroupRole()))
                 .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN)); // ADMIN이 아니거나 그룹과 관련없는 사람이면 에러 보냄
     }
 
