@@ -43,7 +43,7 @@ public class Group extends TimeStamp {
     private String profileURL;
 
     @Column
-    private Long maxNum;
+    private Long maxNum = 30L;
 
     @Column
     private Long participantNum = 0L;

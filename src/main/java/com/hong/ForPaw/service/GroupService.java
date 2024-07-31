@@ -404,6 +404,30 @@ public class GroupService {
     }
 
     @Transactional
+    public GroupResponse.FindApplicantListDTO findApplicantList(Long managerId, Long groupId){
+        // 존재하지 않는 그룹이면 에러
+        checkGroupExist(groupId);
+
+        // 권한 체크
+        checkAdminAuthority(groupId, managerId);
+
+        List<GroupUser> applicants = groupUserRepository.findByGroupRole(groupId, GroupRole.TEMP);
+        List<GroupResponse.ApplicantDTO> applicantDTOS = applicants.stream()
+                .map(gu -> new GroupResponse.ApplicantDTO(
+                        gu.getUser().getId(),
+                        gu.getUser().getNickName(),
+                        gu.getGreeting(),
+                        gu.getUser().getEmail(),
+                        gu.getUser().getProfileURL(),
+                        gu.getUser().getProvince(),
+                        gu.getUser().getDistrict(),
+                        gu.getCreatedDate()))
+                .toList();
+
+        return new GroupResponse.FindApplicantListDTO(applicantDTOS);
+    }
+
+    @Transactional
     public void approveJoin(Long managerId, Long applicantId, Long groupId){
         // 존재하지 않는 그룹이면 에러
         Group group = groupRepository.findById(groupId).orElseThrow(

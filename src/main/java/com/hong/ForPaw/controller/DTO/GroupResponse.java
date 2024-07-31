@@ -99,11 +99,25 @@ public class GroupResponse {
 
     public record ParticipantDTO(String profileURL) {}
 
-    public record MemberDTO(Long id, String name, GroupRole role, String profileURL) {}
+    public record MemberDTO(Long id,
+                            String name,
+                            GroupRole role,
+                            String profileURL) {}
 
     public record CreateGroupDTO(Long id) {}
 
     public record CreateMeetingDTO(Long id) {}
 
     public record CreateNoticeDTO(Long id) {}
+
+    public record FindApplicantListDTO(List<ApplicantDTO> applicants) {}
+
+    public record ApplicantDTO(Long id,
+                               String nickName,
+                               String greeting,
+                               String email,
+                               String profileURL,
+                               Province province,
+                               District district,
+                               LocalDateTime applyDate) {}
 }
