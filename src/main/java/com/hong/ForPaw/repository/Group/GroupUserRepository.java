@@ -38,7 +38,7 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
     @Query("SELECT gu.group FROM GroupUser gu WHERE gu.user.id = :userId")
     List<Group> findAllGroupByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT gu.group FROM GroupUser gu WHERE gu.user.id = :userId")
+    @Query("SELECT gu.group FROM GroupUser gu WHERE gu.user.id = :userId AND gu.groupRole != com.hong.ForPaw.domain.Group.GroupRole.TEMP")
     Page<Group> findAllGroupByUserId(@Param("userId") Long userId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})

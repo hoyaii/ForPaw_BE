@@ -53,10 +53,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findByPostTypeWithUser(@Param("postType") PostType postType, Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT p FROM Post p WHERE (p.postType = 'ADOPTION' OR p.postType = 'FOSTERING') AND p.removedAt IS NULL")
-    Page<Post> findWithUser(Pageable pageable);
-
-    @EntityGraph(attributePaths = {"user"})
     @Query("SELECT p FROM Post p WHERE p.parent.id = :parentId AND p.removedAt IS NULL")
     List<Post> findByParentIdWithUser(@Param("parentId") Long parentId);
 
