@@ -43,7 +43,6 @@ public class ChatService {
 
         // 전송을 위한 메시지 DTO
         String messageId = UUID.randomUUID().toString();
-        LocalDateTime sendDate = LocalDateTime.now();
 
         ChatRequest.MessageDTO messageDTO = new ChatRequest.MessageDTO(
                 messageId,
@@ -52,7 +51,7 @@ public class ChatService {
                 senderName,
                 requestDTO.content(),
                 requestDTO.images(),
-                sendDate
+                requestDTO.sendDate()
         );
 
         // 메시지 브로커에 전송 (알람과 이미지는 비동기로 처리)
