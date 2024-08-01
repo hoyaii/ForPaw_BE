@@ -46,6 +46,6 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     void deleteAllByPostId(Long postId);
 
     @Modifying
-    @Query("UPDATE Comment c SET c.removedAt = NOW() WHERE c.post.id IN (SELECT p.id FROM Post p WHERE p.group.id = :groupId )")
-    void deleteAllByGroupId(@Param("groupId") Long groupId);
+    @Query("DELETE FROM Comment c WHERE c.post.id IN (SELECT p.id FROM Post p WHERE p.group.id = :groupId )")
+    void deleteByGroupId(@Param("groupId") Long groupId);
 }

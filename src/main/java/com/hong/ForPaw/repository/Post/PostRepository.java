@@ -96,6 +96,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     void deleteAllByGroupId(Long groupId);
 
     @Modifying
-    @Query("DELETE Post p WHERE p.id = :postId AND p.removedAt IS NULL")
+    @Query("DELETE FROM Post p WHERE p.group.id = :groupId")
+    void deleteByGroupId(@Param("groupId") Long groupId);
+
+    @Modifying
+    @Query("DELETE FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
     void deleteById(@Param("postId") Long postId);
 }

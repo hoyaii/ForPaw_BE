@@ -19,8 +19,6 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
     boolean existsById(Long id);
 
-    void deleteAllByGroupId(Long groupId);
-
     Page<Meeting> findByGroupId(Long groupId, Pageable pageable);
 
     @Modifying
@@ -36,4 +34,8 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
     @Query("SELECT m FROM Meeting m WHERE m.meetDate < :date")
     List<Meeting> findAllByMeetDateBefore(@Param("date") LocalDateTime date);
+
+    @Modifying
+    @Query("DELETE FROM Meeting m WHERE m.group.id = :groupId")
+    void deleteByGroupId(@Param("groupId") Long groupId);
 }

@@ -19,15 +19,13 @@ public interface ChatUserRepository extends JpaRepository<ChatUser, Long> {
 
     Optional<ChatUser> findByUserIdAndChatRoomId(Long userId, Long chatRoomId);
 
-
-
     @EntityGraph(attributePaths = {"chatRoom"})
     @Query("SELECT cu FROM ChatUser cu WHERE cu.user.id = :userId")
     List<ChatUser> findByUserIdWithChatRoom(Long userId);
 
     @Modifying
     @Query("DELETE FROM ChatUser cu WHERE cu.chatRoom.id IN (SELECT cr.id FROM ChatRoom cr WHERE cr.group.id = :groupId)")
-    void deleteAllByGroupId(@Param("groupId") Long groupId);
+    void deleteByGroupId(@Param("groupId") Long groupId);
 
     void deleteAllByUserId(Long userId);
 }

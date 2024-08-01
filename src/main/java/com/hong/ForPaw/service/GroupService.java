@@ -581,16 +581,16 @@ public class GroupService {
         checkCreatorAuthority(groupId, userId);
 
         // 그룹, 미팅 연관 데이터 삭제
-        meetingUserRepository.deleteAllByGroupId(groupId);
-        meetingRepository.deleteAllByGroupId(groupId);
-        favoriteGroupRepository.deleteAllByGroupId(groupId);
-        groupUserRepository.deleteAllByGroupId(groupId);
+        meetingUserRepository.deleteByGroupId(groupId);
+        meetingRepository.deleteByGroupId(groupId);
+        favoriteGroupRepository.deleteByGroupId(groupId);
+        groupUserRepository.deleteByGroupId(groupId);
 
         // 그룹과 관련된 게시글, 댓글 관련 데이터 삭제
-        postLikeRepository.deleteAllByGroupId(groupId);
-        commentLikeRepository.deleteAllByGroupId(groupId);
-        commentRepository.deleteAllByGroupId(groupId);
-        postRepository.deleteAllByGroupId(groupId);
+        postLikeRepository.deleteByGroupId(groupId);
+        commentLikeRepository.deleteByGroupId(groupId);
+        commentRepository.deleteByGroupId(groupId);
+        postRepository.deleteByGroupId(groupId);
 
         // 레디스에 저장된 좋아요 수 삭제
         redisService.removeData("groupLikeNum", groupId.toString());
@@ -600,7 +600,7 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.CHAT_ROOM_NOT_FOUND)
         );
         String queueName = "room." + chatRoom.getId();
-        chatUserRepository.deleteAllByGroupId(groupId);
+        chatUserRepository.deleteByGroupId(groupId);
         chatRoomRepository.delete(chatRoom);
         brokerService.deleteQueue(queueName); // 채팅방 큐 삭제
 

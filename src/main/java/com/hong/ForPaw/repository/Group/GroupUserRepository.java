@@ -54,7 +54,9 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
 
     void deleteByGroupIdAndUserId(Long groupId, Long userId);
 
-    void deleteAllByGroupId(Long groupId);
+    @Modifying
+    @Query("DELETE FROM GroupUser gu WHERE gu.group.id = :groupId")
+    void deleteByGroupId(@Param("groupId") Long groupId);
 
     void deleteAllByUserId(Long userId);
 }

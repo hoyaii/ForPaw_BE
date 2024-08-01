@@ -1,7 +1,6 @@
 package com.hong.ForPaw.repository.Post;
 
 import com.hong.ForPaw.domain.Post.CommentLike;
-import com.hong.ForPaw.domain.Post.PostLike;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -23,7 +22,7 @@ public interface CommentLikeRepository extends JpaRepository<CommentLike, Long> 
 
     @Modifying
     @Query("DELETE FROM CommentLike cl WHERE cl.comment.id IN (SELECT c.id FROM Comment c WHERE c.post.id IN (SELECT p.id FROM Post p WHERE p.group.id = :groupId))")
-    void deleteAllByGroupId(@Param("groupId") Long groupId);
+    void deleteByGroupId(@Param("groupId") Long groupId);
 
     void deleteAllByUserId(Long userId);
 }

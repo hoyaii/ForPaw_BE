@@ -471,7 +471,7 @@ public class UserService {
         postLikeRepository.deleteAllByUserId(userId);
         commentLikeRepository.deleteAllByUserId(userId);
         favoriteAnimalRepository.deleteAllByUserId(userId);
-        favoriteGroupRepository.deleteAllByGroupId(userId);
+        favoriteGroupRepository.deleteByGroupId(userId);
         chatUserRepository.deleteAllByUserId(userId);
         groupUserRepository.findAllByUserIdWithGroup(userId).forEach(
                 groupUser -> {
