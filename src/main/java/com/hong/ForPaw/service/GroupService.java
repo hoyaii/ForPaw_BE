@@ -14,6 +14,7 @@ import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.District;
 import com.hong.ForPaw.domain.Province;
 import com.hong.ForPaw.domain.User.User;
+import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Group.*;
@@ -576,7 +577,7 @@ public class GroupService {
         // 존재하지 않는 그룹이면 에러
         checkGroupExist(groupId);
 
-        // 권한체크 (그룹장만 삭제 가능)
+        // 권한체크
         checkCreatorAuthority(groupId, userId);
 
         // 그룹, 미팅 연관 데이터 삭제
@@ -859,6 +860,15 @@ public class GroupService {
     }
 
     private void checkCreatorAuthority(Long groupId, Long userId){
+        UserRole role = userRepository.findRoleById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+
+        // Admin은 접근 가능
+        if(role.equals(UserRole.ADMIN) || role.equals(UserRole.SUPER)){
+            return;
+        }
+
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(groupUser -> groupUser.getGroupRole().equals(GroupRole.CREATOR))
                 .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
