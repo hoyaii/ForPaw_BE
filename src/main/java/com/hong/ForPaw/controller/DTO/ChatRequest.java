@@ -16,7 +16,7 @@ public class ChatRequest {
     public record SendMessageDTO(
             @NotNull(message = "채팅방 ID를 입력해주세요.")
             Long chatRoomId,
-            @NotBlank(message = "내용을 입력해주세요.")
+            @NotNull(message = "내용을 입력해주세요.")
             String content,
             List<ChatImageDTO> images,
             LocalDateTime sendDate) {}

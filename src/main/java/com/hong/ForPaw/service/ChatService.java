@@ -188,7 +188,10 @@ public class ChatService {
 
         // 채팅방에 참여한 유저
         List<ChatResponse.ChatUserDTO> chatUserDTOS = chatRoomRepository.findAllUserByChatRoomId(chatRoomId).stream()
-                .map(user -> new ChatResponse.ChatUserDTO(user.getId(), user.getName()))
+                .map(user -> new ChatResponse.ChatUserDTO(
+                        user.getId(),
+                        user.getNickName(),
+                        user.getProfileURL()))
                 .toList();
 
         // 채팅방의 이미지
