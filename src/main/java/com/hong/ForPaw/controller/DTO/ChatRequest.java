@@ -18,8 +18,7 @@ public class ChatRequest {
             Long chatRoomId,
             @NotNull(message = "내용을 입력해주세요.")
             String content,
-            List<ChatImageDTO> images,
-            LocalDateTime sendDate) {}
+            List<ChatImageDTO> images) {}
 
     public record ChatImageDTO(String imageURL){}
 

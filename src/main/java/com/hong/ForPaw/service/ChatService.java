@@ -10,6 +10,7 @@ import com.hong.ForPaw.repository.Chat.ChatImageRepository;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Chat.MessageRepository;
+import com.hong.ForPaw.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +31,7 @@ public class ChatService {
 
     private final MessageRepository messageRepository;
     private final ChatUserRepository chatUserRepository;
+    private final UserRepository userRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatImageRepository chatImageRepository;
     private final BrokerService brokerService;
@@ -43,6 +45,7 @@ public class ChatService {
 
         // 전송을 위한 메시지 DTO
         String messageId = UUID.randomUUID().toString();
+        LocalDateTime sendDate = LocalDateTime.now();
 
         ChatRequest.MessageDTO messageDTO = new ChatRequest.MessageDTO(
                 messageId,
@@ -51,7 +54,7 @@ public class ChatService {
                 senderName,
                 requestDTO.content(),
                 requestDTO.images(),
-                requestDTO.sendDate()
+                sendDate
         );
 
         // 메시지 브로커에 전송 (알람과 이미지는 비동기로 처리)
@@ -104,6 +107,7 @@ public class ChatService {
     public ChatResponse.FindMessageListInRoomDTO findMessageListInRoom(Long chatRoomId, Long userId, Integer startPage){
         // 권한 체크
         ChatUser chatUser = checkChatAuthority(userId, chatRoomId);
+        String nickName = userRepository.findNickname(userId);
 
         List<ChatResponse.MessageDTD> messageDTOS = new ArrayList<>();
         boolean isLast = false;
@@ -140,11 +144,10 @@ public class ChatService {
         if (!messageDTOS.isEmpty()) {
             ChatResponse.MessageDTD lastMessage = messageDTOS.get(messageDTOS.size() - 1);
             long chatNum = messageRepository.countByChatRoomId(chatRoomId);
-
             chatUser.updateLastMessage(lastMessage.messageId(), chatNum - 1);
         }
 
-        return new ChatResponse.FindMessageListInRoomDTO(chatUser.getLastMessageId(), messageDTOS);
+        return new ChatResponse.FindMessageListInRoomDTO(chatUser.getLastMessageId(), nickName, messageDTOS);
     }
 
     @Transactional
