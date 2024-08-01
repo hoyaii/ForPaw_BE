@@ -67,7 +67,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
             user = getUserFromToken(refreshToken);
 
             // 리프레쉬 토큰에 인증 정보 존재 => 리프레쉬 토큰을 바탕으로 토큰 재발급
-            if (user != null) {
+            if (user != null && redisService.validateData("refreshToken", String.valueOf(user.getId()), refreshToken)) {
                 accessToken = JWTProvider.createAccessToken(user);
                 refreshToken = JWTProvider.createRefreshToken(user);
                 CookieUtils.setCookieToResponse(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, refreshToken, JWTProvider.REFRESH_EXP_SEC, false, true, response);
