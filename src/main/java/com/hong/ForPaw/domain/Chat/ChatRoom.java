@@ -45,4 +45,8 @@ public class ChatRoom extends TimeStamp {
         chatImages.add(chatImage);
         chatImage.updateChatRoom(this);
     }
+
+    public void updateName(String name){
+        this.name = name;
+    }
 }

@@ -147,6 +147,11 @@ public class GroupService {
             throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
         }
 
+        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.CHAT_ROOM_NOT_FOUND)
+        );
+        chatRoom.updateName(requestDTO.name());
+
         group.updateInfo(requestDTO.name(), requestDTO.province(), requestDTO.district(), group.getSubDistrict(), requestDTO.description(), requestDTO.category(), requestDTO.profileURL(), requestDTO.maxNum());
     }
 
@@ -398,7 +403,9 @@ public class GroupService {
         groupUserRepository.deleteByGroupIdAndUserId(groupId, userId);
 
         // 그룹 채팅방에서 탈퇴
-        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
+        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.CHAT_ROOM_NOT_FOUND)
+        );
         ChatUser chatUser = chatUserRepository.findByUserIdAndChatRoom(userId, chatRoom).get();
         chatUserRepository.delete(chatUser);
     }
@@ -456,7 +463,9 @@ public class GroupService {
         createAlarm(applicantId, content, redirectURL, AlarmType.join);
 
         // 신청자는 그룹 채팅방에 참여됨
-        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
+        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.CHAT_ROOM_NOT_FOUND)
+        );
         User applicant = entityManager.getReference(User.class, applicantId);
 
         ChatUser chatUser = ChatUser.builder()
@@ -586,7 +595,9 @@ public class GroupService {
         redisService.removeData("groupLikeNum", groupId.toString());
 
         // 그룹 채팅방 삭제
-        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId);
+        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.CHAT_ROOM_NOT_FOUND)
+        );
         String queueName = "room." + chatRoom.getId();
         chatUserRepository.deleteAllByGroupId(groupId);
         chatRoomRepository.delete(chatRoom);
