@@ -169,9 +169,6 @@ public class UserService {
         // 로그인 IP 로깅
         recordLoginAttempt(user, request);
 
-        // 기존에 로그인 된 세션 삭제
-        invalidateDuplicateSession(user);
-
         return createToken(user);
     }
 
@@ -229,11 +226,11 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
 
         // 비정상 경로를 통한 요청을 대비해, 이메일/닉네임 다시 체크
-        //if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
-        //    throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
+        if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
+            throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
 
-        //if(userRepository.existsByNickWithRemoved(requestDTO.nickName()))
-        //    throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
+        if(userRepository.existsByNickWithRemoved(requestDTO.nickName()))
+            throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
 
         User user = User.builder()
                 .name(requestDTO.name())
@@ -288,13 +285,13 @@ public class UserService {
     @Async
     public void checkEmailAndSendCode(UserRequest.EmailDTO requestDTO){
         // 가입한 이메일이 존재 한다면
-        //if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
-        //    throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
+        if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
+            throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
 
         // 계속 이메일을 보내는 건 방지. 5분 후에 다시 시도할 수 있다
-        //if(redisService.isDateExist("emailCode", requestDTO.email())){
-        //    throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
-        //}
+        if(redisService.isDateExist("emailCode", requestDTO.email())){
+            throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
+        }
 
         // 인증 코드 전송 및 레디스에 저장
         String verificationCode = sendCodeByMail(requestDTO.email());
@@ -694,20 +691,12 @@ public class UserService {
         return verificationCode;
     }
 
-    // 중복 로그인 체크 => 만약 이미 로그인된 상태라면 기존 세션은 삭제
-    private void invalidateDuplicateSession(User user){
-        String accessToken = redisService.getDataInStr("accessToken", String.valueOf(user.getId()));
-
-        if(accessToken != null){
-            redisService.removeData("accessToken", String.valueOf(user.getId()));
-        }
-    }
-
     private Map<String, String> createToken(User user){
         String accessToken = JWTProvider.createAccessToken(user);
         String refreshToken = JWTProvider.createRefreshToken(user);
 
-        // Access Token 세션에 저장 (중복 로그인 방지)
+        // Access Token 갱신
+        redisService.removeData("accessToken", String.valueOf(user.getId()));
         redisService.storeValue("accessToken", String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP_MILLI);
 
         // Refresh Token 갱신
@@ -825,9 +814,6 @@ public class UserService {
 
         // 정지 상태 체크
         checkAccountSuspension(user);
-
-        // 기존에 로그인 된 세션 삭제
-        invalidateDuplicateSession(user);
 
         return user;
     }
