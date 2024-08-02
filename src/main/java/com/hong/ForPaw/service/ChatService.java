@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,7 +36,6 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatImageRepository chatImageRepository;
     private final BrokerService brokerService;
-    private final SimpMessagingTemplate messagingTemplate;
     private static final String SORT_BY_ID = "id";
 
     @Transactional
@@ -62,12 +62,8 @@ public class ChatService {
                 senderId
         );
 
-        // 메시지 브로커에 전송 (알람과 이미지는 비동기로 처리)
-        brokerService.produceChatToRoom(requestDTO.chatRoomId(), messageDTO);
-
-        // STOMP 프로토콜을 통한 실시간 메시지 전송
-        //String destination = "/room/" + requestDTO.chatRoomId();
-        //messagingTemplate.convertAndSend(destination, messageDTO);
+        // 메시지 브로커에 비동기로 전송 (알람과 이미지는 비동기로 처리)
+        CompletableFuture.runAsync(() -> brokerService.produceChatToRoom(requestDTO.chatRoomId(), messageDTO));
 
         return new ChatResponse.SendMessageDTO(messageId);
     }
