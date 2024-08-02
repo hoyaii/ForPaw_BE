@@ -40,12 +40,6 @@ public class ChatController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @GetMapping("/chatRooms/{chatRoomId}/messages/previous")
-    public ResponseEntity<?> findPreviousMessageListInRoom(@PathVariable Long chatRoomId, @RequestParam Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
-        ChatResponse.FindPreviousMessageListInRoom responseDTO = chatService.findPreviousMessageListInRoom(chatRoomId, userDetails.getUser().getId(), page);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
-    }
-
     @GetMapping("/chatRooms/{chatRoomId}/drawer")
     public ResponseEntity<?> findChatRoomDrawer(@PathVariable Long chatRoomId, @AuthenticationPrincipal CustomUserDetails userDetails){
         ChatResponse.FindChatRoomDrawerDTO responseDTO = chatService.findChatRoomDrawer(chatRoomId, userDetails.getUser().getId());

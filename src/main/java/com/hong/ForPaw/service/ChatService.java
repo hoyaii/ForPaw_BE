@@ -16,7 +16,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +36,7 @@ public class ChatService {
     private final ChatImageRepository chatImageRepository;
     private final BrokerService brokerService;
     private static final String SORT_BY_ID = "id";
+    private static final String SORT_BY_DATE = "date";
 
     @Transactional
     public ChatResponse.SendMessageDTO sendMessage(ChatRequest.SendMessageDTO requestDTO, Long senderId, String senderNickName){
@@ -89,7 +89,10 @@ public class ChatService {
                         Optional<Message> lastMessageOP = messageRepository.findById(lastMessageId);
                         lastMessageContent = lastMessageOP.map(Message::getContent).orElse(null);
                         lastMessageDate = lastMessageOP.map(Message::getDate).orElse(null);
-                        offset = lastReadMessageIdx != 0L ? lastReadMessageIdx / 50 : 0L;
+
+                        long chatNum = messageRepository.countByChatRoomId(chatUser.getChatRoom().getId());
+                        long entirePageNum = chatNum != 0L ? chatNum / 50 : 0L;
+                        offset = lastReadMessageIdx != 0L ? entirePageNum - (lastReadMessageIdx / 50) : entirePageNum;
                     }
 
                     return new ChatResponse.RoomDTO(
@@ -105,75 +108,21 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatResponse.FindMessageListInRoomDTO findMessageListInRoom(Long chatRoomId, Long userId, Integer startPage){
+    public ChatResponse.FindMessageListInRoomDTO findMessageListInRoom(Long chatRoomId, Long userId, Integer page){
         // 권한 체크
         ChatUser chatUser = checkChatAuthority(userId, chatRoomId);
         String nickName = userRepository.findNickname(userId);
 
-        List<ChatResponse.MessageDTD> messageDTOS = new ArrayList<>();
-        boolean isLast = false;
-        int currentPage = startPage;
+        Pageable pageable = createDescSortedPageable(page, 50, SORT_BY_DATE);
 
-        while(!isLast) {
-            Pageable pageable = createAscSortedPageable(currentPage, 50, SORT_BY_ID);
-            Page<Message> messages = messageRepository.findByChatRoomId(chatRoomId, pageable);
-
-            // 현재 페이지가 마지막 페이지인지 확인
-            isLast = messages.isLast();
-
-            List<ChatResponse.MessageDTD> currentMessageDTOS = messages.getContent().stream()
-                    .map(message -> {
-                        List<ChatResponse.ChatImageDTO> imageDTOS = message.getImageURLs().stream()
-                                .map(ChatResponse.ChatImageDTO::new)
-                                .toList();
-
-                       return new ChatResponse.MessageDTD(
-                               message.getId(),
-                               message.getNickName(),
-                               message.getProfileURL(),
-                               message.getContent(),
-                               imageDTOS,
-                               message.getDate(),
-                               message.getSenderId().equals(userId));
-                    })
-                    .toList();
-
-            messageDTOS.addAll(currentMessageDTOS); // 현재 페이지의 데이터를 추가
-            currentPage++; // 다음 페이지로 이동
-        }
-
-        // 마지막으로 읽은 메시지의 id와 index 업데이트
-        if (!messageDTOS.isEmpty()) {
-            ChatResponse.MessageDTD lastMessage = messageDTOS.get(messageDTOS.size() - 1);
-            long chatNum = messageRepository.countByChatRoomId(chatRoomId);
-            chatUser.updateLastMessage(lastMessage.messageId(), chatNum - 1);
-        }
-
-        return new ChatResponse.FindMessageListInRoomDTO(chatUser.getLastMessageId(), nickName, messageDTOS);
-    }
-
-    @Transactional
-    public ChatResponse.FindPreviousMessageListInRoom findPreviousMessageListInRoom(Long chatRoomId, Long userId, Integer page){
-        // 권한 체크
-        ChatUser chatUser = checkChatAuthority(userId, chatRoomId);
-
-        Long lastReadMessageIdx = chatUser.getLastMessageIdx();
-        Long offset = lastReadMessageIdx != 0L ? lastReadMessageIdx / 50 : 0L;
-
-        if(offset <= page){
-            throw new CustomException(ExceptionCode.CAN_ACCESS_PREVIOUS_MESSAGE);
-        }
-
-        Pageable pageable = createAscSortedPageable(page, 50, SORT_BY_ID);
         Page<Message> messages = messageRepository.findByChatRoomId(chatRoomId, pageable);
-
-        List<ChatResponse.MessageDTD> currentMessageDTOS = messages.getContent().stream()
+        List<ChatResponse.MessageDTO> messageDTOS = new ArrayList<>(messages.getContent().stream()
                 .map(message -> {
                     List<ChatResponse.ChatImageDTO> imageDTOS = message.getImageURLs().stream()
                             .map(ChatResponse.ChatImageDTO::new)
                             .toList();
 
-                    return new ChatResponse.MessageDTD(
+                    return new ChatResponse.MessageDTO(
                             message.getId(),
                             message.getNickName(),
                             message.getProfileURL(),
@@ -182,9 +131,19 @@ public class ChatService {
                             message.getDate(),
                             message.getSenderId().equals(userId));
                 })
-                .toList();
+                .toList());
 
-        return new ChatResponse.FindPreviousMessageListInRoom(currentMessageDTOS);
+        // messageDTOS 리스트의 순서를 역순으로 바꿈
+        Collections.reverse(messageDTOS);
+
+        // 마지막으로 읽은 메시지의 id와 index 업데이트
+        if (!messageDTOS.isEmpty()) {
+            ChatResponse.MessageDTO lastMessage = messageDTOS.get(messageDTOS.size() - 1);
+            long chatNum = messageRepository.countByChatRoomId(chatRoomId);
+            chatUser.updateLastMessage(lastMessage.messageId(), chatNum - 1);
+        }
+
+        return new ChatResponse.FindMessageListInRoomDTO(chatUser.getLastMessageId(), nickName, messageDTOS);
     }
 
     @Transactional
@@ -248,9 +207,5 @@ public class ChatService {
 
     private Pageable createDescSortedPageable(int page, int size, String sortProperty) {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
-    }
-
-    private Pageable createAscSortedPageable(int page, int size, String sortProperty) {
-        return PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, sortProperty));
     }
 }

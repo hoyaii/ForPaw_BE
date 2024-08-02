@@ -7,11 +7,9 @@ public class ChatResponse {
 
     public record SendMessageDTO(String messageId) {}
 
-    public record FindMessageListInRoomDTO(String lastMessageId, String myNickName, List<ChatResponse.MessageDTD> messages) {}
+    public record FindMessageListInRoomDTO(String lastMessageId, String myNickName, List<MessageDTO> messages) {}
 
-    public record FindPreviousMessageListInRoom(List<ChatResponse.MessageDTD> messages) {}
-
-    public record MessageDTD(String messageId,
+    public record MessageDTO(String messageId,
                              String nickName,
                              String profileURL,
                              String content,
