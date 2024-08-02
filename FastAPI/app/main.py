@@ -1,11 +1,11 @@
 # main.py
 from fastapi import FastAPI, BackgroundTasks
 import random
-from app.services import load_and_vectorize_animal_data, load_and_vectorize_group_data, get_similar_animals, update_new_animals, redis_client, generate_animal_introduction, get_similar_groups, update_new_groups, get_animal_ids_with_null_title, update_animal_introductions
+from app.services import load_and_vectorize_animal_data, load_and_vectorize_group_data, get_similar_animals, update_new_animals, redis_client, generate_animal_introduction, get_similar_groups, update_new_groups, get_animal_ids_with_null_title, update_animal_introductions, schedule_process_animal_introduction
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from functools import partial
-from .dto import RecommendRequest, GroupRecommendRequest, AnimalIntroductionRequest
+from .schemas import RecommendRequest, GroupRecommendRequest, AnimalIntroductionRequest
 
 app = FastAPI()
 
@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
     scheduler = AsyncIOScheduler()
 
     # 매일 자정 10분에 process_animal_introduction 실행
-    scheduler.add_job(partial(process_animal_introduction, None), 'cron', hour=0, minute=10)
+    scheduler.add_job(schedule_process_animal_introduction, 'cron', hour=0, minute=10)
 
     # 매일 16시 26분에 update_new_animals 실행
     scheduler.add_job(partial(update_new_animals, animal_index, animal_matrix), 'cron', hour=16, minute=26)

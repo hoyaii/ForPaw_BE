@@ -10,7 +10,7 @@ from .config import settings
 from typing import List
 import logging
 from .init import initialize_mysql, initialize_redis, initialize_milvus
-from .repository import get_db_session, find_animal_by_id, find_group_by_id, find_all_animals, find_all_groups, find_animal_ids_with_null_title
+from .crud import get_db_session, find_animal_by_id, find_group_by_id, find_all_animals, find_all_groups, find_animal_ids_with_null_title
 
 # Milvus, MySQL, 백터화 객체 초기화, PCA 객체 초기화
 animal_collection, group_collection = initialize_milvus()
@@ -246,3 +246,8 @@ async def update_animal_introductions(animal_ids):
             await db.commit()
     
     logger.info("----------------배치 작업 완료----------------")
+
+async def schedule_process_animal_introduction():
+    async with get_db_session(AsyncSessionLocal) as db:
+        animal_ids = await get_animal_ids_with_null_title(db)
+        await update_animal_introductions(animal_ids)

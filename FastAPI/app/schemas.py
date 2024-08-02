@@ -1,4 +1,4 @@
-# dto.py
+# schemas.py
 from pydantic import BaseModel
 
 class RecommendRequest(BaseModel):

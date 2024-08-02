@@ -1,4 +1,4 @@
-# entity.py
+# models.py
 from sqlalchemy import Column, Integer, String, DateTime, Text, Enum as PgEnum
 from sqlalchemy.ext.declarative import declarative_base
 from .enums import Province, District

@@ -1,5 +1,6 @@
+# dto.py
 from sqlalchemy.future import select
-from .entity import Animal, Group
+from .models import Animal, Group
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
