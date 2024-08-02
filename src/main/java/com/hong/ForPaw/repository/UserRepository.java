@@ -26,6 +26,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u.nickName FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
     String findNickname(@Param("id") Long id);
 
+    @Query("SELECT u.profileURL FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
+    Optional<String> findProfileURL(@Param("id") Long id);
+
     @EntityGraph(attributePaths = {"userStatus"})
     @Query("SELECT u FROM User u WHERE (u.role = 'ADMIN' OR u.role = 'USER') AND u.removedAt IS NULL")
     Page<User> findAllAdminAndUserWithUserStatus(Pageable pageable);

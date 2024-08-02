@@ -39,9 +39,13 @@ public class ChatService {
     private static final String SORT_BY_ID = "id";
 
     @Transactional
-    public ChatResponse.SendMessageDTO sendMessage(ChatRequest.SendMessageDTO requestDTO, Long senderId, String senderName){
+    public ChatResponse.SendMessageDTO sendMessage(ChatRequest.SendMessageDTO requestDTO, Long senderId, String senderNickName){
         // 권한 체크
         checkChatAuthority(senderId, requestDTO.chatRoomId());
+
+        String profileURL = userRepository.findProfileURL(senderId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
 
         // 전송을 위한 메시지 DTO
         String messageId = UUID.randomUUID().toString();
@@ -49,20 +53,21 @@ public class ChatService {
 
         ChatRequest.MessageDTO messageDTO = new ChatRequest.MessageDTO(
                 messageId,
-                requestDTO.chatRoomId(),
-                senderId,
-                senderName,
+                senderNickName,
+                profileURL,
                 requestDTO.content(),
                 requestDTO.images(),
-                sendDate
+                sendDate,
+                requestDTO.chatRoomId(),
+                senderId
         );
 
         // 메시지 브로커에 전송 (알람과 이미지는 비동기로 처리)
         brokerService.produceChatToRoom(requestDTO.chatRoomId(), messageDTO);
 
         // STOMP 프로토콜을 통한 실시간 메시지 전송
-        String destination = "/room/" + requestDTO.chatRoomId();
-        messagingTemplate.convertAndSend(destination, messageDTO);
+        //String destination = "/room/" + requestDTO.chatRoomId();
+        //messagingTemplate.convertAndSend(destination, messageDTO);
 
         return new ChatResponse.SendMessageDTO(messageId);
     }
@@ -122,15 +127,16 @@ public class ChatService {
 
             List<ChatResponse.MessageDTD> currentMessageDTOS = messages.getContent().stream()
                     .map(message -> {
-                        List<ChatResponse.ChatImageDTO> chatImageDTOS = message.getImageURLs().stream()
+                        List<ChatResponse.ChatImageDTO> imageDTOS = message.getImageURLs().stream()
                                 .map(ChatResponse.ChatImageDTO::new)
                                 .toList();
 
                        return new ChatResponse.MessageDTD(
                                message.getId(),
-                               message.getSenderName(),
+                               message.getNickName(),
+                               message.getProfileURL(),
                                message.getContent(),
-                               chatImageDTOS,
+                               imageDTOS,
                                message.getDate(),
                                message.getSenderId().equals(userId));
                     })
@@ -167,15 +173,16 @@ public class ChatService {
 
         List<ChatResponse.MessageDTD> currentMessageDTOS = messages.getContent().stream()
                 .map(message -> {
-                    List<ChatResponse.ChatImageDTO> chatImageDTOS = message.getImageURLs().stream()
+                    List<ChatResponse.ChatImageDTO> imageDTOS = message.getImageURLs().stream()
                             .map(ChatResponse.ChatImageDTO::new)
                             .toList();
 
                     return new ChatResponse.MessageDTD(
                             message.getId(),
-                            message.getSenderName(),
+                            message.getNickName(),
+                            message.getProfileURL(),
                             message.getContent(),
-                            chatImageDTOS,
+                            imageDTOS,
                             message.getDate(),
                             message.getSenderId().equals(userId));
                 })

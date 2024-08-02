@@ -110,13 +110,15 @@ public class BrokerService {
                     .toList();
 
             Message message = Message.builder()
-                    .chatRoomId(messageDTO.chatRoomId())
-                    .senderId(messageDTO.senderId())
-                    .senderName(messageDTO.senderName())
+                    .id(messageDTO.messageId())
+                    .nickName(messageDTO.nickName())
+                    .profileURL(messageDTO.profileURL())
                     .content(messageDTO.content())
                     .imageURL(imageURLs)
                     .date(messageDTO.date())
                     .expireAt(calculateExpireAt(messageDTO.date(), 3)) // 3개월 후 만료
+                    .chatRoomId(messageDTO.chatRoomId())
+                    .senderId(messageDTO.senderId())
                     .build();
 
             messageRepository.save(message);

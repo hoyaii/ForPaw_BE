@@ -13,6 +13,7 @@ public class ChatResponse {
 
     public record MessageDTD(String messageId,
                              String nickName,
+                             String profileURL,
                              String content,
                              List<ChatImageDTO> images,
                              LocalDateTime date,
