@@ -31,7 +31,6 @@ public class CookieUtils {
                 .path("/")
                 .sameSite("Lax")
                 .maxAge(maxAgeSec)
-                .domain("localhost")
                 .build();
 
         // 쿠키를 응답 헤더에 추가 (기존에 쿠키가 있더라도 새로 추가)

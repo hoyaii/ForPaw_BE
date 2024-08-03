@@ -39,9 +39,6 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
-        // 모든 헤더를 로깅
-        LogUtils.logAllHeaders(request);
-
         // 엑세스 토큰은 '헤더'에서 추출
         String authorizationHeader = request.getHeader(JWTProvider.AUTHORIZATION);
         String accessToken = (authorizationHeader != null && authorizationHeader.startsWith(JWTProvider.TOKEN_PREFIX)) ?
@@ -71,6 +68,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
                 refreshToken = JWTProvider.createRefreshToken(user);
 
                 updateToken(user, accessToken, refreshToken);
+                CookieUtils.setCookieToResponse(JWTProvider.ACCESS_TOKEN_COOKIE_KEY, accessToken, JWTProvider.ACCESS_EXP_SEC, false, false, response);
                 CookieUtils.setCookieToResponse(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, refreshToken, JWTProvider.REFRESH_EXP_SEC, false, true, response);
             }
         }
