@@ -10,6 +10,7 @@ import com.hong.ForPaw.domain.Chat.ChatRoom;
 import com.hong.ForPaw.domain.Chat.ChatUser;
 import com.hong.ForPaw.domain.Group.*;
 import com.hong.ForPaw.domain.Post.Post;
+import com.hong.ForPaw.domain.Post.PostImage;
 import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.District;
 import com.hong.ForPaw.domain.Province;
@@ -510,6 +511,12 @@ public class GroupService {
 
         Group groupRef = entityManager.getReference(Group.class, groupId);
         User userRef = entityManager.getReference(User.class, userId);
+        List<PostImage> postImages = requestDTO.images().stream()
+                .map(postImageDTO -> PostImage.builder()
+                        .imageURL(postImageDTO.imageURL())
+                        .build())
+                .toList();
+
         Post notice = Post.builder()
                 .user(userRef)
                 .group(groupRef)
@@ -517,6 +524,9 @@ public class GroupService {
                 .title(requestDTO.title())
                 .content(requestDTO.content())
                 .build();
+
+        // 연관관계 설정
+        postImages.forEach(notice::addImage);
 
         postRepository.save(notice);
 
