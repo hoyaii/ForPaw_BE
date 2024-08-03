@@ -24,6 +24,7 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Enumeration;
 
 @Slf4j
 public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
@@ -37,6 +38,9 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
+        // 모든 헤더를 로깅하는 코드 추가
+        logAllHeaders(request);
+
         // 엑세스 토큰은 '헤더'에서 추출
         String authorizationHeader = request.getHeader(JWTProvider.AUTHORIZATION);
         String accessToken = (authorizationHeader != null && authorizationHeader.startsWith(JWTProvider.TOKEN_PREFIX)) ?
@@ -52,7 +56,9 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         }
 
         // 2nd 엑세스 토큰 검증
+        System.out.println("accessToken => " + accessToken);
         User user = authenticateAccessToken(accessToken);
+        System.out.println("user => " + user);
 
         // 3rd 엑세스 토큰에 인증 정보가 없음 => 리프레쉬 토큰 검증
         if (user == null) {
@@ -144,13 +150,21 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         return null;
     }
 
+    private void logAllHeaders(HttpServletRequest request) {
+        Enumeration<String> headerNames = request.getHeaderNames();
+        System.out.println("Request Headers:");
+        while (headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
+            String headerValue = request.getHeader(headerName);
+            System.out.println(headerName + ": " + headerValue);
+        }
+    }
+
     private void updateToken(User user, String accessToken, String refreshToken){
         // 리프레쉬 토큰 갱신
-        redisService.removeData("refreshToken", String.valueOf(user.getId()));
         redisService.storeValue("refreshToken", String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP_MILLI);
 
         // 엑세스 토큰 갱신
-        redisService.removeData("accessToken", String.valueOf(user.getId()));
         redisService.storeValue("accessToken", String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP_MILLI);
     }
 }

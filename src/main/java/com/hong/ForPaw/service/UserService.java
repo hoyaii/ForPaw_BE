@@ -696,11 +696,9 @@ public class UserService {
         String refreshToken = JWTProvider.createRefreshToken(user);
 
         // Access Token 갱신
-        redisService.removeData("accessToken", String.valueOf(user.getId()));
         redisService.storeValue("accessToken", String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP_MILLI);
 
         // Refresh Token 갱신
-        redisService.removeData("refreshToken", String.valueOf(user.getId()));
         redisService.storeValue("refreshToken", String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP_MILLI);
 
         // Map으로 토큰들을 담아 반환

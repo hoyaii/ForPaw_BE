@@ -125,7 +125,7 @@ public class GroupService {
     @Transactional(readOnly = true)
     public GroupResponse.FindGroupByIdDTO findGroupById(Long groupId, Long userId){
         // 조회 권한 체크
-        checkAdminAuthority(groupId, userId);
+        checkGroupAdminAuthority(groupId, userId);
 
         Group group = groupRepository.findById(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
@@ -137,7 +137,7 @@ public class GroupService {
     @Transactional
     public void updateGroup(GroupRequest.UpdateGroupDTO requestDTO, Long groupId, Long userId){
         // 수정 권한 체크
-        checkAdminAuthority(groupId, userId);
+        checkGroupAdminAuthority(groupId, userId);
 
         Group group = groupRepository.findById(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
@@ -417,7 +417,7 @@ public class GroupService {
         checkGroupExist(groupId);
 
         // 권한 체크
-        checkAdminAuthority(groupId, managerId);
+        checkGroupAdminAuthority(groupId, managerId);
 
         List<GroupUser> applicants = groupUserRepository.findByGroupRole(groupId, GroupRole.TEMP);
         List<GroupResponse.ApplicantDTO> applicantDTOS = applicants.stream()
@@ -443,7 +443,7 @@ public class GroupService {
         );
 
         // 권한 체크
-        checkAdminAuthority(groupId, managerId);
+        checkGroupAdminAuthority(groupId, managerId);
 
         // 신청한 적이 없거나 이미 가입했는지 체크
         GroupUser groupUser =  groupUserRepository.findByGroupIdAndUserId(groupId, applicantId).orElseThrow(
@@ -483,7 +483,7 @@ public class GroupService {
         checkGroupExist(groupId);
 
         // 권한 체크
-        checkAdminAuthority(groupId, userId);
+        checkGroupAdminAuthority(groupId, userId);
 
         // 신청한 적이 없거나 이미 가입했는지 체크
         GroupUser groupUser = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId).orElseThrow(
@@ -506,7 +506,7 @@ public class GroupService {
         checkGroupExist(groupId);
 
         // 권한 체크
-        checkAdminAuthority(groupId, userId);
+        checkGroupAdminAuthority(groupId, userId);
 
         Group groupRef = entityManager.getReference(Group.class, groupId);
         User userRef = entityManager.getReference(User.class, userId);
@@ -578,7 +578,7 @@ public class GroupService {
         checkGroupExist(groupId);
 
         // 권한체크
-        checkCreatorAuthority(groupId, userId);
+        checkGroupCreatorAuthority(groupId, userId);
 
         // 그룹, 미팅 연관 데이터 삭제
         meetingUserRepository.deleteByGroupId(groupId);
@@ -618,7 +618,7 @@ public class GroupService {
         }
 
         // 권한체크 (그룹장만 삭제 가능)
-        checkCreatorAuthority(groupId, creatorId);
+        checkGroupCreatorAuthority(groupId, creatorId);
 
         // 그룹장은 자신의 역할을 변경할 수 없음
         if(requestDTO.id().equals(creatorId)){
@@ -644,7 +644,7 @@ public class GroupService {
         }
 
         // 권한 체크 (메니저급만 생성 가능)
-        checkAdminAuthority(groupId, userId);
+        checkGroupAdminAuthority(groupId, userId);
 
         Group groupRef = entityManager.getReference(Group.class, groupId);
         User userRef = entityManager.getReference(User.class, userId); // 주최자
@@ -703,7 +703,7 @@ public class GroupService {
         checkMeetingExist(meetingId);
 
         // 권한 체크(메니저급만 수정 가능)
-        checkAdminAuthority(groupId, userId);
+        checkGroupAdminAuthority(groupId, userId);
 
         Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(
                 () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
@@ -768,7 +768,7 @@ public class GroupService {
         checkMeetingExist(meetingId);
 
         // 권한 체크 (메니저급만 삭제 가능)
-        checkAdminAuthority(groupId, userId);
+        checkGroupAdminAuthority(groupId, userId);
 
         meetingUserRepository.deleteAllByMeetingId(meetingId);
         meetingRepository.deleteById(meetingId);
@@ -852,14 +852,23 @@ public class GroupService {
                 });
     }
 
-    private void checkAdminAuthority(Long groupId, Long userId){
+    private void checkGroupAdminAuthority(Long groupId, Long userId){
+        UserRole role = userRepository.findRoleById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+
+        // Admin은 접근 가능
+        if(role.equals(UserRole.ADMIN) || role.equals(UserRole.SUPER)){
+            return;
+        }
+
         Set<GroupRole> roles = EnumSet.of(GroupRole.ADMIN, GroupRole.CREATOR);
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(groupUser -> roles.contains(groupUser.getGroupRole()))
                 .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN)); // ADMIN이 아니거나 그룹과 관련없는 사람이면 에러 보냄
     }
 
-    private void checkCreatorAuthority(Long groupId, Long userId){
+    private void checkGroupCreatorAuthority(Long groupId, Long userId){
         UserRole role = userRepository.findRoleById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
