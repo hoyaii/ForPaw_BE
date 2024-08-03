@@ -116,7 +116,7 @@ public class BrokerService {
                     .content(messageDTO.content())
                     .imageURL(imageURLs)
                     .date(messageDTO.date())
-                    .expireAt(calculateExpireAt(messageDTO.date(), 3)) // 3개월 후 만료
+                    .expireAt(Date.from(LocalDateTime.now().plusSeconds(2147483647).atZone(ZoneId.systemDefault()).toInstant())) // 3개월 후 만료
                     .chatRoomId(messageDTO.chatRoomId())
                     .senderId(messageDTO.senderId())
                     .build();

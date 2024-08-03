@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
@@ -35,8 +36,8 @@ public class Message implements Serializable {
 
     private LocalDateTime date;
 
-    @Indexed(expireAfterSeconds = 0)
-    private Date expireAt;  // TTL 인덱스 필드
+    @Indexed(name = "ttl_index", expireAfterSeconds = 2147483647)
+    private Date expireAt;
 
     @Builder
     public Message(String id, Long chatRoomId, Long senderId, String nickName, String profileURL, String content, List<String> imageURL, LocalDateTime date, Date expireAt) {
