@@ -50,6 +50,7 @@ public class RabbitMqConfig implements RabbitListenerConfigurer {
         factory.setMismatchedQueuesFatal(true); // 큐 이름이 일치하지 않을 경우, 애플리케이션을 종료
         factory.setMessageConverter(producerJackson2MessageConverter());
         factory.setAcknowledgeMode(AcknowledgeMode.AUTO);  // 메시지를 성공적으로 처리했음을 RabbitMQ 서버에 명시적으로 알려주어야 함
+        factory.setReceiveTimeout(30000L); // 메시지를 받기 위한 타임아웃 설정 (30초)
         return factory;
     }
     @Bean
@@ -71,6 +72,7 @@ public class RabbitMqConfig implements RabbitListenerConfigurer {
         factory.setConsecutiveActiveTrigger(1); // 연속적으로 활성화될 때까지의 트리거 횟수를 설정
         factory.setConsecutiveIdleTrigger(1); // 연속적으로 유휴 상태가 될 때까지의 트리거 횟수를 설정
         factory.setConnectionFactory(connectionFactory); // RabbitMQ 연결 팩토리를 설정
+        factory.setReceiveTimeout(30000L); // 메시지를 받기 위한 타임아웃 설정 (30초)
 
         registrar.setContainerFactory(factory); // 컨테이너 팩토리를 등록
         registrar.setEndpointRegistry(rabbitListenerEndpointRegistry()); // 리스너 엔드포인트 레지스트리를 설정
