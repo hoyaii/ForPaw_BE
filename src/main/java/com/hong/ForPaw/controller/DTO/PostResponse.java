@@ -44,7 +44,8 @@ public class PostResponse {
                                   Long likeNum,
                                   List<PostImageDTO> images,
                                   List<CommentDTO> comments,
-                                  boolean isMine) {}
+                                  boolean isMine,
+                                  boolean isLike) {}
 
     public record FindQnaByIdDTO(String nickName,
                                  String profileURL,
@@ -74,6 +75,7 @@ public class PostResponse {
                              String content,
                              LocalDateTime date,
                              Province location,
+                             Long likeNum,
                              boolean isLike,
                              List<ReplyDTO> replies) {}
 
@@ -83,6 +85,7 @@ public class PostResponse {
                            String content,
                            LocalDateTime date,
                            Province location,
+                           Long likeNum,
                            boolean isLike) {}
 
     public record CreateCommentDTO(Long id) {}

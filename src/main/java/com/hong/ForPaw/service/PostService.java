@@ -230,13 +230,16 @@ public class PostService {
             likeNum = post.getLikeNum();
         }
 
+        // 좋아요 여부
+        boolean isLike = postLikeRepository.existsByPostIdAndUserId(postId, userId);
+
         // 공지 사항의 경우, 게시글 읽음 여부를 저장 (1년동안)
         if(post.getPostType().equals(PostType.NOTICE)){
             String key = POST_READ_KEY_PREFIX + userId;
             redisService.addSetElement(key, postId, POST_READ_EXP);
         }
 
-        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, postImageDTOS, commentDTOS, isMine);
+        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, postImageDTOS, commentDTOS, isMine, isLike);
     }
 
     @Transactional(readOnly = true)
@@ -705,7 +708,7 @@ public class PostService {
                 .map(PopularPost::getPost)
                 .map(post -> {
                     String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = redisService.getDataInLongWithNull("postLikeNum", post.getId().toString());
+                    Long likeNum = redisService.getDataInLong("postLikeNum", post.getId().toString());
 
                     if (likeNum == null) {
                         likeNum = post.getLikeNum();
@@ -735,7 +738,7 @@ public class PostService {
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
                     String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = redisService.getDataInLongWithNull("postLikeNum", post.getId().toString());
+                    Long likeNum = redisService.getDataInLong("postLikeNum", post.getId().toString());
 
                     if (likeNum == null) {
                         likeNum = post.getLikeNum();
@@ -811,12 +814,18 @@ public class PostService {
         comments.forEach(comment -> {
             // 부모 댓글이면, CommentDTO로 변환해서 commentDTOS 리스트에 추가
             if (comment.getParent() == null) {
+                Long likeNum = redisService.getDataInLong("postLikeNum", comment.getId().toString());
+                if(likeNum == null){
+                    likeNum = comment.getLikeNum();
+                }
+
                 PostResponse.CommentDTO commentDTO = new PostResponse.CommentDTO(
                         comment.getId(),
                         comment.getUser().getNickName(),
                         comment.getContent(),
                         comment.getCreatedDate(),
                         comment.getUser().getProvince(),
+                        likeNum,
                         likedComments.contains(comment.getId()),
                         new ArrayList<>());
 
@@ -824,6 +833,11 @@ public class PostService {
                 commentMap.put(comment.getId(), commentDTO);
             }
             else { // 자식 댓글이면, ReplyDTO로 변환해서 부모 댓글의 replies 리스트에 추가
+                Long likeNum = redisService.getDataInLong("postLikeNum", comment.getId().toString());
+                if(likeNum == null){
+                    likeNum = comment.getLikeNum();
+                }
+
                 PostResponse.ReplyDTO replyDTO = new PostResponse.ReplyDTO(
                         comment.getId(),
                         comment.getParent().getUser().getNickName(),
@@ -831,6 +845,7 @@ public class PostService {
                         comment.getContent(),
                         comment.getCreatedDate(),
                         comment.getUser().getProvince(),
+                        likeNum,
                         likedComments.contains(comment.getId()));
 
                 Long parentId = comment.getParent().getId();

@@ -44,6 +44,9 @@ public class Comment extends TimeStamp {
     @Column
     private String content;
 
+    @Column
+    private Long likeNum = 0L;
+
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
 
