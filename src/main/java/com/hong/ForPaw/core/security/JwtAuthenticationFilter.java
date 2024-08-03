@@ -5,6 +5,7 @@ import com.auth0.jwt.exceptions.SignatureVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.hong.ForPaw.core.utils.CookieUtils;
+import com.hong.ForPaw.core.utils.LogUtils;
 import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.service.RedisService;
@@ -38,8 +39,8 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
-        // 모든 헤더를 로깅하는 코드 추가
-        logAllHeaders(request);
+        // 모든 헤더를 로깅
+        LogUtils.logAllHeaders(request);
 
         // 엑세스 토큰은 '헤더'에서 추출
         String authorizationHeader = request.getHeader(JWTProvider.AUTHORIZATION);
@@ -148,16 +149,6 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
             }
         }
         return null;
-    }
-
-    private void logAllHeaders(HttpServletRequest request) {
-        Enumeration<String> headerNames = request.getHeaderNames();
-        System.out.println("Request Headers:");
-        while (headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
-            String headerValue = request.getHeader(headerName);
-            System.out.println(headerName + ": " + headerValue);
-        }
     }
 
     private void updateToken(User user, String accessToken, String refreshToken){
