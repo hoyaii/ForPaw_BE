@@ -74,6 +74,7 @@ public class PostResponse {
                              String content,
                              LocalDateTime date,
                              Province location,
+                             boolean isLike,
                              List<ReplyDTO> replies) {}
 
     public record ReplyDTO(Long id,
@@ -81,7 +82,8 @@ public class PostResponse {
                            String replyName,
                            String content,
                            LocalDateTime date,
-                           Province location) {}
+                           Province location,
+                           boolean isLike) {}
 
     public record CreateCommentDTO(Long id) {}
 }

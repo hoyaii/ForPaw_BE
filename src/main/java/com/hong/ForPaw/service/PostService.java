@@ -197,8 +197,8 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public PostResponse.FindPostByIdDTO findPostById(Long postId, Long userId){
-        // user, postImages를 패치조인 해서 조회
-        Post post = postRepository.findById(postId).orElseThrow(
+        // user를 패치조인 해서 조회
+        Post post = postRepository.findByIdWithUser(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
@@ -221,7 +221,8 @@ public class PostService {
 
         // 댓글과 대댓글을 모두 담고 있는 Comment 리스트를 CommentDTO로 가공하면서, 대댓글이 댓글 밑으로 들어가게 처리
         List<Comment> comments = commentRepository.findAllByPostIdWithUserAndParent(postId);
-        List<PostResponse.CommentDTO> commentDTOS = converCommentToCommentDTO(comments);
+        List<Long> likedCommentIds = commentLikeRepository.findLikeCommentIdListByUserId(userId);
+        List<PostResponse.CommentDTO> commentDTOS = converCommentToCommentDTO(comments, likedCommentIds);
 
         // 좋아요 수
         Long likeNum = redisService.getDataInLongWithNull("postLikeNum", postId.toString());
@@ -800,7 +801,7 @@ public class PostService {
         }
     }
 
-    private List<PostResponse.CommentDTO> converCommentToCommentDTO(List<Comment> comments) {
+    private List<PostResponse.CommentDTO> converCommentToCommentDTO(List<Comment> comments, List<Long> likedComments) {
         // CommentDTO는 특정 게시글에 대한 모든 댓글 및 대댓글을 들고 있음
         List<PostResponse.CommentDTO> commentDTOS = new ArrayList<>();
 
@@ -816,6 +817,7 @@ public class PostService {
                         comment.getContent(),
                         comment.getCreatedDate(),
                         comment.getUser().getProvince(),
+                        likedComments.contains(comment.getId()),
                         new ArrayList<>());
 
                 commentDTOS.add(commentDTO);
@@ -828,7 +830,8 @@ public class PostService {
                         comment.getUser().getNickName(),
                         comment.getContent(),
                         comment.getCreatedDate(),
-                        comment.getUser().getProvince());
+                        comment.getUser().getProvince(),
+                        likedComments.contains(comment.getId()));
 
                 Long parentId = comment.getParent().getId();
                 commentMap.get(parentId).replies().add(replyDTO);
