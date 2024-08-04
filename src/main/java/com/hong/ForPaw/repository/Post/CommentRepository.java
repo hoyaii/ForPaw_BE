@@ -48,4 +48,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     @Modifying
     @Query("DELETE FROM Comment c WHERE c.post.id IN (SELECT p.id FROM Post p WHERE p.group.id = :groupId )")
     void hardDeleteByGroupId(@Param("groupId") Long groupId);
+
+    // date 이후의 댓글이 존재 => 마지막 대댓글이 아니다
+    @Query("SELECT COUNT(c) > 0 FROM Comment c WHERE c.parent.id = :parentId AND c.createdDate > :date AND c.removedAt IS NULL")
+    boolean existsByParentIdAndDateAfter(Long parentId, LocalDateTime date);
 }

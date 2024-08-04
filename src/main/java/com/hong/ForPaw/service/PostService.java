@@ -240,7 +240,7 @@ public class PostService {
             redisService.addSetElement(key, postId, POST_READ_EXP);
         }
 
-        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, postImageDTOS, commentDTOS, isMine, isLike);
+        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, isMine, isLike, postImageDTOS, commentDTOS);
     }
 
     @Transactional(readOnly = true)
@@ -845,11 +845,19 @@ public class PostService {
                     likeNum = comment.getLikeNum();
                 }
 
+                // 삭제된 대댓글
+                if(comment.getRemovedAt() != null){
+                    // 마지막 대댓글이 아니면, '삭제된 댓글입니다' 처리. 마지막 대댓글이면, 보이지 않음
+                    if(!commentRepository.existsByParentIdAndDateAfter(comment.getParent().getId(), comment.getCreatedDate())){
+                        return;
+                    }
+                }
+
                 PostResponse.ReplyDTO replyDTO = new PostResponse.ReplyDTO(
                         comment.getId(),
-                        comment.getParent().getUser().getNickName(),
-                        comment.getUser().getProfileURL(),
                         comment.getUser().getNickName(),
+                        comment.getUser().getProfileURL(),
+                        comment.getParent().getUser().getNickName(),
                         comment.getContent(),
                         comment.getCreatedDate(),
                         comment.getUser().getProvince(),

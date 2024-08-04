@@ -43,10 +43,10 @@ public class PostResponse {
                                   LocalDateTime date,
                                   Long commentNum,
                                   Long likeNum,
-                                  List<PostImageDTO> images,
-                                  List<CommentDTO> comments,
                                   boolean isMine,
-                                  boolean isLike) {}
+                                  boolean isLike,
+                                  List<PostImageDTO> images,
+                                  List<CommentDTO> comments) {}
 
     public record FindQnaByIdDTO(String nickName,
                                  String profileURL,
