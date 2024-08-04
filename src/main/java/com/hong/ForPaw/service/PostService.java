@@ -239,7 +239,7 @@ public class PostService {
             redisService.addSetElement(key, postId, POST_READ_EXP);
         }
 
-        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, postImageDTOS, commentDTOS, isMine, isLike);
+        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, postImageDTOS, commentDTOS, isMine, isLike);
     }
 
     @Transactional(readOnly = true)
@@ -822,6 +822,7 @@ public class PostService {
                 PostResponse.CommentDTO commentDTO = new PostResponse.CommentDTO(
                         comment.getId(),
                         comment.getUser().getNickName(),
+                        comment.getUser().getProfileURL(),
                         comment.getContent(),
                         comment.getCreatedDate(),
                         comment.getUser().getProvince(),
@@ -841,6 +842,7 @@ public class PostService {
                 PostResponse.ReplyDTO replyDTO = new PostResponse.ReplyDTO(
                         comment.getId(),
                         comment.getParent().getUser().getNickName(),
+                        comment.getUser().getProfileURL(),
                         comment.getUser().getNickName(),
                         comment.getContent(),
                         comment.getCreatedDate(),

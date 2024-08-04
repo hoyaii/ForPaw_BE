@@ -37,6 +37,7 @@ public class PostResponse {
     public record PostImageDTO(Long id, String imageURL) {}
 
     public record FindPostByIdDTO(String nickName,
+                                  String profileURL,
                                   String title,
                                   String content,
                                   LocalDateTime date,
@@ -72,6 +73,7 @@ public class PostResponse {
 
     public record CommentDTO(Long id,
                              String nickName,
+                             String profileURL,
                              String content,
                              LocalDateTime date,
                              Province location,
@@ -81,6 +83,7 @@ public class PostResponse {
 
     public record ReplyDTO(Long id,
                            String nickName,
+                           String profileURL,
                            String replyName,
                            String content,
                            LocalDateTime date,
