@@ -34,13 +34,11 @@ public class Message implements Serializable {
 
     private List<String> imageURLs;
 
+    @Indexed(expireAfterSeconds = 7890048) // 3개월 후 자동 삭제
     private LocalDateTime date;
 
-    @Indexed(name = "ttl_index", expireAfterSeconds = 2147483647)
-    private Date expireAt;
-
     @Builder
-    public Message(String id, Long chatRoomId, Long senderId, String nickName, String profileURL, String content, List<String> imageURL, LocalDateTime date, Date expireAt) {
+    public Message(String id, Long chatRoomId, Long senderId, String nickName, String profileURL, String content, List<String> imageURL, LocalDateTime date) {
         this.id = id;
         this.chatRoomId = chatRoomId;
         this.senderId = senderId;
@@ -49,6 +47,5 @@ public class Message implements Serializable {
         this.content = content;
         this.imageURLs = imageURL;
         this.date = date;
-        this.expireAt = expireAt;
     }
 }
