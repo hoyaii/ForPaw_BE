@@ -499,6 +499,11 @@ public class PostService {
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
 
+        // 대댓글에 댓글을 달 수 없다
+        if(parentComment.getParent() != null){
+            throw new CustomException(ExceptionCode.CANT_REPLY_TO_REPLY);
+        }
+
         // 해당 글의 댓글이 아니면 에러
         checkPostOwnComment(parentComment, postId);
 
