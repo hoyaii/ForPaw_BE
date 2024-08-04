@@ -16,9 +16,6 @@ import java.util.Optional;
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long> {
 
-    @Query("SELECT c FROM Comment c WHERE c.removedAt IS NULL")
-    List<Comment> findAll();
-
     @Query("SELECT c FROM Comment c WHERE c.id = :id AND c.removedAt IS NULL")
     Optional<Comment> findById(@Param("id") Long id);
 
@@ -33,19 +30,22 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     Optional<Long> findUserIdById(@Param("commentId") Long commentId);
 
     // 모든 댓글과 대댓글을 한 번에 가져오기
-    @Query("SELECT c FROM Comment c WHERE c.post.id = :postId AND c.removedAt IS NULL")
+    @Query("SELECT c FROM Comment c WHERE c.post.id = :postId")
     @EntityGraph(attributePaths = {"user", "parent"})
-    List<Comment> findAllByPostIdWithUserAndParent(@Param("postId") Long postId);
-
-    @Query("SELECT COUNT(c) > 0 FROM Comment c WHERE c.id = :id AND c.removedAt IS NULL")
-    boolean existsById(Long id);
+    List<Comment> findByPostIdWithUserAndParentAndRemoved(@Param("postId") Long postId);
 
     @Query("SELECT COUNT(c) FROM Comment c WHERE c.createdDate >= :date AND c.removedAt IS NULL")
     Long countALlWithinDate(LocalDateTime date);
 
-    void deleteAllByPostId(Long postId);
+    @Modifying
+    @Query("UPDATE Comment c SET c.removedAt = NOW() WHERE c.post.id= :postId")
+    void deleteByPostId(Long postId);
+
+    @Modifying
+    @Query("UPDATE Comment c SET c.removedAt = NOW() WHERE c.id= :id")
+    void deleteById(@Param("id") Long id);
 
     @Modifying
     @Query("DELETE FROM Comment c WHERE c.post.id IN (SELECT p.id FROM Post p WHERE p.group.id = :groupId )")
-    void deleteByGroupId(@Param("groupId") Long groupId);
+    void hardDeleteByGroupId(@Param("groupId") Long groupId);
 }

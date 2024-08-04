@@ -476,7 +476,7 @@ public class AuthenticationService {
             Comment comment = commentRepository.findById(report.getContentId()).orElseThrow(
                     () -> new CustomException(ExceptionCode.BAD_APPROACH)
             );
-            comment.updateComment(COMMENT_SCREENED);
+            comment.updateContent(COMMENT_SCREENED);
         }
         else{
             throw new CustomException(ExceptionCode.BAD_APPROACH);

@@ -58,6 +58,7 @@ public class PostService {
     private static final String SORT_BY_POPULARITY = "likeNum";
     private static final String POST_SCREENED = "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.";
     private static final String POST_READ_KEY_PREFIX = "user:readPosts:";
+    private static final String COMMENT_DELETED = "삭제된 댓글 입니다.";
 
     @Transactional
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId){
@@ -220,7 +221,7 @@ public class PostService {
                 .collect(Collectors.toList());
 
         // 댓글과 대댓글을 모두 담고 있는 Comment 리스트를 CommentDTO로 가공하면서, 대댓글이 댓글 밑으로 들어가게 처리
-        List<Comment> comments = commentRepository.findAllByPostIdWithUserAndParent(postId);
+        List<Comment> comments = commentRepository.findByPostIdWithUserAndParentAndRemoved(postId);
         List<Long> likedCommentIds = commentLikeRepository.findLikeCommentIdListByUserId(userId);
         List<PostResponse.CommentDTO> commentDTOS = converCommentToCommentDTO(comments, likedCommentIds);
 
@@ -371,7 +372,7 @@ public class PostService {
         commentLikeRepository.deleteAllByPostId(postId);
         popularPostRepository.deleteByPostId(postId);
         postImageRepository.deleteByPostId(postId);
-        commentRepository.deleteAllByPostId(postId); // soft-delete
+        commentRepository.deleteByPostId(postId); // soft-delete
         postRepository.delete(post); // soft-delete
     }
 
@@ -556,7 +557,7 @@ public class PostService {
         // 수정 권한 체크
         checkCommentAuthority(comment.getUser().getId(), user);
 
-        comment.updateComment(requestDTO.content());
+        comment.updateContent(requestDTO.content());
     }
 
     // soft delete를 구현하기 전에는 부모 댓글 삭제시, 대댓글까지 모두 삭제 되도록 구현
@@ -573,13 +574,13 @@ public class PostService {
         // 수정 권한 체크
         checkCommentAuthority(comment.getUser().getId(), user);
 
-        Long childNum = Long.valueOf(comment.getChildren().size());
-
-        // 댓글 및 관련 대댓글 삭제 (CascadeType.ALL에 의해 처리됨)
-        commentLikeRepository.deleteAllByCommentId(commentId);
+        // 댓글은 soft-delete 처리
+        comment.updateContent(COMMENT_DELETED);
         commentRepository.deleteById(commentId);
+        commentLikeRepository.deleteAllByCommentId(commentId);
 
         // 게시글의 댓글 수 감소
+        Long childNum = (long) comment.getChildren().size();
         postRepository.decrementCommentNum(postId, 1L + childNum);
     }
 

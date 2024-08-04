@@ -60,7 +60,7 @@ public class Comment extends TimeStamp {
         this.parent = parent;
     }
 
-    public void updateComment(String content){
+    public void updateContent(String content){
         this.content = content;
     }
 

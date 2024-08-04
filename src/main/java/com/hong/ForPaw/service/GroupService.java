@@ -599,7 +599,7 @@ public class GroupService {
         // 그룹과 관련된 게시글, 댓글 관련 데이터 삭제
         postLikeRepository.deleteByGroupId(groupId);
         commentLikeRepository.deleteByGroupId(groupId);
-        commentRepository.deleteByGroupId(groupId);
+        commentRepository.hardDeleteByGroupId(groupId);
         postRepository.hardDeleteByGroupId(groupId);
 
         // 레디스에 저장된 좋아요 수 삭제
