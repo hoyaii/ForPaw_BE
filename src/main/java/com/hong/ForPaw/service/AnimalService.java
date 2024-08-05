@@ -449,6 +449,18 @@ public class AnimalService {
         applyRepository.deleteById(applyId);
     }
 
+    @Transactional
+    public void updateProfileURLsToHttps() {
+        List<Animal> animals = animalRepository.findAll();
+
+        List<Animal> updatedAnimals = animals.stream()
+                .filter(animal -> animal.getProfileURL() != null && animal.getProfileURL().startsWith("http://"))
+                .peek(animal -> animal.updateProfileURL(animal.getProfileURL().replace("http://", "https://")))
+                .collect(Collectors.toList());
+
+        animalRepository.saveAll(updatedAnimals);
+    }
+
     private Flux<Animal> convertResponseToAnimal(String response, Shelter shelter, List<Long> existAnimalIds) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
 

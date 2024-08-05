@@ -116,4 +116,8 @@ public class Animal extends TimeStamp {
         this.introductionContent = introductionContent;
         this.introductionTitle = introductionTitle;
     }
+
+    public void updateProfileURL(String profileURL){
+        this.profileURL = profileURL;
+    }
 }

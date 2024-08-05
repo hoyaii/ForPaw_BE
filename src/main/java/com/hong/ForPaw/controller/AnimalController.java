@@ -90,6 +90,12 @@ public class AnimalController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
+    @PatchMapping("/animals/profileURL")
+    public ResponseEntity<?> updateProfileURLToHttps(@AuthenticationPrincipal CustomUserDetails userDetails){
+        animalService.updateProfileURLsToHttps();
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
     private Long getUserIdSafely(CustomUserDetails userDetails) {
         return Optional.ofNullable(userDetails)
                 .map(CustomUserDetails::getUser)
