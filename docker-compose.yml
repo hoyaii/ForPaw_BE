@@ -54,3 +54,13 @@ services:
       bash -c "rabbitmq-plugins enable rabbitmq_stomp && rabbitmq-server"
     networks:
       - network
+
+  nginx_proxy:
+    image: nginx:1.21.5-alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - /home/ubuntu/nginx:/etc/nginx/nginx.conf
+    networks:
+      - network
