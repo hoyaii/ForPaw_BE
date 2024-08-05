@@ -820,7 +820,7 @@ public class PostService {
         comments.forEach(comment -> {
             // 부모 댓글이면, CommentDTO로 변환해서 commentDTOS 리스트에 추가
             if (comment.getParent() == null) {
-                Long likeNum = redisService.getDataInLong("postLikeNum", comment.getId().toString());
+                Long likeNum = redisService.getDataInLong("commentLikeNum", comment.getId().toString());
                 if(likeNum == null){
                     likeNum = comment.getLikeNum();
                 }
@@ -840,7 +840,7 @@ public class PostService {
                 commentMap.put(comment.getId(), commentDTO);
             }
             else { // 자식 댓글이면, ReplyDTO로 변환해서 부모 댓글의 replies 리스트에 추가
-                Long likeNum = redisService.getDataInLong("postLikeNum", comment.getId().toString());
+                Long likeNum = redisService.getDataInLong("commentLikeNum", comment.getId().toString());
                 if(likeNum == null){
                     likeNum = comment.getLikeNum();
                 }
