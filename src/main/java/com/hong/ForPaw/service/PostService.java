@@ -33,6 +33,7 @@ import java.time.LocalTime;
 import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -226,10 +227,7 @@ public class PostService {
         List<PostResponse.CommentDTO> commentDTOS = converCommentToCommentDTO(comments, likedCommentIds);
 
         // 좋아요 수
-        Long likeNum = redisService.getDataInLongWithNull("postLikeNum", postId.toString());
-        if(likeNum == null){
-            likeNum = post.getLikeNum();
-        }
+        Long likeNum = getCachedLikeNum("postLikeNum", postId, post::getLikeNum);
 
         // 좋아요 여부
         boolean isLike = postLikeRepository.existsByPostIdAndUserId(postId, userId);
@@ -714,11 +712,7 @@ public class PostService {
                 .map(PopularPost::getPost)
                 .map(post -> {
                     String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = redisService.getDataInLong("postLikeNum", post.getId().toString());
-
-                    if (likeNum == null) {
-                        likeNum = post.getLikeNum();
-                    }
+                    Long likeNum = getCachedLikeNum("postLikeNum", post.getId(), post::getLikeNum);
 
                     return new PostResponse.PostDTO(
                             post.getId(),
@@ -744,11 +738,7 @@ public class PostService {
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
                     String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = redisService.getDataInLong("postLikeNum", post.getId().toString());
-
-                    if (likeNum == null) {
-                        likeNum = post.getLikeNum();
-                    }
+                    Long likeNum = getCachedLikeNum("postLikeNum", post.getId(), post::getLikeNum);
 
                     return new PostResponse.PostDTO(
                             post.getId(),
@@ -818,13 +808,10 @@ public class PostService {
         Map<Long, PostResponse.CommentDTO> commentMap = new HashMap<>();
 
         comments.forEach(comment -> {
+            Long likeNum = getCachedLikeNum("commentLikeNum", comment.getId(), comment::getLikeNum);
+
             // 부모 댓글이면, CommentDTO로 변환해서 commentDTOS 리스트에 추가
             if (comment.getParent() == null) {
-                Long likeNum = redisService.getDataInLong("commentLikeNum", comment.getId().toString());
-                if(likeNum == null){
-                    likeNum = comment.getLikeNum();
-                }
-
                 PostResponse.CommentDTO commentDTO = new PostResponse.CommentDTO(
                         comment.getId(),
                         comment.getUser().getNickName(),
@@ -838,17 +825,11 @@ public class PostService {
 
                 commentDTOS.add(commentDTO);
                 commentMap.put(comment.getId(), commentDTO);
-            }
-            else { // 자식 댓글이면, ReplyDTO로 변환해서 부모 댓글의 replies 리스트에 추가
-                Long likeNum = redisService.getDataInLong("commentLikeNum", comment.getId().toString());
-                if(likeNum == null){
-                    likeNum = comment.getLikeNum();
-                }
-
+            } else { // 자식 댓글이면, ReplyDTO로 변환해서 부모 댓글의 replies 리스트에 추가
                 // 삭제된 대댓글
-                if(comment.getRemovedAt() != null){
+                if (comment.getRemovedAt() != null) {
                     // 마지막 대댓글이 아니면, '삭제된 댓글입니다' 처리. 마지막 대댓글이면, 보이지 않음
-                    if(!commentRepository.existsByParentIdAndDateAfter(comment.getParent().getId(), comment.getCreatedDate())){
+                    if (!commentRepository.existsByParentIdAndDateAfter(comment.getParent().getId(), comment.getCreatedDate())) {
                         return;
                     }
                 }
@@ -870,5 +851,14 @@ public class PostService {
         });
 
         return commentDTOS;
+    }
+
+    private Long getCachedLikeNum(String keyPrefix, Long key, Supplier<Long> dbFallback) {
+        Long likeNum = redisService.getDataInLong(keyPrefix, key.toString());
+
+        if (likeNum == null) {
+            likeNum = dbFallback.get();
+        }
+        return likeNum;
     }
 }
