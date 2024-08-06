@@ -26,7 +26,7 @@ public class Alarm extends TimeStamp {
     @JoinColumn(name = "user_id")
     private User receiver;
 
-    @Column
+    @Column(columnDefinition="TEXT")
     private String content;
 
     @Column

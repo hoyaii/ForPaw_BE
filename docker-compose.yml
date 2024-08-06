@@ -68,12 +68,12 @@ services:
     networks:
       - network
 
-  certbot:
-    depends_on:
-      - nginx
-    image: certbot/certbot
-    container_name: certbot
-    volumes:
-      - /home/ubuntu/certbot-etc:/etc/letsencrypt
-      - /home/ubuntu/myweb:/usr/share/nginx/html
-    command: certonly --webroot --webroot-path=/usr/share/nginx/html --email ygsdfsd@pusan.ac.kr --agree-tos --no-eff-email --keep-until-expiring -d www.forpaw.site
+#  certbot:
+#    depends_on:
+#      - nginx
+#    image: certbot/certbot
+#    container_name: certbot
+#    volumes:
+#      - /home/ubuntu/certbot-etc:/etc/letsencrypt
+#      - /home/ubuntu/myweb:/usr/share/nginx/html
+#    command: certonly --webroot --webroot-path=/usr/share/nginx/html --email ygsdfsd@pusan.ac.kr --agree-tos --no-eff-email --keep-until-expiring -d www.forpaw.site

@@ -53,7 +53,7 @@ public class Post extends TimeStamp {
     @Column
     private String title;
 
-    @Column
+    @Column(columnDefinition="TEXT")
     private String content;
 
     @Column

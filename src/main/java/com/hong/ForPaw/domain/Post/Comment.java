@@ -41,7 +41,7 @@ public class Comment extends TimeStamp {
     @BatchSize(size = 100)
     private List<Comment> children = new ArrayList<>();
 
-    @Column
+    @Column(columnDefinition="TEXT")
     private String content;
 
     @Column
