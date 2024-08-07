@@ -200,7 +200,7 @@ public class PostService {
         return new PostResponse.FindQnaPostListDTO(qnaDTOS);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PostResponse.FindMyPostListDTO findMyPostList(Long userId, Pageable pageable){
         // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findByUserIdWithUser(userId, pageable);
@@ -223,6 +223,25 @@ public class PostService {
                 .toList();
 
         return new PostResponse.FindMyPostListDTO(postDTOS);
+    }
+
+    @Transactional(readOnly = true)
+    public PostResponse.FindQnaPostListDTO findMyQuestionPostList(Long userId, Pageable pageable){
+        // 유저를 패치조인하여 조회
+        Page<Post> postPage = postRepository.findQnaByUserIdWithUser(userId, pageable);
+
+        List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
+                .map(post -> new PostResponse.QnaDTO(
+                        post.getId(),
+                        post.getUser().getNickName(),
+                        post.getUser().getProfileURL(),
+                        post.getTitle(),
+                        post.getContent(),
+                        post.getCreatedDate(),
+                        post.getAnswerNum()))
+                .collect(Collectors.toList());
+
+        return new PostResponse.FindQnaPostListDTO(qnaDTOS);
     }
 
     @Transactional(readOnly = true)
