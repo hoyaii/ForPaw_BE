@@ -10,7 +10,7 @@ from .config import settings
 from typing import List
 import logging
 from .init import initialize_mysql, initialize_redis, initialize_milvus
-from .crud import get_db_session, find_animal_by_id, find_group_by_id, find_all_animals, find_all_groups, find_animal_ids_with_null_title
+from .crud import get_db_session, find_animal_by_id, find_all_animals, find_animal_ids_with_null_title
 
 # Milvus, MySQL, 백터화 객체 초기화, PCA 객체 초기화
 animal_collection, group_collection = initialize_milvus()
@@ -73,21 +73,6 @@ async def load_and_vectorize_animal_data():
     
     return reduced_vectors, {animal.id: idx for idx, animal in enumerate(animals)}
 
-async def load_and_vectorize_group_data():
-    async with get_db_session(AsyncSessionLocal) as db:
-        groups = await find_all_groups(db)
-        texts = [
-            f"{group.province} {group.district} {group.sub_district} {group.category} {group.description}"
-            for group in groups
-        ]
-
-    # 벡터 차원을 4로 축소 
-    reduced_vectors = vectorize_and_reduce(texts, group_pca)
-    ids = [group.id for group in groups]
-    insert_vectors_to_milvus(group_collection, ids, reduced_vectors)
-    
-    return reduced_vectors, {group.id: idx for idx, group in enumerate(groups)}
-
 async def get_similar_animals(animal_id, animal_index, animal_matrix):
     async with get_db_session(AsyncSessionLocal) as db:
         animal = await find_animal_by_id(db, animal_id)
@@ -102,19 +87,6 @@ async def get_similar_animals(animal_id, animal_index, animal_matrix):
     similar_animal_ids = search_similar_items(query_vec, animal_collection, 5)
 
     return similar_animal_ids
-
-async def get_similar_groups(group_id, group_index, group_matrix):
-    async with get_db_session(AsyncSessionLocal) as db:
-        group = await find_group_by_id(db, group_id)
-
-    idx = group_index.get(group_id)
-    if not group or idx is None:
-        return []
-
-    query_vec = group_matrix[idx].tolist()
-    similar_group_ids = search_similar_items(query_vec, group_collection, 5)
-
-    return similar_group_ids
 
 # MySQL에 저장된 새로운 동물 데이터를 백터 DB에 업데이트
 async def update_new_animals(animal_index, animal_matrix):
@@ -142,28 +114,6 @@ async def update_new_animals(animal_index, animal_matrix):
     
     # 기존 animal_matrix에 새로운 벡터 추가하고, animal_index를 업데이트하여 새로운 동물들의 ID와 인덱스를 추가
     animal_matrix, animal_index = update_matrix_and_index(animal_matrix, animal_index, reduced_new_vectors, new_animals)
-
-async def update_new_groups(group_index, group_matrix):
-    async with get_db_session(AsyncSessionLocal) as db:
-        groups = await find_all_groups(db)
-        existing_ids = set(group_index.keys())
-        new_groups = [group for group in groups if group.id not in existing_ids]
-
-        if not new_groups:
-            return
-
-    new_texts = [
-        f"{group.province} {group.district} {group.subDistrict} {group.category} {group.description}"
-        for group in new_groups
-    ]
-
-    new_vectors = vectorizer.transform(new_texts).toarray()
-    reduced_new_vectors = group_pca.transform(new_vectors)
-    new_ids = [group.id for group in new_groups]
-
-    insert_vectors_to_milvus(group_collection, new_ids, reduced_new_vectors)
-
-    group_matrix, group_index = update_matrix_and_index(group_matrix, group_index, reduced_new_vectors, new_groups)
 
 async def generate_animal_introduction(animal_id):
     async with get_db_session(AsyncSessionLocal) as db:

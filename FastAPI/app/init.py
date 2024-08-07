@@ -21,21 +21,14 @@ def create_collection(collection_name: str, fields: List[FieldSchema]):
 def initialize_milvus():
     connections.connect("default", host=settings.MILVUS_HOST, port=str(settings.MILVUS_PORT))
 
-    # 1. 동물 컬렉션 초기화
+    # 동물 컬렉션 초기화
     animal_fields = [
         FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=False), 
         FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=512)
     ]
     animal_collection = create_collection("animal_collection", animal_fields)
-
-    # 2. 그룹 컬렉션 초기화
-    group_fields = [
-        FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=False), 
-        FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=4)  # 초기 설정
-    ]
-    group_collection = create_collection("group_collection", group_fields)
     
-    return animal_collection, group_collection
+    return animal_collection
 
 # MySQL 초기화
 def initialize_mysql():
