@@ -7,6 +7,9 @@ import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -45,8 +48,8 @@ public class PostController {
     }
 
     @GetMapping("/posts/question")
-    public ResponseEntity<?> findQuestionPostList(@RequestParam Integer page){
-        PostResponse.FindQnaPostListDTO responseDTO = postService.findQuestionPostList(page);
+    public ResponseEntity<?> findQuestionPostList(@PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable){
+        PostResponse.FindQnaPostListDTO responseDTO = postService.findQuestionPostList(pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

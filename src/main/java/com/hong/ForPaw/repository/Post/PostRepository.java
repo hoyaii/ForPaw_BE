@@ -57,6 +57,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByParentIdWithUser(@Param("parentId") Long parentId);
 
     @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT p FROM Post p WHERE p.user.id = :userId AND p.removedAt IS NULL")
+    Page<Post> findByUserIdWithUser(@Param("userId") Long userId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user"})
     @Query("SELECT p FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
     Optional<Post> findByIdWithUser(@Param("postId") Long postId);
 

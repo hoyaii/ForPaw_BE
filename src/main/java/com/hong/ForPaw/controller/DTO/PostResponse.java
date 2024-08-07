@@ -15,6 +15,8 @@ public class PostResponse {
 
     public record FindFosteringPostListDTO(List<PostDTO> fostering) {}
 
+    public record FindMyPostListDTO(List<PostDTO> myPosts) {}
+
     public record FindQnaPostListDTO(List<QnaDTO> questions) {}
 
     public record PostDTO(Long id,

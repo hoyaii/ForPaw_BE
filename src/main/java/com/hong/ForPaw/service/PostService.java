@@ -182,9 +182,7 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindQnaPostListDTO findQuestionPostList(Integer page){
-        Pageable pageable = createPageable(page, 5, SORT_BY_CREATED_DATE);
-
+    public PostResponse.FindQnaPostListDTO findQuestionPostList(Pageable pageable){
         // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findByPostTypeWithUser(PostType.QUESTION, pageable);
 
@@ -200,6 +198,31 @@ public class PostService {
                 .collect(Collectors.toList());
 
         return new PostResponse.FindQnaPostListDTO(qnaDTOS);
+    }
+
+    @Transactional
+    public PostResponse.FindMyPostListDTO findMyPostList(Long userId, Pageable pageable){
+        // 유저를 패치조인하여 조회
+        Page<Post> postPage = postRepository.findByUserIdWithUser(userId, pageable);
+
+        List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
+                .map(post -> {
+                    String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
+                    Long likeNum = getCachedLikeNum("postLikeNum", post.getId(), post::getLikeNum);
+
+                    return new PostResponse.PostDTO(
+                            post.getId(),
+                            post.getUser().getNickName(),
+                            post.getTitle(),
+                            post.getContent(),
+                            post.getCreatedDate(),
+                            post.getCommentNum(),
+                            likeNum,
+                            imageURL);
+                })
+                .toList();
+
+        return new PostResponse.FindMyPostListDTO(postDTOS);
     }
 
     @Transactional(readOnly = true)
