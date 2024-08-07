@@ -65,6 +65,11 @@ public class PostService {
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId){
         User userRef = entityManager.getReference(User.class, userId);
 
+        // image가 반드시 하나 이상 들어와야 함
+        if (requestDTO.images() == null || requestDTO.images().isEmpty()) {
+            throw new CustomException(ExceptionCode.POST_MUST_CONTAIN_IMAGE);
+        }
+
         List<PostImage> postImages = requestDTO.images().stream()
                 .map(postImageDTO -> PostImage.builder()
                         .imageURL(postImageDTO.imageURL())

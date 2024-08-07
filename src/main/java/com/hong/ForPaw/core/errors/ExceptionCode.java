@@ -84,6 +84,7 @@ public enum ExceptionCode {
     POST_LIKE_EXPIRED(HttpStatus.BAD_REQUEST, "오래된 글은 공감할 수 없습니다."),
     SCREENED_POST(HttpStatus.BAD_REQUEST, "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다."),
     CANT_REPLY_TO_REPLY(HttpStatus.BAD_REQUEST, "대댓글에 댓글을 달 수 없습니다."),
+    POST_MUST_CONTAIN_IMAGE(HttpStatus.BAD_REQUEST, "게시글에는 이미지를 반드시 포함해야 합니다."),
 
     // 알람 관련 에러
     ALARM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 알람입니다."),
