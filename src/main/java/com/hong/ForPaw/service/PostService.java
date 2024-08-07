@@ -226,7 +226,7 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindQnaPostListDTO findMyQuestionPostList(Long userId, Pageable pageable){
+    public PostResponse.FindQnaPostListDTO findMyQnaList(Long userId, Pageable pageable){
         // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findQnaByUserIdWithUser(userId, pageable);
 
