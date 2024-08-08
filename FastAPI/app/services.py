@@ -13,12 +13,11 @@ from .init import initialize_mysql, initialize_redis, initialize_milvus
 from .crud import get_db_session, find_animal_by_id, find_all_animals, find_animal_ids_with_null_title
 
 # Milvus, MySQL, 백터화 객체 초기화, PCA 객체 초기화
-animal_collection, group_collection = initialize_milvus()
+animal_collection = initialize_milvus()
 AsyncSessionLocal = initialize_mysql()
 redis_client = initialize_redis()
 vectorizer = TfidfVectorizer()
 animal_pca = PCA(n_components=512)
-group_pca = PCA(n_components=4)
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -198,6 +197,5 @@ async def update_animal_introductions(animal_ids):
     logger.info("----------------배치 작업 완료----------------")
 
 async def schedule_process_animal_introduction():
-    async with get_db_session(AsyncSessionLocal) as db:
-        animal_ids = await get_animal_ids_with_null_title(db)
-        await update_animal_introductions(animal_ids)
+    animal_ids = await get_animal_ids_with_null_title()
+    update_animal_introductions(animal_ids)
