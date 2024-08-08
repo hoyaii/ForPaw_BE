@@ -28,9 +28,7 @@ def vectorize_and_reduce(texts: List[str], pca_model: PCA) -> np.ndarray:
     # 백터의 길이는 Milvus 초기 설정시 설정한 차원으로 나누어져야 함 => 길이를 축소해서 나누어지게 만듦
     tfidf_matrix = vectorizer.fit_transform(texts)
     vectors = tfidf_matrix.toarray()
-    reduced_vectors = pca_model.fit_transform(vectors)
-
-    return reduced_vectors
+    return animal_pca.fit_transform(vectors)
 
 def insert_vectors_to_milvus(mivus_collection: Collection, ids: List[int], vectors: np.ndarray):
     # Milvus에 데이터 삽입
@@ -47,7 +45,6 @@ def search_similar_items(query_vec, collection, result_num):
     results = collection.search([query_vec], "vector", search_params, limit=result_num)
     similar_item_ids = [res for res in results[0].ids]
     return similar_item_ids
-
 
 def update_matrix_and_index(matrix, index, new_vectors, new_entities):
     current_length = len(matrix)

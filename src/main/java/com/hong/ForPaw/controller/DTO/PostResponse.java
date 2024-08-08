@@ -15,9 +15,11 @@ public class PostResponse {
 
     public record FindFosteringPostListDTO(List<PostDTO> fostering) {}
 
-    public record FindMyPostListDTO(List<PostDTO> myPosts) {}
+    public record FindMyPostListDTO(List<PostDTO> posts) {}
 
     public record FindQnaPostListDTO(List<QnaDTO> questions) {}
+
+    public record FindMyCommentListDTO(List<MyCommentDTO> comments) {}
 
     public record PostDTO(Long id,
                           String nickName,
@@ -82,6 +84,13 @@ public class PostResponse {
                              Long likeNum,
                              boolean isLike,
                              List<ReplyDTO> replies) {}
+
+    public record MyCommentDTO(Long id,
+                               String postType,
+                               String content,
+                               LocalDateTime date,
+                               String title,
+                               Long commentNum){}
 
     public record ReplyDTO(Long id,
                            String nickName,

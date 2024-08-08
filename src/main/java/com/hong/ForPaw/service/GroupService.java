@@ -202,8 +202,8 @@ public class GroupService {
         List<Long> finalLikedGroupIds = likedGroupIds.isEmpty() ? likedGroupIds :
                 (userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : Collections.emptyList());
 
-        Page<Group> localGroups = groupRepository.findByDistrictAndSubDistrict(province, district, pageable);
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroups.getContent().stream()
+        Page<Group> localGroupPage = groupRepository.findByDistrictAndSubDistrict(province, district, pageable);
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroupPage.getContent().stream()
                 .filter(group -> !joinedGroupIdSet.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> {
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
@@ -233,8 +233,8 @@ public class GroupService {
         // province가 null로 들어오면 => 디폴트 값은 유저가 입력한 province 값
         province = province != null ? province : userRepository.findProvinceById(userId).orElse(DEFAULT_PROVINCE);
 
-        Page<Group> newGroups = groupRepository.findByProvince(province, pageable);
-        List<GroupResponse.NewGroupDTO> newGroupDTOS = newGroups.getContent().stream()
+        Page<Group> newGroupPage = groupRepository.findByProvince(province, pageable);
+        List<GroupResponse.NewGroupDTO> newGroupDTOS = newGroupPage.getContent().stream()
                 .filter(group -> !joinedGroupIdSet.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> new GroupResponse.NewGroupDTO(
                         group.getId(),
@@ -306,8 +306,8 @@ public class GroupService {
         String key = POST_READ_KEY_PREFIX + userId;
         Set<String> postIds = userId != null ? redisService.getAllElement(key) : Collections.emptySet();
 
-        Page<Post> notices = postRepository.findByGroupId(groupId, pageable);
-        List<GroupResponse.NoticeDTO> noticeDTOS = notices.getContent().stream()
+        Page<Post> noticePage = postRepository.findByGroupId(groupId, pageable);
+        List<GroupResponse.NoticeDTO> noticeDTOS = noticePage.getContent().stream()
                 .map(notice -> new GroupResponse.NoticeDTO(
                         notice.getId(),
                         notice.getUser().getNickName(),
@@ -322,8 +322,8 @@ public class GroupService {
 
     @Transactional(readOnly = true)
     public List<GroupResponse.MeetingDTO> findMeetingList(Long groupId, Pageable pageable){
-        Page<Meeting> meetings = meetingRepository.findByGroupId(groupId, pageable);
-        List<GroupResponse.MeetingDTO> meetingDTOS = meetings.getContent().stream()
+        Page<Meeting> meetingPage = meetingRepository.findByGroupId(groupId, pageable);
+        List<GroupResponse.MeetingDTO> meetingDTOS = meetingPage.getContent().stream()
                 .map(meeting -> {
                     List<GroupResponse.ParticipantDTO> participantDTOS = meeting.getMeetingUsers().stream()
                             .map(meetingUser -> new GroupResponse.ParticipantDTO(meetingUser.getProfileURL()))
@@ -795,9 +795,9 @@ public class GroupService {
         Sort sort = Sort.by(Sort.Order.desc(SORT_BY_LIKE_NUM), Sort.Order.desc(SORT_BY_PARTICIPANT_NUM));
         Pageable pageable = PageRequest.of(0, 30, sort);
 
-        Page<Group> recommendGroups = groupRepository.findByProvince(province, pageable);
+        Page<Group> recommendGroupPage = groupRepository.findByProvince(province, pageable);
 
-        List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = recommendGroups.getContent().stream()
+        List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = recommendGroupPage.getContent().stream()
                 .filter(group -> !joinedGroupIdSet.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> {
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());

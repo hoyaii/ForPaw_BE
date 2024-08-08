@@ -239,9 +239,28 @@ public class PostService {
                         post.getContent(),
                         post.getCreatedDate(),
                         post.getAnswerNum()))
-                .collect(Collectors.toList());
+                .toList();
 
         return new PostResponse.FindQnaPostListDTO(qnaDTOS);
+    }
+
+    @Transactional(readOnly = true)
+    public PostResponse.FindMyCommentListDTO findMyCommentList(Long userId, Pageable pageable){
+        // Post를 패치조인하여 조회
+        Page<Comment> commentPage = commentRepository.findByUserIdWithPost(userId, pageable);
+
+        List<PostResponse.MyCommentDTO> myCommentDTOS = commentPage.getContent().stream()
+                .map(comment -> new PostResponse.MyCommentDTO(
+                        comment.getId(),
+                        comment.getPost().getPostType().getValue(),
+                        comment.getContent(),
+                        comment.getCreatedDate(),
+                        comment.getPost().getTitle(),
+                        comment.getPost().getCommentNum()
+                ))
+                .toList();
+
+        return new PostResponse.FindMyCommentListDTO(myCommentDTOS);
     }
 
     @Transactional(readOnly = true)
@@ -632,7 +651,7 @@ public class PostService {
     @Transactional
     public void likeComment(Long commentId, Long userId){
         // 존재하지 않는 댓글인지 체크
-        Long commentWriterId = commentRepository.findUserIdById(commentId).orElseThrow(
+        Long commentWriterId = commentRepository.findWriterIdById(commentId).orElseThrow(
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
 

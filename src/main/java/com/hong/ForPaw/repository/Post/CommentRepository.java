@@ -1,7 +1,10 @@
 package com.hong.ForPaw.repository.Post;
 
 import com.hong.ForPaw.domain.Post.Comment;
+import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.User.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -27,12 +30,16 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     Optional<User> findUserById(@Param("commentId") Long commentId);
 
     @Query("SELECT c.user.id FROM Comment c WHERE c.id = :commentId AND c.removedAt IS NULL")
-    Optional<Long> findUserIdById(@Param("commentId") Long commentId);
+    Optional<Long> findWriterIdById(@Param("commentId") Long commentId);
 
     // 모든 댓글과 대댓글을 한 번에 가져오기
     @Query("SELECT c FROM Comment c WHERE c.post.id = :postId")
     @EntityGraph(attributePaths = {"user", "parent"})
     List<Comment> findByPostIdWithUserAndParentAndRemoved(@Param("postId") Long postId);
+
+    @EntityGraph(attributePaths = {"post"})
+    @Query("SELECT c FROM Comment c WHERE c.user.id = :userId AND c.removedAt IS NULL")
+    Page<Comment> findByUserIdWithPost(@Param("userId") Long userId, Pageable pageable);
 
     @Query("SELECT COUNT(c) FROM Comment c WHERE c.createdDate >= :date AND c.removedAt IS NULL")
     Long countALlWithinDate(LocalDateTime date);
