@@ -59,9 +59,15 @@ public class PostController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @GetMapping("/posts/myQna")
+    @GetMapping("/posts/myQuestions")
     public ResponseEntity<?> findMyQuestionList(@PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         PostResponse.FindQnaPostListDTO responseDTO = postService.findMyQuestionList(userDetails.getUser().getId(), pageable);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
+    @GetMapping("/posts/myAnswers")
+    public ResponseEntity<?> findMyAnswerList(@PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+        PostResponse.FindQnaPostListDTO responseDTO = postService.findMyAnswerList(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
