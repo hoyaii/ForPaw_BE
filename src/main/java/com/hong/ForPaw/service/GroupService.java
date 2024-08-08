@@ -654,14 +654,15 @@ public class GroupService {
         }
 
         // 권한 체크 (메니저급만 생성 가능)
-        checkGroupAdminAuthority(groupId, userId);
+        User creator = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+        checkGroupAdminAuthority(groupId, creator);
 
         Group groupRef = entityManager.getReference(Group.class, groupId);
-        User userRef = entityManager.getReference(User.class, userId); // 주최자
-
         Meeting meeting = Meeting.builder()
                 .group(groupRef)
-                .creator(userRef)
+                .creator(creator)
                 .name(requestDTO.name())
                 .meetDate(requestDTO.meetDate())
                 .location(requestDTO.location())
@@ -673,7 +674,8 @@ public class GroupService {
 
         // 주최자를 맴버로 저장
         MeetingUser meetingUser = MeetingUser.builder()
-                .user(userRef)
+                .user(creator)
+                .profileURL(creator.getProfileURL())
                 .build();
 
         // 양방향 관계 설정 후 meeting 저장 (cascade에 의해 meetingUser도 자동으로 저장됨)
@@ -876,6 +878,19 @@ public class GroupService {
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(groupUser -> roles.contains(groupUser.getGroupRole()))
                 .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN)); // ADMIN이 아니거나 그룹과 관련없는 사람이면 에러 보냄
+    }
+
+    private void checkGroupAdminAuthority(Long groupId, User user){
+        UserRole role = user.getRole();
+
+        if(role.equals(UserRole.ADMIN) || role.equals(UserRole.SUPER)){
+            return;
+        }
+
+        Set<GroupRole> roles = EnumSet.of(GroupRole.ADMIN, GroupRole.CREATOR);
+        groupUserRepository.findByGroupIdAndUserId(groupId, user.getId())
+                .filter(groupUser -> roles.contains(groupUser.getGroupRole()))
+                .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
     }
 
     private void checkGroupCreatorAuthority(Long groupId, Long userId){
