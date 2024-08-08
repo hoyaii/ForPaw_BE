@@ -43,8 +43,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE p.postType = 'NOTICE' AND p.group.id = :groupId AND p.removedAt IS NULL")
     Page<Post> findNoticeByGroupIdWithUser(@Param("groupId") Long groupId, Pageable pageable);
 
-    @Query(value = "SELECT * FROM post_tb WHERE MATCH(title) AGAINST(:title IN BOOLEAN MODE) AND removed_at IS NULL",
-            countQuery = "SELECT COUNT(*) FROM post_tb WHERE MATCH(title) AGAINST(:title IN BOOLEAN MODE) AND removed_at IS NULL",
+    @Query(value = "SELECT * FROM post_tb WHERE MATCH(title) AGAINST(:title IN BOOLEAN MODE) AND post_type IN ('ADOPTION', 'FOSTERING', 'QUESTION') AND removed_at IS NULL",
+            countQuery = "SELECT COUNT(*) FROM post_tb WHERE MATCH(title) AGAINST(:title IN BOOLEAN MODE) AND post_type IN ('ADOPTION', 'FOSTERING', 'QUESTION') AND removed_at IS NULL",
             nativeQuery = true)
     Page<Post> findByTitleContaining(@Param("title") String title, Pageable pageable);
 

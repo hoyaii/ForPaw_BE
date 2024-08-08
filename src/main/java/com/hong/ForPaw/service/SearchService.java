@@ -67,6 +67,7 @@ public class SearchService {
         List<SearchResponse.PostDTO> postDTOS = posts.getContent().stream()
                 .map(post -> new SearchResponse.PostDTO(
                         post.getId(),
+                        post.getPostType(),
                         post.getTitle(),
                         post.getContent(),
                         post.getCreatedDate(),

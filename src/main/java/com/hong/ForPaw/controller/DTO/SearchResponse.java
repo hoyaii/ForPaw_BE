@@ -1,6 +1,7 @@
 package com.hong.ForPaw.controller.DTO;
 
 import com.hong.ForPaw.domain.District;
+import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.Province;
 
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ public class SearchResponse {
     public record ShelterDTO(Long id, String name) {}
 
     public record PostDTO(Long id,
+                          PostType type,
                           String title,
                           String content,
                           LocalDateTime date,
