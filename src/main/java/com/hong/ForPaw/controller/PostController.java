@@ -48,30 +48,30 @@ public class PostController {
     }
 
     @GetMapping("/posts/question")
-    public ResponseEntity<?> findQuestionPostList(@PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable){
-        PostResponse.FindQnaPostListDTO responseDTO = postService.findQuestionPostList(pageable);
+    public ResponseEntity<?> findQuestionList(@PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable){
+        PostResponse.FindQnaListDTO responseDTO = postService.findQuestionList(pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @GetMapping("/posts/myPosts")
+    @GetMapping("/posts/myPost")
     public ResponseEntity<?> findMyPostList(@PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         PostResponse.FindMyPostListDTO responseDTO = postService.findMyPostList(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @GetMapping("/posts/myQuestions")
+    @GetMapping("/posts/myQuestion")
     public ResponseEntity<?> findMyQuestionList(@PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
-        PostResponse.FindQnaPostListDTO responseDTO = postService.findMyQuestionList(userDetails.getUser().getId(), pageable);
+        PostResponse.FindQnaListDTO responseDTO = postService.findMyQuestionList(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @GetMapping("/posts/myAnswers")
+    @GetMapping("/posts/myAnswer")
     public ResponseEntity<?> findMyAnswerList(@PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
-        PostResponse.FindQnaPostListDTO responseDTO = postService.findMyAnswerList(userDetails.getUser().getId(), pageable);
+        PostResponse.FindQnaListDTO responseDTO = postService.findMyAnswerList(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @GetMapping("/posts/myComments")
+    @GetMapping("/posts/myComment")
     public ResponseEntity<?> findMyCommentList(@PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         PostResponse.FindMyCommentListDTO responseDTO = postService.findMyCommentList(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));

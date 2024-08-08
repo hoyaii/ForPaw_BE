@@ -182,7 +182,7 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindQnaPostListDTO findQuestionPostList(Pageable pageable){
+    public PostResponse.FindQnaListDTO findQuestionList(Pageable pageable){
         // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findByPostTypeWithUser(PostType.QUESTION, pageable);
 
@@ -197,7 +197,7 @@ public class PostService {
                         post.getAnswerNum()))
                 .collect(Collectors.toList());
 
-        return new PostResponse.FindQnaPostListDTO(qnaDTOS);
+        return new PostResponse.FindQnaListDTO(qnaDTOS);
     }
 
     @Transactional(readOnly = true)
@@ -226,7 +226,7 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindQnaPostListDTO findMyQuestionList(Long userId, Pageable pageable){
+    public PostResponse.FindQnaListDTO findMyQuestionList(Long userId, Pageable pageable){
         // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findQnaByUserIdWithUser(userId, pageable);
 
@@ -241,11 +241,11 @@ public class PostService {
                         post.getAnswerNum()))
                 .toList();
 
-        return new PostResponse.FindQnaPostListDTO(qnaDTOS);
+        return new PostResponse.FindQnaListDTO(qnaDTOS);
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindQnaPostListDTO findMyAnswerList(Long userId, Pageable pageable){
+    public PostResponse.FindQnaListDTO findMyAnswerList(Long userId, Pageable pageable){
         // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findAnswerQnaByUserIdWithUser(userId, pageable);
 
@@ -260,7 +260,7 @@ public class PostService {
                         post.getAnswerNum()))
                 .toList();
 
-        return new PostResponse.FindQnaPostListDTO(qnaDTOS);
+        return new PostResponse.FindQnaListDTO(qnaDTOS);
     }
 
     @Transactional(readOnly = true)
@@ -271,6 +271,7 @@ public class PostService {
         List<PostResponse.MyCommentDTO> myCommentDTOS = commentPage.getContent().stream()
                 .map(comment -> new PostResponse.MyCommentDTO(
                         comment.getId(),
+                        comment.getPost().getId(),
                         comment.getPost().getPostType().getValue(),
                         comment.getContent(),
                         comment.getCreatedDate(),

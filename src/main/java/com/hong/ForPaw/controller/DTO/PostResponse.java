@@ -17,7 +17,7 @@ public class PostResponse {
 
     public record FindMyPostListDTO(List<PostDTO> posts) {}
 
-    public record FindQnaPostListDTO(List<QnaDTO> questions) {}
+    public record FindQnaListDTO(List<QnaDTO> questions) {}
 
     public record FindMyCommentListDTO(List<MyCommentDTO> comments) {}
 
@@ -31,6 +31,14 @@ public class PostResponse {
                           String imageURL){}
 
     public record QnaDTO(Long id,
+                         String nickName,
+                         String profileURL,
+                         String title,
+                         String content,
+                         LocalDateTime date,
+                         Long answerNum) {}
+
+    public record MyQnaDTO(Long id,
                          String nickName,
                          String profileURL,
                          String title,
@@ -85,7 +93,8 @@ public class PostResponse {
                              boolean isLike,
                              List<ReplyDTO> replies) {}
 
-    public record MyCommentDTO(Long id,
+    public record MyCommentDTO(Long commentId,
+                               Long postId,
                                String postType,
                                String content,
                                LocalDateTime date,
