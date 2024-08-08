@@ -40,8 +40,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Optional<Long> findUserIdById(@Param("postId") Long postId);
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT p FROM Post p WHERE p.group.id = :groupId AND p.removedAt IS NULL")
-    Page<Post> findByGroupId(@Param("groupId") Long groupId, Pageable pageable);
+    @Query("SELECT p FROM Post p WHERE p.postType = 'NOTICE' AND p.group.id = :groupId AND p.removedAt IS NULL")
+    Page<Post> findNoticeByGroupIdWithUser(@Param("groupId") Long groupId, Pageable pageable);
 
     @Query(value = "SELECT * FROM post_tb WHERE MATCH(title) AGAINST(:title IN BOOLEAN MODE) AND removed_at IS NULL",
             countQuery = "SELECT COUNT(*) FROM post_tb WHERE MATCH(title) AGAINST(:title IN BOOLEAN MODE) AND removed_at IS NULL",
@@ -57,12 +57,16 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByParentIdWithUser(@Param("parentId") Long parentId);
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT p FROM Post p WHERE p.user.id = :userId AND p.removedAt IS NULL")
-    Page<Post> findByUserIdWithUser(@Param("userId") Long userId, Pageable pageable);
+    @Query("SELECT p FROM Post p WHERE p.user.id = :userId AND (p.postType = 'ADOPTION' OR p.postType = 'FOSTERING')AND p.removedAt IS NULL")
+    Page<Post> findFosterAndAdoptionByUserIdWithUser(@Param("userId") Long userId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})
     @Query("SELECT p FROM Post p WHERE p.user.id = :userId AND p.postType = 'QUESTION' AND p.removedAt IS NULL")
     Page<Post> findQnaByUserIdWithUser(@Param("userId") Long userId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT DISTINCT p.parent FROM Post p WHERE p.user.id = :userId AND p.postType = 'ANSWER' AND p.parent.postType = 'QUESTION' AND p.parent.removedAt IS NULL")
+    Page<Post> findAnswerQnaByUserIdWithUser(@Param("userId") Long userId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})
     @Query("SELECT p FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")

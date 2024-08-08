@@ -29,6 +29,7 @@ public class GroupUser extends TimeStamp {
     private User user;
 
     @Column
+    @Enumerated(EnumType.STRING)
     private GroupRole groupRole;
 
     @Column

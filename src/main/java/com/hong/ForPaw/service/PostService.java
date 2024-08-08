@@ -203,7 +203,7 @@ public class PostService {
     @Transactional(readOnly = true)
     public PostResponse.FindMyPostListDTO findMyPostList(Long userId, Pageable pageable){
         // 유저를 패치조인하여 조회
-        Page<Post> postPage = postRepository.findByUserIdWithUser(userId, pageable);
+        Page<Post> postPage = postRepository.findFosterAndAdoptionByUserIdWithUser(userId, pageable);
 
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
@@ -226,9 +226,28 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindQnaPostListDTO findMyQnaList(Long userId, Pageable pageable){
+    public PostResponse.FindQnaPostListDTO findMyQuestionList(Long userId, Pageable pageable){
         // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findQnaByUserIdWithUser(userId, pageable);
+
+        List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
+                .map(post -> new PostResponse.QnaDTO(
+                        post.getId(),
+                        post.getUser().getNickName(),
+                        post.getUser().getProfileURL(),
+                        post.getTitle(),
+                        post.getContent(),
+                        post.getCreatedDate(),
+                        post.getAnswerNum()))
+                .toList();
+
+        return new PostResponse.FindQnaPostListDTO(qnaDTOS);
+    }
+
+    @Transactional(readOnly = true)
+    public PostResponse.FindQnaPostListDTO findMyAnswerList(Long userId, Pageable pageable){
+        // 유저를 패치조인하여 조회
+        Page<Post> postPage = postRepository.findAnswerQnaByUserIdWithUser(userId, pageable);
 
         List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
                 .map(post -> new PostResponse.QnaDTO(

@@ -306,7 +306,7 @@ public class GroupService {
         String key = POST_READ_KEY_PREFIX + userId;
         Set<String> postIds = userId != null ? redisService.getAllElement(key) : Collections.emptySet();
 
-        Page<Post> noticePage = postRepository.findByGroupId(groupId, pageable);
+        Page<Post> noticePage = postRepository.findNoticeByGroupIdWithUser(groupId, pageable);
         List<GroupResponse.NoticeDTO> noticeDTOS = noticePage.getContent().stream()
                 .map(notice -> new GroupResponse.NoticeDTO(
                         notice.getId(),
