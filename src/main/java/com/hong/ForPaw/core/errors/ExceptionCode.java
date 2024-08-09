@@ -29,8 +29,8 @@ public enum ExceptionCode {
     CANNOT_CHANGE_TO_SUPER(HttpStatus.BAD_REQUEST, "SUPER 권한으로의 변경은 불가능합니다."),
     USER_ALREADY_SUSPENDED(HttpStatus.BAD_REQUEST, "이미 정지된 상태입니다."),
     USER_NOT_SUSPENDED(HttpStatus.BAD_REQUEST, "정지된 유저가 아닙니다."),
-    JOINED_BY_LOCAL(HttpStatus.BAD_REQUEST, "이미 가입된 계정입니다."),
-    JOINED_BY_SOCIAL(HttpStatus.BAD_REQUEST, "소셜 회원 가입을 통해 이미 가입된 계정입니다."),
+    JOINED_BY_LOCAL(HttpStatus.BAD_REQUEST, "일반 회원 가입을 통해 가입된 계정입니다."),
+    JOINED_BY_SOCIAL(HttpStatus.BAD_REQUEST, "소셜 회원 가입을 통해 가입된 계정입니다."),
 
     // 고객 문의 관련 에러
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, "문의 내역이 존재하지 않습니다"),

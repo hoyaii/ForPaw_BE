@@ -189,9 +189,11 @@ public class UserService {
         KakaoOauthDTO.TokenDTO token = getKakaoToken(code);
         KakaoOauthDTO.UserInfoDTO userInfo = getKakaoUserInfo(token.access_token());
 
-        // 카카오 계정으로 가입한 계정의 이메일은 {카카오 id}@kakao.com로 구성
-        // 카카오의 경우 비즈니스 계정이어야 이메일을 제공해줘서, 직접 카카오 아이디를 바탕으로 이메일을 구성
+        // 카카오 계정으로 가입한 계정의 이메일은 {카카오 id}@kakao.com로 구성 (비즈니스 계정이 아라서 이메일 접근 불가)
         String email = userInfo.id().toString() + "@kakao.com";
+
+        // 이미 로컬로 가입한 계정인지 체크
+        checkIsLocalAccount(email);
 
         // 가입되지 않음 => email을 넘겨서 추가 정보를 입력하도록 함
         if(isNotMember(email)){
@@ -217,6 +219,9 @@ public class UserService {
         // 구글의 경우 메일을 제공해줌
         String email = userInfoDTO.email();
 
+        // 이미 로컬로 가입한 계정인지 체크
+        checkIsLocalAccount(email);
+
         if(isNotMember(email)){
             Map<String, String> response = new HashMap<>();
             response.put("email", email);
@@ -237,10 +242,10 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
 
         // 이미 가입된 계정인지 체크
-        checkAlreadyJoin(requestDTO);
+        checkAlreadyJoin(requestDTO.email());
 
         // 중복된 닉네임 다시 체크 (프론트에서 체크하고 이중 체크)
-        checkDuplicateNickname(requestDTO);
+        checkDuplicateNickname(requestDTO.nickName());
 
         User user = User.builder()
                 .name(requestDTO.name())
@@ -266,12 +271,11 @@ public class UserService {
 
     @Transactional
     public void socialJoin(UserRequest.SocialJoinDTO requestDTO){
-        // 비정상 경로를 통한 요청을 대비해, 이메일/닉네임 다시 체크
-        if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
-            throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
+        // 악의적 접근 방지를 위한 이중 체크
+        checkAlreadyJoin(requestDTO.email());
 
-        if(userRepository.existsByNickWithRemoved(requestDTO.nickName()))
-            throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
+        // 중복된 닉네임 다시 체크 (프론트에서 체크하고 이중 체크)
+        checkDuplicateNickname(requestDTO.nickName());
 
         User user = User.builder()
                 .name(requestDTO.name())
@@ -870,19 +874,25 @@ public class UserService {
         user.updateStatus(status);
     }
 
-    private void checkAlreadyJoin(UserRequest.JoinDTO requestDTO) {
+    private void checkAlreadyJoin(String email) {
         // 로컬 회원 가입을 통해 이미 가입함
-        if(userRepository.existsLocalAccountByEmailWithRemoved(requestDTO.email()))
+        if(userRepository.existsLocalAccountByEmailWithRemoved(email))
             throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
 
         // 소셜 회원 가입을 통해 이미 가입함
-        if(userRepository.existsSocialAccountByEmailWithRemoved(requestDTO.email())){
+        if(userRepository.existsSocialAccountByEmailWithRemoved(email)){
             throw new CustomException(ExceptionCode.JOINED_BY_SOCIAL);
         }
     }
 
-    private void checkDuplicateNickname(UserRequest.JoinDTO requestDTO) {
-        if(userRepository.existsByNickWithRemoved(requestDTO.nickName()))
+    private void checkDuplicateNickname(String nickName) {
+        if(userRepository.existsByNickWithRemoved(nickName))
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
+    }
+
+    private void checkIsLocalAccount(String email) {
+        if(userRepository.existsLocalAccountByEmailWithRemoved(email)){
+            throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
+        }
     }
 }
