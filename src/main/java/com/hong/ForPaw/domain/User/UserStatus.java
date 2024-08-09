@@ -23,7 +23,6 @@ public class UserStatus {
     @JoinColumn(name = "user_id")
     private User user;
 
-
     @Column
     private boolean isActive;
 

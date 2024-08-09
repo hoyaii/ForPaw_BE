@@ -19,7 +19,7 @@ public enum ExceptionCode {
     USER_UPDATE_FORBIDDEN(HttpStatus.FORBIDDEN, "사용자 정보를 수정할 권한이 없습니다."),
     USER_FORBIDDEN(HttpStatus.FORBIDDEN, "권한이 없습니다."),
     USER_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 되지 않았습니다."),
-    USER_ALREADY_EXIT(HttpStatus.NOT_FOUND, "이미 탈퇴한 회원입니다."),
+    USER_ALREADY_EXIT(HttpStatus.NOT_FOUND, "이미 탈퇴한 계정입니다."),
     CREATOR_CANT_EXIT(HttpStatus.BAD_REQUEST, "그룹장은 권한 양도 후 탈퇴 가능합니다."),
     USER_SUSPENDED(HttpStatus.FORBIDDEN, "계정이 비활성화 상태입니다."),
     LOGIN_ATTEMPT_EXCEEDED(HttpStatus.FORBIDDEN, "로그인 횟수를 초과했습니다."),

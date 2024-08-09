@@ -1,7 +1,6 @@
 package com.hong.ForPaw.repository;
 
 import com.hong.ForPaw.domain.District;
-import com.hong.ForPaw.domain.Post.Post;
 import com.hong.ForPaw.domain.Province;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.User.UserRole;
@@ -65,8 +64,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(@Param("email") String email);
 
     @EntityGraph(attributePaths = {"status"})
-    @Query("SELECT u FROM User u WHERE u.email = :email AND u.removedAt IS NULL")
-    Optional<User> findByEmailWithUserStatus(@Param("email") String email);
+    @Query("SELECT u FROM User u WHERE u.email = :email")
+    Optional<User> findByEmailWithUserStatusAndRemoved(@Param("email") String email);
 
     @Query("SELECT u.profileURL FROM User u WHERE u.id = :userId AND u.removedAt IS NULL")
     Optional<String> findProfileById(@Param("userId") Long userId);

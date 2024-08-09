@@ -147,9 +147,14 @@ public class UserService {
 
     @Transactional
     public Map<String, String> login(UserRequest.LoginDTO requestDTO, HttpServletRequest request){
-        User user = userRepository.findByEmailWithUserStatus(requestDTO.email()).orElseThrow(
+        User user = userRepository.findByEmailWithUserStatusAndRemoved(requestDTO.email()).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
         );
+
+        // 탈퇴한 계정
+        if(user.getRemovedAt() != null){
+            throw new CustomException(ExceptionCode.USER_ALREADY_EXIT);
+        }
 
         // 계정 정지 상태 체크
         checkAccountSuspension(user);
@@ -782,9 +787,13 @@ public class UserService {
     }
 
     private User processLogin(String email){
-        User user = userRepository.findByEmailWithUserStatus(email).orElseThrow(
+        User user = userRepository.findByEmailWithUserStatusAndRemoved(email).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
+
+        if(user.getRemovedAt() != null){
+            throw new CustomException(ExceptionCode.USER_ALREADY_EXIT);
+        }
 
         // 정지 상태 체크
         checkAccountSuspension(user);
