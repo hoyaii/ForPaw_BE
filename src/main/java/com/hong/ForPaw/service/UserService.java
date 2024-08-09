@@ -277,10 +277,7 @@ public class UserService {
         setAlarm(user);
     }
 
-    // 중복 여부 확인 => 만약 사용 가능한 메일이면, 코드 전송
-    @Transactional
-    @Async
-    public void checkEmailAndSendCode(UserRequest.EmailDTO requestDTO){
+    public void checkEmailExist(UserRequest.EmailDTO requestDTO){
         // 가입한 이메일이 존재 한다면
         if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
             throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
@@ -289,13 +286,16 @@ public class UserService {
         if(redisService.isDateExist("emailCode", requestDTO.email())){
             throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
         }
+    }
 
+    @Async
+    public void sendCodeByEmail(UserRequest.EmailDTO requestDTO){
         // 인증 코드 전송 및 레디스에 저장
-        String verificationCode = sendCodeByMail(requestDTO.email());
+        String verificationCode = generateVerificationCode();
+        sendMail(requestDTO.email(), MailTemplate.VERIFICATION_CODE, verificationCode);
         redisService.storeValue("emailCode", requestDTO.email(), verificationCode, 5 * 60 * 1000L); // 5분 동안 유효
     }
 
-    @Transactional
     public void verifyRegisterCode(UserRequest.VerifyCodeDTO requestDTO){
         // 레디스를 통해 해당 코드가 유효한지 확인
         if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
@@ -303,30 +303,22 @@ public class UserService {
         redisService.removeData("emailCode", requestDTO.email()); // 검증 후 토큰 삭제
     }
 
-    @Transactional
     public void checkNick(UserRequest.CheckNickDTO requestDTO){
         if(userRepository.existsByNickWithRemoved(requestDTO.nickName()))
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
     }
 
-    @Transactional
-    @Async
-    public void sendRecoveryCode(UserRequest.EmailDTO requestDTO){
+    public void checkAccountExist(UserRequest.EmailDTO requestDTO){
         // 가입된 계정이 아니라면
         if(userRepository.findByEmail(requestDTO.email()).isEmpty())
             throw new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND);
 
         // 계속 이메일을 보내는 건 방지. 5분 후에 다시 시도할 수 있다
-        //if(redisService.isDateExist("emailCode", requestDTO.email())){
-        //    throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
-        //}
-
-        // 인증 코드 전송 및 레디스에 저장
-        String verificationCode = sendCodeByMail(requestDTO.email());
-        redisService.storeValue("emailCode", requestDTO.email(), verificationCode, 5 * 60 * 1000L);
+        if(redisService.isDateExist("emailCode", requestDTO.email())){
+            throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
+        }
     }
 
-    @Transactional
     public void verifyRecoveryCode(UserRequest.VerifyCodeDTO requestDTO){
         if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
             throw new CustomException(ExceptionCode.CODE_WRONG);
@@ -386,7 +378,7 @@ public class UserService {
         user.updatePassword(passwordEncoder.encode(requestDTO.newPassword()));
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public UserResponse.ProfileDTO findProfile(Long userId){
         User user = userRepository.findById(userId).get();
         return new UserResponse.ProfileDTO(user.getEmail(), user.getName(), user.getNickName(), user.getProvince(), user.getDistrict(), user.getSubDistrict(), user.getProfileURL());
@@ -529,7 +521,7 @@ public class UserService {
         inquiry.updateCustomerInquiry(requestDTO.title(), requestDTO.description(), requestDTO.contactMail());
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public UserResponse.FindInquiryListDTO findInquiryList(Long userId){
         List<Inquiry> customerInquiries = inquiryRepository.findAllByQuestionerId(userId);
 
@@ -548,7 +540,7 @@ public class UserService {
         return new UserResponse.FindInquiryListDTO(inquiryDTOS);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public UserResponse.FindInquiryByIdDTO findInquiryById(Long userId, Long inquiryId){
         Inquiry inquiry = inquiryRepository.findById(inquiryId).orElseThrow(
                 () -> new CustomException(ExceptionCode.INQUIRY_NOT_FOUND)
@@ -570,7 +562,7 @@ public class UserService {
         return new UserResponse.FindInquiryByIdDTO(inquiry.getTitle(), inquiry.getDescription(), inquiry.getStatus(), inquiry.getCreatedDate(), answerDTOS);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public UserResponse.ValidateAccessTokenDTO validateAccessToken(@CookieValue String accessToken){
         // 잘못된 토큰 형식인지 체크
         if(!JWTProvider.validateToken(accessToken)) {
@@ -601,7 +593,7 @@ public class UserService {
             redisService.storeValue("loginFailDaily", user.getId().toString(), loginFailNumDaily.toString(), 86400000L);  // 24시간
 
             if(loginFailNumDaily == 3L){
-                sendAccountSuspensionByMail(user.getEmail());
+                sendMail(user.getEmail(), MailTemplate.ACCOUNT_SUSPENSION);
             }
 
             throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
@@ -611,20 +603,8 @@ public class UserService {
     }
 
     @Async
-    public String sendCodeByMail(String toEmail) {
-        String verificationCode = generateVerificationCode();
-        sendMail(toEmail, MailTemplate.VERIFICATION_CODE, verificationCode);
-        return verificationCode;
-    }
-
-    @Async
     public void sendPasswordByMail(String toEmail, String password) {
         sendMail(toEmail, MailTemplate.TEMPORARY_PASSWORD, password);
-    }
-
-    //@Async
-    public void sendAccountSuspensionByMail(String toEmail) {
-        sendMail(toEmail, MailTemplate.ACCOUNT_SUSPENSION);
     }
 
     @Async

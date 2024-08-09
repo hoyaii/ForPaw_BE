@@ -109,7 +109,8 @@ public class UserController {
 
     @PostMapping("/accounts/check/email")
     public ResponseEntity<?> checkEmailAndSendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO){
-        userService.checkEmailAndSendCode(requestDTO);
+        userService.checkEmailExist(requestDTO);
+        userService.sendCodeByEmail(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
@@ -127,7 +128,8 @@ public class UserController {
 
     @PostMapping("/accounts/recovery")
     public ResponseEntity<?> sendRecoveryCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO){
-        userService.sendRecoveryCode(requestDTO);
+        userService.checkAccountExist(requestDTO);
+        userService.sendCodeByEmail(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
