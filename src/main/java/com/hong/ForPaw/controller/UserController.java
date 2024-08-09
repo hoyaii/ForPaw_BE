@@ -54,7 +54,7 @@ public class UserController {
 
         // 가입된 계정이 아님
         if (tokenOrEmail.get("email") != null) {
-            String redirectUrl = "http://localhost:3000/login?email=" + URLEncoder.encode(tokenOrEmail.get("email"), "UTF-8");
+            String redirectUrl = "http://localhost:3000/login/signup/sns/01?email=" + URLEncoder.encode(tokenOrEmail.get("email"), "UTF-8");
             response.sendRedirect(redirectUrl);
             return;
         }
@@ -62,7 +62,7 @@ public class UserController {
         // 가입된 계정이면, JWT 토큰 반환 및 리다이렉트
         String accessToken = tokenOrEmail.get("accessToken");
         String refreshToken = tokenOrEmail.get("refreshToken");
-        String redirectUrl = "http://localhost:3000/login?accessToken=" + URLEncoder.encode(accessToken, "UTF-8");
+        String redirectUrl = "http://localhost:3000/home?accessToken=" + URLEncoder.encode(accessToken, "UTF-8");
 
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
@@ -77,23 +77,31 @@ public class UserController {
     }
 
     @GetMapping("/auth/login/google")
-    public ResponseEntity<?> googleLogin(@RequestParam String code, HttpServletRequest request){
+    public void googleLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, String> tokenOrEmail = userService.googleLogin(code, request);
 
         // 가입된 계정이 아님
-        if(tokenOrEmail.get("email") != null){
-            return ResponseEntity.ok().body((ApiUtils.success(HttpStatus.OK, new UserResponse.GoogleLoginDTO("", tokenOrEmail.get("email")))));
+        if (tokenOrEmail.get("email") != null) {
+            String redirectUrl = "http://localhost:3000/login/signup/sns/01?email=" + URLEncoder.encode(tokenOrEmail.get("email"), "UTF-8");
+            response.sendRedirect(redirectUrl);
+            return;
         }
 
         // 가입된 계정이면, jwt 토큰 반환
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokenOrEmail.get("refreshToken"))
-                        .httpOnly(true)
-                        .secure(true)
-                        .sameSite("None")
-                        .maxAge(JWTProvider.REFRESH_EXP_MILLI)
-                        .build().toString())
-                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.GoogleLoginDTO(tokenOrEmail.get("accessToken"), "")));
+        String accessToken = tokenOrEmail.get("accessToken");
+        String refreshToken = tokenOrEmail.get("refreshToken");
+        String redirectUrl = "http://localhost:3000/home?accessToken=" + URLEncoder.encode(accessToken, "UTF-8");
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(JWTProvider.REFRESH_EXP_SEC)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+        response.sendRedirect(redirectUrl);
     }
 
     @PostMapping("/accounts")
