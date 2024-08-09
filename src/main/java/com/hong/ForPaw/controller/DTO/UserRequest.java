@@ -2,6 +2,7 @@ package com.hong.ForPaw.controller.DTO;
 
 import com.hong.ForPaw.domain.District;
 import com.hong.ForPaw.domain.Province;
+import com.hong.ForPaw.domain.User.AuthProvider;
 import com.hong.ForPaw.domain.User.UserRole;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -82,7 +83,9 @@ public class UserRequest {
             District district,
             String subDistrict,
             @NotBlank(message = "프로필을 입력해주세요.")
-            String profileURL) {}
+            String profileURL,
+            @NotNull(message = "가입 경로를 입력해주세요.")
+            AuthProvider authProvider) {}
 
     public record CurPasswordDTO(@NotBlank String password) {}
 

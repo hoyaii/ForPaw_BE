@@ -6,12 +6,12 @@ import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
-import com.hong.ForPaw.core.utils.MailTemplate;
 import com.hong.ForPaw.domain.Authentication.LoginAttempt;
 import com.hong.ForPaw.domain.Group.GroupRole;
 import com.hong.ForPaw.domain.Inquiry.InquiryAnswer;
 import com.hong.ForPaw.domain.Inquiry.Inquiry;
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
+import com.hong.ForPaw.domain.User.AuthProvider;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.UserStatus;
@@ -236,9 +236,8 @@ public class UserService {
         if (!requestDTO.password().equals(requestDTO.passwordConfirm()))
             throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
 
-        // 비정상 경로를 통한 요청을 대비해, 이메일/닉네임 다시 체크
-        if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
-            throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
+        // 비정상 경로를 통한 요청을 대비해, 이메일/닉네임 다시 체크 (탈퇴한 회원의 이메일/닉네임도 사용할 수 없다)
+        extracted(requestDTO);
 
         if(userRepository.existsByNickWithRemoved(requestDTO.nickName()))
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
@@ -253,6 +252,7 @@ public class UserService {
                 .province(requestDTO.province())
                 .district(requestDTO.district())
                 .subDistrict(requestDTO.subDistrict())
+                .authProvider(AuthProvider.LOCAL)
                 .build();
 
         userRepository.save(user);
@@ -262,6 +262,11 @@ public class UserService {
 
         // 알람 사용을 위한 설정
         setAlarm(user);
+    }
+
+    private void extracted(UserRequest.JoinDTO requestDTO) {
+        if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
+            throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
     }
 
     @Transactional
@@ -283,6 +288,7 @@ public class UserService {
                 .province(requestDTO.province())
                 .district(requestDTO.district())
                 .subDistrict(requestDTO.subDistrict())
+                .authProvider(requestDTO.authProvider())
                 .build();
 
         userRepository.save(user);

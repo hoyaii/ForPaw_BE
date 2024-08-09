@@ -59,11 +59,15 @@ public class User extends TimeStamp {
     @Column
     private String subDistrict;
 
+    @Column
+    @Enumerated(EnumType.STRING)
+    private AuthProvider authProvider;
+
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
 
     @Builder
-    public User(Long id, UserStatus status, String name, String nickName, String email, String password, UserRole role, String profileURL, Province province, District district, String subDistrict) {
+    public User(Long id, UserStatus status, String name, String nickName, String email, String password, UserRole role, String profileURL, Province province, District district, String subDistrict, AuthProvider authProvider) {
         this.id = id;
         this.status = status;
         this.name = name;
@@ -75,6 +79,7 @@ public class User extends TimeStamp {
         this.province = province;
         this.district = district;
         this.subDistrict = subDistrict;
+        this.authProvider = authProvider;
     }
 
     public void updatePassword (String password) {
