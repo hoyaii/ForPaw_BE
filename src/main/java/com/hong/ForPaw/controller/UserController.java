@@ -6,6 +6,7 @@ import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.security.JWTProvider;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.UserService;
+import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -33,7 +34,7 @@ public class UserController {
     private String redirectUrl;
 
     @PostMapping("/auth/login")
-    public ResponseEntity<?> login(@RequestBody @Valid UserRequest.LoginDTO requestDTO, HttpServletRequest request) {
+    public ResponseEntity<?> login(@RequestBody @Valid UserRequest.LoginDTO requestDTO, HttpServletRequest request) throws MessagingException {
         Map<String, String> tokens = userService.login(requestDTO, request);
 
         return ResponseEntity.ok()
@@ -108,7 +109,7 @@ public class UserController {
     }
 
     @PostMapping("/accounts/check/email")
-    public ResponseEntity<?> checkEmailAndSendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO){
+    public ResponseEntity<?> checkEmailAndSendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
         userService.checkEmailExist(requestDTO);
         userService.sendCodeByEmail(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
@@ -127,7 +128,7 @@ public class UserController {
     }
 
     @PostMapping("/accounts/recovery")
-    public ResponseEntity<?> sendRecoveryCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO){
+    public ResponseEntity<?> sendRecoveryCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
         userService.checkAccountExist(requestDTO);
         userService.sendCodeByEmail(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));

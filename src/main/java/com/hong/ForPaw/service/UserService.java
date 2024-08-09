@@ -29,13 +29,15 @@ import com.hong.ForPaw.repository.Post.CommentLikeRepository;
 import com.hong.ForPaw.repository.Post.PostLikeRepository;
 import com.hong.ForPaw.repository.UserRepository;
 import com.hong.ForPaw.repository.UserStatusRepository;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -47,6 +49,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -119,6 +123,8 @@ public class UserService {
     @Value("${admin.password}")
     private String adminPassword;
 
+    private final SpringTemplateEngine templateEngine;
+
     @Transactional
     public void initSuperAdmin(){
         // SuperAdmin이 등록되어 있지 않다면 등록
@@ -146,7 +152,7 @@ public class UserService {
     }
 
     @Transactional
-    public Map<String, String> login(UserRequest.LoginDTO requestDTO, HttpServletRequest request){
+    public Map<String, String> login(UserRequest.LoginDTO requestDTO, HttpServletRequest request) throws MessagingException {
         User user = userRepository.findByEmailWithUserStatusAndRemoved(requestDTO.email()).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
         );
@@ -203,9 +209,8 @@ public class UserService {
     public Map<String, String> googleLogin(String code, HttpServletRequest request){
         // 구글 엑세스 토큰 획득
         GoogleOauthDTO.TokenDTO token = getGoogleToken(code);
-        System.out.println("token= " + token.access_token() );
         GoogleOauthDTO.UserInfoDTO userInfoDTO = getGoogleUserInfo(token.access_token());
-        System.out.println("email= " + userInfoDTO.email());
+
         // 구글의 경우 메일을 제공해줌
         String email = userInfoDTO.email();
 
@@ -289,16 +294,21 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
 
         // 계속 이메일을 보내는 건 방지. 5분 후에 다시 시도할 수 있다
-        if(redisService.isDateExist("emailCode", requestDTO.email())){
-            throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
-        }
+        //if(redisService.isDateExist("emailCode", requestDTO.email())){
+        //    throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
+        //}
     }
 
     @Async
-    public void sendCodeByEmail(UserRequest.EmailDTO requestDTO){
+    public void sendCodeByEmail(UserRequest.EmailDTO requestDTO) throws MessagingException {
         // 인증 코드 전송 및 레디스에 저장
         String verificationCode = generateVerificationCode();
-        sendMail(requestDTO.email(), MailTemplate.VERIFICATION_CODE, verificationCode);
+
+        Map<String, Object> model = new HashMap<>();
+        model.put("code", verificationCode);
+
+        sendMail(requestDTO.email(), "[ForPaw] 이메일 인증 코드입니다.", "verification_code_email.html", model);
+
         redisService.storeValue("emailCode", requestDTO.email(), verificationCode, 5 * 60 * 1000L); // 5분 동안 유효
     }
 
@@ -585,7 +595,7 @@ public class UserService {
         return new UserResponse.ValidateAccessTokenDTO(profile);
     }
 
-    private Long checkLoginFailures(User user){
+    private Long checkLoginFailures(User user) throws MessagingException {
         // 하루 동안 5분 잠금이 세 번을 초과하면, 24시간 동안 로그인이 불가
         Long loginFailNumDaily = redisService.getDataInLong("loginFailDaily", user.getId().toString());
         if (loginFailNumDaily >= 3L) {
@@ -599,7 +609,8 @@ public class UserService {
             redisService.storeValue("loginFailDaily", user.getId().toString(), loginFailNumDaily.toString(), 86400000L);  // 24시간
 
             if(loginFailNumDaily == 3L){
-                sendMail(user.getEmail(), MailTemplate.ACCOUNT_SUSPENSION);
+                Map<String, Object> model = new HashMap<>();
+                sendMail(user.getEmail(), "[ForPaw] 로그인 횟수를 초과하여 계정이 비활성화 되었습니다.", "verification_code_email.html", model);
             }
 
             throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
@@ -610,20 +621,24 @@ public class UserService {
 
     @Async
     public void sendPasswordByMail(String toEmail, String password) {
-        sendMail(toEmail, MailTemplate.TEMPORARY_PASSWORD, password);
+        //sendMail(toEmail, MailTemplate.TEMPORARY_PASSWORD, password);
     }
 
     @Async
-    public void sendMail(String toEmail, MailTemplate template, String... args) {
-        // template에서 subject와 text 추출
-        String subject = template.getSubject();
-        String text = template.formatText(args);
+    public void sendMail(String toEmail, String subject, String templateName, Map<String, Object> templateModel) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromEmail);
-        message.setTo(toEmail);
-        message.setSubject(subject);
-        message.setText(text);
+        // 템플릿 설정
+        Context context = new Context();
+        templateModel.forEach(context::setVariable);
+        String htmlContent = templateEngine.process(templateName, context);
+        helper.setText(htmlContent, true);
+
+        helper.setFrom(fromEmail);
+        helper.setTo(toEmail);
+        helper.setSubject(subject);
+
         mailSender.send(message);
     }
 
@@ -732,15 +747,12 @@ public class UserService {
     }
 
     private GoogleOauthDTO.TokenDTO getGoogleToken(String code) {
-        System.out.println("=================================");
-        System.out.println("code = " + code);
         String decode = URLDecoder.decode(code, StandardCharsets.UTF_8);
-        System.out.println("decode = " + decode);
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("code", decode);
         formData.add("client_id", googleClientId);
         formData.add("client_secret", googleClientSecret);
-        //formData.add("redirect_uri", googleRedirectURI);
+        formData.add("redirect_uri", googleRedirectURI);
         formData.add("grant_type", "authorization_code");
 
         Mono<GoogleOauthDTO.TokenDTO> response = webClient.post()
