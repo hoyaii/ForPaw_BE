@@ -236,11 +236,11 @@ public class UserService {
         if (!requestDTO.password().equals(requestDTO.passwordConfirm()))
             throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
 
-        // 비정상 경로를 통한 요청을 대비해, 이메일/닉네임 다시 체크 (탈퇴한 회원의 이메일/닉네임도 사용할 수 없다)
-        extracted(requestDTO);
+        // 이미 가입된 계정인지 체크
+        checkAlreadyJoin(requestDTO);
 
-        if(userRepository.existsByNickWithRemoved(requestDTO.nickName()))
-            throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
+        // 중복된 닉네임 다시 체크 (프론트에서 체크하고 이중 체크)
+        checkDuplicateNickname(requestDTO);
 
         User user = User.builder()
                 .name(requestDTO.name())
@@ -262,11 +262,6 @@ public class UserService {
 
         // 알람 사용을 위한 설정
         setAlarm(user);
-    }
-
-    private void extracted(UserRequest.JoinDTO requestDTO) {
-        if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
-            throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
     }
 
     @Transactional
@@ -873,5 +868,21 @@ public class UserService {
 
         userStatusRepository.save(status);
         user.updateStatus(status);
+    }
+
+    private void checkAlreadyJoin(UserRequest.JoinDTO requestDTO) {
+        // 로컬 회원 가입을 통해 이미 가입함
+        if(userRepository.existsLocalAccountByEmailWithRemoved(requestDTO.email()))
+            throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
+
+        // 소셜 회원 가입을 통해 이미 가입함
+        if(userRepository.existsSocialAccountByEmailWithRemoved(requestDTO.email())){
+            throw new CustomException(ExceptionCode.JOINED_BY_SOCIAL);
+        }
+    }
+
+    private void checkDuplicateNickname(UserRequest.JoinDTO requestDTO) {
+        if(userRepository.existsByNickWithRemoved(requestDTO.nickName()))
+            throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
     }
 }
