@@ -203,8 +203,9 @@ public class UserService {
     public Map<String, String> googleLogin(String code, HttpServletRequest request){
         // 구글 엑세스 토큰 획득
         GoogleOauthDTO.TokenDTO token = getGoogleToken(code);
+        System.out.println("token= " + token.access_token() );
         GoogleOauthDTO.UserInfoDTO userInfoDTO = getGoogleUserInfo(token.access_token());
-
+        System.out.println("email= " + userInfoDTO.email());
         // 구글의 경우 메일을 제공해줌
         String email = userInfoDTO.email();
 
@@ -731,13 +732,15 @@ public class UserService {
     }
 
     private GoogleOauthDTO.TokenDTO getGoogleToken(String code) {
+        System.out.println("=================================");
+        System.out.println("code = " + code);
         String decode = URLDecoder.decode(code, StandardCharsets.UTF_8);
-
+        System.out.println("decode = " + decode);
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("code", decode);
         formData.add("client_id", googleClientId);
         formData.add("client_secret", googleClientSecret);
-        formData.add("redirect_uri", googleRedirectURI);
+        //formData.add("redirect_uri", googleRedirectURI);
         formData.add("grant_type", "authorization_code");
 
         Mono<GoogleOauthDTO.TokenDTO> response = webClient.post()
