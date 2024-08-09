@@ -7,6 +7,7 @@ import com.hong.ForPaw.core.security.JWTProvider;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.Map;
 
 @RestController
@@ -25,6 +28,9 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+
+    @Value("${kakao.oauth.redirect.uri}")
+    private String redirectUrl;
 
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody @Valid UserRequest.LoginDTO requestDTO, HttpServletRequest request) {
@@ -37,31 +43,36 @@ public class UserController {
                         .path("/")
                         .sameSite("Lax")
                         .maxAge(JWTProvider.REFRESH_EXP_SEC)
-                        //.domain("localhost")
                         .build().toString())
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokens.get("accessToken"))));
     }
 
     @GetMapping("/auth/login/kakao")
-    public ResponseEntity<?> kakaoLogin(@RequestParam String code, HttpServletRequest request) {
+    public void kakaoLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, String> tokenOrEmail = userService.kakaoLogin(code, request);
 
         // 가입된 계정이 아님
-        if(tokenOrEmail.get("email") != null){
-            return ResponseEntity.ok().body((ApiUtils.success(HttpStatus.OK, new UserResponse.KakaoLoginDTO("", tokenOrEmail.get("email")))));
+        if (tokenOrEmail.get("email") != null) {
+            String redirectUrl = "http://localhost:3000/login?email=" + URLEncoder.encode(tokenOrEmail.get("email"), "UTF-8");
+            response.sendRedirect(redirectUrl);
+            return;
         }
 
-        // 가입된 계정이면, jwt 토큰 반환
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokenOrEmail.get("refreshToken"))
-                        .httpOnly(true)
-                        .secure(false)
-                        .path("/")
-                        .sameSite("Lax")
-                        .maxAge(JWTProvider.REFRESH_EXP_SEC)
-                        //.domain("localhost")
-                        .build().toString())
-                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.KakaoLoginDTO(tokenOrEmail.get("accessToken"), "")));
+        // 가입된 계정이면, JWT 토큰 반환 및 리다이렉트
+        String accessToken = tokenOrEmail.get("accessToken");
+        String refreshToken = tokenOrEmail.get("refreshToken");
+        String redirectUrl = "http://localhost:3000/login?accessToken=" + URLEncoder.encode(accessToken, "UTF-8");
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(JWTProvider.REFRESH_EXP_SEC)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+        response.sendRedirect(redirectUrl);
     }
 
     @GetMapping("/auth/login/google")

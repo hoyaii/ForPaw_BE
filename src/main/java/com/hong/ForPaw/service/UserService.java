@@ -98,9 +98,6 @@ public class UserService {
     @Value("${kakao.oauth.userInfo.uri}")
     private String kakaoUserInfoURI;
 
-    @Value("${kakao.oauth.redirect.uri}")
-    private String kakaoRedirectURI;
-
     @Value("${google.client.id}")
     private String googleClientId;
 
@@ -726,7 +723,6 @@ public class UserService {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("grant_type", "authorization_code");
         formData.add("client_id", kakaoAPIKey);
-        formData.add("redirect_uri", kakaoRedirectURI);
         formData.add("code", code);
 
         Mono<KakaoOauthDTO.TokenDTO> response = webClient.post()

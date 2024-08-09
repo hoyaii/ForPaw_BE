@@ -54,9 +54,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         }
 
         // 2nd 엑세스 토큰 검증
-        System.out.println("accessToken => " + accessToken);
         User user = authenticateAccessToken(accessToken);
-        System.out.println("user => " + user);
 
         // 3rd 엑세스 토큰에 인증 정보가 없음 => 리프레쉬 토큰 검증
         if (user == null) {
