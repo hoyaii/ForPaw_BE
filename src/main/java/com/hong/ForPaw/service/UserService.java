@@ -64,6 +64,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.hong.ForPaw.core.utils.MailTemplate.ACCOUNT_SUSPENSION;
+import static com.hong.ForPaw.core.utils.MailTemplate.VERIFICATION_CODE;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -307,7 +310,7 @@ public class UserService {
         Map<String, Object> model = new HashMap<>();
         model.put("code", verificationCode);
 
-        sendMail(requestDTO.email(), "[ForPaw] 이메일 인증 코드입니다.", "verification_code_email.html", model);
+        sendMail(requestDTO.email(), VERIFICATION_CODE.getSubject(), "verification_code_email.html", model);
 
         redisService.storeValue("emailCode", requestDTO.email(), verificationCode, 5 * 60 * 1000L); // 5분 동안 유효
     }
@@ -610,7 +613,7 @@ public class UserService {
 
             if(loginFailNumDaily == 3L){
                 Map<String, Object> model = new HashMap<>();
-                sendMail(user.getEmail(), "[ForPaw] 로그인 횟수를 초과하여 계정이 비활성화 되었습니다.", "verification_code_email.html", model);
+                sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), "lock_account.html", model);
             }
 
             throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
