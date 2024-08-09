@@ -73,6 +73,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email")
     boolean existsByEmailWithRemoved(@Param("email") String email);
 
+    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email AND (u.authProvider = 'KAKAO' OR u.authProvider = 'GOOGLE')")
+    boolean existsSocialAccountByEmailWithRemoved(@Param("email") String email);
+
+    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email AND u.authProvider = 'LOCAL'")
+    boolean existsLocalAccountByEmailWithRemoved(@Param("email") String email);
+
     @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.nickName = :nickName")
     boolean existsByNickWithRemoved(@Param("nickName") String nickName);
 
