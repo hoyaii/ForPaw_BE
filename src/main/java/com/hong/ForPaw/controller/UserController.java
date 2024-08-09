@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @RestController
@@ -30,8 +31,11 @@ public class UserController {
 
     private final UserService userService;
 
-    @Value("${kakao.oauth.redirect.uri}")
-    private String redirectUrl;
+    @Value("${social.join.redirect.uri}")
+    private String REDIRECT_JOIN_URI;
+
+    @Value("${social.home.redirect.uri}")
+    private String REDIRECT_HOME_URI;
 
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody @Valid UserRequest.LoginDTO requestDTO, HttpServletRequest request) throws MessagingException {
@@ -51,57 +55,13 @@ public class UserController {
     @GetMapping("/auth/login/kakao")
     public void kakaoLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, String> tokenOrEmail = userService.kakaoLogin(code, request);
-
-        // 가입된 계정이 아님
-        if (tokenOrEmail.get("email") != null) {
-            String redirectUrl = "http://localhost:3000/login/signup/sns/01?email=" + URLEncoder.encode(tokenOrEmail.get("email"), "UTF-8");
-            response.sendRedirect(redirectUrl);
-            return;
-        }
-
-        // 가입된 계정이면, JWT 토큰 반환 및 리다이렉트
-        String accessToken = tokenOrEmail.get("accessToken");
-        String refreshToken = tokenOrEmail.get("refreshToken");
-        String redirectUrl = "http://localhost:3000/home?accessToken=" + URLEncoder.encode(accessToken, "UTF-8");
-
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .sameSite("Lax")
-                .maxAge(JWTProvider.REFRESH_EXP_SEC)
-                .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
-        response.sendRedirect(redirectUrl);
+        handleAuthenticationRedirect(tokenOrEmail, response);
     }
 
     @GetMapping("/auth/login/google")
     public void googleLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, String> tokenOrEmail = userService.googleLogin(code, request);
-
-        // 가입된 계정이 아님
-        if (tokenOrEmail.get("email") != null) {
-            String redirectUrl = "http://localhost:3000/login/signup/sns/01?email=" + URLEncoder.encode(tokenOrEmail.get("email"), "UTF-8");
-            response.sendRedirect(redirectUrl);
-            return;
-        }
-
-        // 가입된 계정이면, jwt 토큰 반환
-        String accessToken = tokenOrEmail.get("accessToken");
-        String refreshToken = tokenOrEmail.get("refreshToken");
-        String redirectUrl = "http://localhost:3000/home?accessToken=" + URLEncoder.encode(accessToken, "UTF-8");
-
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .sameSite("Lax")
-                .maxAge(JWTProvider.REFRESH_EXP_SEC)
-                .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
-        response.sendRedirect(redirectUrl);
+        handleAuthenticationRedirect(tokenOrEmail, response);
     }
 
     @PostMapping("/accounts")
@@ -235,5 +195,22 @@ public class UserController {
     public ResponseEntity<?> validateAccessToken(@CookieValue String accessToken){
         UserResponse.ValidateAccessTokenDTO responseDTO = userService.validateAccessToken(accessToken);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
+    private void handleAuthenticationRedirect(Map<String, String> tokenOrEmail, HttpServletResponse response) throws IOException {
+        if (tokenOrEmail.get("email") != null) {
+            response.sendRedirect(REDIRECT_JOIN_URI + URLEncoder.encode(tokenOrEmail.get("email"), StandardCharsets.UTF_8));
+        } else {
+            ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", tokenOrEmail.get("refreshToken"))
+                    .httpOnly(true)
+                    .secure(false)
+                    .path("/")
+                    .sameSite("Lax")
+                    .maxAge(JWTProvider.REFRESH_EXP_SEC)
+                    .build();
+
+            response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+            response.sendRedirect(REDIRECT_HOME_URI + URLEncoder.encode(tokenOrEmail.get("accessToken"), StandardCharsets.UTF_8));
+        }
     }
 }
