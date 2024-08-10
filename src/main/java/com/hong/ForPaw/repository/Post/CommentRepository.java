@@ -2,6 +2,7 @@ package com.hong.ForPaw.repository.Post;
 
 import com.hong.ForPaw.domain.Post.Comment;
 import com.hong.ForPaw.domain.Post.Post;
+import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.User.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,6 +44,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     @Query("SELECT COUNT(c) FROM Comment c WHERE c.createdDate >= :date AND c.removedAt IS NULL")
     Long countALlWithinDate(LocalDateTime date);
+
+    @Query("SELECT COUNT(c) FROM Comment c WHERE c.user.id = :userId AND c.removedAt IS NULL")
+    Long countByUserId(@Param("userId") Long userId);
 
     @Modifying
     @Query("UPDATE Comment c SET c.removedAt = NOW() WHERE c.post.id= :postId")

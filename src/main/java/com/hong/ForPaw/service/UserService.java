@@ -11,6 +11,7 @@ import com.hong.ForPaw.domain.Group.GroupRole;
 import com.hong.ForPaw.domain.Inquiry.InquiryAnswer;
 import com.hong.ForPaw.domain.Inquiry.Inquiry;
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
+import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.User.AuthProvider;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.User.UserRole;
@@ -26,7 +27,9 @@ import com.hong.ForPaw.repository.Group.MeetingUserRepository;
 import com.hong.ForPaw.repository.Inquiry.InquiryAnswerRepository;
 import com.hong.ForPaw.repository.Inquiry.InquiryRepository;
 import com.hong.ForPaw.repository.Post.CommentLikeRepository;
+import com.hong.ForPaw.repository.Post.CommentRepository;
 import com.hong.ForPaw.repository.Post.PostLikeRepository;
+import com.hong.ForPaw.repository.Post.PostRepository;
 import com.hong.ForPaw.repository.UserRepository;
 import com.hong.ForPaw.repository.UserStatusRepository;
 import jakarta.mail.MessagingException;
@@ -79,8 +82,10 @@ public class UserService {
     private final MeetingUserRepository meetingUserRepository;
     private final ChatUserRepository chatUserRepository;
     private final PostLikeRepository postLikeRepository;
+    private final CommentRepository commentRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final InquiryRepository inquiryRepository;
+    private final PostRepository postRepository;
     private final InquiryAnswerRepository answerRepository;
     private final LoginAttemptRepository loginAttemptRepository;
     private final UserStatusRepository userStatusRepository;
@@ -585,6 +590,28 @@ public class UserService {
         String profile = userRepository.findProfileById(userIdFromToken).orElse(null);
 
         return new UserResponse.ValidateAccessTokenDTO(profile);
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse.FindCommunityRecord findCommunityStats(Long userId){
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+
+        List<Object[]> postTypeCounts = postRepository.countPostsByTypeAndUserId(List.of(PostType.ADOPTION, PostType.FOSTERING, PostType.QUESTION, PostType.ANSWER), userId);
+        Map<PostType, Long> postCountMap = postTypeCounts.stream()
+                .collect(Collectors.toMap(
+                        result -> (PostType) result[0],
+                        result -> (Long) result[1]
+                ));
+
+        Long adoptionNum = postCountMap.getOrDefault(PostType.ADOPTION, 0L);
+        Long fosteringNum = postCountMap.getOrDefault(PostType.FOSTERING, 0L);
+        Long questionNum = postCountMap.getOrDefault(PostType.QUESTION, 0L);
+        Long answerNum = postCountMap.getOrDefault(PostType.ANSWER, 0L);
+        Long commentNum = commentRepository.countByUserId(userId);
+
+        return new UserResponse.FindCommunityRecord(user.getNickName(), user.getEmail(), adoptionNum + fosteringNum, commentNum, questionNum, answerNum);
     }
 
     private Long checkLoginFailures(User user) throws MessagingException {

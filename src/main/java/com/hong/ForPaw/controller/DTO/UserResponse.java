@@ -49,4 +49,11 @@ public class UserResponse {
     public record VerifyPasswordDTO(boolean isMatching){}
 
     public record ValidateAccessTokenDTO(String profile){}
+
+    public record FindCommunityRecord(String nickName,
+                                      String email,
+                                      Long postNum,
+                                      Long commentNum,
+                                      Long questionNum,
+                                      Long answerNum){}
 }

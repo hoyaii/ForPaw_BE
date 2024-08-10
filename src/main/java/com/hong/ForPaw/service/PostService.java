@@ -271,7 +271,6 @@ public class PostService {
         return new PostResponse.FindQnaListDTO(qnaDTOS);
     }
 
-
     @Transactional(readOnly = true)
     public PostResponse.FindMyCommentListDTO findMyCommentList(Long userId, Pageable pageable){
         // Post를 패치조인하여 조회
