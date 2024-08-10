@@ -598,7 +598,7 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        List<Object[]> postTypeCounts = postRepository.countPostsByTypeAndUserId(List.of(PostType.ADOPTION, PostType.FOSTERING, PostType.QUESTION, PostType.ANSWER), userId);
+        List<Object[]> postTypeCounts = postRepository.countByUserIdAndType(userId, List.of(PostType.ADOPTION, PostType.FOSTERING, PostType.QUESTION, PostType.ANSWER));
         Map<PostType, Long> postCountMap = postTypeCounts.stream()
                 .collect(Collectors.toMap(
                         result -> (PostType) result[0],

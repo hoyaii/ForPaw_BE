@@ -85,8 +85,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT COUNT(p) FROM Post p WHERE p.createdDate >= :date AND p.removedAt IS NULL")
     Long countALlWithinDate(LocalDateTime date);
 
-    @Query("SELECT p.postType, COUNT(p) FROM Post p WHERE p.user.id = :userId AND p.postType IN :postTypes GROUP BY p.postType")
-    List<Object[]> countPostsByTypeAndUserId(@Param("postTypes") List<PostType> postTypes, @Param("userId") Long userId);
+    @Query("SELECT p.postType, COUNT(p) FROM Post p WHERE p.user.id = :userId AND p.removedAt IS NULL AND p.postType IN :postTypes GROUP BY p.postType")
+    List<Object[]> countByUserIdAndType(@Param("userId") Long userId, @Param("postTypes") List<PostType> postTypes);
 
     @Modifying
     @Query("UPDATE Post p SET p.likeNum = :likeNum WHERE p.id = :postId AND p.removedAt IS NULL")

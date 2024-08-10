@@ -197,6 +197,12 @@ public class UserController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
+    @GetMapping("/communityStats")
+    public ResponseEntity<?> findCommunityStats(@AuthenticationPrincipal CustomUserDetails userDetails){
+        UserResponse.FindCommunityRecord responseDTO = userService.findCommunityStats(userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
     private void handleAuthenticationRedirect(Map<String, String> tokenOrEmail, HttpServletResponse response) throws IOException {
         if (tokenOrEmail.get("email") != null) {
             response.sendRedirect(REDIRECT_JOIN_URI + URLEncoder.encode(tokenOrEmail.get("email"), StandardCharsets.UTF_8));
