@@ -18,6 +18,7 @@ public class PostRequest {
             PostType type,
             @NotBlank(message = "본문을 입력해주세요.")
             String content,
+            @NotNull(message = "이미지가 비어있다면, null이 아닌 빈 리스트로 보내주세요.")
             List<PostImageDTO> images) {}
 
     public record CreateAnswerDTO(@NotBlank(message = "답변을 입력해주세요.") String content, List<PostImageDTO> images) {}

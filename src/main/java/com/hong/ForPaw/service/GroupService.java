@@ -801,7 +801,6 @@ public class GroupService {
                 .filter(group -> !joinedGroupIdSet.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> {
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
-
                     return new GroupResponse.RecommendGroupDTO(
                             group.getId(),
                             group.getName(),
@@ -815,6 +814,15 @@ public class GroupService {
                             likedGroupIds.contains(group.getId()));
                 })
                 .collect(Collectors.toList());
+
+        // District를 바탕으로 한 추천 그룹의 개수가 부족하면, 다른 District의 그룹을 추가
+        if (allRecommendGroupDTOS.size() < 5) {
+            List<GroupResponse.RecommendGroupDTO> additionalGroupDTOS = fetchAdditionalGroups(likedGroupIds, joinedGroupIdSet, sort);
+            additionalGroupDTOS.stream()
+                    .filter(newGroupDTO -> allRecommendGroupDTOS.stream() // 중복된 그룹을 제외하고 추가
+                            .noneMatch(oldGroupDTO -> oldGroupDTO.id().equals(newGroupDTO.id())))
+                    .forEach(allRecommendGroupDTOS::add);
+        }
 
         // 매번 동일하게 추천을 할 수는 없으니, 간추린 추천 목록 중에서 5개를 랜덤으로 보내준다.
         Collections.shuffle(allRecommendGroupDTOS);
@@ -963,5 +971,28 @@ public class GroupService {
                 alarmType);
 
         brokerService.produceAlarmToUser(userId, alarmDTO);
+    }
+
+    private List<GroupResponse.RecommendGroupDTO> fetchAdditionalGroups(List<Long> likedGroupIds, Set<Long> joinedGroupIdSet, Sort sort) {
+        Pageable pageable = PageRequest.of(0, 10, sort);
+
+        return groupRepository.findAll(pageable).getContent().stream()
+                .filter(group -> !joinedGroupIdSet.contains(group.getId()))
+                .map(group -> {
+                    Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
+
+                    return new GroupResponse.RecommendGroupDTO(
+                            group.getId(),
+                            group.getName(),
+                            group.getDescription(),
+                            group.getParticipantNum(),
+                            group.getCategory(),
+                            group.getProvince(),
+                            group.getDistrict(),
+                            group.getProfileURL(),
+                            likeNum,
+                            likedGroupIds.contains(group.getId()));
+                })
+                .collect(Collectors.toList());
     }
 }

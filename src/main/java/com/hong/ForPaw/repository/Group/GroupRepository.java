@@ -22,6 +22,9 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     @Query("SELECT g FROM Group g WHERE g.province = :province")
     Page<Group> findByProvince(@Param("province") Province province, Pageable pageable);
 
+    @Query("SELECT g FROM Group g")
+    Page<Group> findAll(Pageable pageable);
+
     boolean existsByName(String name);
 
     @Query("SELECT COUNT(g) > 0 FROM Group g WHERE g.id != :id AND g.name = :name")

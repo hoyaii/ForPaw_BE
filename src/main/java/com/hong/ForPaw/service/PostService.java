@@ -71,7 +71,7 @@ public class PostService {
         }
 
         // 입양 스토리와 임시보호 스토리는 image가 반드시 하나 이상 들어와야 함
-        if ((requestDTO.images() == null || requestDTO.images().isEmpty()) && requestDTO.type() != PostType.QUESTION) {
+        if (requestDTO.images().isEmpty() && requestDTO.type() != PostType.QUESTION) {
             throw new CustomException(ExceptionCode.POST_MUST_CONTAIN_IMAGE);
         }
 
