@@ -131,7 +131,7 @@ public class UserService {
     @Transactional
     public void initSuperAdmin(){
         // SuperAdmin이 등록되어 있지 않다면 등록
-        if(!userRepository.existsByNickWithRemoved("admin")){
+        if(!userRepository.existsByNickname("admin")){
             User admin = User.builder()
                     .email(adminEmail)
                     .name("admin")
@@ -150,7 +150,7 @@ public class UserService {
             userStatusRepository.save(status);
             admin.updateStatus(status);
 
-            setAlarm(admin);
+            setAlarmQueue(admin);
         }
     }
 
@@ -192,22 +192,7 @@ public class UserService {
         // 카카오 계정으로 가입한 계정의 이메일은 {카카오 id}@kakao.com로 구성 (비즈니스 계정이 아라서 이메일 접근 불가)
         String email = userInfo.id().toString() + "@kakao.com";
 
-        // 이미 로컬로 가입한 계정인지 체크
-        checkIsLocalAccount(email);
-
-        // 가입되지 않음 => email을 넘겨서 추가 정보를 입력하도록 함
-        if(isNotMember(email)){
-            Map<String, String> response = new HashMap<>();
-            response.put("email", email);
-            return response;
-        }
-
-        User user = processLogin(email);
-
-        // 로그인 IP 로깅
-        recordLoginAttempt(user, request);
-
-        return createToken(user);
+        return processOAuthLogin(email, request);
     }
 
     @Transactional
@@ -219,21 +204,7 @@ public class UserService {
         // 구글의 경우 메일을 제공해줌
         String email = userInfoDTO.email();
 
-        // 이미 로컬로 가입한 계정인지 체크
-        checkIsLocalAccount(email);
-
-        if(isNotMember(email)){
-            Map<String, String> response = new HashMap<>();
-            response.put("email", email);
-            return response;
-        }
-
-        User user = processLogin(email);
-
-        // 로그인 IP 로깅
-        recordLoginAttempt(user, request);
-
-        return createToken(user);
+        return processOAuthLogin(email, request);
     }
 
     @Transactional
@@ -266,7 +237,7 @@ public class UserService {
         setUserStatus(user);
 
         // 알람 사용을 위한 설정
-        setAlarm(user);
+        setAlarmQueue(user);
     }
 
     @Transactional
@@ -292,10 +263,14 @@ public class UserService {
 
         userRepository.save(user);
 
+        // 유저 상태 설정
         setUserStatus(user);
-        setAlarm(user);
+
+        // 알람 사용을 위한 설정
+        setAlarmQueue(user);
     }
 
+    @Transactional(readOnly = true)
     public void checkEmailExist(UserRequest.EmailDTO requestDTO){
         // 가입한 이메일이 존재 한다면
         if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
@@ -312,6 +287,7 @@ public class UserService {
         // 인증 코드 전송 및 레디스에 저장
         String verificationCode = generateVerificationCode();
 
+        // 메일 전송 템플릿 보낼 데이터는 map에 담음
         Map<String, Object> model = new HashMap<>();
         model.put("code", verificationCode);
 
@@ -324,14 +300,18 @@ public class UserService {
         // 레디스를 통해 해당 코드가 유효한지 확인
         if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
             throw new CustomException(ExceptionCode.CODE_WRONG);
-        redisService.removeData("emailCode", requestDTO.email()); // 검증 후 토큰 삭제
+
+        // 검증 후 토큰 삭제
+        redisService.removeData("emailCode", requestDTO.email());
     }
 
+    @Transactional
     public void checkNick(UserRequest.CheckNickDTO requestDTO){
-        if(userRepository.existsByNickWithRemoved(requestDTO.nickName()))
+        if(userRepository.existsByNicknameWithRemoved(requestDTO.nickName()))
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
     }
 
+    @Transactional(readOnly = true)
     public void checkAccountExist(UserRequest.EmailDTO requestDTO){
         // 가입된 계정이 아니라면
         if(userRepository.findByEmail(requestDTO.email()).isEmpty())
@@ -404,16 +384,20 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserResponse.ProfileDTO findProfile(Long userId){
-        User user = userRepository.findById(userId).get();
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
         return new UserResponse.ProfileDTO(user.getEmail(), user.getName(), user.getNickName(), user.getProvince(), user.getDistrict(), user.getSubDistrict(), user.getProfileURL());
     }
 
     @Transactional
     public void updateProfile(UserRequest.UpdateProfileDTO requestDTO, Long userId){
-        User user = userRepository.findById(userId).get();
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
 
         // 닉네임 중복 체크 (현재 닉네임은 통과)
-        if(!user.getNickName().equals(requestDTO.nickName()) && userRepository.existsByNickWithRemoved(requestDTO.nickName()))
+        if(!user.getNickName().equals(requestDTO.nickName()) && userRepository.existsByNicknameWithRemoved(requestDTO.nickName()))
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
 
         user.updateProfile(requestDTO.nickName(), requestDTO.province(), requestDTO.district(), requestDTO.subDistrict(), requestDTO.profileURL());
@@ -617,8 +601,7 @@ public class UserService {
             redisService.storeValue("loginFailDaily", user.getId().toString(), loginFailNumDaily.toString(), 86400000L);  // 24시간
 
             if(loginFailNumDaily == 3L){
-                Map<String, Object> model = new HashMap<>();
-                sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), "lock_account.html", model);
+                sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), "lock_account.html", new HashMap<>());
             }
 
             throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
@@ -728,6 +711,36 @@ public class UserService {
         return tokens;
     }
 
+    private Map<String, String> processOAuthLogin(String email, HttpServletRequest request) {
+        // 아예 가입되어 있지 않음 => email을 넘겨서 소셜 회원가입을 진행하도록 함
+        boolean isNewAccount = userRepository.findByEmail(email).isEmpty();
+        if(isNewAccount){
+            Map<String, String> response = new HashMap<>();
+            response.put("email", email);
+            return response;
+        }
+
+        // 로컬로 가입한 계정인지 체크
+        checkIsLocalAccount(email);
+
+        // 소셜 로그인으로 가입한 계정이면 계속 진행
+        User user = userRepository.findByEmailWithUserStatusAndRemoved(email).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+
+        if(user.getRemovedAt() != null){
+            throw new CustomException(ExceptionCode.USER_ALREADY_EXIT);
+        }
+
+        // 정지 상태 체크
+        checkAccountSuspension(user);
+
+        // 로그인 IP 로깅
+        recordLoginAttempt(user, request);
+
+        return createToken(user);
+    }
+
     private KakaoOauthDTO.TokenDTO getKakaoToken(String code) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("grant_type", "authorization_code");
@@ -783,11 +796,7 @@ public class UserService {
         return response.blockFirst();
     }
 
-    private boolean isNotMember(String email){
-        return userRepository.findByEmail(email).isEmpty();
-    }
-
-    private void setAlarm(User user) {
+    private void setAlarmQueue(User user) {
         // 알람 전송을 위한 큐 등록
         String exchangeName = "alarm.exchange";
         String queueName = "user." + user.getId();
@@ -807,21 +816,6 @@ public class UserService {
         if(!user.getStatus().isActive()){
             throw new CustomException(ExceptionCode.USER_SUSPENDED);
         }
-    }
-
-    private User processLogin(String email){
-        User user = userRepository.findByEmailWithUserStatusAndRemoved(email).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
-        );
-
-        if(user.getRemovedAt() != null){
-            throw new CustomException(ExceptionCode.USER_ALREADY_EXIT);
-        }
-
-        // 정지 상태 체크
-        checkAccountSuspension(user);
-
-        return user;
     }
 
     public void recordLoginAttempt(User user, HttpServletRequest request) {
@@ -886,7 +880,7 @@ public class UserService {
     }
 
     private void checkDuplicateNickname(String nickName) {
-        if(userRepository.existsByNickWithRemoved(nickName))
+        if(userRepository.existsByNicknameWithRemoved(nickName))
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
     }
 

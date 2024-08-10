@@ -80,7 +80,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsLocalAccountByEmailWithRemoved(@Param("email") String email);
 
     @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.nickName = :nickName")
-    boolean existsByNickWithRemoved(@Param("nickName") String nickName);
+    boolean existsByNickname(@Param("nickName") String nickName);
+
+    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.nickName = :nickName")
+    boolean existsByNicknameWithRemoved(@Param("nickName") String nickName);
 
     @Modifying
     @Query("DELETE FROM User u WHERE u.removedAt <= :cutoffDate")
