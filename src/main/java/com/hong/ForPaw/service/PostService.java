@@ -65,8 +65,13 @@ public class PostService {
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId){
         User userRef = entityManager.getReference(User.class, userId);
 
-        // image가 반드시 하나 이상 들어와야 함
-        if (requestDTO.images() == null || requestDTO.images().isEmpty()) {
+        // 질문글이면 에러
+        if(requestDTO.type() == PostType.ANSWER){
+            throw new CustomException(ExceptionCode.IS_QUESTION_TYPE);
+        }
+
+        // 입양 스토리와 임시보호 스토리는 image가 반드시 하나 이상 들어와야 함
+        if ((requestDTO.images() == null || requestDTO.images().isEmpty()) && requestDTO.type() != PostType.QUESTION) {
             throw new CustomException(ExceptionCode.POST_MUST_CONTAIN_IMAGE);
         }
 
