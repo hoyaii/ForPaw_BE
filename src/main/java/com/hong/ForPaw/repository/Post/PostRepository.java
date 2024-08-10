@@ -65,7 +65,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findQnaByUserIdWithUser(@Param("userId") Long userId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT DISTINCT p.parent FROM Post p WHERE p.user.id = :userId AND p.postType = 'ANSWER' AND p.parent.postType = 'QUESTION' AND p.parent.removedAt IS NULL")
+    @Query("SELECT p.parent FROM Post p WHERE p.user.id = :userId AND p.postType = 'ANSWER' AND p.parent.postType = 'QUESTION' AND p.parent.removedAt IS NULL")
     Page<Post> findAnswerQnaByUserIdWithUser(@Param("userId") Long userId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})

@@ -250,11 +250,14 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindQnaListDTO findMyAnswerList(Long userId, Pageable pageable){
+    public PostResponse.FindQnaListDTO findMyAnswerList(Long userId, Pageable pageable) {
         // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findAnswerQnaByUserIdWithUser(userId, pageable);
 
-        List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
+        // 중복 제거를 위해 Set을 사용하여 중복된 Post 객체를 필터링
+        Set<Post> uniquePosts = new HashSet<>(postPage.getContent());
+
+        List<PostResponse.QnaDTO> qnaDTOS = uniquePosts.stream()
                 .map(post -> new PostResponse.QnaDTO(
                         post.getId(),
                         post.getUser().getNickName(),
@@ -267,6 +270,7 @@ public class PostService {
 
         return new PostResponse.FindQnaListDTO(qnaDTOS);
     }
+
 
     @Transactional(readOnly = true)
     public PostResponse.FindMyCommentListDTO findMyCommentList(Long userId, Pageable pageable){
@@ -472,6 +476,7 @@ public class PostService {
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
 
+        // 답변 타입이 아니면 에러
         if(!post.getPostType().equals(PostType.ANSWER)){
             throw new CustomException(ExceptionCode.NOT_ANSWER_TYPE);
         }
