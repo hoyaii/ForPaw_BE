@@ -2,6 +2,7 @@ package com.hong.ForPaw.repository.Authentication;
 
 import com.hong.ForPaw.domain.Authentication.Visit;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -14,5 +15,8 @@ public interface VisitRepository extends JpaRepository<Visit, Long> {
     @Query("SELECT v FROM Visit v WHERE v.date >= :date")
     List<Visit> findALlWithinDate(LocalDateTime date);
 
-    void deleteAllByUserId(Long userId);
+
+    @Modifying
+    @Query("DELETE FROM Visit v WHERE v.user.id = :userId")
+    void deleteByUserId(Long userId);
 }

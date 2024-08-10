@@ -20,7 +20,7 @@ public interface AlarmRepository extends JpaRepository<Alarm, Long> {
 
     @Modifying
     @Query("DELETE FROM Alarm a WHERE a.receiver.id = :userId")
-    void deleteAllByUserId(Long userId);
+    void deleteByUserId(Long userId);
 
     @Modifying
     @Query("DELETE FROM Alarm a WHERE a.readDate <= :cutoffDate AND a.isRead = true")

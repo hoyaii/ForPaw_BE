@@ -472,27 +472,27 @@ public class UserService {
                 });
 
         // 알람 삭제
-        alarmRepository.deleteAllByUserId(userId);
+        alarmRepository.deleteByUserId(userId);
 
         // 방문 기록 삭제
-        visitRepository.deleteAllByUserId(userId);
+        visitRepository.deleteByUserId(userId);
 
         // 로그인 기록 삭제
-        loginAttemptRepository.deleteAllByUserId(userId);
+        loginAttemptRepository.deleteByUserId(userId);
 
         // 중간 테이블 역할의 엔티티 삭제
-        postLikeRepository.deleteAllByUserId(userId);
-        commentLikeRepository.deleteAllByUserId(userId);
+        postLikeRepository.deleteByUserId(userId);
+        commentLikeRepository.deleteByUserId(userId);
         favoriteAnimalRepository.deleteAllByUserId(userId);
         favoriteGroupRepository.deleteByGroupId(userId);
-        chatUserRepository.deleteAllByUserId(userId);
-        groupUserRepository.findAllByUserIdWithGroup(userId).forEach(
+        chatUserRepository.deleteByUserId(userId);
+        groupUserRepository.findByUserIdWithGroup(userId).forEach(
                 groupUser -> {
                     redisService.decrementCnt("groupParticipantNum", groupUser.getGroup().getId().toString(), 1L);
                     groupUserRepository.delete(groupUser);
                 }
         );
-        meetingUserRepository.findAllByUserIdWithMeeting(userId).forEach(
+        meetingUserRepository.findByUserIdWithMeeting(userId).forEach(
                 meetingUser -> {
                     redisService.decrementCnt("meetingParticipantNum", meetingUser.getMeeting().getId().toString(), 1L);
                     meetingUserRepository.delete(meetingUser);

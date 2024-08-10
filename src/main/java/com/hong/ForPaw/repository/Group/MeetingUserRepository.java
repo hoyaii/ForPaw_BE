@@ -19,7 +19,7 @@ public interface MeetingUserRepository extends JpaRepository<MeetingUser, Long> 
 
     @EntityGraph(attributePaths = {"meeting"})
     @Query("SELECT gu FROM GroupUser gu WHERE gu.user.id = :userId")
-    List<MeetingUser> findAllByUserIdWithMeeting(Long userId);
+    List<MeetingUser> findByUserIdWithMeeting(Long userId);
 
     @Query("SELECT COUNT(m) > 0 FROM MeetingUser m WHERE m.meeting.id = :meetingId AND m.user.id = :userId")
     boolean existsByMeetingIdAndUserId(@Param("meetingId") Long meetingId, @Param("userId") Long userId);
