@@ -11,15 +11,11 @@ public class PostResponse {
 
     public record CreateAnswerDTO(Long id) {}
 
-    public record FindAdoptionPostListDTO(List<PostDTO> adoptions) {}
+    public record FindPostListDTO(List<PostDTO> posts, boolean isLastPage) {}
 
-    public record FindFosteringPostListDTO(List<PostDTO> fostering) {}
+    public record FindQnaListDTO(List<QnaDTO> questions, boolean isLastPage) {}
 
-    public record FindMyPostListDTO(List<PostDTO> posts) {}
-
-    public record FindQnaListDTO(List<QnaDTO> questions) {}
-
-    public record FindMyCommentListDTO(List<MyCommentDTO> comments) {}
+    public record FindMyCommentListDTO(List<MyCommentDTO> comments, boolean isLastPage) {}
 
     public record PostDTO(Long id,
                           String nickName,

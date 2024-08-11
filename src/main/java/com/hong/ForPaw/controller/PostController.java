@@ -4,6 +4,7 @@ import com.hong.ForPaw.controller.DTO.PostRequest;
 import com.hong.ForPaw.controller.DTO.PostResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
+import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.service.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,14 +37,14 @@ public class PostController {
     }
 
     @GetMapping("/posts/adoption")
-    public ResponseEntity<?> findAdoptionPostList(@RequestParam Integer page, @RequestParam String sort){
-        PostResponse.FindAdoptionPostListDTO responseDTO = postService.findAdoptionPostList(page, sort);
+    public ResponseEntity<?> findAdoptionPostList(@PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable, @RequestParam String sort){
+        PostResponse.FindPostListDTO responseDTO = postService.findPostListByType(pageable, PostType.ADOPTION);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/fostering")
-    public ResponseEntity<?> findFosteringPostList(@RequestParam Integer page, @RequestParam String sort){
-        PostResponse.FindFosteringPostListDTO responseDTO = postService.findFosteringPostList(page, sort);
+    public ResponseEntity<?> findFosteringPostList(@PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable, @RequestParam String sort){
+        PostResponse.FindPostListDTO responseDTO = postService.findPostListByType(pageable, PostType.FOSTERING);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -55,7 +56,7 @@ public class PostController {
 
     @GetMapping("/posts/myPost")
     public ResponseEntity<?> findMyPostList(@PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
-        PostResponse.FindMyPostListDTO responseDTO = postService.findMyPostList(userDetails.getUser().getId(), pageable);
+        PostResponse.FindPostListDTO responseDTO = postService.findMyPostList(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

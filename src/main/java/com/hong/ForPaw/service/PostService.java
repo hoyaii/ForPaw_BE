@@ -153,37 +153,28 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindAdoptionPostListDTO findAdoptionPostList(Integer page, String sort) {
-        List<PostResponse.PostDTO> postDTOS;
+    public PostResponse.FindPostListDTO findPostListByType(Pageable pageable, PostType postType) {
+        // 유저를 패치조인하여 조회
+        Page<Post> postPage = postRepository.findByPostTypeWithUser(postType, pageable);
 
-        if(sort.equals(SORT_BY_CREATED_DATE)) {
-            postDTOS = findPostListByType(PostType.ADOPTION, page);
-        }
-        else if(sort.equals(SORT_BY_POPULARITY)){
-            postDTOS = findPopularPostListByType(PostType.ADOPTION, page);
-        }
-        else{
-            throw new CustomException(ExceptionCode.POST_TYPE_INCORRECT);
-        }
+        List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
+                .map(post -> {
+                    String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
+                    Long likeNum = getCachedLikeNum("postLikeNum", post.getId(), post::getLikeNum);
 
-        return new PostResponse.FindAdoptionPostListDTO(postDTOS);
-    }
+                    return new PostResponse.PostDTO(
+                            post.getId(),
+                            post.getUser().getNickName(),
+                            post.getTitle(),
+                            post.getContent(),
+                            post.getCreatedDate(),
+                            post.getCommentNum(),
+                            likeNum,
+                            imageURL);
+                })
+                .toList();
 
-    @Transactional(readOnly = true)
-    public PostResponse.FindFosteringPostListDTO findFosteringPostList(Integer page, String sort) {
-        List<PostResponse.PostDTO> postDTOS;
-
-        if(sort.equals(SORT_BY_CREATED_DATE)) {
-            postDTOS = findPostListByType(PostType.FOSTERING, page);
-        }
-        else if(sort.equals(SORT_BY_POPULARITY)){
-            postDTOS = findPopularPostListByType(PostType.FOSTERING, page);
-        }
-        else{
-            throw new CustomException(ExceptionCode.POST_TYPE_INCORRECT);
-        }
-
-        return new PostResponse.FindFosteringPostListDTO(postDTOS);
+        return new PostResponse.FindPostListDTO(postDTOS, postPage.isLast());
     }
 
     @Transactional(readOnly = true)
@@ -202,11 +193,11 @@ public class PostService {
                         post.getAnswerNum()))
                 .collect(Collectors.toList());
 
-        return new PostResponse.FindQnaListDTO(qnaDTOS);
+        return new PostResponse.FindQnaListDTO(qnaDTOS, postPage.isLast());
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindMyPostListDTO findMyPostList(Long userId, Pageable pageable){
+    public PostResponse.FindPostListDTO findMyPostList(Long userId, Pageable pageable){
         // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findFosterAndAdoptionByUserIdWithUser(userId, pageable);
 
@@ -227,7 +218,7 @@ public class PostService {
                 })
                 .toList();
 
-        return new PostResponse.FindMyPostListDTO(postDTOS);
+        return new PostResponse.FindPostListDTO(postDTOS, postPage.isLast());
     }
 
     @Transactional(readOnly = true)
@@ -246,7 +237,7 @@ public class PostService {
                         post.getAnswerNum()))
                 .toList();
 
-        return new PostResponse.FindQnaListDTO(qnaDTOS);
+        return new PostResponse.FindQnaListDTO(qnaDTOS, postPage.isLast());
     }
 
     @Transactional(readOnly = true)
@@ -268,7 +259,7 @@ public class PostService {
                         post.getAnswerNum()))
                 .toList();
 
-        return new PostResponse.FindQnaListDTO(qnaDTOS);
+        return new PostResponse.FindQnaListDTO(qnaDTOS, postPage.isLast());
     }
 
     @Transactional(readOnly = true)
@@ -288,7 +279,7 @@ public class PostService {
                 ))
                 .toList();
 
-        return new PostResponse.FindMyCommentListDTO(myCommentDTOS);
+        return new PostResponse.FindMyCommentListDTO(myCommentDTOS, commentPage.isLast());
     }
 
     @Transactional(readOnly = true)
@@ -805,32 +796,6 @@ public class PostService {
         Page<PopularPost> popularPostPage = popularPostRepository.findAllWithPost(postType, pageable);
         List<PostResponse.PostDTO> postDTOS = popularPostPage.getContent().stream()
                 .map(PopularPost::getPost)
-                .map(post -> {
-                    String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = getCachedLikeNum("postLikeNum", post.getId(), post::getLikeNum);
-
-                    return new PostResponse.PostDTO(
-                            post.getId(),
-                            post.getUser().getNickName(),
-                            post.getTitle(),
-                            post.getContent(),
-                            post.getCreatedDate(),
-                            post.getCommentNum(),
-                            likeNum,
-                            imageURL);
-                })
-                .toList();
-
-        return postDTOS;
-    }
-
-    private List<PostResponse.PostDTO> findPostListByType(PostType postType, Integer page) {
-        Pageable pageable = createPageable(page, 5, SORT_BY_CREATED_DATE);
-
-        // 유저를 패치조인하여 조회
-        Page<Post> postPage = postRepository.findByPostTypeWithUser(postType, pageable);
-
-        List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
                     String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
                     Long likeNum = getCachedLikeNum("postLikeNum", post.getId(), post::getLikeNum);
