@@ -119,6 +119,12 @@ public class GroupController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
+    @PostMapping("/groups/{groupId}/expel")
+    public ResponseEntity<?> expelGroupMember(@RequestBody @Valid GroupRequest.ExpelGroupMember requestDTO ,@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
+        groupService.expelGroupMember(userDetails.getUser().getId(), requestDTO.userId(), groupId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
     @GetMapping("/groups/{groupId}/join")
     public ResponseEntity<?> findApplicantList(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
         GroupResponse.FindApplicantListDTO responseDTO = groupService.findApplicantList(userDetails.getUser().getId(), groupId);

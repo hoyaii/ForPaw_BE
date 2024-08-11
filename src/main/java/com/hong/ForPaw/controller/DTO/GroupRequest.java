@@ -91,4 +91,6 @@ public class GroupRequest {
             @NotBlank(message = "본문을 입력해주세요.")
             String content,
             List<PostRequest.PostImageDTO> images) {}
+
+    public record ExpelGroupMember(@NotNull(message = "강퇴할 유저 ID를 입력해주세요.") Long userId) {}
 }

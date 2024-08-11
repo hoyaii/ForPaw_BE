@@ -406,7 +406,7 @@ public class GroupService {
         // 그룹 채팅방에서 탈퇴
         chatUserRepository.deleteByGroupIdAndUserId(groupId, userId);
 
-        // 맴버가 가입한 정기모임들에서도 탈퇴
+        // 맴버가 가입한 정기모임에서도 탈퇴
         meetingUserRepository.deleteByGroupIdAndUserId(groupId, userId);
 
         // 참가자 수 감소
@@ -429,7 +429,7 @@ public class GroupService {
         // 그룹 채팅방에서 탈퇴
         chatUserRepository.deleteByGroupIdAndUserId(groupId, memberId);
 
-        // 맴버가 가입한 정기모임들에서도 탈퇴
+        // 맴버가 가입한 정기모임에서도 탈퇴
         meetingUserRepository.deleteByGroupIdAndUserId(groupId, memberId);
 
         // 참가자 수 감소
