@@ -49,7 +49,7 @@ public class GroupRequest {
 
     public record JoinGroupDTO(@NotBlank(message = "가입 인사말을 입력해주세요.") String greeting) {}
 
-    public record UpdateUserRoleDTO(@NotNull(message = "id를 입력해주세요.") Long id, GroupRole role) {}
+    public record UpdateUserRoleDTO(@NotNull(message = "id를 입력해주세요.") Long userId, GroupRole role) {}
 
     public record CreateMeetingDTO(
             @NotBlank(message = "정기모임의 이름을 입력해주세요.")
