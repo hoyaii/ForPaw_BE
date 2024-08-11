@@ -6,6 +6,9 @@ import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.service.ShelterService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,6 +22,7 @@ import java.util.Optional;
 public class ShelterController {
 
     private final ShelterService shelterService;
+    private static final String DATE = "createdDate";
 
     @GetMapping("/shelters/import")
     public ResponseEntity<?> loadShelter(@AuthenticationPrincipal CustomUserDetails userDetails) {
@@ -39,13 +43,16 @@ public class ShelterController {
     }
 
     @GetMapping("/shelters/{shelterId}/animals")
-    public ResponseEntity<?> findShelterAnimalsById(@PathVariable Long shelterId, @RequestParam Integer page, @RequestParam(value = "sort", defaultValue = "noticeSdt") String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
-        Long userId = Optional.ofNullable(userDetails)
+    public ResponseEntity<?> findShelterAnimalsById(@PathVariable Long shelterId, @RequestParam(defaultValue = "noticeSdt") String sort, @PageableDefault(sort = DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+        Long userId = getUserIdSafely(userDetails);
+        ShelterResponse.FindShelterAnimalsByIdDTO responseDTO = shelterService.findShelterAnimalListById(shelterId, userId, sort, pageable);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
+    private Long getUserIdSafely(CustomUserDetails userDetails) {
+        return Optional.ofNullable(userDetails)
                 .map(CustomUserDetails::getUser)
                 .map(User::getId)
                 .orElse(null);
-
-        ShelterResponse.FindShelterAnimalsByIdDTO responseDTO = shelterService.findShelterAnimalListById(shelterId, userId, page, sort);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }

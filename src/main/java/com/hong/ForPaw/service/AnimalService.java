@@ -85,13 +85,7 @@ public class AnimalService {
     @Value("${animal.update.uri}")
     private String updateAnimalIntroduceURI;
 
-    private static final String SORT_BY_ID = "id";
-    private static final String SORT_BY_CREATED_DATE = "createdDate";
-    private static final Map<String, AnimalType> ANIMAL_TYPE_MAP = Map.of(
-            "dog", AnimalType.DOG,
-            "cat", AnimalType.CAT,
-            "other", AnimalType.OTHER
-    );
+    private static final Map<String, AnimalType> ANIMAL_TYPE_MAP = Map.of("dog", AnimalType.DOG, "cat", AnimalType.CAT, "other", AnimalType.OTHER);
 
     @Transactional
     @Scheduled(cron = "0 0 0 * * *") // 매일 자정에 실행
@@ -197,11 +191,9 @@ public class AnimalService {
     }
 
     @Transactional(readOnly = true)
-    public AnimalResponse.FindAnimalListDTO findAnimalList(Integer page, String sort, Long userId){
+    public AnimalResponse.FindAnimalListDTO findAnimalList(Pageable pageable, String type, Long userId){
         // sort 파라미터를 AnimalType으로 변환
-        AnimalType animalType = converStringToAnimalType(sort);
-
-        Pageable pageable = createPageable(page, 5, SORT_BY_CREATED_DATE);
+        AnimalType animalType = converStringToAnimalType(type);
         Page<Animal> animalPage = animalRepository.findAllByAnimalType(animalType, pageable);
         boolean isLastPage = !animalPage.hasNext();
 
@@ -449,18 +441,6 @@ public class AnimalService {
         applyRepository.deleteById(applyId);
     }
 
-    @Transactional
-    public void updateProfileURLsToHttps() {
-        List<Animal> animals = animalRepository.findAll();
-
-        List<Animal> updatedAnimals = animals.stream()
-                .filter(animal -> animal.getProfileURL() != null && animal.getProfileURL().startsWith("http://"))
-                .peek(animal -> animal.updateProfileURL(animal.getProfileURL().replace("http://", "https://")))
-                .collect(Collectors.toList());
-
-        animalRepository.saveAll(updatedAnimals);
-    }
-
     private Flux<Animal> convertResponseToAnimal(String response, Shelter shelter, List<Long> existAnimalIds) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -560,10 +540,6 @@ public class AnimalService {
         URI uri = uriBuilder.build().encode().toUri();
 
         return uri;
-    }
-
-    private Pageable createPageable(int page, int size, String sortProperty) {
-        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 
     public List<Long> getRecommendedAnimalIdList(Long userId){

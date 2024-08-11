@@ -51,13 +51,7 @@ public class ShelterService {
     @Value("${openAPI.shelter.uri}")
     private String baseUrl;
 
-    private static final String SORT_BY_CREATED_DATE = "createdDate";
-
-    private static final Map<String, AnimalType> ANIMAL_TYPE_MAP = Map.of(
-            "dog", AnimalType.DOG,
-            "cat", AnimalType.CAT,
-            "other", AnimalType.OTHER
-    );
+    private static final Map<String, AnimalType> ANIMAL_TYPE_MAP = Map.of("dog", AnimalType.DOG, "cat", AnimalType.CAT, "other", AnimalType.OTHER);
 
     @Transactional
     @Scheduled(cron = "0 0 6 * * MON") // 매주 월요일 새벽 6시에 실행
@@ -121,10 +115,8 @@ public class ShelterService {
     }
 
     @Transactional(readOnly = true)
-    public ShelterResponse.FindShelterAnimalsByIdDTO findShelterAnimalListById(Long shelterId, Long userId, Integer page, String sort){
-        AnimalType animalType = converStringToAnimalType(sort);
-        Pageable pageable = createPageable(page, 5, SORT_BY_CREATED_DATE);
-
+    public ShelterResponse.FindShelterAnimalsByIdDTO findShelterAnimalListById(Long shelterId, Long userId, String type, Pageable pageable){
+        AnimalType animalType = converStringToAnimalType(type);
         Page<Animal> animalPage = animalRepository.findByShelterIdAndType(animalType, shelterId, pageable);
         boolean isLastPage = !animalPage.hasNext();
 
@@ -181,10 +173,6 @@ public class ShelterService {
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private Pageable createPageable(int page, int size, String sortProperty) {
-        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 
     private AnimalType converStringToAnimalType(String sort) {

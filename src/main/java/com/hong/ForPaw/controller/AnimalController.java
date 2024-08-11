@@ -25,6 +25,7 @@ import java.util.Optional;
 public class AnimalController {
 
     private final AnimalService animalService;
+    private static final String DATE = "createdDate";
 
     @GetMapping("/animals/import")
     public ResponseEntity<?> loadAnimals() {
@@ -40,14 +41,14 @@ public class AnimalController {
     }
 
     @GetMapping("/animals")
-    public ResponseEntity<?> findAnimalList(@RequestParam Integer page, @RequestParam String sort, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findAnimalList(@RequestParam String sort, @PageableDefault(sort = DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         Long userId = getUserIdSafely(userDetails);
-        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(page, sort, userId);
+        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(pageable, sort, userId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/animals/like")
-    public ResponseEntity<?> findLikeAnimalList(@PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findLikeAnimalList(@PageableDefault(sort = DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         AnimalResponse.FindLikeAnimalListDTO responseDTO = animalService.findLikeAnimalList(pageable, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
@@ -87,12 +88,6 @@ public class AnimalController {
     @DeleteMapping ("/applies/{applyId}")
     public ResponseEntity<?> deleteApply(@PathVariable Long applyId, @AuthenticationPrincipal CustomUserDetails userDetails){
         animalService.deleteApply(applyId, userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
-    }
-
-    @PatchMapping("/animals/profileURL")
-    public ResponseEntity<?> updateProfileURLToHttps(@AuthenticationPrincipal CustomUserDetails userDetails){
-        animalService.updateProfileURLsToHttps();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 

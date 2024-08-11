@@ -22,6 +22,7 @@ import java.util.List;
 public class SearchController {
 
     private final SearchService searchService;
+    private static final String ID = "id";
 
     @GetMapping("/search/all")
     public ResponseEntity<?> searchAll(@RequestParam String keyword){
@@ -30,7 +31,7 @@ public class SearchController {
     }
 
     @GetMapping("/search/shelters")
-    public ResponseEntity<?> searchShelterList(@RequestParam String keyword, @PageableDefault(sort = "id", size = 3) Pageable pageable){
+    public ResponseEntity<?> searchShelterList(@RequestParam String keyword, @PageableDefault(sort = ID, size = 3) Pageable pageable){
         searchService.checkKeywordEmpty(keyword);
         List<SearchResponse.ShelterDTO> shelterDTOS = searchService.searchShelterList(keyword, pageable);
         SearchResponse.SearchShelterListDTO responseDTO = new SearchResponse.SearchShelterListDTO(shelterDTOS);
@@ -38,7 +39,7 @@ public class SearchController {
     }
 
     @GetMapping("/search/posts")
-    public ResponseEntity<?> searchPostList(@RequestParam String keyword, @PageableDefault(sort = "id", size = 3) Pageable pageable){
+    public ResponseEntity<?> searchPostList(@RequestParam String keyword, @PageableDefault(sort = ID, size = 3) Pageable pageable){
         searchService.checkKeywordEmpty(keyword);
         List<SearchResponse.PostDTO> postDTOS = searchService.searchPostList(keyword, pageable);
         SearchResponse.SearchPostListDTO responseDTO = new SearchResponse.SearchPostListDTO(postDTOS);
@@ -46,7 +47,7 @@ public class SearchController {
     }
 
     @GetMapping("/search/groups")
-    public ResponseEntity<?> searchGroupList(@RequestParam String keyword, @PageableDefault(sort = "id", size = 3) Pageable pageable){
+    public ResponseEntity<?> searchGroupList(@RequestParam String keyword, @PageableDefault(sort = ID, size = 3) Pageable pageable){
         searchService.checkKeywordEmpty(keyword);
         List<SearchResponse.GroupDTO> groupDTOS = searchService.searchGroupList(keyword, pageable);
         SearchResponse.SearchGroupListDTO responseDTO = new SearchResponse.SearchGroupListDTO(groupDTOS);
