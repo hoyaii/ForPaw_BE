@@ -55,8 +55,6 @@ public class PostService {
     private final EntityManager entityManager;
     public static final Long POST_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
     public static final Long POST_READ_EXP = 60L * 60 * 24 * 360; // 1년
-    private static final String SORT_BY_CREATED_DATE = "createdDate";
-    private static final String SORT_BY_POPULARITY = "likeNum";
     private static final String POST_SCREENED = "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.";
     private static final String POST_READ_KEY_PREFIX = "user:readPosts:";
     private static final String COMMENT_DELETED = "삭제된 댓글 입니다.";
@@ -175,6 +173,32 @@ public class PostService {
                 .toList();
 
         return new PostResponse.FindPostListDTO(postDTOS, postPage.isLast());
+    }
+
+    @Transactional(readOnly = true)
+    public PostResponse.FindPostListDTO findPopularPostListByType(Pageable pageable, PostType postType) {
+        // Post를 패치조인하여 조회
+        Page<PopularPost> popularPostPage = popularPostRepository.findAllWithPost(postType, pageable);
+
+        List<PostResponse.PostDTO> postDTOS = popularPostPage.getContent().stream()
+                .map(PopularPost::getPost)
+                .map(post -> {
+                    String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
+                    Long likeNum = getCachedLikeNum("postLikeNum", post.getId(), post::getLikeNum);
+
+                    return new PostResponse.PostDTO(
+                            post.getId(),
+                            post.getUser().getNickName(),
+                            post.getTitle(),
+                            post.getContent(),
+                            post.getCreatedDate(),
+                            post.getCommentNum(),
+                            likeNum,
+                            imageURL);
+                })
+                .toList();
+
+        return new PostResponse.FindPostListDTO(postDTOS, popularPostPage.isLast());
     }
 
     @Transactional(readOnly = true)
@@ -788,35 +812,6 @@ public class PostService {
                     .build();
             popularPostRepository.save(popularPost);
         });
-    }
-
-    public List<PostResponse.PostDTO> findPopularPostListByType(PostType postType, Integer page){
-        Pageable pageable = createPageable(page, 5, SORT_BY_CREATED_DATE);
-
-        Page<PopularPost> popularPostPage = popularPostRepository.findAllWithPost(postType, pageable);
-        List<PostResponse.PostDTO> postDTOS = popularPostPage.getContent().stream()
-                .map(PopularPost::getPost)
-                .map(post -> {
-                    String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = getCachedLikeNum("postLikeNum", post.getId(), post::getLikeNum);
-
-                    return new PostResponse.PostDTO(
-                            post.getId(),
-                            post.getUser().getNickName(),
-                            post.getTitle(),
-                            post.getContent(),
-                            post.getCreatedDate(),
-                            post.getCommentNum(),
-                            likeNum,
-                            imageURL);
-                })
-                .toList();
-
-        return postDTOS;
-    }
-
-    private Pageable createPageable(int page, int size, String sortProperty) {
-        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 
     private void checkPostAuthority(Long writerId, User accessor){

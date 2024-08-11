@@ -8,6 +8,9 @@ import com.hong.ForPaw.domain.Province;
 import com.hong.ForPaw.repository.Animal.AnimalRepository;
 import com.hong.ForPaw.repository.Group.FavoriteGroupRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,7 +53,8 @@ public class HomeService {
                 .toList();
 
         // 2. 인기 글
-        List<PostResponse.PostDTO> postDTOS = postService.findPopularPostListByType(PostType.ADOPTION, 0);
+        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdData"));
+        List<PostResponse.PostDTO> postDTOS = postService.findPopularPostListByType(pageable, PostType.ADOPTION).posts();
 
         // 3. 추천 그룹
         List<Long> likedGroupIds = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : new ArrayList<>();
