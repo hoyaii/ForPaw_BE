@@ -191,7 +191,7 @@ public class AnimalService {
     }
 
     @Transactional(readOnly = true)
-    public AnimalResponse.FindAnimalListDTO findAnimalList(Pageable pageable, String type, Long userId){
+    public AnimalResponse.FindAnimalListDTO findAnimalList(String type, Long userId, Pageable pageable){
         // sort 파라미터를 AnimalType으로 변환
         AnimalType animalType = converStringToAnimalType(type);
         Page<Animal> animalPage = animalRepository.findAllByAnimalType(animalType, pageable);
@@ -595,13 +595,12 @@ public class AnimalService {
         return animalIds;
     }
 
-    // sort가 date, dog, cat, other이 아니면 에러 발생
-    private AnimalType converStringToAnimalType(String sort) {
-        if(sort.equals("date")) {
+    private AnimalType converStringToAnimalType(String type) {
+        if(type.equals("date")) {
             return null;
         }
 
-        return Optional.ofNullable(ANIMAL_TYPE_MAP.get(sort))
+        return Optional.ofNullable(ANIMAL_TYPE_MAP.get(type))
                 .orElseThrow(() -> new CustomException(ExceptionCode.WRONG_ANIMAL_TYPE));
     }
 

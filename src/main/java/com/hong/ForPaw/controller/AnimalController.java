@@ -42,9 +42,9 @@ public class AnimalController {
     }
 
     @GetMapping("/animals")
-    public ResponseEntity<?> findAnimalList(@RequestParam String sort, @PageableDefault(sort = DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findAnimalList(@RequestParam String type, @PageableDefault(sort = DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         Long userId = getUserIdSafely(userDetails);
-        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(pageable, sort, userId);
+        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(type, userId, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

@@ -44,9 +44,9 @@ public class ShelterController {
     }
 
     @GetMapping("/shelters/{shelterId}/animals")
-    public ResponseEntity<?> findShelterAnimalsById(@PathVariable Long shelterId, @RequestParam(defaultValue = "noticeSdt") String sort, @PageableDefault(sort = DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findShelterAnimalsById(@PathVariable Long shelterId, @RequestParam String type, @PageableDefault(sort = DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         Long userId = getUserIdSafely(userDetails);
-        ShelterResponse.FindShelterAnimalsByIdDTO responseDTO = shelterService.findShelterAnimalListById(shelterId, userId, sort, pageable);
+        ShelterResponse.FindShelterAnimalsByIdDTO responseDTO = shelterService.findShelterAnimalListById(shelterId, userId, type, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

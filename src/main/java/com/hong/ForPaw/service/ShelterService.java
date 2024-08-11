@@ -176,7 +176,7 @@ public class ShelterService {
     }
 
     private AnimalType converStringToAnimalType(String sort) {
-        if(sort.equals("meetDate")) {
+        if(sort.equals("date")) {
             return null;
         }
 

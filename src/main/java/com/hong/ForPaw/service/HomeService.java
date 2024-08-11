@@ -53,7 +53,7 @@ public class HomeService {
                 .toList();
 
         // 2. 인기 글
-        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdData"));
+        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdDate"));
         List<PostResponse.PostDTO> postDTOS = postService.findPopularPostListByType(pageable, PostType.ADOPTION).posts();
 
         // 3. 추천 그룹

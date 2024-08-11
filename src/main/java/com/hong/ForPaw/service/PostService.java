@@ -77,6 +77,7 @@ public class PostService {
                         .build())
                 .toList();
 
+        // Post 객체 저장
         Post post = Post.builder()
                 .user(userRef)
                 .postType(requestDTO.type())
@@ -84,8 +85,7 @@ public class PostService {
                 .content(requestDTO.content())
                 .build();
 
-        // 연관관계 설정
-        postImages.forEach(post::addImage);
+        postImages.forEach(post::addImage); // 연관관계 설정
 
         postRepository.save(post);
 
@@ -706,7 +706,7 @@ public class PostService {
             throw new CustomException(ExceptionCode.ALREADY_REPORTED);
         }
 
-        User offender = null;
+        User offender ;
         if(requestDTO.contentType() == ContentType.POST) {
             offender = postRepository.findUserById(requestDTO.contentId()).orElseThrow(
                     () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
