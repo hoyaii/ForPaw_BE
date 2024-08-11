@@ -24,11 +24,12 @@ public class ShelterController {
     private final ShelterService shelterService;
     private static final String DATE = "createdDate";
 
-    @GetMapping("/shelters/import")
-    public ResponseEntity<?> loadShelter(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        shelterService.updateShelterData();
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
-    }
+    // 테스트 시에만 API를 열어둠
+    //@GetMapping("/shelters/import")
+    //public ResponseEntity<?> loadShelter(@AuthenticationPrincipal CustomUserDetails userDetails) {
+    //    shelterService.updateShelterData();
+    //    return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    //}
 
     @GetMapping("/shelters")
     public ResponseEntity<?> findShelterList(){

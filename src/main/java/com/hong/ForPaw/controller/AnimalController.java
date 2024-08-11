@@ -27,11 +27,12 @@ public class AnimalController {
     private final AnimalService animalService;
     private static final String DATE = "createdDate";
 
-    @GetMapping("/animals/import")
-    public ResponseEntity<?> loadAnimals() {
-        animalService.updateAnimalData();
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
-    }
+    // 테스트시에만 열어둠
+    //@GetMapping("/animals/import")
+    //public ResponseEntity<?> loadAnimals() {
+    //    animalService.updateAnimalData();
+    //    return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    //}
 
     @GetMapping("/animals/recommend")
     public ResponseEntity<?> findRecommendedAnimalList(@AuthenticationPrincipal CustomUserDetails userDetails){

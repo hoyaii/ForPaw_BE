@@ -42,13 +42,7 @@ public class UserController {
         Map<String, String> tokens = userService.login(requestDTO, request);
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
-                        .httpOnly(true)
-                        .secure(false)
-                        .path("/")
-                        .sameSite("Lax")
-                        .maxAge(JWTProvider.REFRESH_EXP_SEC)
-                        .build().toString())
+                .header(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokens.get("refreshToken")))
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokens.get("accessToken"))));
     }
 
@@ -143,14 +137,7 @@ public class UserController {
         Map<String, String> tokens = userService.updateAccessToken(refreshToken);
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
-                        .httpOnly(true)
-                        .secure(false)
-                        .path("/")
-                        .sameSite("Lax")
-                        .maxAge(JWTProvider.REFRESH_EXP_SEC)
-                        .domain("localhost")
-                        .build().toString())
+                .header(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokens.get("refreshToken")))
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(tokens.get("accessToken"))));
     }
 
@@ -207,16 +194,18 @@ public class UserController {
         if (tokenOrEmail.get("email") != null) {
             response.sendRedirect(REDIRECT_JOIN_URI + URLEncoder.encode(tokenOrEmail.get("email"), StandardCharsets.UTF_8));
         } else {
-            ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", tokenOrEmail.get("refreshToken"))
-                    .httpOnly(true)
-                    .secure(false)
-                    .path("/")
-                    .sameSite("Lax")
-                    .maxAge(JWTProvider.REFRESH_EXP_SEC)
-                    .build();
-
-            response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+            response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokenOrEmail.get("refreshToken")));
             response.sendRedirect(REDIRECT_HOME_URI + URLEncoder.encode(tokenOrEmail.get("accessToken"), StandardCharsets.UTF_8));
         }
+    }
+
+    private String createRefreshTokenCookie(String refreshToken) {
+        return ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(JWTProvider.REFRESH_EXP_SEC)
+                .build().toString();
     }
 }
