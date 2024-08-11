@@ -18,9 +18,7 @@ import com.hong.ForPaw.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -117,6 +115,7 @@ public class PostService {
                         .build())
                 .toList();
 
+        // Post 객체 저장
         Post post = Post.builder()
                 .user(userRef)
                 .postType(PostType.ANSWER)
@@ -124,8 +123,7 @@ public class PostService {
                 .content(requestDTO.content())
                 .build();
 
-        // 연관관계 설정
-        postImages.forEach(post::addImage);
+        postImages.forEach(post::addImage); // 연관관계 설정
         parentPost.addChildPost(post);
 
         postRepository.save(post);
@@ -136,16 +134,7 @@ public class PostService {
         // 알림 생성
         String content = "새로운 답변: " + requestDTO.content();
         String redirectURL = "post/"+parentPostId+"/entire";
-        LocalDateTime date = LocalDateTime.now();
-
-        AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
-                parentPost.getUser().getId(),
-                content,
-                redirectURL,
-                date,
-                AlarmType.answer);
-
-        brokerService.produceAlarmToUser(parentPost.getUser().getId(), alarmDTO);
+        createAlarm(parentPost.getUser().getId(), content, redirectURL, AlarmType.ANSWER);
 
         return new PostResponse.CreateAnswerDTO(post.getId());
     }
@@ -587,16 +576,7 @@ public class PostService {
         // 알람 생성
         String content = "새로운 댓글: " + requestDTO.content();
         String redirectURL = "post/"+postId;
-        LocalDateTime date = LocalDateTime.now();
-
-        AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
-                writerId,
-                content,
-                redirectURL,
-                date,
-                AlarmType.comment);
-
-        brokerService.produceAlarmToUser(writerId, alarmDTO);
+        createAlarm(writerId, content, redirectURL, AlarmType.COMMENT);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
     }
@@ -638,16 +618,7 @@ public class PostService {
         // 알람 생성
         String content = "새로운 대댓글: " + requestDTO.content();
         String redirectURL = "posts/"+postId;
-        LocalDateTime date = LocalDateTime.now();
-
-        AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
-                parentComment.getUser().getId(),
-                content,
-                redirectURL,
-                date,
-                AlarmType.comment);
-
-        brokerService.produceAlarmToUser(parentComment.getUser().getId(), alarmDTO);
+        createAlarm(parentComment.getUser().getId(), content, redirectURL, AlarmType.COMMENT);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
     }
@@ -915,5 +886,18 @@ public class PostService {
             likeNum = dbFallback.get();
         }
         return likeNum;
+    }
+
+    private void createAlarm(Long userId, String content, String redirectURL, AlarmType alarmType) {
+        LocalDateTime date = LocalDateTime.now();
+
+        AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
+                userId,
+                content,
+                redirectURL,
+                date,
+                alarmType);
+
+        brokerService.produceAlarmToUser(userId, alarmDTO);
     }
 }

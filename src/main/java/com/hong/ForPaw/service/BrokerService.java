@@ -149,7 +149,7 @@ public class BrokerService {
                                 content,
                                 redirectURL,
                                 date,
-                                AlarmType.chatting);
+                                AlarmType.CHATTING);
 
                         produceAlarmToUser(messageDTO.senderId(), alarmDTO);
                     });

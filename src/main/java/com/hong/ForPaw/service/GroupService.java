@@ -486,7 +486,7 @@ public class GroupService {
         // 알람 생성
         String content = "가입이 승인 되었습니다!";
         String redirectURL = "groups/" + groupId + "/detail";
-        createAlarm(applicantId, content, redirectURL, AlarmType.join);
+        createAlarm(applicantId, content, redirectURL, AlarmType.JOIN);
 
         // 신청자는 그룹 채팅방에 참여됨
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId).orElseThrow(
@@ -522,7 +522,7 @@ public class GroupService {
         // 알람 생성
         String content = "가입이 거절 되었습니다.";
         String redirectURL = "groups/" + groupId + "/detail";
-        createAlarm(applicantId, content, redirectURL, AlarmType.join);
+        createAlarm(applicantId, content, redirectURL, AlarmType.JOIN);
     }
 
     @Transactional
@@ -560,7 +560,7 @@ public class GroupService {
         for(User user : users){
             String content = "공지: " + requestDTO.title();
             String redirectURL = "posts/" + notice.getId() + "/entire";
-            createAlarm(user.getId(), content, redirectURL, AlarmType.notice);
+            createAlarm(user.getId(), content, redirectURL, AlarmType.NOTICE);
         }
 
         return new GroupResponse.CreateNoticeDTO(notice.getId());
@@ -715,7 +715,7 @@ public class GroupService {
         for(User user : users){
             String content = "새로운 정기 모임: " + requestDTO.name();
             String redirectURL = "groups/" + groupId + "/meetings/"+meeting.getId();
-            createAlarm(user.getId(), content, redirectURL, AlarmType.newMeeting);
+            createAlarm(user.getId(), content, redirectURL, AlarmType.NEW_MEETING);
         }
         
         return new GroupResponse.CreateMeetingDTO(meeting.getId());
