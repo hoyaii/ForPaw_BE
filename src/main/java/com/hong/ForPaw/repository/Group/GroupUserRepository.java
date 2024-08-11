@@ -52,7 +52,9 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
     @Query("UPDATE GroupUser gu SET gu.groupRole = :groupRole WHERE gu.group.id = :groupId AND gu.user.id = :userId")
     void updateRole(@Param("groupRole") GroupRole groupRole, @Param("groupId") Long groupId, @Param("userId") Long userId);
 
-    void deleteByGroupIdAndUserId(Long groupId, Long userId);
+    @Modifying
+    @Query("DELETE FROM GroupUser gu WHERE gu.group.id = :groupId AND gu.user.id = :userId")
+    void deleteByGroupIdAndUserId(@Param("groupId") Long groupId, @Param("userId") Long userId);
 
     @Modifying
     @Query("DELETE FROM GroupUser gu WHERE gu.group.id = :groupId")

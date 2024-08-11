@@ -29,5 +29,9 @@ public interface ChatUserRepository extends JpaRepository<ChatUser, Long> {
 
     @Modifying
     @Query("DELETE FROM ChatUser cu WHERE cu.user.id = :userId")
-    void deleteByUserId(Long userId);
+    void deleteByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query("DELETE FROM ChatUser cu WHERE cu.user.id = :userId AND cu.chatRoom.group.id = :groupId")
+    void deleteByGroupIdAndUserId(@Param("groupId") Long groupId, @Param("userId") Long userId);
 }

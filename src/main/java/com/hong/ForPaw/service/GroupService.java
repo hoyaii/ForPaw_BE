@@ -401,15 +401,39 @@ public class GroupService {
 
         // 그룹 참가자 수 감소
         group.decrementParticipantNum();
-
         groupUserRepository.deleteByGroupIdAndUserId(groupId, userId);
 
         // 그룹 채팅방에서 탈퇴
-        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId).orElseThrow(
-                () -> new CustomException(ExceptionCode.CHAT_ROOM_NOT_FOUND)
+        chatUserRepository.deleteByGroupIdAndUserId(groupId, userId);
+
+        // 맴버가 가입한 정기모임들에서도 탈퇴
+        meetingUserRepository.deleteByGroupIdAndUserId(groupId, userId);
+
+        // 참가자 수 감소
+        meetingRepository.decrementParticipantNum(groupId, userId);
+    }
+
+    @Transactional
+    public void expelGroupMember(Long adminId, Long memberId, Long groupId){
+        Group group = groupRepository.findById(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
-        ChatUser chatUser = chatUserRepository.findByUserIdAndChatRoom(userId, chatRoom).get();
-        chatUserRepository.delete(chatUser);
+
+        // 권한 체크
+        checkGroupAdminAuthority(groupId, adminId);
+
+        // 그룹 참가자 수 감소
+        group.decrementParticipantNum();
+        groupUserRepository.deleteByGroupIdAndUserId(groupId, memberId);
+
+        // 그룹 채팅방에서 탈퇴
+        chatUserRepository.deleteByGroupIdAndUserId(groupId, memberId);
+
+        // 맴버가 가입한 정기모임들에서도 탈퇴
+        meetingUserRepository.deleteByGroupIdAndUserId(groupId, memberId);
+
+        // 참가자 수 감소
+        meetingRepository.decrementParticipantNum(groupId, memberId);
     }
 
     @Transactional
@@ -877,7 +901,7 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        // Admin은 접근 가능
+        // 서비스 운영자는 접근 가능
         if(role.equals(UserRole.ADMIN) || role.equals(UserRole.SUPER)){
             return;
         }
@@ -906,7 +930,7 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        // Admin은 접근 가능
+        // 서비스 운영자는 접근 가능
         if(role.equals(UserRole.ADMIN) || role.equals(UserRole.SUPER)){
             return;
         }
