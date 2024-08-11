@@ -72,7 +72,7 @@ public class GroupController {
     }
 
     @GetMapping("/groups/my")
-    public ResponseEntity<?> findMyGroupList(@PageableDefault(sort = ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findMyGroupList(@PageableDefault(size = 5, sort = ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         Long userId = getUserIdSafely(userDetails);
         List<GroupResponse.MyGroupDTO> myGroupDTOS = groupService.findMyGroupList(userId, Collections.emptyList(), pageable);
         GroupResponse.FindMyGroupListDTO responseDTO = new GroupResponse.FindMyGroupListDTO(myGroupDTOS);
@@ -87,7 +87,8 @@ public class GroupController {
     }
 
     @GetMapping("/groups/{groupId}/notices")
-    public ResponseEntity<?> findNoticeList(@PathVariable Long groupId, @PageableDefault(sort = ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findNoticeList(@PathVariable Long groupId,
+                                            @PageableDefault(size = 5, sort = ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         groupService.checkGroupAndMember(groupId, userDetails.getUser().getId());
         List<GroupResponse.NoticeDTO> noticeDTOS = groupService.findNoticeList(userDetails.getUser().getId(), groupId, pageable);
         GroupResponse.FindNoticeListDTO responseDTO = new GroupResponse.FindNoticeListDTO(noticeDTOS);
@@ -95,7 +96,8 @@ public class GroupController {
     }
 
     @GetMapping("/groups/{groupId}/meetings")
-    public ResponseEntity<?> findMeetingList(@PathVariable Long groupId, @PageableDefault(sort = ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findMeetingList(@PathVariable Long groupId,
+                                             @PageableDefault(size = 5, sort = ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         groupService.checkGroupAndMember(groupId, userDetails.getUser().getId());
         List<GroupResponse.MeetingDTO> meetingDTOS = groupService.findMeetingList(groupId, pageable);
         GroupResponse.FindMeetingListDTO responseDTO = new GroupResponse.FindMeetingListDTO(meetingDTOS);

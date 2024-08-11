@@ -42,14 +42,15 @@ public class AnimalController {
     }
 
     @GetMapping("/animals")
-    public ResponseEntity<?> findAnimalList(@RequestParam String type, @PageableDefault(sort = DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findAnimalList(@RequestParam String type,
+                                            @PageableDefault(size = 5, sort = DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         Long userId = getUserIdSafely(userDetails);
         AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(type, userId, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/animals/like")
-    public ResponseEntity<?> findLikeAnimalList(@PageableDefault(sort = DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findLikeAnimalList(@PageableDefault(size = 5, sort = DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         AnimalResponse.FindLikeAnimalListDTO responseDTO = animalService.findLikeAnimalList(pageable, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
