@@ -20,7 +20,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -194,7 +193,7 @@ public class AnimalService {
     public AnimalResponse.FindAnimalListDTO findAnimalList(String type, Long userId, Pageable pageable){
         // sort 파라미터를 AnimalType으로 변환
         AnimalType animalType = converStringToAnimalType(type);
-        Page<Animal> animalPage = animalRepository.findAllByAnimalType(animalType, pageable);
+        Page<Animal> animalPage = animalRepository.findByAnimalType(animalType, pageable);
         boolean isLastPage = !animalPage.hasNext();
 
         // 사용자가 '좋아요' 표시한 Animal의 ID 목록 => 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
@@ -231,7 +230,7 @@ public class AnimalService {
         List<Long> recommendedAnimalIds = getRecommendedAnimalIdList(userId);
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findLikedAnimalIdsByUserId(userId) : new ArrayList<>();
 
-        List<AnimalResponse.AnimalDTO> animalDTOS = animalRepository.findAllByIds(recommendedAnimalIds).stream()
+        List<AnimalResponse.AnimalDTO> animalDTOS = animalRepository.findByIds(recommendedAnimalIds).stream()
                 .map(animal -> {
                     Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
 
@@ -580,13 +579,13 @@ public class AnimalService {
 
         // 우선 사용자 district를 바탕으로 조회
         List<Long> animalIds = userRepository.findDistrictById(userId)
-                .map(district -> animalRepository.findAnimalIdsByDistrict(district, pageRequest))
+                .map(district -> animalRepository.findIdsByDistrict(district, pageRequest))
                 .orElseGet(ArrayList::new);
 
         // 조회된 동물 ID의 수가 5개 미만인 경우, province 범위까지 확대해서 추가 조회
         if (animalIds.size() < 5) {
             animalIds.addAll(userRepository.findProvinceById(userId)
-                    .map(province -> animalRepository.findAnimalIdsByProvince(province, pageRequest))
+                    .map(province -> animalRepository.findIdsByProvince(province, pageRequest))
                     .orElseGet(ArrayList::new));
 
             return animalIds.subList(0, Math.min(5, animalIds.size()));

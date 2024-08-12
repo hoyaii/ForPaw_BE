@@ -277,7 +277,7 @@ public class AuthenticationService {
                 .map(apply -> apply.getAnimal().getId())
                 .collect(Collectors.toList());
 
-        List<Animal> animals = animalRepository.findAllByIdsWithShelter(animalIds);
+        List<Animal> animals = animalRepository.findByIdsWithShelter(animalIds);
         Map<Long, Animal> animalMap = animals.stream()
                 .collect(Collectors.toMap(Animal::getId, animal -> animal));
 
