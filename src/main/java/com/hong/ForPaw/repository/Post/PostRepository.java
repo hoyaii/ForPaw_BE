@@ -23,24 +23,28 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findAll();
 
     @Query("SELECT p FROM Post p WHERE p.createdDate BETWEEN :startOfDay AND :endOfDay AND p.postType = :postType AND p.removedAt IS NULL")
-    List<Post> findAllByDate(@Param("startOfDay") LocalDateTime startOfDay,
-                             @Param("endOfDay") LocalDateTime endOfDay,
-                             @Param("postType") PostType postType);
+    List<Post> findByDateAndType(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDay") LocalDateTime endOfDay, @Param("postType") PostType postType);
 
     @Query("SELECT p FROM Post p WHERE p.id = :id AND p.removedAt IS NULL")
     Optional<Post> findById(@Param("id") Long id);
 
-    @Query("SELECT p.user FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
+    @Query("SELECT u FROM Post p " +
+            "JOIN p.user u " +
+            "WHERE p.id = :postId AND p.removedAt IS NULL")
     Optional<User> findUserById(@Param("postId") Long postId);
+
+    @Query("SELECT u.id FROM Post p " +
+            "JOIN p.user u " +
+            "WHERE p.id = :postId AND p.removedAt IS NULL")
+    Optional<Long> findUserIdById(@Param("postId") Long postId);
 
     @Query("SELECT p.postType FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
     Optional<PostType> findPostTypeById(@Param("postId") Long postId);
 
-    @Query("SELECT p.user.id FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
-    Optional<Long> findUserIdById(@Param("postId") Long postId);
-
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT p FROM Post p WHERE p.postType = 'NOTICE' AND p.group.id = :groupId AND p.removedAt IS NULL")
+    @Query("SELECT p FROM Post p " +
+            "JOIN p.group g " +
+            "WHERE p.postType = 'NOTICE' AND g.id = :groupId AND p.removedAt IS NULL")
     Page<Post> findNoticeByGroupIdWithUser(@Param("groupId") Long groupId, Pageable pageable);
 
     @Query(value = "SELECT * FROM post_tb WHERE MATCH(title) AGAINST(:title IN BOOLEAN MODE) AND post_type IN ('ADOPTION', 'FOSTERING', 'QUESTION') AND removed_at IS NULL",
@@ -53,20 +57,23 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findByPostTypeWithUser(@Param("postType") PostType postType, Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT p FROM Post p WHERE p.parent.id = :parentId AND p.removedAt IS NULL")
+    @Query("SELECT p FROM Post p " +
+            "JOIN p.parent pr " +
+            "WHERE pr.id = :parentId AND p.removedAt IS NULL")
     List<Post> findByParentIdWithUser(@Param("parentId") Long parentId);
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT p FROM Post p WHERE p.user.id = :userId AND (p.postType = 'ADOPTION' OR p.postType = 'FOSTERING')AND p.removedAt IS NULL")
-    Page<Post> findFosterAndAdoptionByUserIdWithUser(@Param("userId") Long userId, Pageable pageable);
+    @Query("SELECT p FROM Post p " +
+            "JOIN p.user u " +
+            "WHERE u.id = :userId AND p.postType IN :postTypes AND p.removedAt IS NULL")
+    Page<Post> findPostsByUserIdAndTypesWithUser(@Param("userId") Long userId, @Param("postTypes") List<PostType> postTypes, Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT p FROM Post p WHERE p.user.id = :userId AND p.postType = 'QUESTION' AND p.removedAt IS NULL")
-    Page<Post> findQnaByUserIdWithUser(@Param("userId") Long userId, Pageable pageable);
-
-    @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT p.parent FROM Post p WHERE p.user.id = :userId AND p.postType = 'ANSWER' AND p.parent.postType = 'QUESTION' AND p.parent.removedAt IS NULL")
-    Page<Post> findAnswerQnaByUserIdWithUser(@Param("userId") Long userId, Pageable pageable);
+    @Query("SELECT p.parent FROM Post p " +
+            "JOIN p.user u " +
+            "JOIN p.parent pr " +
+            "WHERE u.id = :userId AND p.postType = 'ANSWER' AND pr.postType = 'QUESTION' AND pr.removedAt IS NULL")
+    Page<Post> findQnaOfAnswerByUserIdWithUser(@Param("userId") Long userId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})
     @Query("SELECT p FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
@@ -76,7 +83,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE p.id = :postId AND p.removedAt IS NULL")
     Optional<Post> findByIdWithUserAndParent(@Param("postId") Long postId);
 
-    @Query("SELECT p.id FROM Post p WHERE p.removedAt IS NULL AND p.createdDate > :date")
+    @Query("SELECT p.id FROM Post p WHERE p.createdDate > :date AND p.removedAt IS NULL")
     List<Long> findPostIdsWithinDate(LocalDateTime date);
 
     @Query("SELECT COUNT(p) > 0 FROM Post p WHERE p.id = :id AND p.removedAt IS NULL")
@@ -108,7 +115,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("UPDATE Post p SET p.commentNum = p.commentNum - :decrementNum WHERE p.id = :postId AND p.commentNum > 0")
     void decrementCommentNum(@Param("postId") Long postId, @Param("decrementNum") Long decrementNum);
 
-    void deleteAllByGroupId(Long groupId);
 
     @Modifying
     @Query("DELETE FROM Post p WHERE p.group.id = :groupId")

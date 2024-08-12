@@ -14,7 +14,10 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
 
     Optional<PostLike> findByUserIdAndPostId(Long userId, Long postId);
 
-    @Query("SELECT COUNT(pl) > 0 FROM PostLike pl WHERE pl.post.id = :postId AND pl.user.id = :userId")
+    @Query("SELECT COUNT(pl) > 0 FROM PostLike pl " +
+            "JOIN pl.post p " +
+            "JOIN pl.user u " +
+            "WHERE p.id = :postId AND u.id = :userId")
     boolean existsByPostIdAndUserId(@Param("postId") Long postId, @Param("userId") Long userId);
 
     void deleteAllByPostId(Long postId);

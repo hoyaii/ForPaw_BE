@@ -212,7 +212,8 @@ public class PostService {
     @Transactional(readOnly = true)
     public PostResponse.FindPostListDTO findMyPostList(Long userId, Pageable pageable){
         // 유저를 패치조인하여 조회
-        Page<Post> postPage = postRepository.findFosterAndAdoptionByUserIdWithUser(userId, pageable);
+        List<PostType> postTypes = List.of(PostType.ADOPTION, PostType.FOSTERING);
+        Page<Post> postPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
 
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
@@ -237,7 +238,8 @@ public class PostService {
     @Transactional(readOnly = true)
     public PostResponse.FindQnaListDTO findMyQuestionList(Long userId, Pageable pageable){
         // 유저를 패치조인하여 조회
-        Page<Post> postPage = postRepository.findQnaByUserIdWithUser(userId, pageable);
+        List<PostType> postTypes = List.of(PostType.QUESTION);
+        Page<Post> postPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
 
         List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
                 .map(post -> new PostResponse.QnaDTO(
@@ -256,7 +258,7 @@ public class PostService {
     @Transactional(readOnly = true)
     public PostResponse.FindQnaListDTO findMyAnswerList(Long userId, Pageable pageable) {
         // 유저를 패치조인하여 조회
-        Page<Post> postPage = postRepository.findAnswerQnaByUserIdWithUser(userId, pageable);
+        Page<Post> postPage = postRepository.findQnaOfAnswerByUserIdWithUser(userId, pageable);
 
         // 중복 제거를 위해 Set을 사용하여 중복된 Post 객체를 필터링
         Set<Post> uniquePosts = new HashSet<>(postPage.getContent());
@@ -745,11 +747,11 @@ public class PostService {
         LocalDateTime endOfToday = now.atTime(LocalTime.MAX);
 
         // 인기 입양 글 업데이트
-        List<Post> adoptionPosts = postRepository.findAllByDate(startOfToday, endOfToday, PostType.ADOPTION);
+        List<Post> adoptionPosts = postRepository.findByDateAndType(startOfToday, endOfToday, PostType.ADOPTION);
         processPopularPosts(adoptionPosts, PostType.ADOPTION);
 
         // 인기 임시보호 글 업데이트
-        List<Post> fosteringPosts = postRepository.findAllByDate(startOfToday, endOfToday, PostType.FOSTERING);
+        List<Post> fosteringPosts = postRepository.findByDateAndType(startOfToday, endOfToday, PostType.FOSTERING);
         processPopularPosts(fosteringPosts, PostType.FOSTERING);
     }
 
