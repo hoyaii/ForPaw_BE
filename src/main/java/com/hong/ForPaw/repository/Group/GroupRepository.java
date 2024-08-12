@@ -22,21 +22,17 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     @Query("SELECT g FROM Group g WHERE g.province = :province")
     Page<Group> findByProvince(@Param("province") Province province, Pageable pageable);
 
-    @Query("SELECT g FROM Group g")
-    Page<Group> findAll(Pageable pageable);
-
-    boolean existsByName(String name);
-
-    @Query("SELECT COUNT(g) > 0 FROM Group g WHERE g.id != :id AND g.name = :name")
-    boolean existsByNameExcludingId(@Param("name") String name, @Param("id") Long id);
-
     @Query(value = "SELECT * FROM groups_tb WHERE MATCH(name) AGAINST(:name IN BOOLEAN MODE)",
             countQuery = "SELECT COUNT(*) FROM groups_tb WHERE MATCH(name) AGAINST(:name IN BOOLEAN MODE)",
             nativeQuery = true)
     Page<Group> findByNameContaining(@Param("name") String name, Pageable pageable);
 
-    @Query("SELECT g.id FROM Group g")
-    List<Long> findGroupIds();
+    List<Long> findAllIds();
+
+    boolean existsByName(String name);
+
+    @Query("SELECT COUNT(g) > 0 FROM Group g WHERE g.id != :id AND g.name = :name")
+    boolean existsByNameExcludingId(@Param("name") String name, @Param("id") Long id);
 
     @Modifying
     @Query("UPDATE Group g SET g.likeNum = :likeNum WHERE g.id = :groupId")

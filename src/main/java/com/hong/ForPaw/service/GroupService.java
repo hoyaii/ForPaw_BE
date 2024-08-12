@@ -597,7 +597,7 @@ public class GroupService {
     @Scheduled(cron = "0 15 0 * * *")
     @Transactional
     public void syncLikes() {
-        List<Long> groupIds = groupRepository.findGroupIds();
+        List<Long> groupIds = groupRepository.findAllIds();
 
         for (Long groupId : groupIds) {
             Long likeNum = redisService.getDataInLong("groupLikeNum", groupId.toString());
@@ -726,7 +726,7 @@ public class GroupService {
     @Transactional
     public void deleteExpiredMeetings() {
         LocalDateTime now = LocalDateTime.now();
-        List<Meeting> expiredMeetings = meetingRepository.findAllByMeetDateBefore(now);
+        List<Meeting> expiredMeetings = meetingRepository.findByMeetDateBefore(now);
 
         expiredMeetings.forEach(meeting -> {
             meetingUserRepository.deleteAllByMeetingId(meeting.getId());
