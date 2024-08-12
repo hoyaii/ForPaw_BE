@@ -177,7 +177,7 @@ public class GroupService {
         Pageable pageable = createPageable(0, 5, SORT_BY_ID);
 
         // 좋아요한 그룹 리스트 (로그인 하지 않았으면 빈 리스트)
-        List<Long> likedGroupIdList = userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : Collections.emptyList();
+        List<Long> likedGroupIdList = userId != null ? favoriteGroupRepository.findGroupIdByUserId(userId) : Collections.emptyList();
 
         // 추천 그룹 찾기
         List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = findRecommendGroupList(userId, province, likedGroupIdList);
@@ -201,7 +201,7 @@ public class GroupService {
 
         // likedGroupIds가 비어있으면 새로 조회 => 새로 조회 시 userId가 null이라면 emptyList로! (스트림 사용을 위해 final로 만듦)
         List<Long> finalLikedGroupIds = likedGroupIds.isEmpty() ? likedGroupIds :
-                (userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : Collections.emptyList());
+                (userId != null ? favoriteGroupRepository.findGroupIdByUserId(userId) : Collections.emptyList());
 
         Page<Group> localGroupPage = groupRepository.findByDistrictAndSubDistrict(province, district, pageable);
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroupPage.getContent().stream()
@@ -252,10 +252,10 @@ public class GroupService {
     // 내 그룹 추가 조회
     @Transactional(readOnly = true)
     public List<GroupResponse.MyGroupDTO> findMyGroupList(Long userId, List<Long> likedGroupIds, Pageable pageable){
-        List<Group> joinedGroups = groupUserRepository.findAllGroupByUserId(userId, pageable).getContent();
+        List<Group> joinedGroups = groupUserRepository.findGroupByUserId(userId, pageable).getContent();
 
         List<Long> finalLikedGroupIds = likedGroupIds.isEmpty() ? likedGroupIds :
-                (userId != null ? favoriteGroupRepository.findLikedGroupIdsByUserId(userId) : Collections.emptyList());
+                (userId != null ? favoriteGroupRepository.findGroupIdByUserId(userId) : Collections.emptyList());
 
         List<GroupResponse.MyGroupDTO> myGroupDTOS = joinedGroups.stream()
                 .map(group -> {
@@ -557,7 +557,7 @@ public class GroupService {
         postRepository.save(notice);
 
         // 알람 생성
-        List<User> users = groupUserRepository.findUsersByGroupIdWithoutMe(groupId, userId);
+        List<User> users = groupUserRepository.findUserByGroupIdWithoutMe(groupId, userId);
 
         for(User user : users){
             String content = "공지: " + requestDTO.title();
@@ -711,7 +711,7 @@ public class GroupService {
         meetingRepository.incrementParticipantNum(meeting.getId());
 
         // 알람 생성
-        List<User> users = groupUserRepository.findUsersByGroupIdWithoutMe(groupId, userId);
+        List<User> users = groupUserRepository.findUserByGroupIdWithoutMe(groupId, userId);
 
         for(User user : users){
             String content = "새로운 정기 모임: " + requestDTO.name();
@@ -866,7 +866,7 @@ public class GroupService {
     }
 
     private Set<Long> getAllGroupIdSet(Long userId){
-        List<Group> groups = groupUserRepository.findGroupsByUserId(userId);
+        List<Group> groups = groupUserRepository.findGroupByUserId(userId);
 
         Set<Long> groupIdSet = groups.stream()
                 .map(Group::getId)
