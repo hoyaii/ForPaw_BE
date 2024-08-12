@@ -101,9 +101,9 @@ public class AuthenticationService {
 
         // 유기 동물 통계
         Long waitingForAdoptionNum = animalRepository.countAnimal();
-        Long adoptionProcessingNum = applyRepository.countProcessing();
-        Long adoptedRecentlyNum = applyRepository.countProcessedWithinDate(now.minusWeeks(1));
-        Long adoptedTotalNum = applyRepository.countProcessed();
+        Long adoptionProcessingNum = applyRepository.countByStatus(ApplyStatus.PROCESSING);
+        Long adoptedRecentlyNum = applyRepository.countByStatusWithinDate(ApplyStatus.PROCESSED, now.minusWeeks(1));
+        Long adoptedTotalNum = applyRepository.countByStatus(ApplyStatus.PROCESSED);
 
         AuthenticationResponse.AnimalStatsDTO animalStatsDTO = new AuthenticationResponse.AnimalStatsDTO(
             waitingForAdoptionNum,
@@ -145,7 +145,7 @@ public class AuthenticationService {
         Long entryNum = userRepository.countALlWithinDate(nowDateOnly);
         Long newPostNum = postRepository.countALlWithinDate(nowDateOnly);
         Long newCommentNum = commentRepository.countALlWithinDate(nowDateOnly);
-        Long newAdoptApplicationNum = applyRepository.countProcessingWithinDate(nowDateOnly);
+        Long newAdoptApplicationNum = applyRepository.countByStatusWithinDate(ApplyStatus.PROCESSING, nowDateOnly);
 
         AuthenticationResponse.DailySummaryDTO dailySummaryDTO = new AuthenticationResponse.DailySummaryDTO(
                 entryNum,

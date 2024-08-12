@@ -434,8 +434,10 @@ public class AnimalService {
         }
 
         // 동물의 문의 횟수 감소
-        Long animalId = applyRepository.findAnimalIdById(applyId);
-        animalRepository.decrementInquiryNumById(animalId);
+        Animal animal = applyRepository.findAnimalIdById(applyId).orElseThrow(
+                () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
+        );
+        animal.decrementInquiryNum();
 
         applyRepository.deleteById(applyId);
     }
