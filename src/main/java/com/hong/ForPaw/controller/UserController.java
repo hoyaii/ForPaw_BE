@@ -49,13 +49,13 @@ public class UserController {
     @GetMapping("/auth/login/kakao")
     public void kakaoLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, String> tokenOrEmail = userService.kakaoLogin(code, request);
-        handleAuthenticationRedirect(tokenOrEmail, response);
+        handleAuthenticationRedirect(tokenOrEmail, "kakao", response);
     }
 
     @GetMapping("/auth/login/google")
     public void googleLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, String> tokenOrEmail = userService.googleLogin(code, request);
-        handleAuthenticationRedirect(tokenOrEmail, response);
+        handleAuthenticationRedirect(tokenOrEmail, "google", response);
     }
 
     @PostMapping("/accounts")
@@ -190,12 +190,12 @@ public class UserController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    private void handleAuthenticationRedirect(Map<String, String> tokenOrEmail, HttpServletResponse response) throws IOException {
+    private void handleAuthenticationRedirect(Map<String, String> tokenOrEmail, String authProvider, HttpServletResponse response) throws IOException {
         if (tokenOrEmail.get("email") != null) {
-            response.sendRedirect(REDIRECT_JOIN_URI + URLEncoder.encode(tokenOrEmail.get("email"), StandardCharsets.UTF_8));
+            response.sendRedirect(REDIRECT_JOIN_URI + URLEncoder.encode(tokenOrEmail.get("email"), StandardCharsets.UTF_8) + "&authProvider=" + URLEncoder.encode(authProvider, StandardCharsets.UTF_8));
         } else {
             response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokenOrEmail.get("refreshToken")));
-            response.sendRedirect(REDIRECT_HOME_URI + URLEncoder.encode(tokenOrEmail.get("accessToken"), StandardCharsets.UTF_8));
+            response.sendRedirect(REDIRECT_HOME_URI + URLEncoder.encode(tokenOrEmail.get("accessToken"), StandardCharsets.UTF_8) + "&authProvider=" + URLEncoder.encode(authProvider, StandardCharsets.UTF_8));
         }
     }
 
