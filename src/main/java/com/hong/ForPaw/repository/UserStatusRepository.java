@@ -15,16 +15,6 @@ import java.util.Optional;
 public interface UserStatusRepository extends JpaRepository<UserStatus, Long> {
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT u FROM UserStatus u WHERE u.user.role = 'USER'")
-    Page<UserStatus> findByAdminRole(Pageable pageable);
-
-    @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT u FROM UserStatus u WHERE u.user.role = 'USER' or u.user.role = 'ADMIN' AND u.user.removedAt IS NULL")
-    Page<UserStatus> findBySuperRole(Pageable pageable);
-
-    @EntityGraph(attributePaths = {"user"})
     @Query("SELECT u FROM UserStatus u WHERE u.user.id = :id")
     Optional<UserStatus> findByUserId(@Param("id") Long id);
-
-    void deleteAllByUserId(Long userId);
 }

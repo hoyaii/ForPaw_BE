@@ -897,11 +897,11 @@ public class UserService {
 
     private void checkAlreadyJoin(String email) {
         // 로컬 회원 가입을 통해 이미 가입함
-        if(userRepository.existsLocalAccountByEmailWithRemoved(email))
+        if(userRepository.existsByEmailAndAuthProviders(email, List.of("LOCAL")))
             throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
 
         // 소셜 회원 가입을 통해 이미 가입함
-        if(userRepository.existsSocialAccountByEmailWithRemoved(email)){
+        if(userRepository.existsByEmailAndAuthProviders(email, List.of("KAKAO", "GOOGLE"))){
             throw new CustomException(ExceptionCode.JOINED_BY_SOCIAL);
         }
     }
@@ -912,7 +912,7 @@ public class UserService {
     }
 
     private void checkIsLocalAccount(String email) {
-        if(userRepository.existsLocalAccountByEmailWithRemoved(email)){
+        if(userRepository.existsByEmailAndAuthProviders(email, List.of("LOCAL"))){
             throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
         }
     }

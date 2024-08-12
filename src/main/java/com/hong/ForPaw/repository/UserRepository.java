@@ -4,8 +4,6 @@ import com.hong.ForPaw.domain.District;
 import com.hong.ForPaw.domain.Province;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.User.UserRole;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -28,16 +26,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u.profileURL FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
     Optional<String> findProfileURL(@Param("id") Long id);
 
-    @EntityGraph(attributePaths = {"userStatus"})
-    @Query("SELECT u FROM User u WHERE (u.role = 'ADMIN' OR u.role = 'USER') AND u.removedAt IS NULL")
-    Page<User> findAllAdminAndUserWithUserStatus(Pageable pageable);
-
     @Query("SELECT u FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
     Optional<User> findById(@Param("id") Long id);
-
-    @EntityGraph(attributePaths = {"userStatus"})
-    @Query("SELECT u FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
-    Optional<User> findByIdWithUserStatus(@Param("id") Long id);
 
     @Query("SELECT u.role FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
     Optional<UserRole> findRoleById(@Param("id") Long id);
@@ -73,11 +63,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email")
     boolean existsByEmailWithRemoved(@Param("email") String email);
 
-    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email AND (u.authProvider = 'KAKAO' OR u.authProvider = 'GOOGLE')")
-    boolean existsSocialAccountByEmailWithRemoved(@Param("email") String email);
-
-    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email AND u.authProvider = 'LOCAL'")
-    boolean existsLocalAccountByEmailWithRemoved(@Param("email") String email);
+    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email AND u.authProvider IN :authProviders")
+    boolean existsByEmailAndAuthProviders(@Param("email") String email, @Param("authProviders") List<String> authProviders);
 
     @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.nickName = :nickName")
     boolean existsByNickname(@Param("nickName") String nickName);
@@ -88,17 +75,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Modifying
     @Query("DELETE FROM User u WHERE u.removedAt <= :cutoffDate")
     void deleteAllWithRemovedBefore(LocalDateTime cutoffDate);
-
-    @Query(value =
-        "SELECT u.* " +
-            "FROM user u " +
-            "INNER JOIN user_status us ON u.id = us.user_id " +
-            "LEFT JOIN ( " +
-            "    SELECT user_id, MAX(date) AS latest_visit " +
-            "    FROM visit " +
-            "    GROUP BY user_id " +
-            ") v ON u.id = v.user_id ", nativeQuery = true)
-    List<User> findUserWithLatestVisit();
 
     // Spring Data JPA 메서드는 외래키 제약 조건 때문에 작동하지 않음 => Post나 Comment를 남겨둬야 하기 때문에 Spring Data JPA 말고 직접 업데이트 쿼리를 날린다
     @Modifying

@@ -34,6 +34,15 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
     @Query("SELECT s FROM Shelter s")
     List<Shelter> findAllWithRegionCode();
 
+    @Query(value = "SELECT s.*" +
+            "FROM shelter_tb s " +
+            "JOIN region_code_tb rc ON s.region_code_id = rc.id " +
+            "WHERE s.animal_cnt >= 1 " +
+            "ORDER BY (6371 * ACOS(COS(RADIANS(:lat)) * COS(RADIANS(s.latitude)) " +
+            "* COS(RADIANS(s.longitude) - RADIANS(:lon)) + SIN(RADIANS(:lat)) " +
+            "* SIN(RADIANS(s.latitude)))) ASC", nativeQuery = true)
+    List<Shelter> findNearestShelters(@Param("lat") double lat, @Param("lon") double lon);
+
     @Modifying
     @Transactional
     @Query("UPDATE Shelter s SET s.careTel = :careTel, s.careAddr = :careAddr, s.animalCnt = :animalCnt WHERE s.id = :shelterId")
@@ -43,13 +52,4 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
     @Transactional
     @Query("UPDATE Shelter s SET s.latitude = :latitude, s.longitude = :longitude WHERE s.id = :shelterId")
     void updateAddressInfo(@Param("latitude") Double latitude, @Param("longitude") Double longitude, @Param("shelterId") Long shelterId);
-
-    @Query(value = "SELECT s.*" +
-            "FROM shelter_tb s " +
-            "JOIN region_code_tb rc ON s.region_code_id = rc.id " +
-            "WHERE s.animal_cnt >= 1 " +
-            "ORDER BY (6371 * ACOS(COS(RADIANS(:lat)) * COS(RADIANS(s.latitude)) " +
-            "* COS(RADIANS(s.longitude) - RADIANS(:lon)) + SIN(RADIANS(:lat)) " +
-            "* SIN(RADIANS(s.latitude)))) ASC", nativeQuery = true)
-    List<Shelter> findNearestShelters(@Param("lat") double lat, @Param("lon") double lon);
 }
