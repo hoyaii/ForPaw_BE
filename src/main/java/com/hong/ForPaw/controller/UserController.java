@@ -18,6 +18,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -36,6 +37,8 @@ public class UserController {
 
     @Value("${social.home.redirect.uri}")
     private String REDIRECT_HOME_URI;
+    private static final String AUTH_KAKAO = "KAKAO";
+    private static final String AUTH_GOOGLE = "GOOGLE";
 
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody @Valid UserRequest.LoginDTO requestDTO, HttpServletRequest request) throws MessagingException {
@@ -49,13 +52,13 @@ public class UserController {
     @GetMapping("/auth/login/kakao")
     public void kakaoLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, String> tokenOrEmail = userService.kakaoLogin(code, request);
-        handleAuthenticationRedirect(tokenOrEmail, "kakao", response);
+        handleAuthenticationRedirect(tokenOrEmail, AUTH_KAKAO, response);
     }
 
     @GetMapping("/auth/login/google")
     public void googleLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, String> tokenOrEmail = userService.googleLogin(code, request);
-        handleAuthenticationRedirect(tokenOrEmail, "google", response);
+        handleAuthenticationRedirect(tokenOrEmail, AUTH_GOOGLE, response);
     }
 
     @PostMapping("/accounts")
@@ -191,12 +194,22 @@ public class UserController {
     }
 
     private void handleAuthenticationRedirect(Map<String, String> tokenOrEmail, String authProvider, HttpServletResponse response) throws IOException {
-        if (tokenOrEmail.get("email") != null) {
-            response.sendRedirect(REDIRECT_JOIN_URI + URLEncoder.encode(tokenOrEmail.get("email"), StandardCharsets.UTF_8) + "&authProvider=" + URLEncoder.encode(authProvider, StandardCharsets.UTF_8));
+        String redirectUri;
+        if(tokenOrEmail.get("email") != null) {
+            redirectUri = UriComponentsBuilder.fromUriString(REDIRECT_JOIN_URI)
+                    .queryParam("email", URLEncoder.encode(tokenOrEmail.get("email"), StandardCharsets.UTF_8))
+                    .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
+                    .build()
+                    .toUriString();
         } else {
             response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokenOrEmail.get("refreshToken")));
-            response.sendRedirect(REDIRECT_HOME_URI + URLEncoder.encode(tokenOrEmail.get("accessToken"), StandardCharsets.UTF_8) + "&authProvider=" + URLEncoder.encode(authProvider, StandardCharsets.UTF_8));
+            redirectUri = UriComponentsBuilder.fromUriString(REDIRECT_HOME_URI)
+                    .queryParam("accessToken", URLEncoder.encode(tokenOrEmail.get("accessToken"), StandardCharsets.UTF_8))
+                    .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
+                    .build()
+                    .toUriString();
         }
+        response.sendRedirect(redirectUri);
     }
 
     private String createRefreshTokenCookie(String refreshToken) {

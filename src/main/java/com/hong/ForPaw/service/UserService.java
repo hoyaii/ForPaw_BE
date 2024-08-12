@@ -910,7 +910,6 @@ public class UserService {
     }
 
     private void checkIsLocalAccount(String email) {
-
         if(userRepository.existsByEmailAndAuthProviders(email, List.of(AuthProvider.LOCAL))){
             throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
         }
