@@ -557,7 +557,7 @@ public class GroupService {
         postRepository.save(notice);
 
         // 알람 생성
-        List<User> users = groupUserRepository.findAllUsersByGroupIdWithoutMe(groupId, userId);
+        List<User> users = groupUserRepository.findUsersByGroupIdWithoutMe(groupId, userId);
 
         for(User user : users){
             String content = "공지: " + requestDTO.title();
@@ -711,7 +711,7 @@ public class GroupService {
         meetingRepository.incrementParticipantNum(meeting.getId());
 
         // 알람 생성
-        List<User> users = groupUserRepository.findAllUsersByGroupIdWithoutMe(groupId, userId);
+        List<User> users = groupUserRepository.findUsersByGroupIdWithoutMe(groupId, userId);
 
         for(User user : users){
             String content = "새로운 정기 모임: " + requestDTO.name();
@@ -866,7 +866,7 @@ public class GroupService {
     }
 
     private Set<Long> getAllGroupIdSet(Long userId){
-        List<Group> groups = groupUserRepository.findAllGroupByUserId(userId);
+        List<Group> groups = groupUserRepository.findGroupsByUserId(userId);
 
         Set<Long> groupIdSet = groups.stream()
                 .map(Group::getId)
@@ -920,7 +920,7 @@ public class GroupService {
 
         Set<GroupRole> roles = EnumSet.of(GroupRole.ADMIN, GroupRole.CREATOR);
         groupUserRepository.findByGroupIdAndUserId(groupId, user.getId())
-                .filter(groupUser -> roles.contains(groupUser.getGroupRole()))
+                .filter(groupUser -> roles.contains(groupUser.getGroupRole() != null ? groupUser.getGroupRole() : GroupRole.TEMP))
                 .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
     }
 

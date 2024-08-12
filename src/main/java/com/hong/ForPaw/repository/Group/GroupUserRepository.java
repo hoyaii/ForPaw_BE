@@ -25,27 +25,43 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
     List<GroupUser> findAllByUserId(Long userId);
 
     @EntityGraph(attributePaths = {"group"})
-    @Query("SELECT gu FROM GroupUser gu WHERE gu.user.id = :userId")
+    @Query("SELECT gu FROM GroupUser gu " +
+            "JOIN gu.user u " +
+            "WHERE u.id = :userId")
     List<GroupUser> findByUserIdWithGroup(Long userId);
 
-    @Query("SELECT gu.user FROM GroupUser gu WHERE gu.group.id = :groupId AND gu.user.id NOT IN (:myId)")
-    List<User> findAllUsersByGroupIdWithoutMe(@Param("groupId") Long groupId, @Param("myId") Long myId);
+    @Query("SELECT u FROM GroupUser gu " +
+            "JOIN gu.user u " +
+            "WHERE gu.group.id = :groupId AND u.id NOT IN (:myId)")
+    List<User> findUsersByGroupIdWithoutMe(@Param("groupId") Long groupId, @Param("myId") Long myId);
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT gu FROM GroupUser gu WHERE gu.group.id = :groupId AND gu.groupRole = :groupRole")
+    @Query("SELECT gu FROM GroupUser gu " +
+            "JOIN gu.group g " +
+            "WHERE g.id = :groupId AND gu.groupRole = :groupRole")
     List<GroupUser> findByGroupRole(@Param("groupId") Long groupId, @Param("groupRole") GroupRole groupRole);
 
-    @Query("SELECT gu.group FROM GroupUser gu WHERE gu.user.id = :userId")
-    List<Group> findAllGroupByUserId(@Param("userId") Long userId);
+    @Query("SELECT g FROM GroupUser gu " +
+            "JOIN gu.group g " +
+            "JOIN gu.user u WHERE u.id = :userId")
+    List<Group> findGroupsByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT gu.group FROM GroupUser gu WHERE gu.user.id = :userId AND gu.groupRole != 'TEMP'")
+    @Query("SELECT g FROM GroupUser gu " +
+            "JOIN gu.group g " +
+            "JOIN gu.user u " +
+            "WHERE u.id = :userId AND gu.groupRole != 'TEMP'")
     Page<Group> findAllGroupByUserId(@Param("userId") Long userId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"user"})
-    @Query("SELECT gu FROM GroupUser gu WHERE gu.group.id = :groupId")
+    @Query("SELECT gu FROM GroupUser gu " +
+            "JOIN gu.group g " +
+            "WHERE g.id = :groupId")
     List<GroupUser> findByGroupIdWithUser(@Param("groupId") Long groupId);
 
-    @Query("SELECT COUNT(gu) > 0 FROM GroupUser gu WHERE gu.group.id = :groupId AND gu.user.id = :userId")
+    @Query("SELECT COUNT(gu) > 0 FROM GroupUser gu " +
+            "JOIN gu.group g " +
+            "JOIN gu.user u " +
+            "WHERE g.id = :groupId AND u.id = :userId")
     boolean existsByGroupIdAndUserId(@Param("groupId") Long groupId, @Param("userId") Long userId);
 
     @Modifying
@@ -59,6 +75,4 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
     @Modifying
     @Query("DELETE FROM GroupUser gu WHERE gu.group.id = :groupId")
     void deleteByGroupId(@Param("groupId") Long groupId);
-
-    void deleteAllByUserId(Long userId);
 }
