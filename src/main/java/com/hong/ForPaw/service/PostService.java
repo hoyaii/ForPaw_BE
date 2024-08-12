@@ -704,7 +704,7 @@ public class PostService {
         );
 
         // 이미 신고함
-        if(reportRepository.existsByReporterIdAndContent(userId, requestDTO.contentId(), requestDTO.contentType())){
+        if(reportRepository.existsByReporterIdAndContentId(userId, requestDTO.contentId(), requestDTO.contentType())){
             throw new CustomException(ExceptionCode.ALREADY_REPORTED);
         }
 

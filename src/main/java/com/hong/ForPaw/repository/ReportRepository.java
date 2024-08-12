@@ -1,11 +1,8 @@
 package com.hong.ForPaw.repository;
 
-import com.hong.ForPaw.domain.Apply.Apply;
-import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Report.ContentType;
 import com.hong.ForPaw.domain.Report.Report;
 import com.hong.ForPaw.domain.Report.ReportStatus;
-import com.hong.ForPaw.domain.User.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -23,8 +20,10 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     @Query("SELECT r FROM Report r WHERE r.id = :id")
     Optional<Report> findByIdWithOffender(@Param("id") Long id);
 
-    @Query("SELECT COUNT(r) > 0 FROM Report r WHERE r.reporter.id = :reporterId AND r.contentId = :contentId AND r.contentType = :contentType")
-    boolean existsByReporterIdAndContent(@Param("reporterId") Long reporterId, @Param("contentId") Long contentId, @Param("contentType") ContentType contentType);
+    @Query("SELECT COUNT(r) > 0 FROM Report r " +
+            "JOIN r.reporter rer " +
+            "WHERE rer.id = :reporterId AND r.contentId = :contentId AND r.contentType = :contentType")
+    boolean existsByReporterIdAndContentId(@Param("reporterId") Long reporterId, @Param("contentId") Long contentId, @Param("contentType") ContentType contentType);
 
     @EntityGraph(attributePaths = {"reporter"})
     @Query("SELECT r From Report r WHERE (:status IS NULL OR r.status = :status)")
