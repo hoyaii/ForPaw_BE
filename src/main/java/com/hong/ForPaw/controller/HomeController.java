@@ -23,12 +23,15 @@ public class HomeController {
 
     @GetMapping("/home")
     public ResponseEntity<?> findHome(@AuthenticationPrincipal CustomUserDetails userDetails){
-        Long userId = Optional.ofNullable(userDetails)
+        Long userId = getUserIdSafely(userDetails);
+        HomeResponse.FindHomeDTO responseDTO = homeService.findHome(userId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
+    private Long getUserIdSafely(CustomUserDetails userDetails) {
+        return Optional.ofNullable(userDetails)
                 .map(CustomUserDetails::getUser)
                 .map(User::getId)
                 .orElse(null);
-
-        HomeResponse.FindHomeDTO responseDTO = homeService.findHome(userId);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }

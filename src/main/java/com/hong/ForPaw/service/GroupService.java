@@ -3,6 +3,7 @@ package com.hong.ForPaw.service;
 import com.hong.ForPaw.controller.DTO.AlarmRequest;
 import com.hong.ForPaw.controller.DTO.GroupRequest;
 import com.hong.ForPaw.controller.DTO.GroupResponse;
+import com.hong.ForPaw.controller.DTO.Query.MeetingUserProfileDTO;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
@@ -323,10 +324,18 @@ public class GroupService {
     @Transactional(readOnly = true)
     public List<GroupResponse.MeetingDTO> findMeetingList(Long groupId, Pageable pageable){
         Page<Meeting> meetingPage = meetingRepository.findByGroupId(groupId, pageable);
-        List<GroupResponse.MeetingDTO> meetingDTOS = meetingPage.getContent().stream()
+
+        // <Long meetingId, List<String> userProfiles> 형태의 맵 구성
+        Map<Long, List<String>> meetingUserMap = new HashMap<>();
+        List<MeetingUserProfileDTO> queryDTOS = meetingUserRepository.findMeetingUsersByGroupId(groupId);
+        for (MeetingUserProfileDTO queryDTO : queryDTOS) {
+            meetingUserMap.computeIfAbsent(queryDTO.getMeetingId(), k -> new ArrayList<>()).add(queryDTO.getProfileURL());
+        }
+
+        return meetingPage.getContent().stream()
                 .map(meeting -> {
-                    List<GroupResponse.ParticipantDTO> participantDTOS = meeting.getMeetingUsers().stream()
-                            .map(meetingUser -> new GroupResponse.ParticipantDTO(meetingUser.getProfileURL()))
+                    List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserMap.get(meeting.getId()).stream()
+                            .map(GroupResponse.ParticipantDTO::new)
                             .toList();
 
                     return new GroupResponse.MeetingDTO(
@@ -342,8 +351,6 @@ public class GroupService {
                             participantDTOS);
                 })
                 .toList();
-
-        return meetingDTOS;
     }
 
     @Transactional(readOnly = true)
