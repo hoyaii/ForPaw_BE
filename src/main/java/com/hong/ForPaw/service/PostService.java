@@ -321,7 +321,7 @@ public class PostService {
 
         // 댓글과 대댓글을 모두 담고 있는 Comment 리스트를 CommentDTO로 가공하면서, 대댓글이 댓글 밑으로 들어가게 처리
         List<Comment> comments = commentRepository.findByPostIdWithUserAndParentAndRemoved(postId);
-        List<Long> likedCommentIds = commentLikeRepository.findLikeCommentIdListByUserId(userId);
+        List<Long> likedCommentIds = commentLikeRepository.findCommentIdsByUserId(userId);
         List<PostResponse.CommentDTO> commentDTOS = converCommentToCommentDTO(comments, likedCommentIds);
 
         // 좋아요 수
@@ -465,7 +465,7 @@ public class PostService {
         );*/
 
         postLikeRepository.deleteAllByPostId(postId);
-        commentLikeRepository.deleteAllByPostId(postId);
+        commentLikeRepository.deleteByPostId(postId);
         popularPostRepository.deleteByPostId(postId);
         postImageRepository.deleteByPostId(postId);
         commentRepository.deleteByPostId(postId); // soft-delete
@@ -666,7 +666,7 @@ public class PostService {
     @Transactional
     public void likeComment(Long commentId, Long userId){
         // 존재하지 않는 댓글인지 체크
-        Long commentWriterId = commentRepository.findWriterIdById(commentId).orElseThrow(
+        Long commentWriterId = commentRepository.findUserIdById(commentId).orElseThrow(
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
 

@@ -15,12 +15,5 @@ public interface MessageRepository extends MongoRepository<Message, String> {
 
     Page<Message> findByChatRoomId(Long chatRoomId, Pageable pageable);
 
-    List<Message> findByChatRoomId(Long chatRoomId);
-
-    // 특정 시간 이후의 채팅
-    Page<Message> findByChatRoomIdAndDateGreaterThan(Long chatRoomId, LocalDateTime date, Pageable pageable);
-
-    Optional<Message> findFirstByChatRoomIdOrderByDateDesc(Long chatRoomId);
-
     Integer countByChatRoomId(Long chatRoomId);
 }

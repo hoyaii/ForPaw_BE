@@ -17,6 +17,14 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
     Page<Meeting> findByGroupId(Long groupId, Pageable pageable);
 
+    @Query("SELECT m FROM Meeting m WHERE m.meetDate < :date")
+    List<Meeting> findByMeetDateBefore(@Param("date") LocalDateTime date);
+
+    @Query("SELECT COUNT(m) > 0 FROM Meeting m " +
+            "JOIN m.group g " +
+            "WHERE m.name = :name AND g.id = :groupId")
+    boolean existsByNameAndGroupId(@Param("name") String name, @Param("groupId") Long groupId);
+
     @Modifying
     @Query("UPDATE Meeting m SET m.participantNum = m.participantNum + 1 WHERE m.id = :meetingId")
     void incrementParticipantNum(@Param("meetingId") Long meetingId);
@@ -28,14 +36,6 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     @Modifying
     @Query("UPDATE Meeting m SET m.participantNum = m.participantNum - 1 WHERE m.group.id = :groupId AND m.id IN (SELECT mu.meeting.id FROM MeetingUser mu WHERE mu.user.id = :userId) AND m.participantNum > 0")
     void decrementParticipantNum(@Param("groupId") Long groupId, @Param("userId") Long userId);
-
-    @Query("SELECT COUNT(m) > 0 FROM Meeting m " +
-            "JOIN m.group g " +
-            "WHERE m.name = :name AND g.id = :groupId")
-    boolean existsByNameAndGroupId(@Param("name") String name, @Param("groupId") Long groupId);
-
-    @Query("SELECT m FROM Meeting m WHERE m.meetDate < :date")
-    List<Meeting> findByMeetDateBefore(@Param("date") LocalDateTime date);
 
     @Modifying
     @Query("DELETE FROM Meeting m WHERE m.group.id = :groupId")
