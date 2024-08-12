@@ -706,7 +706,6 @@ public class GroupService {
         // 주최자를 맴버로 저장
         MeetingUser meetingUser = MeetingUser.builder()
                 .user(creator)
-                .profileURL(creator.getProfileURL())
                 .build();
 
         // 양방향 관계 설정 후 meeting 저장 (cascade에 의해 meetingUser도 자동으로 저장됨)
@@ -772,10 +771,8 @@ public class GroupService {
 
         // 기본 프로필은 나중에 주소를 설정해야 함
         User userRef = entityManager.getReference(User.class, userId);
-        String profileURL = userRepository.findProfileById(userId).orElse("www.s3.basicProfile");
         MeetingUser meetingUser = MeetingUser.builder()
                 .user(userRef)
-                .profileURL(profileURL)
                 .build();
 
         // 양방향 관계 설정 후 meeting 저장
