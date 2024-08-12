@@ -333,12 +333,7 @@ public class GroupService {
         }
 
         return meetingPage.getContent().stream()
-                .map(meeting -> {
-                    List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserMap.get(meeting.getId()).stream()
-                            .map(GroupResponse.ParticipantDTO::new)
-                            .toList();
-
-                    return new GroupResponse.MeetingDTO(
+                .map(meeting -> new GroupResponse.MeetingDTO(
                             meeting.getId(),
                             meeting.getName(),
                             meeting.getMeetDate(),
@@ -348,13 +343,13 @@ public class GroupService {
                             meeting.getMaxNum(),
                             meeting.getProfileURL(),
                             meeting.getDescription(),
-                            participantDTOS);
-                })
+                            meetingUserMap.get(meeting.getId()))
+                )
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public GroupResponse.MeetingDTO findMeetingById(Long meetingId, Long groupId, Long userId){
+    public GroupResponse.FindMeetingByIdDTO findMeetingById(Long meetingId, Long groupId, Long userId){
         // 그룹 존재 여부 체크
         checkGroupExist(groupId);
 
@@ -365,11 +360,11 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
         );
 
-        List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository.findUsersByMeetingId(meeting.getId()).stream()
-                .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL()))
+        List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository.findUserByMeetingId(meeting.getId()).stream()
+                .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL(), user.getNickName()))
                 .toList();
 
-        return new GroupResponse.MeetingDTO(meeting.getId(), meeting.getName(), meeting.getMeetDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
+        return new GroupResponse.FindMeetingByIdDTO(meeting.getId(), meeting.getName(), meeting.getMeetDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
     }
 
     @Transactional

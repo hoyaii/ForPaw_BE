@@ -95,9 +95,7 @@ public class GroupResponse {
                              Integer maxNum,
                              String profileURL,
                              String description,
-                             List<ParticipantDTO> participants) {}
-
-    public record ParticipantDTO(String profileURL) {}
+                             List<String> participants) {}
 
     public record MemberDTO(Long id,
                             String name,
@@ -107,6 +105,19 @@ public class GroupResponse {
     public record CreateGroupDTO(Long id) {}
 
     public record CreateMeetingDTO(Long id) {}
+
+    public record FindMeetingByIdDTO(Long id,
+                             String name,
+                             LocalDateTime meetDate,
+                             String location,
+                             Long cost,
+                             Long participantNum,
+                             Integer maxNum,
+                             String profileURL,
+                             String description,
+                             List<ParticipantDTO> participants) {}
+
+    public record ParticipantDTO(String profileURL, String nickName) {}
 
     public record CreateNoticeDTO(Long id) {}
 

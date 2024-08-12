@@ -106,7 +106,7 @@ public class GroupController {
 
     @GetMapping("/groups/{groupId}/meetings/{meetingId}")
     public ResponseEntity<?> findMeetingById(@PathVariable Long groupId, @PathVariable Long meetingId, @AuthenticationPrincipal CustomUserDetails userDetails){
-        GroupResponse.MeetingDTO responseDTO = groupService.findMeetingById(meetingId, groupId, userDetails.getUser().getId());
+        GroupResponse.FindMeetingByIdDTO responseDTO = groupService.findMeetingById(meetingId, groupId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

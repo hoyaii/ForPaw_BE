@@ -16,7 +16,7 @@ import java.util.List;
 public interface MeetingUserRepository extends JpaRepository<MeetingUser, Long> {
 
     @Query("SELECT mu.user FROM MeetingUser mu WHERE mu.meeting.id = :meetingId")
-    List<User> findUsersByMeetingId(@Param("meetingId") Long meetingId);
+    List<User> findUserByMeetingId(@Param("meetingId") Long meetingId);
 
     @EntityGraph(attributePaths = {"meeting"})
     @Query("SELECT gu FROM GroupUser gu WHERE gu.user.id = :userId")
