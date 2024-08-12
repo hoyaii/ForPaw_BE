@@ -16,13 +16,23 @@ import java.util.Optional;
 @Repository
 public interface FavoriteAnimalRepository extends JpaRepository<FavoriteAnimal, Long> {
 
+    @Query("SELECT fa FROM FavoriteAnimal fa " +
+            "JOIN fa.animal a " +
+            "JOIN fa.user u " +
+            "WHERE u.id = :userId AND a.id = :animalId AND a.removedAt IS NULL")
     Optional<FavoriteAnimal> findByUserIdAndAnimalId(Long userId, Long animalId);
 
-    @Query("SELECT fa.animal FROM FavoriteAnimal fa WHERE fa.user.id = :userId AND fa.animal.removedAt IS NULL")
-    Page<Animal> findFavoriteAnimalByUserId(@Param("userId") Long userId, Pageable pageable);
+    @Query("SELECT a FROM FavoriteAnimal fa " +
+            "JOIN fa.animal a " +
+            "JOIN fa.user u " +
+            "WHERE u.id = :userId AND a.removedAt IS NULL")
+    Page<Animal> findAnimalsByUserId(@Param("userId") Long userId, Pageable pageable);
 
-    @Query("SELECT fa.animal.id FROM FavoriteAnimal fa WHERE fa.user.id = :userId")
-    List<Long> findLikedAnimalIdsByUserId(@Param("userId") Long userId);
+    @Query("SELECT a.id FROM FavoriteAnimal fa " +
+            "JOIN fa.animal a " +
+            "JOIN fa.user u " +
+            "WHERE u.id = :userId AND a.removedAt IS NULL")
+    List<Long> findAnimalIdsByUserId(@Param("userId") Long userId);
 
     @Modifying
     @Query("DELETE FROM FavoriteAnimal fa WHERE fa.user.id = :userId AND fa.animal.removedAt IS NULL")
