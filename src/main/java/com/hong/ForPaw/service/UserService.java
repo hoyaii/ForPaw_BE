@@ -194,8 +194,7 @@ public class UserService {
         KakaoOauthDTO.TokenDTO token = getKakaoToken(code);
         KakaoOauthDTO.UserInfoDTO userInfo = getKakaoUserInfo(token.access_token());
 
-        // 카카오 계정으로 가입한 계정의 이메일은 {카카오 id}@kakao.com로 구성 (비즈니스 계정이 아라서 이메일 접근 불가)
-        String email = userInfo.id().toString() + "@kakao.com";
+        String email = userInfo.kakao_account().email();
 
         return processOAuthLogin(email, request);
     }
@@ -206,7 +205,6 @@ public class UserService {
         GoogleOauthDTO.TokenDTO token = getGoogleToken(code);
         GoogleOauthDTO.UserInfoDTO userInfoDTO = getGoogleUserInfo(token.access_token());
 
-        // 구글의 경우 메일을 제공해줌
         String email = userInfoDTO.email();
 
         return processOAuthLogin(email, request);
@@ -897,11 +895,11 @@ public class UserService {
 
     private void checkAlreadyJoin(String email) {
         // 로컬 회원 가입을 통해 이미 가입함
-        if(userRepository.existsByEmailAndAuthProviders(email, List.of("LOCAL")))
+        if(userRepository.existsByEmailAndAuthProviders(email, List.of(AuthProvider.LOCAL)))
             throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
 
         // 소셜 회원 가입을 통해 이미 가입함
-        if(userRepository.existsByEmailAndAuthProviders(email, List.of("KAKAO", "GOOGLE"))){
+        if(userRepository.existsByEmailAndAuthProviders(email, List.of(AuthProvider.KAKAO, AuthProvider.GOOGLE))){
             throw new CustomException(ExceptionCode.JOINED_BY_SOCIAL);
         }
     }
@@ -912,7 +910,8 @@ public class UserService {
     }
 
     private void checkIsLocalAccount(String email) {
-        if(userRepository.existsByEmailAndAuthProviders(email, List.of("LOCAL"))){
+
+        if(userRepository.existsByEmailAndAuthProviders(email, List.of(AuthProvider.LOCAL))){
             throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
         }
     }

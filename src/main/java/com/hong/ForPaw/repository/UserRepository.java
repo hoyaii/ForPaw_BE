@@ -2,6 +2,7 @@ package com.hong.ForPaw.repository;
 
 import com.hong.ForPaw.domain.District;
 import com.hong.ForPaw.domain.Province;
+import com.hong.ForPaw.domain.User.AuthProvider;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.User.UserRole;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -64,7 +65,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmailWithRemoved(@Param("email") String email);
 
     @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email AND u.authProvider IN :authProviders")
-    boolean existsByEmailAndAuthProviders(@Param("email") String email, @Param("authProviders") List<String> authProviders);
+    boolean existsByEmailAndAuthProviders(@Param("email") String email, @Param("authProviders") List<AuthProvider> authProviders);
 
     @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.nickName = :nickName")
     boolean existsByNickname(@Param("nickName") String nickName);
