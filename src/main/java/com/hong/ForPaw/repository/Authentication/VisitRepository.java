@@ -15,7 +15,6 @@ public interface VisitRepository extends JpaRepository<Visit, Long> {
     @Query("SELECT v FROM Visit v WHERE v.date >= :date")
     List<Visit> findALlWithinDate(LocalDateTime date);
 
-
     @Modifying
     @Query("DELETE FROM Visit v WHERE v.user.id = :userId")
     void deleteByUserId(Long userId);

@@ -15,12 +15,12 @@ import java.util.Optional;
 @Repository
 public interface ChatUserRepository extends JpaRepository<ChatUser, Long> {
 
-    Optional<ChatUser> findByUserIdAndChatRoom(Long userId, ChatRoom chatRoom);
-
     Optional<ChatUser> findByUserIdAndChatRoomId(Long userId, Long chatRoomId);
 
     @EntityGraph(attributePaths = {"chatRoom"})
-    @Query("SELECT cu FROM ChatUser cu WHERE cu.user.id = :userId")
+    @Query("SELECT cu FROM ChatUser cu " +
+            "JOIN cu.user u " +
+            "WHERE u.id = :userId")
     List<ChatUser> findByUserIdWithChatRoom(Long userId);
 
     @Modifying

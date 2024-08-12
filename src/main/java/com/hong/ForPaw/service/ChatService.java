@@ -152,7 +152,7 @@ public class ChatService {
         checkChatAuthority(userId, chatRoomId);
 
         // 채팅방에 참여한 유저
-        List<ChatResponse.ChatUserDTO> chatUserDTOS = chatRoomRepository.findAllUserByChatRoomId(chatRoomId).stream()
+        List<ChatResponse.ChatUserDTO> chatUserDTOS = chatRoomRepository.findUsersByChatRoomId(chatRoomId).stream()
                 .map(user -> new ChatResponse.ChatUserDTO(
                         user.getId(),
                         user.getNickName(),

@@ -138,7 +138,7 @@ public class BrokerService {
             }
 
             // 알람 전송
-            chatRoomRepository.findAllUserByChatRoomId(messageDTO.chatRoomId())
+            chatRoomRepository.findUsersByChatRoomId(messageDTO.chatRoomId())
                     .forEach(user -> {
                         String content = "새로문 메시지: " + messageDTO.content();
                         String redirectURL = "chatRooms/" + messageDTO.chatRoomId();
