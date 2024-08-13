@@ -88,8 +88,8 @@ public class UserController {
 
     @PostMapping("/accounts/check/nick")
     public ResponseEntity<?> checkNick(@RequestBody @Valid UserRequest.CheckNickDTO requestDTO){
-        userService.checkNick(requestDTO);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+        UserResponse.CheckNimcDTO responseDTO = userService.checkNick(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/accounts/check/email/verify")

@@ -316,9 +316,9 @@ public class UserService {
     }
 
     @Transactional
-    public void checkNick(UserRequest.CheckNickDTO requestDTO){
-        if(userRepository.existsByNicknameWithRemoved(requestDTO.nickName()))
-            throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
+    public UserResponse.CheckNimcDTO checkNick(UserRequest.CheckNickDTO requestDTO){
+        boolean isDuplicate = userRepository.existsByNicknameWithRemoved(requestDTO.nickName());
+        return new UserResponse.CheckNimcDTO(isDuplicate);
     }
 
     @Transactional(readOnly = true)

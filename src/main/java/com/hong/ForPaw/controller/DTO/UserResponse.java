@@ -11,9 +11,7 @@ import java.util.List;
 public class UserResponse {
     public record LoginDTO(String accessToken) {}
 
-    public record KakaoLoginDTO(String accessToken, String email) {}
-
-    public record GoogleLoginDTO(String accessToken, String email) {}
+    public record CheckNimcDTO(boolean isDuplicate) {}
 
     public record AccessTokenDTO(String accessToken) {}
 
