@@ -299,6 +299,13 @@ public class UserService {
         redisService.storeValue("emailCode", requestDTO.email(), verificationCode, 5 * 60 * 1000L); // 5분 동안 유효
     }
 
+    // 코드 재전송 API 호출 시, 앞서 코드가 전송된 적이 있는지 체크한다
+    public void verifyCodeSended(UserRequest.EmailDTO requestDTO){
+        if(!redisService.isDateExist("emailCode", requestDTO.email())){
+            throw new CustomException(ExceptionCode.CODE_NOT_SENDED);
+        }
+    }
+
     public void verifyRegisterCode(UserRequest.VerifyCodeDTO requestDTO){
         // 레디스를 통해 해당 코드가 유효한지 확인
         if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))

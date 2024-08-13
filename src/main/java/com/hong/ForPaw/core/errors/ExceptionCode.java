@@ -46,6 +46,7 @@ public enum ExceptionCode {
     CODE_EXPIRED(HttpStatus.BAD_REQUEST, "유효기간이 만료되었습니다."),
     CODE_WRONG(HttpStatus.BAD_REQUEST, "잘못된 인증코드입니다."),
     CODE_NOT_SEND(HttpStatus.INTERNAL_SERVER_ERROR, "인증코드를 전송하지 못했습니다."),
+    CODE_NOT_SENDED(HttpStatus.BAD_REQUEST, "이전에 이메일 코드를 전송한 적이 없습니다."),
 
     // 토큰 관련 에러
     TOKEN_WRONG(HttpStatus.BAD_REQUEST, "잘못된 토큰 형식입니다."),
