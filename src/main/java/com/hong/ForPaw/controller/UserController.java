@@ -79,6 +79,12 @@ public class UserController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
+    @PostMapping("/accounts/resend/code")
+    public ResponseEntity<?> resendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
+        userService.sendCodeByEmail(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
     @PostMapping("/accounts/check/nick")
     public ResponseEntity<?> checkNick(@RequestBody @Valid UserRequest.CheckNickDTO requestDTO){
         userService.checkNick(requestDTO);
