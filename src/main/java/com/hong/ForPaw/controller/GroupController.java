@@ -110,6 +110,12 @@ public class GroupController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
+    @GetMapping("/groups/{groupId}/members")
+    public ResponseEntity<?> findGroupMemberList(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
+        GroupResponse.FindGroupMemberListDTO responseDTO = groupService.findGroupMemberList(userDetails.getUser().getId(), groupId);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
     @PostMapping("/groups/{groupId}/join")
     public ResponseEntity<?> joinGroup(@RequestBody @Valid GroupRequest.JoinGroupDTO requestDTO, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails){
         groupService.joinGroup(requestDTO, userDetails.getUser().getId(), groupId);
