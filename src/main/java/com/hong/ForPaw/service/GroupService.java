@@ -364,7 +364,7 @@ public class GroupService {
                 .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL(), user.getNickName()))
                 .toList();
 
-        return new GroupResponse.FindMeetingByIdDTO(meeting.getId(), meeting.getName(), meeting.getMeetDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
+        return new GroupResponse.FindMeetingByIdDTO(meeting.getId(), meeting.getName(), meeting.getMeetDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getCreator().getNickName() ,meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
     }
 
     @Transactional

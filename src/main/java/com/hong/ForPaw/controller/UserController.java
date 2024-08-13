@@ -43,7 +43,6 @@ public class UserController {
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody @Valid UserRequest.LoginDTO requestDTO, HttpServletRequest request) throws MessagingException {
         Map<String, String> tokens = userService.login(requestDTO, request);
-
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokens.get("refreshToken")))
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokens.get("accessToken"))));
@@ -138,7 +137,6 @@ public class UserController {
     @PatchMapping("/auth/access")
     public ResponseEntity<?> updateAccessToken(@CookieValue String refreshToken){
         Map<String, String> tokens = userService.updateAccessToken(refreshToken);
-
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokens.get("refreshToken")))
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(tokens.get("accessToken"))));

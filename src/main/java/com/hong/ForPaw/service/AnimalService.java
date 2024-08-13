@@ -622,7 +622,7 @@ public class AnimalService {
         if (matcher.find()) {
             return matcher.group(1);
         }
-
+        
         return null;
     }
 }

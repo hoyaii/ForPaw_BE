@@ -113,6 +113,7 @@ public class GroupResponse {
                              Long cost,
                              Long participantNum,
                              Integer maxNum,
+                             String organizer,
                              String profileURL,
                              String description,
                              List<ParticipantDTO> participants) {}
