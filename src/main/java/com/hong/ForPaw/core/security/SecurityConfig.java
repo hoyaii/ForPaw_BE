@@ -73,7 +73,7 @@ public class SecurityConfig {
 
                 // 인증 요구사항 및 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/accounts/profile", "/api/accounts/password/**", "/api/accounts/role", "/api/accounts/withdraw", "/api/shelters/import", "/api/animals/like").authenticated()
+                        .requestMatchers("/api/accounts/profile", "/api/accounts/password/**", "/api/accounts/role", "/api/accounts/withdraw", "/api/shelters/import", "/api/animals/like", "/api/accounts/withdraw/code").authenticated()
                         .requestMatchers(new AntPathRequestMatcher("/api/animals/*/like")).authenticated()
                         .requestMatchers(new AntPathRequestMatcher("/api/animals/*/apply")).authenticated()
                         .requestMatchers(new AntPathRequestMatcher("/api/groups/*/detail")).permitAll()

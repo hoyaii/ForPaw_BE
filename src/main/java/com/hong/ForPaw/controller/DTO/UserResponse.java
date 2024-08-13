@@ -11,7 +11,7 @@ import java.util.List;
 public class UserResponse {
     public record LoginDTO(String accessToken) {}
 
-    public record CheckNimcDTO(boolean isDuplicate) {}
+    public record CheckNickNameDTO(boolean isDuplicate) {}
 
     public record AccessTokenDTO(String accessToken) {}
 

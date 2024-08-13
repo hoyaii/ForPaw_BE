@@ -306,7 +306,7 @@ public class UserService {
         }
     }
 
-    public void verifyRegisterCode(UserRequest.VerifyCodeDTO requestDTO){
+    public void verifyEmailCode(UserRequest.VerifyCodeDTO requestDTO){
         // 레디스를 통해 해당 코드가 유효한지 확인
         if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
             throw new CustomException(ExceptionCode.CODE_WRONG);
@@ -316,9 +316,9 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse.CheckNimcDTO checkNick(UserRequest.CheckNickDTO requestDTO){
+    public UserResponse.CheckNickNameDTO checkNickName(UserRequest.CheckNickDTO requestDTO){
         boolean isDuplicate = userRepository.existsByNicknameWithRemoved(requestDTO.nickName());
-        return new UserResponse.CheckNimcDTO(isDuplicate);
+        return new UserResponse.CheckNickNameDTO(isDuplicate);
     }
 
     @Transactional(readOnly = true)
@@ -667,6 +667,13 @@ public class UserService {
         helper.setSubject(subject);
 
         mailSender.send(message);
+    }
+
+    @Transactional(readOnly = true)
+    public void checkIsMember(Long userId){
+        if(!userRepository.existsById(userId)){
+            throw new CustomException(ExceptionCode.USER_NOT_FOUND);
+        }
     }
 
     // 알파벳, 숫자를 조합해서 인증 코드 생성

@@ -39,13 +39,29 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
+        /*Enumeration<String> headerNames = request.getHeaderNames();
+        System.out.println("*********************************************************************");
+        if (headerNames != null) {
+            while (headerNames.hasMoreElements()) {
+                String headerName = headerNames.nextElement();
+                String headerValue = request.getHeader(headerName);
+                System.out.println(headerName + ": " + headerValue);
+            }
+        }
+        System.out.println("*********************************************************************");*/
+
         // 엑세스 토큰은 '헤더'에서 추출
         String authorizationHeader = request.getHeader(JWTProvider.AUTHORIZATION);
         String accessToken = (authorizationHeader != null && authorizationHeader.startsWith(JWTProvider.TOKEN_PREFIX)) ?
                 authorizationHeader.replace(JWTProvider.TOKEN_PREFIX, "") : null;
+        //System.out.println("==============================================================================");
+        //System.out.println("AccessToken:" + accessToken);
 
         // 리프레쉬 토큰은 '쿠키'에서 추출
         String refreshToken = CookieUtils.getCookieFromRequest(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, request);
+
+        //System.out.println("RefreshToken:" + refreshToken);
+        //System.out.println("==============================================================================");
 
         // 1st 토큰 값이 존재하는지 체크
         if (checkIsTokenEmpty(accessToken, refreshToken)){

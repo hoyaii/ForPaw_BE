@@ -80,33 +80,33 @@ public class UserController {
     }
 
     @PostMapping("/accounts/resend/code")
-    public ResponseEntity<?> resendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
+    public ResponseEntity<?> resendCodeForJoin(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
         userService.verifyAlreadyCodeSend(requestDTO);
         userService.sendCodeByEmail(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/check/nick")
-    public ResponseEntity<?> checkNick(@RequestBody @Valid UserRequest.CheckNickDTO requestDTO){
-        UserResponse.CheckNimcDTO responseDTO = userService.checkNick(requestDTO);
+    public ResponseEntity<?> checkNickname(@RequestBody @Valid UserRequest.CheckNickDTO requestDTO){
+        UserResponse.CheckNickNameDTO responseDTO = userService.checkNickName(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/accounts/check/email/verify")
-    public ResponseEntity<?> verifyRegisterCode(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO){
-        userService.verifyRegisterCode(requestDTO);
+    public ResponseEntity<?> verifyEmailCode(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO){
+        userService.verifyEmailCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/recovery")
-    public ResponseEntity<?> sendRecoveryCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
+    public ResponseEntity<?> sendCodeForRecovery(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
         userService.checkAccountExist(requestDTO);
         userService.sendCodeByEmail(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/recovery/verify")
-    public ResponseEntity<?> verifyRecoveryCode(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO){
+    public ResponseEntity<?> verifyCodeForRecovery(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO){
         userService.verifyRecoveryCode(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
@@ -114,6 +114,13 @@ public class UserController {
     @PostMapping("/accounts/recovery/reset")
     public ResponseEntity<?> resetPassword(@RequestBody @Valid UserRequest.ResetPasswordDTO requestDTO){
         userService.resetPassword(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
+
+    @PostMapping("/accounts/withdraw/code")
+    public ResponseEntity<?> sendCodeForWithdraw(@RequestBody @Valid UserRequest.EmailDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) throws MessagingException {
+        userService.checkIsMember(userDetails.getUser().getId());
+        userService.sendCodeByEmail(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
