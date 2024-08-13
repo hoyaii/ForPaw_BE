@@ -488,13 +488,13 @@ public class UserService {
         chatUserRepository.deleteByUserId(userId);
         groupUserRepository.findByUserIdWithGroup(userId).forEach(
                 groupUser -> {
-                    redisService.decrementCnt("groupParticipantNum", groupUser.getGroup().getId().toString(), 1L);
+                    groupUser.getGroup().decrementParticipantNum();
                     groupUserRepository.delete(groupUser);
                 }
         );
         meetingUserRepository.findByUserIdWithMeeting(userId).forEach(
                 meetingUser -> {
-                    redisService.decrementCnt("meetingParticipantNum", meetingUser.getMeeting().getId().toString(), 1L);
+                    meetingUser.getMeeting().decrementParticipantNum();
                     meetingUserRepository.delete(meetingUser);
                 }
         );
