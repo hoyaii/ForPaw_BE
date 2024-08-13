@@ -300,7 +300,7 @@ public class UserService {
     }
 
     // 코드 재전송 API 호출 시, 앞서 코드가 전송된 적이 있는지 체크한다
-    public void verifyCodeSended(UserRequest.EmailDTO requestDTO){
+    public void verifyAlreadyCodeSend(UserRequest.EmailDTO requestDTO){
         if(!redisService.isDateExist("emailCode", requestDTO.email())){
             throw new CustomException(ExceptionCode.CODE_NOT_SENDED);
         }
@@ -397,7 +397,11 @@ public class UserService {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
-        return new UserResponse.ProfileDTO(user.getEmail(), user.getName(), user.getNickName(), user.getProvince(), user.getDistrict(), user.getSubDistrict(), user.getProfileURL());
+
+        // 소셜 회원가입으로 가입
+        boolean isSocialJoined = !user.getAuthProvider().equals(AuthProvider.LOCAL);
+
+        return new UserResponse.ProfileDTO(user.getEmail(), user.getName(), user.getNickName(), user.getProvince(), user.getDistrict(), user.getSubDistrict(), user.getProfileURL(), isSocialJoined);
     }
 
     @Transactional

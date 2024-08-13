@@ -4,7 +4,6 @@ package com.hong.ForPaw.controller.DTO;
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
 import com.hong.ForPaw.domain.District;
 import com.hong.ForPaw.domain.Province;
-import com.hong.ForPaw.domain.User.UserRole;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,7 +23,8 @@ public class UserResponse {
                              Province province,
                              District district,
                              String subDistrict,
-                             String profileURL) {}
+                             String profileURL,
+                             boolean isSocialJoined) {}
 
     public record SubmitInquiryDTO(Long id) {}
 
