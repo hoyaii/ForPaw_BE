@@ -378,6 +378,7 @@ public class GroupService {
         checkIsAdmin(groupId, userId);
 
         List<GroupResponse.MemberDetailDTO> memberDetailDTOS = groupUserRepository.findByGroupIdWithGroup(groupId).stream()
+                .filter(groupUser -> !groupUser.getGroupRole().equals(GroupRole.TEMP))
                 .map(groupUser -> new GroupResponse.MemberDetailDTO(
                         groupUser.getUser().getId(),
                         groupUser.getUser().getNickName(),
