@@ -94,8 +94,8 @@ public class UserController {
 
     @PostMapping("/accounts/check/email/verify")
     public ResponseEntity<?> verifyEmailCode(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO){
-        userService.verifyEmailCode(requestDTO);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+        UserResponse.VerifyEmailCodeDTO responseDTO = userService.verifyEmailCode(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/accounts/recovery")

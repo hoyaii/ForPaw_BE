@@ -306,13 +306,15 @@ public class UserService {
         }
     }
 
-    public void verifyEmailCode(UserRequest.VerifyCodeDTO requestDTO){
+    public UserResponse.VerifyEmailCodeDTO verifyEmailCode(UserRequest.VerifyCodeDTO requestDTO){
         // 레디스를 통해 해당 코드가 유효한지 확인
         if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
-            throw new CustomException(ExceptionCode.CODE_WRONG);
+            return new UserResponse.VerifyEmailCodeDTO(false);
 
         // 검증 후 토큰 삭제
         redisService.removeData("emailCode", requestDTO.email());
+
+        return new UserResponse.VerifyEmailCodeDTO(true);
     }
 
     @Transactional

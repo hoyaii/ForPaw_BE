@@ -24,6 +24,8 @@ public class UserResponse {
                              String profileURL,
                              boolean isSocialJoined) {}
 
+    public record VerifyEmailCodeDTO(boolean isMatching) {}
+
     public record SubmitInquiryDTO(Long id) {}
 
     public record FindInquiryListDTO(List<InquiryDTO> inquiries){}
