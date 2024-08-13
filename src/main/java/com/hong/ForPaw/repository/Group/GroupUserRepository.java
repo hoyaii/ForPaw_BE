@@ -35,6 +35,12 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
             "WHERE gu.group.id = :groupId AND u.id NOT IN (:myId)")
     List<User> findUserByGroupIdWithoutMe(@Param("groupId") Long groupId, @Param("myId") Long myId);
 
+    @EntityGraph(attributePaths = {"group"})
+    @Query("SELECT gu FROM GroupUser gu " +
+            "JOIN gu.group g " +
+            "WHERE g.id = :groupId")
+    List<GroupUser> findByGroupIdWithGroup(@Param("groupId") Long groupId);
+
     @EntityGraph(attributePaths = {"user"})
     @Query("SELECT gu FROM GroupUser gu " +
             "JOIN gu.group g " +

@@ -102,6 +102,12 @@ public class GroupResponse {
                             GroupRole role,
                             String profileURL) {}
 
+    public record MemberDetailDTO(Long id,
+                            String nickName,
+                            String profileURL,
+                            LocalDateTime joinDate,
+                            GroupRole role) {}
+
     public record CreateGroupDTO(Long id) {}
 
     public record CreateMeetingDTO(Long id) {}
@@ -123,6 +129,8 @@ public class GroupResponse {
     public record CreateNoticeDTO(Long id) {}
 
     public record FindApplicantListDTO(List<ApplicantDTO> applicants) {}
+
+    public record FindGroupMemberListDTO(Long participantCnt, Long maxNum, List<MemberDetailDTO> members) {}
 
     public record ApplicantDTO(Long id,
                                String nickName,
