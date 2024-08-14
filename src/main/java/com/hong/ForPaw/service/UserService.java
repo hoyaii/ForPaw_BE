@@ -312,7 +312,7 @@ public class UserService {
             return new UserResponse.VerifyEmailCodeDTO(false);
 
         // 검증 후 토큰 삭제
-        redisService.removeData("emailCode", requestDTO.email());
+        // redisService.removeData("emailCode", requestDTO.email());
 
         return new UserResponse.VerifyEmailCodeDTO(true);
     }

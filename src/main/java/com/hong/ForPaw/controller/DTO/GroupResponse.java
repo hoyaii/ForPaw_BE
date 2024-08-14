@@ -27,6 +27,8 @@ public class GroupResponse {
 
     public record FindNewGroupListDTO(List<NewGroupDTO> newGroups) {}
 
+    public record FindLocalAndNewGroupListDTO(List<LocalGroupDTO> localGroups, List<NewGroupDTO> newGroups) {}
+
     public record FindMyGroupListDTO(List<MyGroupDTO> myGroups) {}
 
     public record RecommendGroupDTO(Long id,
