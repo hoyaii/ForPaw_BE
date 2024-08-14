@@ -306,7 +306,7 @@ public class UserService {
         }
     }
 
-    public UserResponse.VerifyEmailCodeDTO verifyEmailCode(UserRequest.VerifyCodeDTO requestDTO){
+    public UserResponse.VerifyEmailCodeDTO verifyCode(UserRequest.VerifyCodeDTO requestDTO){
         // 레디스를 통해 해당 코드가 유효한지 확인
         if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
             return new UserResponse.VerifyEmailCodeDTO(false);
@@ -669,13 +669,6 @@ public class UserService {
         helper.setSubject(subject);
 
         mailSender.send(message);
-    }
-
-    @Transactional(readOnly = true)
-    public void checkIsMember(Long userId){
-        if(!userRepository.existsById(userId)){
-            throw new CustomException(ExceptionCode.USER_NOT_FOUND);
-        }
     }
 
     // 알파벳, 숫자를 조합해서 인증 코드 생성

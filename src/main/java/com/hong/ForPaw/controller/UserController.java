@@ -79,8 +79,14 @@ public class UserController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
+    @PostMapping("/accounts/verify/code")
+    public ResponseEntity<?> verifyCode(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO){
+        UserResponse.VerifyEmailCodeDTO responseDTO = userService.verifyCode(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
     @PostMapping("/accounts/resend/code")
-    public ResponseEntity<?> resendCodeForJoin(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
+    public ResponseEntity<?> resendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
         userService.verifyAlreadyCodeSend(requestDTO);
         userService.sendCodeByEmail(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
@@ -92,10 +98,11 @@ public class UserController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @PostMapping("/accounts/verify/code")
-    public ResponseEntity<?> verifyEmailCode(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO){
-        UserResponse.VerifyEmailCodeDTO responseDTO = userService.verifyEmailCode(requestDTO);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    @PostMapping("/accounts/withdraw/code")
+    public ResponseEntity<?> sendCodeForWithdraw(@RequestBody @Valid UserRequest.EmailDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) throws MessagingException {
+        userService.checkAccountExist(requestDTO);
+        userService.sendCodeByEmail(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/recovery")
@@ -114,13 +121,6 @@ public class UserController {
     @PostMapping("/accounts/recovery/reset")
     public ResponseEntity<?> resetPassword(@RequestBody @Valid UserRequest.ResetPasswordDTO requestDTO){
         userService.resetPassword(requestDTO);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
-    }
-
-    @PostMapping("/accounts/withdraw/code")
-    public ResponseEntity<?> sendCodeForWithdraw(@RequestBody @Valid UserRequest.EmailDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) throws MessagingException {
-        userService.checkIsMember(userDetails.getUser().getId());
-        userService.sendCodeByEmail(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
