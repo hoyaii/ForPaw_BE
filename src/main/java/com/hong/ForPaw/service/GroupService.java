@@ -196,16 +196,12 @@ public class GroupService {
 
     @Transactional(readOnly = true)
     public List<GroupResponse.LocalGroupDTO> findLocalGroupList(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable){
-        // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
-        Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
-
         // likedGroupIds가 비어있으면 새로 조회 => 새로 조회 시 userId가 null이라면 emptyList로! (스트림 사용을 위해 final로 만듦)
         List<Long> finalLikedGroupIds = likedGroupIds.isEmpty() ? likedGroupIds :
                 (userId != null ? favoriteGroupRepository.findGroupIdByUserId(userId) : Collections.emptyList());
 
-        Page<Group> localGroupPage = groupRepository.findByDistrictAndSubDistrict(province, district, pageable);
+        Page<Group> localGroupPage = groupRepository.findByDistrictAndSubDistrict(province, district, userId, pageable);
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroupPage.getContent().stream()
-                .filter(group -> !joinedGroupIdSet.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> {
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
 

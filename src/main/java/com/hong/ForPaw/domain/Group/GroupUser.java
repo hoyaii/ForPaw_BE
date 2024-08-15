@@ -8,8 +8,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-
-
 @Entity
 @Table(name = "groupUser_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
