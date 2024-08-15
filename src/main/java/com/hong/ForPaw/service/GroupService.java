@@ -200,7 +200,7 @@ public class GroupService {
         List<Long> finalLikedGroupIds = likedGroupIds.isEmpty() ? likedGroupIds :
                 (userId != null ? favoriteGroupRepository.findGroupIdByUserId(userId) : Collections.emptyList());
 
-        Page<Group> localGroupPage = groupRepository.findByDistrictAndSubDistrict(province, district, userId, pageable);
+        Page<Group> localGroupPage = groupRepository.findByProvinceAndDistrictWithoutMyGroup(province, district, userId, pageable);
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroupPage.getContent().stream()
                 .map(group -> {
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
@@ -228,7 +228,7 @@ public class GroupService {
         // province가 null로 들어오면 => 디폴트 province 값
         province = province != null ? province : userRepository.findProvinceById(userId).orElse(DEFAULT_PROVINCE);
 
-        Page<Group> newGroupPage = groupRepository.findByProvince(province, userId, pageable);
+        Page<Group> newGroupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, pageable);
         List<GroupResponse.NewGroupDTO> newGroupDTOS = newGroupPage.getContent().stream()
                 .map(group -> new GroupResponse.NewGroupDTO(
                         group.getId(),
@@ -828,17 +828,12 @@ public class GroupService {
 
     @Transactional(readOnly = true)
     public List<GroupResponse.RecommendGroupDTO> findRecommendGroupList(Long userId, Province province, List<Long> likedGroupIds){
-        // 만약 로그인 되어 있지 않다면, 빈 셋으로 처리한다.
-        Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
-
         // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순
         Sort sort = Sort.by(Sort.Order.desc(SORT_BY_LIKE_NUM), Sort.Order.desc(SORT_BY_PARTICIPANT_NUM));
         Pageable pageable = PageRequest.of(0, 30, sort);
 
-        Page<Group> recommendGroupPage = groupRepository.findByProvince(province, userId, pageable);
-
-        List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = recommendGroupPage.getContent().stream()
-                .filter(group -> !joinedGroupIdSet.contains(group.getId())) // 내가 가입한 그룹을 제외
+        Page<Group> groupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, pageable);
+        List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = groupPage.getContent().stream()
                 .map(group -> {
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
                     return new GroupResponse.RecommendGroupDTO(
@@ -857,7 +852,7 @@ public class GroupService {
 
         // District를 바탕으로 한 추천 그룹의 개수가 부족하면, 다른 District의 그룹을 추가
         if (allRecommendGroupDTOS.size() < 5) {
-            List<GroupResponse.RecommendGroupDTO> additionalGroupDTOS = fetchAdditionalGroups(likedGroupIds, joinedGroupIdSet, sort);
+            List<GroupResponse.RecommendGroupDTO> additionalGroupDTOS = fetchAdditionalGroups(userId, likedGroupIds, sort);
             additionalGroupDTOS.stream()
                     .filter(newGroupDTO -> allRecommendGroupDTOS.stream() // 중복된 그룹을 제외하고 추가
                             .noneMatch(oldGroupDTO -> oldGroupDTO.id().equals(newGroupDTO.id())))
@@ -1013,14 +1008,12 @@ public class GroupService {
         brokerService.produceAlarmToUser(userId, alarmDTO);
     }
 
-    private List<GroupResponse.RecommendGroupDTO> fetchAdditionalGroups(List<Long> likedGroupIds, Set<Long> joinedGroupIdSet, Sort sort) {
+    private List<GroupResponse.RecommendGroupDTO> fetchAdditionalGroups(Long userId, List<Long> likedGroupIds, Sort sort) {
         Pageable pageable = PageRequest.of(0, 10, sort);
 
-        return groupRepository.findAll(pageable).getContent().stream()
-                .filter(group -> !joinedGroupIdSet.contains(group.getId()))
+        return groupRepository.findAllWithoutMyGroup(userId, pageable).getContent().stream()
                 .map(group -> {
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
-
                     return new GroupResponse.RecommendGroupDTO(
                             group.getId(),
                             group.getName(),
