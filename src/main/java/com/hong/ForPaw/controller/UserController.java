@@ -74,9 +74,10 @@ public class UserController {
 
     @PostMapping("/accounts/check/email")
     public ResponseEntity<?> checkEmailAndSendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
-        userService.checkEmailExist(requestDTO);
-        userService.sendCodeByEmail(requestDTO);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+        UserResponse.CheckEmailExistDTO responseDTO = userService.checkEmailExist(requestDTO);
+        if(responseDTO.isValid())
+            userService.sendCodeByEmail(requestDTO);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/accounts/verify/code")

@@ -274,15 +274,20 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public void checkEmailExist(UserRequest.EmailDTO requestDTO){
-        // 가입한 이메일이 존재 한다면
-        if(userRepository.existsByEmailWithRemoved(requestDTO.email()))
-            throw new CustomException(ExceptionCode.USER_EMAIL_EXIST);
+    public UserResponse.CheckEmailExistDTO checkEmailExist(UserRequest.EmailDTO requestDTO){
+        boolean isValid = true;
+
+        // 가입한 이메일이 존재
+        if(userRepository.existsByEmailWithRemoved(requestDTO.email())){
+            isValid = false;
+        }
 
         // 계속 이메일을 보내는 건 방지. 5분 후에 다시 시도할 수 있다
         //if(redisService.isDateExist("emailCode", requestDTO.email())){
         //    throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
         //}
+
+        return new UserResponse.CheckEmailExistDTO(isValid);
     }
 
     @Async
