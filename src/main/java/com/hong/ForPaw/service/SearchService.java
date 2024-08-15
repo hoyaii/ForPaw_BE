@@ -109,7 +109,7 @@ public class SearchService {
         StringBuilder modifiedKeyword = new StringBuilder();
 
         for (String word : words) {
-            modifiedKeyword.append(word).append("* ").append(" ");
+            modifiedKeyword.append("+").append(word).append("* ").append(" ");
         }
 
         return modifiedKeyword.toString().trim();

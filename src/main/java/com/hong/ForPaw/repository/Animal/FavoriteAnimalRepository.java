@@ -2,6 +2,7 @@ package com.hong.ForPaw.repository.Animal;
 
 import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Animal.FavoriteAnimal;
+import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -39,6 +40,7 @@ public interface FavoriteAnimalRepository extends JpaRepository<FavoriteAnimal, 
     void deleteAllByUserId(Long userId);
 
     @Modifying
+    @Transactional
     @Query("DELETE FROM FavoriteAnimal fa WHERE fa.animal IN :animals AND fa.animal.removedAt IS NULL")
     void deleteByAnimalIn(@Param("animals") List<Animal> animals);
 }

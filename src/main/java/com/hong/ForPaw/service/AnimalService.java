@@ -133,13 +133,13 @@ public class AnimalService {
                             });
                 })
                 .then()
-                .doOnTerminate(this::cleanupExpiredAnimals)
+                .doOnTerminate(this::postProcessAfterAnimalUpdate)
                 .subscribe();
     }
 
-    // 공가가 종료된 동물과 관련해서 후처리
+    // 동물 업데이트 후 후처리
     @Transactional
-    public void cleanupExpiredAnimals(){
+    public void postProcessAfterAnimalUpdate(){
         Set<Shelter> updatedShelters = new HashSet<>();
         List<Animal> expiredAnimals = animalRepository.findAllOutOfDateWithShelter(LocalDateTime.now().toLocalDate());
 
@@ -166,6 +166,9 @@ public class AnimalService {
         updatedShelters.forEach(shelter ->
                 shelter.updateAnimalCnt(animalRepository.countByShelterId(shelter.getId()))
         );
+
+        // 소개글 업데이트
+        requestAnimalIntroduction();
     }
 
     @Transactional
@@ -569,7 +572,7 @@ public class AnimalService {
         return recommendedAnimalIds;
     }
 
-    private void updateAnimalIntroduction(){
+    private void requestAnimalIntroduction(){
         webClient.post()
                 .uri(updateAnimalIntroduceURI)
                 .contentType(MediaType.APPLICATION_JSON)
