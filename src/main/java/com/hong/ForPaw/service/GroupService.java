@@ -225,14 +225,11 @@ public class GroupService {
     // 새 그룹 추가 조회
     @Transactional(readOnly = true)
     public List<GroupResponse.NewGroupDTO> findNewGroupList(Long userId, Province province, Pageable pageable){
-        Set<Long> joinedGroupIdSet = userId != null ? getAllGroupIdSet(userId) : Collections.emptySet();
-
-        // province가 null로 들어오면 => 디폴트 값은 유저가 입력한 province 값
+        // province가 null로 들어오면 => 디폴트 province 값
         province = province != null ? province : userRepository.findProvinceById(userId).orElse(DEFAULT_PROVINCE);
 
-        Page<Group> newGroupPage = groupRepository.findByProvince(province, pageable);
+        Page<Group> newGroupPage = groupRepository.findByProvince(province, userId, pageable);
         List<GroupResponse.NewGroupDTO> newGroupDTOS = newGroupPage.getContent().stream()
-                .filter(group -> !joinedGroupIdSet.contains(group.getId())) // 내가 가입한 그룹을 제외
                 .map(group -> new GroupResponse.NewGroupDTO(
                         group.getId(),
                         group.getName(),
@@ -838,7 +835,7 @@ public class GroupService {
         Sort sort = Sort.by(Sort.Order.desc(SORT_BY_LIKE_NUM), Sort.Order.desc(SORT_BY_PARTICIPANT_NUM));
         Pageable pageable = PageRequest.of(0, 30, sort);
 
-        Page<Group> recommendGroupPage = groupRepository.findByProvince(province, pageable);
+        Page<Group> recommendGroupPage = groupRepository.findByProvince(province, userId, pageable);
 
         List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = recommendGroupPage.getContent().stream()
                 .filter(group -> !joinedGroupIdSet.contains(group.getId())) // 내가 가입한 그룹을 제외

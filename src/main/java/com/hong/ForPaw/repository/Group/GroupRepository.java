@@ -24,8 +24,10 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
                                              @Param("userId") Long userId,
                                              Pageable pageable);
 
-    @Query("SELECT g FROM Group g WHERE g.province = :province")
-    Page<Group> findByProvince(@Param("province") Province province, Pageable pageable);
+    @Query("SELECT g FROM Group g WHERE g.province = :province " +
+            "AND (:userId IS NULL OR g.id NOT IN " +
+            "(SELECT g.id FROM GroupUser gu JOIN gu.group g JOIN gu.user u WHERE u.id = :userId))")
+    Page<Group> findByProvince(@Param("province") Province province, @Param("userId") Long userId, Pageable pageable);
 
     @Query(value = "SELECT * FROM groups_tb WHERE MATCH(name) AGAINST(:name IN BOOLEAN MODE)",
             countQuery = "SELECT COUNT(*) FROM groups_tb WHERE MATCH(name) AGAINST(:name IN BOOLEAN MODE)",
