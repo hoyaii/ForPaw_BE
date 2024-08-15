@@ -1,5 +1,6 @@
 package com.hong.ForPaw.controller.DTO;
 
+import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.Province;
 
 import java.time.LocalDateTime;
@@ -12,6 +13,8 @@ public class PostResponse {
     public record CreateAnswerDTO(Long id) {}
 
     public record FindPostListDTO(List<PostDTO> posts, boolean isLastPage) {}
+
+    public record FindMyPostListDTO(List<MyPostDTO> posts, boolean isLastPage) {}
 
     public record FindQnaListDTO(List<QnaDTO> questions, boolean isLastPage) {}
 
@@ -34,13 +37,15 @@ public class PostResponse {
                          LocalDateTime date,
                          Long answerNum) {}
 
-    public record MyQnaDTO(Long id,
-                         String nickName,
-                         String profileURL,
-                         String title,
-                         String content,
-                         LocalDateTime date,
-                         Long answerNum) {}
+    public record MyPostDTO(Long id,
+                           String nickName,
+                           String title,
+                           String content,
+                           LocalDateTime date,
+                           Long commentNum,
+                           Long likeNum,
+                           String imageURL,
+                           String postType) {}
 
     public record PostImageDTO(Long id, String imageURL) {}
 

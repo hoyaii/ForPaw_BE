@@ -65,7 +65,7 @@ public class PostController {
 
     @GetMapping("/posts/myPost")
     public ResponseEntity<?> findMyPostList(@PageableDefault(size = 5, sort = ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
-        PostResponse.FindPostListDTO responseDTO = postService.findMyPostList(userDetails.getUser().getId(), pageable);
+        PostResponse.FindMyPostListDTO responseDTO = postService.findMyPostList(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

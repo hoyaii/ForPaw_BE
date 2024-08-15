@@ -201,7 +201,8 @@ public class GroupService {
                 (userId != null ? favoriteGroupRepository.findGroupIdByUserId(userId) : Collections.emptyList());
 
         Page<Group> localGroupPage = groupRepository.findByProvinceAndDistrictWithoutMyGroup(province, district, userId, pageable);
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = localGroupPage.getContent().stream()
+
+        return localGroupPage.getContent().stream()
                 .map(group -> {
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
 
@@ -218,8 +219,6 @@ public class GroupService {
                             finalLikedGroupIds.contains(group.getId()));
                 })
                 .collect(Collectors.toList());
-
-        return localGroupDTOS;
     }
 
     // 새 그룹 추가 조회
@@ -229,7 +228,8 @@ public class GroupService {
         province = province != null ? province : userRepository.findProvinceById(userId).orElse(DEFAULT_PROVINCE);
 
         Page<Group> newGroupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, pageable);
-        List<GroupResponse.NewGroupDTO> newGroupDTOS = newGroupPage.getContent().stream()
+
+        return newGroupPage.getContent().stream()
                 .map(group -> new GroupResponse.NewGroupDTO(
                         group.getId(),
                         group.getName(),
@@ -238,8 +238,6 @@ public class GroupService {
                         group.getDistrict(),
                         group.getProfileURL()))
                 .collect(Collectors.toList());
-
-        return newGroupDTOS;
     }
 
     // 내 그룹 추가 조회
@@ -250,7 +248,7 @@ public class GroupService {
         List<Long> finalLikedGroupIds = likedGroupIds.isEmpty() ? likedGroupIds :
                 (userId != null ? favoriteGroupRepository.findGroupIdByUserId(userId) : Collections.emptyList());
 
-        List<GroupResponse.MyGroupDTO> myGroupDTOS = joinedGroups.stream()
+        return joinedGroups.stream()
                 .map(group -> {
                     Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
 
@@ -267,8 +265,6 @@ public class GroupService {
                             finalLikedGroupIds.contains(group.getId()));
                 })
                 .collect(Collectors.toList());
-
-        return myGroupDTOS;
     }
 
     @Transactional(readOnly = true)

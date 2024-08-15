@@ -210,17 +210,17 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindPostListDTO findMyPostList(Long userId, Pageable pageable){
+    public PostResponse.FindMyPostListDTO findMyPostList(Long userId, Pageable pageable){
         // 유저를 패치조인하여 조회
         List<PostType> postTypes = List.of(PostType.ADOPTION, PostType.FOSTERING);
         Page<Post> postPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
 
-        List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
+        List<PostResponse.MyPostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
                     String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
                     Long likeNum = getCachedLikeNum("postLikeNum", post.getId(), post::getLikeNum);
 
-                    return new PostResponse.PostDTO(
+                    return new PostResponse.MyPostDTO(
                             post.getId(),
                             post.getUser().getNickName(),
                             post.getTitle(),
@@ -228,11 +228,12 @@ public class PostService {
                             post.getCreatedDate(),
                             post.getCommentNum(),
                             likeNum,
-                            imageURL);
+                            imageURL,
+                            post.getPostType().toString().toLowerCase());
                 })
                 .toList();
 
-        return new PostResponse.FindPostListDTO(postDTOS, postPage.isLast());
+        return new PostResponse.FindMyPostListDTO(postDTOS, postPage.isLast());
     }
 
     @Transactional(readOnly = true)
