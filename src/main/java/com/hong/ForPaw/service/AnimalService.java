@@ -16,6 +16,7 @@ import com.hong.ForPaw.repository.Animal.AnimalRepository;
 import com.hong.ForPaw.repository.Animal.FavoriteAnimalRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -45,6 +46,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class AnimalService {
 
     private final AnimalRepository animalRepository;
@@ -143,13 +145,13 @@ public class AnimalService {
         Set<Shelter> updatedShelters = new HashSet<>();
         List<Animal> expiredAnimals = animalRepository.findAllOutOfDateWithShelter(LocalDateTime.now().toLocalDate());
 
-        // 캐싱한 '좋아요 수' 삭제
+        // 1. 캐싱한 '좋아요 수' 삭제
         expiredAnimals.forEach(animal -> {
             updatedShelters.add(animal.getShelter());
             redisService.removeData("animalLikeNum", animal.getId().toString());
         });
 
-        // 유저가 검색한 동물 기록에서 삭제
+        // 2. 유저가 검색한 동물 기록에서 삭제
         List<User> users = userRepository.findAll();
         for(User user : users){
             expiredAnimals.forEach(animal -> {
@@ -158,17 +160,19 @@ public class AnimalService {
             });
         }
 
-        // 공지가 만료된 유기 동물 삭제
+        // 3. 공지가 만료된 유기 동물 삭제
         favoriteAnimalRepository.deleteByAnimalIn(expiredAnimals);
         animalRepository.deleteAll(expiredAnimals);
 
-        // 보호소의 '보호 동물 수' 업데이트
+        // 4. 보호소의 '보호 동물 수' 업데이트
         updatedShelters.forEach(shelter ->
                 shelter.updateAnimalCnt(animalRepository.countByShelterId(shelter.getId()))
         );
 
-        // 소개글 업데이트
-        requestAnimalIntroduction();
+        // 5. 소개글 업데이트
+        requestAnimalIntroduction()
+                .doOnError(error -> log.info("소개글 업데이트 요청 실패"))
+                .subscribe();
     }
 
     @Transactional
@@ -469,7 +473,6 @@ public class AnimalService {
                     .map(j -> j.response().body().items().item())
                     .filter(items -> !items.isEmpty())
                     .map(items -> items.get(0))
-                    //.ifPresent(itemDTO -> shelter.updateByAnimalData(itemDTO.careTel(), itemDTO.careAddr(), countActiveAnimals(json))); // 영속성 컨텍스트 적용이 안됨
                     .ifPresent(itemDTO -> shelterRepository.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), countActiveAnimals(json), shelter.getId()));
             return Mono.empty();
         }).then();
@@ -572,11 +575,12 @@ public class AnimalService {
         return recommendedAnimalIds;
     }
 
-    private void requestAnimalIntroduction(){
-        webClient.post()
+    private Mono<Void> requestAnimalIntroduction() {
+        return webClient.post()
                 .uri(updateAnimalIntroduceURI)
                 .contentType(MediaType.APPLICATION_JSON)
-                .retrieve();
+                .retrieve()
+                .bodyToMono(Void.class);
     }
 
     private List<Long> findAnimalIdListByUserLocation(Long userId) {
