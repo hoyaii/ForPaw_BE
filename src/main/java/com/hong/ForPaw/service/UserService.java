@@ -290,10 +290,10 @@ public class UserService {
     public UserResponse.CheckEmailExistDTO checkEmailExist(UserRequest.EmailDTO requestDTO){
         boolean isValid = !userRepository.existsByEmailWithRemoved(requestDTO.email());
 
-        // 계속 이메일을 보내는 건 방지. 5분 후에 다시 시도할 수 있다
-        //if(redisService.isDateExist("emailCode", requestDTO.email())){
-        //    throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
-        //}
+        // 계속 이메일을 보내는 건 방지. 3분 후에 다시 시도할 수 있다
+        if(redisService.isDateExist("emailCode", requestDTO.email())){
+            throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
+        }
 
         return new UserResponse.CheckEmailExistDTO(isValid);
     }
@@ -309,7 +309,7 @@ public class UserService {
 
         sendMail(requestDTO.email(), VERIFICATION_CODE.getSubject(), MAIL_TEMPLATE_FOR_CODE, model);
 
-        redisService.storeValue("emailCode", requestDTO.email(), verificationCode, 5 * 60 * 1000L); // 5분 동안 유효
+        redisService.storeValue("emailCode", requestDTO.email(), verificationCode, 175 * 1000L); // 3분 동안 유효
     }
 
     @Async
@@ -319,10 +319,10 @@ public class UserService {
         }
     }
 
-    // 코드 재전송 API 호출 시, 앞서 코드가 전송된 적이 있는지 체크한다
-    public void verifyAlreadyCodeSend(UserRequest.EmailDTO requestDTO){
-        if(!redisService.isDateExist("emailCode", requestDTO.email())){
-            throw new CustomException(ExceptionCode.CODE_NOT_SENDED);
+    public void checkSendCodeTTL(UserRequest.EmailDTO requestDTO){
+        // 재시도는 전송 3분 후에 가능하다
+        if(redisService.isDateExist("emailCode", requestDTO.email())){
+            throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
         }
     }
 
@@ -349,7 +349,7 @@ public class UserService {
         if(userRepository.findByEmail(requestDTO.email()).isEmpty())
             throw new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND);
 
-        // 계속 이메일을 보내는 건 방지. 5분 후에 다시 시도할 수 있다
+        // 계속 이메일을 보내는 건 방지. 3분 후에 다시 시도할 수 있다
         if(redisService.isDateExist("emailCode", requestDTO.email())){
             throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
         }

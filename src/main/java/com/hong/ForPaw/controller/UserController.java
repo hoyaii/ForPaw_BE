@@ -76,7 +76,7 @@ public class UserController {
 
     @PostMapping("/accounts/resend/code")
     public ResponseEntity<?> resendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
-        userService.verifyAlreadyCodeSend(requestDTO);
+        userService.checkSendCodeTTL(requestDTO);
         userService.sendCodeByEmail(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }

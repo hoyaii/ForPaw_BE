@@ -117,6 +117,11 @@ public class RedisService {
         return listOps.range(key, 0, -1);
     }
 
+    public Long getTTL(String type, String id) {
+        Long ttl = redisTemplate.getExpire(buildKey(type, id), TimeUnit.SECONDS);
+        return ttl != null ? ttl : -2L;  // TTL이 존재하지 않으면 -2 반환
+    }
+
     private String buildKey(String type, String id){
         return type + ":" + id;
     }
