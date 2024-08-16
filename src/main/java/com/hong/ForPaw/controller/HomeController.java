@@ -23,8 +23,7 @@ public class HomeController {
 
     @GetMapping("/home")
     public ResponseEntity<?> findHome(@AuthenticationPrincipal CustomUserDetails userDetails){
-        Long userId = getUserIdSafely(userDetails);
-        HomeResponse.FindHomeDTO responseDTO = homeService.findHome(userId);
+        HomeResponse.FindHomeDTO responseDTO = homeService.findHome(getUserIdSafely(userDetails));
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

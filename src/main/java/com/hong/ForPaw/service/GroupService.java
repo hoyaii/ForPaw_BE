@@ -231,6 +231,7 @@ public class GroupService {
                 .orElse(DEFAULT_PROVINCE);
 
         Page<Group> newGroupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, pageable);
+
         return newGroupPage.getContent().stream()
                 .map(group -> new GroupResponse.NewGroupDTO(
                         group.getId(),

@@ -3,7 +3,6 @@ package com.hong.ForPaw.controller;
 import com.hong.ForPaw.controller.DTO.UserRequest;
 import com.hong.ForPaw.controller.DTO.UserResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
-import com.hong.ForPaw.core.security.JWTProvider;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.UserService;
 import jakarta.mail.MessagingException;
@@ -11,18 +10,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @RestController
@@ -32,11 +26,6 @@ public class UserController {
 
     private final UserService userService;
 
-    @Value("${social.join.redirect.uri}")
-    private String REDIRECT_JOIN_URI;
-
-    @Value("${social.home.redirect.uri}")
-    private String REDIRECT_HOME_URI;
     private static final String AUTH_KAKAO = "KAKAO";
     private static final String AUTH_GOOGLE = "GOOGLE";
 
@@ -44,20 +33,20 @@ public class UserController {
     public ResponseEntity<?> login(@RequestBody @Valid UserRequest.LoginDTO requestDTO, HttpServletRequest request) throws MessagingException {
         Map<String, String> tokens = userService.login(requestDTO, request);
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokens.get("refreshToken")))
+                .header(HttpHeaders.SET_COOKIE, userService.createRefreshTokenCookie(tokens.get("refreshToken")))
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokens.get("accessToken"))));
     }
 
     @GetMapping("/auth/login/kakao")
     public void kakaoLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, String> tokenOrEmail = userService.kakaoLogin(code, request);
-        handleAuthenticationRedirect(tokenOrEmail, AUTH_KAKAO, response);
+        userService.processOAuthRedirect(tokenOrEmail, AUTH_KAKAO, response);
     }
 
     @GetMapping("/auth/login/google")
     public void googleLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, String> tokenOrEmail = userService.googleLogin(code, request);
-        handleAuthenticationRedirect(tokenOrEmail, AUTH_GOOGLE, response);
+        userService.processOAuthRedirect(tokenOrEmail, AUTH_GOOGLE, response);
     }
 
     @PostMapping("/accounts")
@@ -152,7 +141,7 @@ public class UserController {
     public ResponseEntity<?> updateAccessToken(@CookieValue String refreshToken){
         Map<String, String> tokens = userService.updateAccessToken(refreshToken);
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokens.get("refreshToken")))
+                .header(HttpHeaders.SET_COOKIE, userService.createRefreshTokenCookie(tokens.get("refreshToken")))
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(tokens.get("accessToken"))));
     }
 
@@ -203,34 +192,5 @@ public class UserController {
     public ResponseEntity<?> findCommunityStats(@AuthenticationPrincipal CustomUserDetails userDetails){
         UserResponse.FindCommunityRecord responseDTO = userService.findCommunityStats(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
-    }
-
-    private void handleAuthenticationRedirect(Map<String, String> tokenOrEmail, String authProvider, HttpServletResponse response) throws IOException {
-        String redirectUri;
-        if(tokenOrEmail.get("email") != null) {
-            redirectUri = UriComponentsBuilder.fromUriString(REDIRECT_JOIN_URI)
-                    .queryParam("email", URLEncoder.encode(tokenOrEmail.get("email"), StandardCharsets.UTF_8))
-                    .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
-                    .build()
-                    .toUriString();
-        } else {
-            response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokenOrEmail.get("refreshToken")));
-            redirectUri = UriComponentsBuilder.fromUriString(REDIRECT_HOME_URI)
-                    .queryParam("accessToken", URLEncoder.encode(tokenOrEmail.get("accessToken"), StandardCharsets.UTF_8))
-                    .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
-                    .build()
-                    .toUriString();
-        }
-        response.sendRedirect(redirectUri);
-    }
-
-    private String createRefreshTokenCookie(String refreshToken) {
-        return ResponseCookie.from("refreshToken", refreshToken)
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .sameSite("Lax")
-                .maxAge(JWTProvider.REFRESH_EXP_SEC)
-                .build().toString();
     }
 }

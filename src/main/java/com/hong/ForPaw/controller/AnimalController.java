@@ -36,16 +36,14 @@ public class AnimalController {
 
     @GetMapping("/animals/recommend")
     public ResponseEntity<?> findRecommendedAnimalList(@AuthenticationPrincipal CustomUserDetails userDetails){
-        Long userId = getUserIdSafely(userDetails);
-        AnimalResponse.FindRecommendedAnimalList responseDTO = animalService.findRecommendedAnimalList(userId);
+        AnimalResponse.FindRecommendedAnimalList responseDTO = animalService.findRecommendedAnimalList(getUserIdSafely(userDetails));
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/animals")
     public ResponseEntity<?> findAnimalList(@RequestParam String type,
                                             @PageableDefault(size = 5, sort = DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
-        Long userId = getUserIdSafely(userDetails);
-        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(type, userId, pageable);
+        AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(type, getUserIdSafely(userDetails), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -57,8 +55,7 @@ public class AnimalController {
 
     @GetMapping("/animals/{animalId}")
     public ResponseEntity<?> findAnimalById(@PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails){
-        Long userId = getUserIdSafely(userDetails);
-        AnimalResponse.FindAnimalByIdDTO responseDTO = animalService.findAnimalById(animalId, userId);
+        AnimalResponse.FindAnimalByIdDTO responseDTO = animalService.findAnimalById(animalId, getUserIdSafely(userDetails));
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

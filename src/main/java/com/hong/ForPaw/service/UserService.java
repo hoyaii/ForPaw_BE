@@ -36,6 +36,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -52,12 +53,15 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -130,6 +134,12 @@ public class UserService {
 
     @Value("${admin.password}")
     private String adminPassword;
+
+    @Value("${social.join.redirect.uri}")
+    private String REDIRECT_JOIN_URI;
+
+    @Value("${social.home.redirect.uri}")
+    private String REDIRECT_HOME_URI;
 
     private final SpringTemplateEngine templateEngine;
 
@@ -656,11 +666,6 @@ public class UserService {
     }
 
     @Async
-    public void sendPasswordByMail(String toEmail, String password) {
-        //sendMail(toEmail, MailTemplate.TEMPORARY_PASSWORD, password);
-    }
-
-    @Async
     public void sendMail(String toEmail, String subject, String templateName, Map<String, Object> templateModel) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -676,6 +681,35 @@ public class UserService {
         helper.setSubject(subject);
 
         mailSender.send(message);
+    }
+
+    public void processOAuthRedirect(Map<String, String> tokenOrEmail, String authProvider, HttpServletResponse response) throws IOException {
+        String redirectUri;
+        if(tokenOrEmail.get("email") != null) {
+            redirectUri = UriComponentsBuilder.fromUriString(REDIRECT_JOIN_URI)
+                    .queryParam("email", URLEncoder.encode(tokenOrEmail.get("email"), StandardCharsets.UTF_8))
+                    .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
+                    .build()
+                    .toUriString();
+        } else {
+            response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokenOrEmail.get("refreshToken")));
+            redirectUri = UriComponentsBuilder.fromUriString(REDIRECT_HOME_URI)
+                    .queryParam("accessToken", URLEncoder.encode(tokenOrEmail.get("accessToken"), StandardCharsets.UTF_8))
+                    .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
+                    .build()
+                    .toUriString();
+        }
+        response.sendRedirect(redirectUri);
+    }
+
+    public String createRefreshTokenCookie(String refreshToken) {
+        return ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(JWTProvider.REFRESH_EXP_SEC)
+                .build().toString();
     }
 
     // 알파벳, 숫자를 조합해서 인증 코드 생성
@@ -758,8 +792,8 @@ public class UserService {
 
     private Map<String, String> processOAuthLogin(String email, HttpServletRequest request) {
         // 아예 가입되어 있지 않음 => email을 넘겨서 소셜 회원가입을 진행하도록 함
-        boolean isNewAccount = userRepository.findByEmail(email).isEmpty();
-        if(isNewAccount){
+        boolean isNotJoined = userRepository.findByEmail(email).isEmpty();
+        if(isNotJoined){
             Map<String, String> response = new HashMap<>();
             response.put("email", email);
             return response;
