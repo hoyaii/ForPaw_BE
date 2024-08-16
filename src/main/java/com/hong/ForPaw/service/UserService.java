@@ -142,6 +142,9 @@ public class UserService {
     private String REDIRECT_HOME_URI;
 
     private final SpringTemplateEngine templateEngine;
+    private final String MAIL_TEMPLATE_FOR_CODE = "verification_code_email.html";
+    private final String MAIL_TEMPLATE_FOR_LOCK_ACCOUNT = "lock_account.html";
+
 
     @Transactional
     public void initSuperAdmin(){
@@ -304,7 +307,7 @@ public class UserService {
         Map<String, Object> model = new HashMap<>();
         model.put("code", verificationCode);
 
-        sendMail(requestDTO.email(), VERIFICATION_CODE.getSubject(), "verification_code_email.html", model);
+        sendMail(requestDTO.email(), VERIFICATION_CODE.getSubject(), MAIL_TEMPLATE_FOR_CODE, model);
 
         redisService.storeValue("emailCode", requestDTO.email(), verificationCode, 5 * 60 * 1000L); // 5분 동안 유효
     }
@@ -656,7 +659,7 @@ public class UserService {
             redisService.storeValue("loginFailDaily", user.getId().toString(), loginFailNumDaily.toString(), 86400000L);  // 24시간
 
             if(loginFailNumDaily == 3L){
-                sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), "lock_account.html", new HashMap<>());
+                sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), MAIL_TEMPLATE_FOR_LOCK_ACCOUNT, new HashMap<>());
             }
 
             throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);

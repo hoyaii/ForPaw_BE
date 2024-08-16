@@ -24,7 +24,10 @@ public class SearchResponse {
                           String title,
                           String content,
                           LocalDateTime date,
-                          String imageURL){}
+                          String imageURL,
+                          String nickName,
+                          Long commentNum,
+                          Long likeNum){}
 
 
     public record GroupDTO(Long id,

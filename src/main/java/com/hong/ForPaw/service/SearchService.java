@@ -4,7 +4,7 @@ import com.hong.ForPaw.controller.DTO.SearchResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Group.Group;
-import com.hong.ForPaw.domain.Post.Post;
+import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.Shelter;
 import com.hong.ForPaw.repository.Group.GroupRepository;
 import com.hong.ForPaw.repository.Group.MeetingRepository;
@@ -18,10 +18,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.HashMap;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,6 +33,7 @@ public class SearchService {
     private final PostRepository postRepository;
     private final GroupRepository groupRepository;
     private final MeetingRepository meetingRepository;
+    private final RedisService redisService;
 
     @Transactional(readOnly = true)
     public SearchResponse.SearchAllDTO searchAll(String keyword){
@@ -64,16 +65,22 @@ public class SearchService {
     @Transactional(readOnly = true)
     public List<SearchResponse.PostDTO> searchPostList(String keyword, Pageable pageable){
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
-        Page<Post> posts = postRepository.findByTitleContaining(formattedKeyword, pageable);
+        Page<Object[]> posts = postRepository.findByTitleContaining(formattedKeyword, pageable);
 
         return posts.getContent().stream()
-                .map(post -> new SearchResponse.PostDTO(
-                        post.getId(),
-                        post.getPostType(),
-                        post.getTitle(),
-                        post.getContent(),
-                        post.getCreatedDate(),
-                        post.getPostImages().get(0).getImageURL()))
+                .map(row -> {
+                    Long likeNum = redisService.getDataInLong("postLikeNum", ((Long) row[0]).toString());
+                    return new SearchResponse.PostDTO(
+                        (Long) row[0],  // postId
+                        PostType.valueOf((String) row[4]),  // postType (String을 PostType으로 변환)
+                        (String) row[1],  // title
+                        (String) row[2],  // content
+                        ((Timestamp) row[3]).toLocalDateTime(),  // createdDate (Timestamp를 LocalDateTime으로 변환)
+                        (String) row[5],  // imageUrl
+                        (String) row[7],   // nickName
+                        (Long) row[8], // commentNum
+                        likeNum);
+                })
                 .collect(Collectors.toList());
     }
 
