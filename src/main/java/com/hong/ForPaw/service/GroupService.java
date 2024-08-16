@@ -224,11 +224,13 @@ public class GroupService {
     // 새 그룹 추가 조회
     @Transactional(readOnly = true)
     public List<GroupResponse.NewGroupDTO> findNewGroupList(Long userId, Province province, Pageable pageable){
-        // province가 null로 들어오면 => 디폴트 province 값
-        province = province != null ? province : userRepository.findProvinceById(userId).orElse(DEFAULT_PROVINCE);
+        // 1. 로그인된 상태고 province가 요청값으로 들어오지 않으면 프로필에서 설정한 province 사용, 2. 로그인도 되지 않으면 디폴트 값 사용
+        province = Optional.ofNullable(province)
+                .or(() -> Optional.ofNullable(userId)
+                        .flatMap(userRepository::findProvinceById))
+                .orElse(DEFAULT_PROVINCE);
 
         Page<Group> newGroupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, pageable);
-
         return newGroupPage.getContent().stream()
                 .map(group -> new GroupResponse.NewGroupDTO(
                         group.getId(),
