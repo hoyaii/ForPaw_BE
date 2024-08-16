@@ -33,6 +33,8 @@ public class SearchResponse {
                            String category,
                            Province province,
                            District district,
-                           String profileURL) {}
+                           String profileURL,
+                           Long participantNum,
+                           Long meetingNum) {}
 
 }

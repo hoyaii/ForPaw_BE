@@ -884,16 +884,6 @@ public class GroupService {
         checkIsMember(groupId, userId);
     }
 
-    private Set<Long> getAllGroupIdSet(Long userId){
-        List<Group> groups = groupUserRepository.findGroupByUserId(userId);
-
-        Set<Long> groupIdSet = groups.stream()
-                .map(Group::getId)
-                .collect(Collectors.toSet());
-
-        return groupIdSet;
-    }
-
     private Pageable createPageable(int page, int size, String sortProperty) {
         return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }

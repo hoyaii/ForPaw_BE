@@ -20,6 +20,12 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     @Query("SELECT m FROM Meeting m WHERE m.meetDate < :date")
     List<Meeting> findByMeetDateBefore(@Param("date") LocalDateTime date);
 
+    @Query("SELECT g.id, COUNT(m) FROM Meeting m " +
+            "JOIN m.group g " +
+            "WHERE g.id IN :groupIds " +
+            "GROUP BY g.id")
+    List<Object[]> countMeetingsByGroupIds(@Param("groupIds") List<Long> groupIds);
+
     @Query("SELECT COUNT(m) > 0 FROM Meeting m " +
             "JOIN m.group g " +
             "WHERE m.name = :name AND g.id = :groupId")
