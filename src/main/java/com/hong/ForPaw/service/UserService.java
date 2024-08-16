@@ -275,12 +275,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserResponse.CheckEmailExistDTO checkEmailExist(UserRequest.EmailDTO requestDTO){
-        boolean isValid = true;
-
-        // 가입한 이메일이 존재
-        if(userRepository.existsByEmailWithRemoved(requestDTO.email())){
-            isValid = false;
-        }
+        boolean isValid = !userRepository.existsByEmailWithRemoved(requestDTO.email());
 
         // 계속 이메일을 보내는 건 방지. 5분 후에 다시 시도할 수 있다
         //if(redisService.isDateExist("emailCode", requestDTO.email())){
@@ -302,6 +297,13 @@ public class UserService {
         sendMail(requestDTO.email(), VERIFICATION_CODE.getSubject(), "verification_code_email.html", model);
 
         redisService.storeValue("emailCode", requestDTO.email(), verificationCode, 5 * 60 * 1000L); // 5분 동안 유효
+    }
+
+    @Async
+    public void sendCodeByEmailWithValidation(UserRequest.EmailDTO requestDTO, boolean isValid) throws MessagingException {
+        if(isValid){
+            sendCodeByEmail(requestDTO);
+        }
     }
 
     // 코드 재전송 API 호출 시, 앞서 코드가 전송된 적이 있는지 체크한다

@@ -80,7 +80,7 @@ public class SecurityConfig {
                         .requestMatchers(new AntPathRequestMatcher("/api/chat/*/read")).permitAll()
                         .requestMatchers("/ws/**","/api/auth/**", "/api/accounts/**", "/api/animals/**", "/api/shelters/**",
                                 "/api/groups","/api/groups/local", "/api/groups/new","/api/home", "/api/search/**", "/api/validate/accessToken",
-                                "/api/posts/adoption", "/api/posts/fostering", "/api/posts/question", "/api/posts/popular").permitAll()
+                                "/api/posts/adoption", "/api/posts/fostering", "/api/posts/question", "/api/posts/popular", "/api/groups/localAndNew").permitAll()
                         .anyRequest().authenticated()
                 )
 
