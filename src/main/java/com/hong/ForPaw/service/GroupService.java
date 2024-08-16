@@ -196,10 +196,6 @@ public class GroupService {
 
     @Transactional(readOnly = true)
     public List<GroupResponse.LocalGroupDTO> findLocalGroupList(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable){
-        // likedGroupIds가 비어있으면 새로 조회 => 새로 조회 시 userId가 null이라면 emptyList로! (스트림 사용을 위해 final로 만듦)
-        List<Long> finalLikedGroupIds = likedGroupIds.isEmpty() ? likedGroupIds :
-                (userId != null ? favoriteGroupRepository.findGroupIdByUserId(userId) : Collections.emptyList());
-
         Page<Group> localGroupPage = groupRepository.findByProvinceAndDistrictWithoutMyGroup(province, district, userId, pageable);
 
         return localGroupPage.getContent().stream()
@@ -216,7 +212,7 @@ public class GroupService {
                             group.getDistrict(),
                             group.getProfileURL(),
                             likeNum,
-                            finalLikedGroupIds.contains(group.getId()));
+                            likedGroupIds.contains(group.getId()));
                 })
                 .collect(Collectors.toList());
     }
@@ -244,8 +240,8 @@ public class GroupService {
     }
 
     @Transactional(readOnly = true)
-    public GroupResponse.FindLocalAndNewGroupListDTO findLocalAndNewGroupList(Long userId, Province province, District district, Pageable pageable){
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = findLocalGroupList(userId, province, district, Collections.emptyList(), pageable);
+    public GroupResponse.FindLocalAndNewGroupListDTO findLocalAndNewGroupList(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable){
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = findLocalGroupList(userId, province, district, likedGroupIds, pageable);
         List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroupList(userId, province, pageable);
 
         return new GroupResponse.FindLocalAndNewGroupListDTO(localGroupDTOS, newGroupDTOS);
@@ -255,9 +251,6 @@ public class GroupService {
     @Transactional(readOnly = true)
     public List<GroupResponse.MyGroupDTO> findMyGroupList(Long userId, List<Long> likedGroupIds, Pageable pageable){
         List<Group> joinedGroups = groupUserRepository.findGroupByUserId(userId, pageable).getContent();
-
-        List<Long> finalLikedGroupIds = likedGroupIds.isEmpty() ? likedGroupIds :
-                (userId != null ? favoriteGroupRepository.findGroupIdByUserId(userId) : Collections.emptyList());
 
         return joinedGroups.stream()
                 .map(group -> {
@@ -273,7 +266,7 @@ public class GroupService {
                             group.getDistrict(),
                             group.getProfileURL(),
                             likeNum,
-                            finalLikedGroupIds.contains(group.getId()));
+                            likedGroupIds.contains(group.getId()));
                 })
                 .collect(Collectors.toList());
     }
@@ -882,6 +875,11 @@ public class GroupService {
 
         // 맴버인지 체크
         checkIsMember(groupId, userId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> getLikedGroupList(Long userId){
+        return userId != null ? favoriteGroupRepository.findGroupIdByUserId(userId) : Collections.emptyList();
     }
 
     private Pageable createPageable(int page, int size, String sortProperty) {
