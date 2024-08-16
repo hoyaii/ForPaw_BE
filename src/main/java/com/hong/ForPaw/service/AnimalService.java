@@ -30,6 +30,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -580,7 +581,13 @@ public class AnimalService {
                 .uri(updateAnimalIntroduceURI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .bodyToMono(Void.class);
+                .onStatus(httpStatus ->(httpStatus.is5xxServerError() || httpStatus.is4xxClientError()),
+                        clientResponse -> Mono.error(new RuntimeException("소개글 요청 실패")))
+                .bodyToMono(Void.class)
+                .retryWhen(
+                        Retry.fixedDelay(3, Duration.ofSeconds(2))  // 2초 간격으로 3번 재시도
+                                .filter(throwable -> throwable instanceof RuntimeException)  // RuntimeException 발생 시 재시도
+                );
     }
 
     private List<Long> findAnimalIdListByUserLocation(Long userId) {
