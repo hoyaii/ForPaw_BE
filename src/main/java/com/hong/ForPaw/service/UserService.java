@@ -287,7 +287,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserResponse.CheckEmailExistDTO checkEmailExist(UserRequest.EmailDTO requestDTO){
+    public UserResponse.CheckEmailExistDTO checkEmailExistAndTTL(UserRequest.EmailDTO requestDTO){
         boolean isValid = !userRepository.existsByEmailWithRemoved(requestDTO.email());
 
         // 계속 이메일을 보내는 건 방지. 3분 후에 다시 시도할 수 있다
@@ -344,18 +344,18 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public void checkAccountExist(UserRequest.EmailDTO requestDTO){
-        // 가입된 계정이 아니라면
-        if(userRepository.findByEmail(requestDTO.email()).isEmpty())
-            throw new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND);
+    public UserResponse.CheckAccountExistDTO checkAccountExist(UserRequest.EmailDTO requestDTO){
+        boolean isValid = userRepository.findByEmail(requestDTO.email()).isPresent();
 
         // 계속 이메일을 보내는 건 방지. 3분 후에 다시 시도할 수 있다
         if(redisService.isDateExist("emailCode", requestDTO.email())){
             throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
         }
+
+        return new UserResponse.CheckAccountExistDTO(isValid);
     }
 
-    public void verifyRecoveryCode(UserRequest.VerifyCodeDTO requestDTO){
+    public void verifyRecoveryCodeForRecovery(UserRequest.VerifyCodeDTO requestDTO){
         if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
             throw new CustomException(ExceptionCode.CODE_WRONG);
 

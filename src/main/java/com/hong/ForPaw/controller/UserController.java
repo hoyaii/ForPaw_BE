@@ -63,7 +63,7 @@ public class UserController {
 
     @PostMapping("/accounts/check/email")
     public ResponseEntity<?> checkEmailAndSendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
-        UserResponse.CheckEmailExistDTO responseDTO = userService.checkEmailExist(requestDTO);
+        UserResponse.CheckEmailExistDTO responseDTO = userService.checkEmailExistAndTTL(requestDTO);
         userService.sendCodeByEmailWithValidation(requestDTO, responseDTO.isValid());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
@@ -89,21 +89,21 @@ public class UserController {
 
     @PostMapping("/accounts/withdraw/code")
     public ResponseEntity<?> sendCodeForWithdraw(@RequestBody @Valid UserRequest.EmailDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) throws MessagingException {
-        userService.checkAccountExist(requestDTO);
+        UserResponse.CheckAccountExistDTO responseDTO = userService.checkAccountExist(requestDTO);
         userService.sendCodeByEmail(requestDTO);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/accounts/recovery")
     public ResponseEntity<?> sendCodeForRecovery(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
-        userService.checkAccountExist(requestDTO);
+        UserResponse.CheckAccountExistDTO responseDTO = userService.checkAccountExist(requestDTO);
         userService.sendCodeByEmail(requestDTO);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/accounts/recovery/verify")
     public ResponseEntity<?> verifyCodeForRecovery(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO){
-        userService.verifyRecoveryCode(requestDTO);
+        userService.verifyRecoveryCodeForRecovery(requestDTO);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
