@@ -901,8 +901,8 @@ public class PostService {
         postImages.stream()
                 .filter(postImage -> !retainedImageIds.contains(postImage.getId()))
                 .forEach(postImage -> {
-                    String objectKey = s3Service.extractObjectKeyFromUri(postImage.getImageURL());
-                    s3Service.deleteImage(objectKey);
+                    String objectKey = s3Service.extractKeyFromUrl(postImage.getImageURL());
+                    s3Service.deleteObject(objectKey);
                 });
     }
 }
