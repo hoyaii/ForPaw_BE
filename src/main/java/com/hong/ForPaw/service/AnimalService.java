@@ -87,7 +87,6 @@ public class AnimalService {
     @Value("${animal.update.uri}")
     private String updateAnimalIntroduceURI;
 
-    private static final String DO_INTRODUCING = "소개글을 작성중입니다!";
     private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
     private static final String ANIMAL_SEARCH_KEY_PREFIX = "animalSearch";
     private static final String ANIMAL_TYPE_DOG = "[개]";
@@ -506,7 +505,7 @@ public class AnimalService {
                 .neuter(itemDTO.neuterYn())
                 .specialMark(itemDTO.specialMark())
                 .region(shelter.getRegionCode().getUprName() + " " + shelter.getRegionCode().getOrgName())
-                .introductionContent(DO_INTRODUCING)
+                .introductionContent("소개글을 작성중입니다!")
                 .build();
     }
 

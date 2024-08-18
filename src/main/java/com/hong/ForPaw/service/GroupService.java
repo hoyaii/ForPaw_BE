@@ -64,6 +64,9 @@ public class GroupService {
     private static final String SORT_BY_LIKE_NUM = "likeNum";
     private static final String SORT_BY_PARTICIPANT_NUM = "participantNum";
     private static final String POST_READ_KEY_PREFIX = "user:readPosts:";
+    private static final String GROUP_LIKE_NUM_KEY_PREFIX = "groupLikeNum";
+    private static final String ROOM_PREFIX = "room.";
+    private static final String CHAT_EXCHANGE = "chat.exchange";
 
     @Transactional
     public GroupResponse.CreateGroupDTO createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId){
@@ -115,7 +118,7 @@ public class GroupService {
         chatUserRepository.save(chatUser);
 
         // 레디스에 저장될 '좋아요 수' 값 초기화  (그룹의 경우 유효기간이 없고, 그룹이 삭제되기 전까지 남아 있음)
-        redisService.storeValue("groupLikeNum", group.getId().toString(), "0");
+        redisService.storeValue(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString(), "0");
 
         // RabbitMQ 설정
         configureRabbitMQForChatRoom(chatRoom);
@@ -200,7 +203,7 @@ public class GroupService {
 
         return localGroupPage.getContent().stream()
                 .map(group -> {
-                    Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
+                    Long likeNum = redisService.getDataInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
 
                     return new GroupResponse.LocalGroupDTO(
                             group.getId(),
@@ -254,7 +257,7 @@ public class GroupService {
 
         return joinedGroups.stream()
                 .map(group -> {
-                    Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
+                    Long likeNum = redisService.getDataInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
 
                     return new GroupResponse.MyGroupDTO(
                             group.getId(),
@@ -301,7 +304,8 @@ public class GroupService {
         Set<String> postIds = userId != null ? redisService.getAllElement(key) : Collections.emptySet();
 
         Page<Post> noticePage = postRepository.findNoticeByGroupIdWithUser(groupId, pageable);
-        List<GroupResponse.NoticeDTO> noticeDTOS = noticePage.getContent().stream()
+
+        return noticePage.getContent().stream()
                 .map(notice -> new GroupResponse.NoticeDTO(
                         notice.getId(),
                         notice.getUser().getNickName(),
@@ -310,8 +314,6 @@ public class GroupService {
                         postIds.contains(notice.getId().toString()))
                 )
                 .collect(Collectors.toList());
-
-        return noticeDTOS;
     }
 
     @Transactional(readOnly = true)
@@ -595,7 +597,7 @@ public class GroupService {
         // 좋아요가 이미 있다면 삭제, 없다면 추가
         if (favoriteGroupOP.isPresent()) {
             favoriteGroupRepository.delete(favoriteGroupOP.get());
-            redisService.decrementCnt("groupLikeNum", groupId.toString(), 1L);
+            redisService.decrementCnt(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString(), 1L);
         }
         else {
             Group groupRef = entityManager.getReference(Group.class, groupId);
@@ -607,7 +609,7 @@ public class GroupService {
                     .build();
 
             favoriteGroupRepository.save(favoriteGroup);
-            redisService.incrementCnt("groupLikeNum", groupId.toString(), 1L);
+            redisService.incrementCnt(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString(), 1L);
         }
     }
 
@@ -617,7 +619,7 @@ public class GroupService {
         List<Long> groupIds = groupRepository.findAllIds();
 
         for (Long groupId : groupIds) {
-            Long likeNum = redisService.getDataInLong("groupLikeNum", groupId.toString());
+            Long likeNum = redisService.getDataInLong(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString());
 
             if (likeNum != null) {
                 groupRepository.updateLikeNum(likeNum, groupId);
@@ -646,13 +648,13 @@ public class GroupService {
         postRepository.hardDeleteByGroupId(groupId);
 
         // 레디스에 저장된 좋아요 수 삭제
-        redisService.removeData("groupLikeNum", groupId.toString());
+        redisService.removeData(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString());
 
         // 그룹 채팅방 삭제
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.CHAT_ROOM_NOT_FOUND)
         );
-        String queueName = "room." + chatRoom.getId();
+        String queueName = ROOM_PREFIX + chatRoom.getId();
         chatUserRepository.deleteByGroupId(groupId);
         chatRoomRepository.delete(chatRoom);
         brokerService.deleteQueue(queueName); // 채팅방 큐 삭제
@@ -835,7 +837,7 @@ public class GroupService {
         Page<Group> groupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, pageable);
         List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = groupPage.getContent().stream()
                 .map(group -> {
-                    Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
+                    Long likeNum = redisService.getDataInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
                     return new GroupResponse.RecommendGroupDTO(
                             group.getId(),
                             group.getName(),
@@ -968,7 +970,7 @@ public class GroupService {
         // user를 패치조인 해서 조회
         List<GroupUser> groupUsers = groupUserRepository.findByGroupIdWithUser(groupId);
 
-        List<GroupResponse.MemberDTO> memberDTOS = groupUsers.stream()
+        return groupUsers.stream()
                 .filter(groupUser -> !groupUser.getGroupRole().equals(GroupRole.TEMP)) // 가입 승인 상태가 아니면 제외
                 .map(groupUser -> new GroupResponse.MemberDTO(
                         groupUser.getUser().getId(),
@@ -976,17 +978,14 @@ public class GroupService {
                         groupUser.getGroupRole(),
                         groupUser.getUser().getProfileURL()))
                 .collect(Collectors.toList());
-
-        return memberDTOS;
     }
 
     private void configureRabbitMQForChatRoom(ChatRoom chatRoom) {
         // 그룹 채팅방의 exchange 등록 후 그룹장에 대한 큐와 리스너 등록
-        String exchangeName = "chat.exchange";
-        String queueName = "room." + chatRoom.getId();
-        String listenerId = "room." + chatRoom.getId();
+        String queueName = ROOM_PREFIX + chatRoom.getId();
+        String listenerId = ROOM_PREFIX + chatRoom.getId();
 
-        brokerService.registerDirectExQueue(exchangeName, queueName);
+        brokerService.registerDirectExQueue(CHAT_EXCHANGE, queueName);
         brokerService.registerChatListener(listenerId, queueName);
     }
 
@@ -1008,7 +1007,7 @@ public class GroupService {
 
         return groupRepository.findAllWithoutMyGroup(userId, pageable).getContent().stream()
                 .map(group -> {
-                    Long likeNum = redisService.getDataInLong("groupLikeNum", group.getId().toString());
+                    Long likeNum = redisService.getDataInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
                     return new GroupResponse.RecommendGroupDTO(
                             group.getId(),
                             group.getName(),
