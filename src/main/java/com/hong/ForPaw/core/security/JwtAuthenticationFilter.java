@@ -5,7 +5,6 @@ import com.auth0.jwt.exceptions.SignatureVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.hong.ForPaw.core.utils.CookieUtils;
-import com.hong.ForPaw.core.utils.LogUtils;
 import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.service.RedisService;
@@ -25,7 +24,6 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Enumeration;
 
 @Slf4j
 public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
@@ -156,7 +154,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         if (refreshToken != null) {
             User user = getUserFromToken(refreshToken);
 
-            if (user != null && redisService.validateData("refreshToken", String.valueOf(user.getId()), refreshToken)) {
+            if (user != null && redisService.validateValue("refreshToken", String.valueOf(user.getId()), refreshToken)) {
                 return user;
             }
         }

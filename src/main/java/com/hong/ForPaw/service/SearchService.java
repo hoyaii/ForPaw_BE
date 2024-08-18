@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -69,7 +68,7 @@ public class SearchService {
 
         return posts.getContent().stream()
                 .map(row -> {
-                    Long likeNum = redisService.getDataInLong("postLikeNum", ((Long) row[0]).toString());
+                    Long likeNum = redisService.getValueInLong("postLikeNum", ((Long) row[0]).toString());
                     return new SearchResponse.PostDTO(
                         (Long) row[0],  // postId
                         PostType.valueOf((String) row[4]),  // postType (String을 PostType으로 변환)

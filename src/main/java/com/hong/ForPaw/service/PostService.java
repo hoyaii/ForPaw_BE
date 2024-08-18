@@ -425,20 +425,14 @@ public class PostService {
         post.updateTitleAndContent(requestDTO.title(), requestDTO.content());
 
         // 유지할 이미지를 제외한 모든 이미지 DB와 S3에서 삭제
-        List<PostImage> postImages = post.getPostImages();
-
         if (requestDTO.retainedImageIds() != null && !requestDTO.retainedImageIds().isEmpty()) {
             postImageRepository.deleteByPostIdAndIdNotIn(postId, requestDTO.retainedImageIds());
         } else {
             postImageRepository.deleteByPostId(postId);
         }
 
-        /*postImages.stream()
-                .filter(postImage -> !requestDTO.retainedImageIds().contains(postImage.getId()))
-                .forEach(postImage -> {
-                    String objectKey = s3Service.extractObjectKeyFromUri(postImage.getImageURL());
-                    s3Service.deleteImage(objectKey);
-                });*/
+        //List<PostImage> postImages = post.getPostImages();
+        //deleteImagesInS3(requestDTO.retainedImageIds(), postImages);
 
         // 새 이미지 추가
         List<PostImage> newImages = requestDTO.newImages().stream()
@@ -521,7 +515,7 @@ public class PostService {
             checkExpiration(postLikeOP.get().getCreatedDate());
 
             postLikeRepository.delete(postLikeOP.get());
-            redisService.decrementCnt(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), 1L);
+            redisService.decrementValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), 1L);
         }
         else { // 좋아요를 누르지 않았다면, 좋아요 수를 증가키고, 엔티티 저장
             User userRef = entityManager.getReference(User.class, userId);
@@ -530,7 +524,7 @@ public class PostService {
             PostLike postLike = PostLike.builder().user(userRef).post(postRef).build();
 
             postLikeRepository.save(postLike);
-            redisService.incrementCnt(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), 1L);
+            redisService.incrementValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), 1L);
         }
     }
 
@@ -541,7 +535,7 @@ public class PostService {
         List<Long> postIds = postRepository.findPostIdsWithinDate(threeMonthsAgo);
 
         for (Long postId : postIds) {
-            Long likeNum = redisService.getDataInLong(POST_LIKE_NUM_KEY_PREFIX, postId.toString());
+            Long likeNum = redisService.getValueInLong(POST_LIKE_NUM_KEY_PREFIX, postId.toString());
 
             if (likeNum != null) {
                 postRepository.updateLikeNum(likeNum, postId);
@@ -664,7 +658,7 @@ public class PostService {
         commentLikeRepository.deleteAllByCommentId(commentId);
 
         // 게시글의 댓글 수 감소
-        Long childNum = (long) comment.getChildren().size();
+        long childNum = comment.getChildren().size();
         postRepository.decrementCommentNum(postId, 1L + childNum);
     }
 
@@ -687,7 +681,7 @@ public class PostService {
             checkExpiration(commentLikeOP.get().getCreatedDate());
 
             commentLikeRepository.delete(commentLikeOP.get());
-            redisService.decrementCnt(COMMENT_LIKE_NUM_KEY_PREFIX, commentId.toString(), 1L);
+            redisService.decrementValue(COMMENT_LIKE_NUM_KEY_PREFIX, commentId.toString(), 1L);
         }
         else{ // 좋아요를 누르지 않았다면, 좋아요 수를 증가키고, 엔티티 저장
             User userRef = entityManager.getReference(User.class, userId);
@@ -696,7 +690,7 @@ public class PostService {
             CommentLike commentLike = CommentLike.builder().user(userRef).comment(commentRef).build();
 
             commentLikeRepository.save(commentLike);
-            redisService.incrementCnt(COMMENT_LIKE_NUM_KEY_PREFIX, commentId.toString(), 1L);
+            redisService.incrementValue(COMMENT_LIKE_NUM_KEY_PREFIX, commentId.toString(), 1L);
         }
     }
 
@@ -884,7 +878,7 @@ public class PostService {
     }
 
     private Long getCachedLikeNum(String keyPrefix, Long key, Supplier<Long> dbFallback) {
-        Long likeNum = redisService.getDataInLong(keyPrefix, key.toString());
+        Long likeNum = redisService.getValueInLong(keyPrefix, key.toString());
 
         if (likeNum == null) {
             likeNum = dbFallback.get();
@@ -901,5 +895,14 @@ public class PostService {
                 alarmType);
 
         brokerService.produceAlarmToUser(userId, alarmDTO);
+    }
+
+    private void deleteImagesInS3(List<Long> retainedImageIds, List<PostImage> postImages) {
+        postImages.stream()
+                .filter(postImage -> !retainedImageIds.contains(postImage.getId()))
+                .forEach(postImage -> {
+                    String objectKey = s3Service.extractObjectKeyFromUri(postImage.getImageURL());
+                    s3Service.deleteImage(objectKey);
+                });
     }
 }

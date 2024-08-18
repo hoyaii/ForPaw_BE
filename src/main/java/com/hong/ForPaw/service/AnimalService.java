@@ -213,7 +213,7 @@ public class AnimalService {
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
-                    Long likeNum = redisService.getDataInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
+                    Long likeNum = redisService.getValueInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
 
                     return new AnimalResponse.AnimalDTO(
                         animal.getId(),
@@ -244,7 +244,7 @@ public class AnimalService {
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalRepository.findByIds(recommendedAnimalIds).stream()
                 .map(animal -> {
-                    Long likeNum = redisService.getDataInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
+                    Long likeNum = redisService.getValueInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
 
                     return new AnimalResponse.AnimalDTO(
                             animal.getId(),
@@ -274,7 +274,7 @@ public class AnimalService {
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
-                    Long likeNum = redisService.getDataInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
+                    Long likeNum = redisService.getValueInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
 
                     return new AnimalResponse.AnimalDTO(
                             animal.getId(),
@@ -343,7 +343,7 @@ public class AnimalService {
         // 좋아요가 이미 있다면 삭제, 없다면 추가
         if (favoriteAnimalOP.isPresent()) {
             favoriteAnimalRepository.delete(favoriteAnimalOP.get());
-            redisService.decrementCnt(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString(), 1L);
+            redisService.decrementValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString(), 1L);
         }
         else {
             Animal animalRef = entityManager.getReference(Animal.class, animalId);
@@ -355,7 +355,7 @@ public class AnimalService {
                     .build();
 
             favoriteAnimalRepository.save(favoriteAnimal);
-            redisService.incrementCnt(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString(), 1L);
+            redisService.incrementValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString(), 1L);
         }
     }
 
@@ -365,7 +365,7 @@ public class AnimalService {
         List<Long> animalIds = animalRepository.findAllIds();
 
         for (Long postId : animalIds) {
-            Long likeNum = redisService.getDataInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, postId.toString());
+            Long likeNum = redisService.getValueInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, postId.toString());
 
             if (likeNum != null) {
                 animalRepository.updateLikeNum(likeNum, postId);

@@ -203,7 +203,7 @@ public class GroupService {
 
         return localGroupPage.getContent().stream()
                 .map(group -> {
-                    Long likeNum = redisService.getDataInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
+                    Long likeNum = redisService.getValueInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
 
                     return new GroupResponse.LocalGroupDTO(
                             group.getId(),
@@ -257,7 +257,7 @@ public class GroupService {
 
         return joinedGroups.stream()
                 .map(group -> {
-                    Long likeNum = redisService.getDataInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
+                    Long likeNum = redisService.getValueInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
 
                     return new GroupResponse.MyGroupDTO(
                             group.getId(),
@@ -301,7 +301,7 @@ public class GroupService {
     public List<GroupResponse.NoticeDTO> findNoticeList(Long userId, Long groupId, Pageable pageable){
         // 해당 유저가 읽은 post의 id 목록
         String key = POST_READ_KEY_PREFIX + userId;
-        Set<String> postIds = userId != null ? redisService.getAllElement(key) : Collections.emptySet();
+        Set<String> postIds = userId != null ? redisService.getMembersOfSet(key) : Collections.emptySet();
 
         Page<Post> noticePage = postRepository.findNoticeByGroupIdWithUser(groupId, pageable);
 
@@ -597,7 +597,7 @@ public class GroupService {
         // 좋아요가 이미 있다면 삭제, 없다면 추가
         if (favoriteGroupOP.isPresent()) {
             favoriteGroupRepository.delete(favoriteGroupOP.get());
-            redisService.decrementCnt(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString(), 1L);
+            redisService.decrementValue(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString(), 1L);
         }
         else {
             Group groupRef = entityManager.getReference(Group.class, groupId);
@@ -609,7 +609,7 @@ public class GroupService {
                     .build();
 
             favoriteGroupRepository.save(favoriteGroup);
-            redisService.incrementCnt(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString(), 1L);
+            redisService.incrementValue(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString(), 1L);
         }
     }
 
@@ -619,7 +619,7 @@ public class GroupService {
         List<Long> groupIds = groupRepository.findAllIds();
 
         for (Long groupId : groupIds) {
-            Long likeNum = redisService.getDataInLong(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString());
+            Long likeNum = redisService.getValueInLong(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString());
 
             if (likeNum != null) {
                 groupRepository.updateLikeNum(likeNum, groupId);
@@ -837,7 +837,7 @@ public class GroupService {
         Page<Group> groupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, pageable);
         List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = groupPage.getContent().stream()
                 .map(group -> {
-                    Long likeNum = redisService.getDataInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
+                    Long likeNum = redisService.getValueInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
                     return new GroupResponse.RecommendGroupDTO(
                             group.getId(),
                             group.getName(),
@@ -1007,7 +1007,7 @@ public class GroupService {
 
         return groupRepository.findAllWithoutMyGroup(userId, pageable).getContent().stream()
                 .map(group -> {
-                    Long likeNum = redisService.getDataInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
+                    Long likeNum = redisService.getValueInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
                     return new GroupResponse.RecommendGroupDTO(
                             group.getId(),
                             group.getName(),

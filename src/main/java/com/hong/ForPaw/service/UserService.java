@@ -328,7 +328,7 @@ public class UserService {
 
     public UserResponse.VerifyEmailCodeDTO verifyCode(UserRequest.VerifyCodeDTO requestDTO){
         // 레디스를 통해 해당 코드가 유효한지 확인
-        if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
+        if(!redisService.validateValue("emailCode", requestDTO.email(), requestDTO.code()))
             return new UserResponse.VerifyEmailCodeDTO(false);
 
         // 검증 후 토큰 삭제
@@ -356,7 +356,7 @@ public class UserService {
     }
 
     public void verifyRecoveryCodeForRecovery(UserRequest.VerifyCodeDTO requestDTO){
-        if(!redisService.validateData("emailCode", requestDTO.email(), requestDTO.code()))
+        if(!redisService.validateValue("emailCode", requestDTO.email(), requestDTO.code()))
             throw new CustomException(ExceptionCode.CODE_WRONG);
 
         // resetPassword()에서 서버에 요청으로 이메일과 비밀번호를 동시에 보내지 않도록, 코드에 대한 이메일을 저장
@@ -365,7 +365,7 @@ public class UserService {
 
     @Transactional
     public void resetPassword(UserRequest.ResetPasswordDTO requestDTO){
-        String email = redisService.getDataInStr("emailCodeToEmail", requestDTO.code());
+        String email = redisService.getValueInStr("emailCodeToEmail", requestDTO.code());
 
         // 해당 email이 계정 복구중이 아님. (verifyRecoveryCode()를 거쳐야 값이 존재한다)
         if(email == null){
@@ -377,7 +377,7 @@ public class UserService {
         );
 
         // 다시 한번 이메일 코드 체크
-        if(!redisService.validateData("emailCode", email, requestDTO.code()))
+        if(!redisService.validateValue("emailCode", email, requestDTO.code()))
             throw new CustomException(ExceptionCode.BAD_APPROACH);
         redisService.removeData("emailCode", email);
 
@@ -614,7 +614,7 @@ public class UserService {
         }
 
         Long userIdFromToken = JWTProvider.getUserIdFromToken(accessToken);
-        if(!redisService.validateData("accessToken", String.valueOf(userIdFromToken), accessToken)){
+        if(!redisService.validateValue("accessToken", String.valueOf(userIdFromToken), accessToken)){
             throw new CustomException(ExceptionCode.ACCESS_TOKEN_WRONG);
         }
 
@@ -647,13 +647,13 @@ public class UserService {
 
     private Long checkLoginFailures(User user) throws MessagingException {
         // 하루 동안 5분 잠금이 세 번을 초과하면, 24시간 동안 로그인이 불가
-        Long loginFailNumDaily = redisService.getDataInLong("loginFailDaily", user.getId().toString());
+        Long loginFailNumDaily = redisService.getValueInLong("loginFailDaily", user.getId().toString());
         if (loginFailNumDaily >= 3L) {
             throw new CustomException(ExceptionCode.ACCOUNT_LOCKED);
         }
 
         // 로그이 실패 횟수가 3회 이상이면, 5분 동안 로그인 불가
-        Long loginFailNum = redisService.getDataInLong("loginFail", user.getId().toString());
+        Long loginFailNum = redisService.getValueInLong("loginFail", user.getId().toString());
         if(loginFailNum >= 3L) {
             loginFailNumDaily++;
             redisService.storeValue("loginFailDaily", user.getId().toString(), loginFailNumDaily.toString(), 86400000L);  // 24시간
@@ -782,7 +782,7 @@ public class UserService {
 
     private Map<String, String> createAccessToken(User user){
         String accessToken = JWTProvider.createAccessToken(user);
-        String refreshToken = redisService.getDataInStr("refreshToken", String.valueOf(user.getId()));
+        String refreshToken = redisService.getValueInStr("refreshToken", String.valueOf(user.getId()));
 
         redisService.storeValue("accessToken", String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP_MILLI);
 

@@ -39,7 +39,7 @@ public class HomeService {
 
         List<HomeResponse.AnimalDTO> animalDTOS = animalRepository.findByIds(recommendedAnimalIds).stream()
                 .map(animal -> {
-                    Long likeNum = redisService.getDataInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
+                    Long likeNum = redisService.getValueInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
 
                     return new HomeResponse.AnimalDTO(
                             animal.getId(),
