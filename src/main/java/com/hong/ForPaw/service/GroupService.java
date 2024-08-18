@@ -65,7 +65,7 @@ public class GroupService {
     private static final String SORT_BY_PARTICIPANT_NUM = "participantNum";
     private static final String POST_READ_KEY_PREFIX = "user:readPosts:";
     private static final String GROUP_LIKE_NUM_KEY_PREFIX = "groupLikeNum";
-    private static final String ROOM_PREFIX = "room.";
+    private static final String ROOM_QUEUE_PREFIX = "room.";
     private static final String CHAT_EXCHANGE = "chat.exchange";
 
     @Transactional
@@ -654,7 +654,7 @@ public class GroupService {
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.CHAT_ROOM_NOT_FOUND)
         );
-        String queueName = ROOM_PREFIX + chatRoom.getId();
+        String queueName = ROOM_QUEUE_PREFIX + chatRoom.getId();
         chatUserRepository.deleteByGroupId(groupId);
         chatRoomRepository.delete(chatRoom);
         brokerService.deleteQueue(queueName); // 채팅방 큐 삭제
@@ -982,8 +982,8 @@ public class GroupService {
 
     private void configureRabbitMQForChatRoom(ChatRoom chatRoom) {
         // 그룹 채팅방의 exchange 등록 후 그룹장에 대한 큐와 리스너 등록
-        String queueName = ROOM_PREFIX + chatRoom.getId();
-        String listenerId = ROOM_PREFIX + chatRoom.getId();
+        String queueName = ROOM_QUEUE_PREFIX + chatRoom.getId();
+        String listenerId = ROOM_QUEUE_PREFIX + chatRoom.getId();
 
         brokerService.registerDirectExQueue(CHAT_EXCHANGE, queueName);
         brokerService.registerChatListener(listenerId, queueName);

@@ -51,15 +51,15 @@ public class BrokerService {
 
     private static final String CHAT_EXCHANGE = "chat.exchange";
     private static final String ALARM_EXCHANGE = "alarm.exchange";
-    private static final String ROOM_PREFIX = "room.";
-    private static final String USER_PREFIX = "user.";
+    private static final String ROOM_QUEUE_PREFIX = "room.";
+    private static final String USER_QUEUE_PREFIX = "user.";
 
     @Transactional
     public void initChatListener(){
         chatRoomRepository.findAll()
                 .forEach(chatRoom -> {
-                    String queueName = ROOM_PREFIX + chatRoom.getId();
-                    String listenerId = ROOM_PREFIX + chatRoom.getId();
+                    String queueName = ROOM_QUEUE_PREFIX + chatRoom.getId();
+                    String listenerId = ROOM_QUEUE_PREFIX + chatRoom.getId();
 
                     registerDirectExQueue(CHAT_EXCHANGE, queueName);
                     registerChatListener(listenerId, queueName);
@@ -70,8 +70,8 @@ public class BrokerService {
     public void initAlarmListener(){
         userRepository.findAll()
                 .forEach(user -> {
-                    String queueName = USER_PREFIX + user.getId();
-                    String listenerId = USER_PREFIX + user.getId();
+                    String queueName = USER_QUEUE_PREFIX + user.getId();
+                    String listenerId = USER_QUEUE_PREFIX + user.getId();
 
                     registerDirectExQueue(ALARM_EXCHANGE, queueName);
                     registerAlarmListener(listenerId, queueName);
@@ -185,13 +185,13 @@ public class BrokerService {
     }
 
     public void produceChatToRoom(Long chatRoomId, ChatRequest.MessageDTO message){
-        String routingKey = ROOM_PREFIX + chatRoomId;
+        String routingKey = ROOM_QUEUE_PREFIX + chatRoomId;
 
         rabbitTemplate.convertAndSend(CHAT_EXCHANGE, routingKey, message);
     }
 
     public void produceAlarmToUser(Long userId, AlarmRequest.AlarmDTO alarm) {
-        String routingKey = USER_PREFIX + userId;
+        String routingKey = USER_QUEUE_PREFIX + userId;
 
         rabbitTemplate.convertAndSend(ALARM_EXCHANGE, routingKey, alarm);
     }

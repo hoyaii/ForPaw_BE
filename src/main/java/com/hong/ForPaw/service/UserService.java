@@ -142,9 +142,16 @@ public class UserService {
     private String REDIRECT_HOME_URI;
 
     private final SpringTemplateEngine templateEngine;
-    private final String MAIL_TEMPLATE_FOR_CODE = "verification_code_email.html";
-    private final String MAIL_TEMPLATE_FOR_LOCK_ACCOUNT = "lock_account.html";
-
+    private static final String MAIL_TEMPLATE_FOR_CODE = "verification_code_email.html";
+    private static final String MAIL_TEMPLATE_FOR_LOCK_ACCOUNT = "lock_account.html";
+    private static final String EMAIL_CODE_KEY_PREFIX = "emailCode";
+    private static final String REFRESH_TOKEN_KEY_PREFIX = "refreshToken";
+    private static final String ACCESS_TOKEN_KEY_PREFIX = "accessToken";
+    private static final String LOGIN_FAIL_DAILY_KEY_PREFIX = "loginFailDaily";
+    private static final String LOGIN_FAIL_KEY_PREFIX = "loginFail";
+    private static final String CODE_TO_EMAIL_KEY_PREFIX = "codeToEmail";
+    private static final String USER_QUEUE_PREFIX = "user.";
+    private static final String ALARM_EXCHANGE = "alarm.exchange";
 
     @Transactional
     public void initSuperAdmin(){
@@ -191,7 +198,7 @@ public class UserService {
 
         // 비밀번호가 일치하지 않음
         if(!passwordEncoder.matches(requestDTO.password(), user.getPassword())){
-            redisService.storeValue("loginFail", user.getId().toString(), Long.toString(++loginFailNum), 300000L); // 5분
+            redisService.storeValue(LOGIN_FAIL_KEY_PREFIX, user.getId().toString(), Long.toString(++loginFailNum), 300000L); // 5분
             throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
         }
 
@@ -291,7 +298,7 @@ public class UserService {
         boolean isValid = !userRepository.existsByEmailWithRemoved(requestDTO.email());
 
         // 계속 이메일을 보내는 건 방지. 3분 후에 다시 시도할 수 있다
-        if(redisService.isDateExist("emailCode", requestDTO.email())){
+        if(redisService.isDateExist(EMAIL_CODE_KEY_PREFIX, requestDTO.email())){
             throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
         }
 
@@ -309,7 +316,7 @@ public class UserService {
 
         sendMail(requestDTO.email(), VERIFICATION_CODE.getSubject(), MAIL_TEMPLATE_FOR_CODE, model);
 
-        redisService.storeValue("emailCode", requestDTO.email(), verificationCode, 175 * 1000L); // 3분 동안 유효
+        redisService.storeValue(EMAIL_CODE_KEY_PREFIX, requestDTO.email(), verificationCode, 175 * 1000L); // 3분 동안 유효
     }
 
     @Async
@@ -321,18 +328,18 @@ public class UserService {
 
     public void checkSendCodeTTL(UserRequest.EmailDTO requestDTO){
         // 재시도는 전송 3분 후에 가능하다
-        if(redisService.isDateExist("emailCode", requestDTO.email())){
+        if(redisService.isDateExist(EMAIL_CODE_KEY_PREFIX, requestDTO.email())){
             throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
         }
     }
 
     public UserResponse.VerifyEmailCodeDTO verifyCode(UserRequest.VerifyCodeDTO requestDTO){
         // 레디스를 통해 해당 코드가 유효한지 확인
-        if(!redisService.validateValue("emailCode", requestDTO.email(), requestDTO.code()))
+        if(!redisService.validateValue(EMAIL_CODE_KEY_PREFIX, requestDTO.email(), requestDTO.code()))
             return new UserResponse.VerifyEmailCodeDTO(false);
 
         // 검증 후 토큰 삭제
-        // redisService.removeData("emailCode", requestDTO.email());
+        // redisService.removeData(EMAIL_CODE_KEY_PREFIX, requestDTO.email());
 
         return new UserResponse.VerifyEmailCodeDTO(true);
     }
@@ -348,7 +355,7 @@ public class UserService {
         boolean isValid = userRepository.findByEmail(requestDTO.email()).isPresent();
 
         // 계속 이메일을 보내는 건 방지. 3분 후에 다시 시도할 수 있다
-        if(redisService.isDateExist("emailCode", requestDTO.email())){
+        if(redisService.isDateExist(EMAIL_CODE_KEY_PREFIX, requestDTO.email())){
             throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
         }
 
@@ -356,16 +363,16 @@ public class UserService {
     }
 
     public void verifyRecoveryCodeForRecovery(UserRequest.VerifyCodeDTO requestDTO){
-        if(!redisService.validateValue("emailCode", requestDTO.email(), requestDTO.code()))
+        if(!redisService.validateValue(EMAIL_CODE_KEY_PREFIX, requestDTO.email(), requestDTO.code()))
             throw new CustomException(ExceptionCode.CODE_WRONG);
 
         // resetPassword()에서 서버에 요청으로 이메일과 비밀번호를 동시에 보내지 않도록, 코드에 대한 이메일을 저장
-        redisService.storeValue("emailCodeToEmail", requestDTO.code(), requestDTO.email(), 5 * 60 * 1000L);
+        redisService.storeValue(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code(), requestDTO.email(), 5 * 60 * 1000L);
     }
 
     @Transactional
     public void resetPassword(UserRequest.ResetPasswordDTO requestDTO){
-        String email = redisService.getValueInStr("emailCodeToEmail", requestDTO.code());
+        String email = redisService.getValueInStr(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code());
 
         // 해당 email이 계정 복구중이 아님. (verifyRecoveryCode()를 거쳐야 값이 존재한다)
         if(email == null){
@@ -377,9 +384,9 @@ public class UserService {
         );
 
         // 다시 한번 이메일 코드 체크
-        if(!redisService.validateValue("emailCode", email, requestDTO.code()))
+        if(!redisService.validateValue(EMAIL_CODE_KEY_PREFIX, email, requestDTO.code()))
             throw new CustomException(ExceptionCode.BAD_APPROACH);
-        redisService.removeData("emailCode", email);
+        redisService.removeData(EMAIL_CODE_KEY_PREFIX, email);
 
         // 새로운 비밀번호로 업데이트
         user.updatePassword(passwordEncoder.encode(requestDTO.newPassword()));
@@ -449,7 +456,7 @@ public class UserService {
         Long userId = JWTProvider.getUserIdFromToken(refreshToken);
 
         // 토큰 만료 여부 체크
-        if(!redisService.isDateExist("refreshToken", String.valueOf(userId)))
+        if(!redisService.isDateExist(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(userId)))
             throw new CustomException(ExceptionCode.TOKEN_EXPIRED);
 
         // 탈퇴한 회원의 refreshToken이 요청으로 왔으면, USER_NOT_FOUND 에러 발생
@@ -460,13 +467,12 @@ public class UserService {
         return createAccessToken(user);
     }
 
-    // 관지라 API
     @Transactional
-    public void updateRole(UserRequest.UpdateRoleDTO requestDTO, UserRole userRole){
-        // 관리자만 사용 가능 (테스트 상황에선 주석 처리)
-        //if(role.equals(Role.ADMIN)){
-        //    throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        //}
+    public void updateRole(UserRequest.UpdateRoleDTO requestDTO, UserRole role){
+        // 관리자만 사용 가능
+        if(role.equals(UserRole.ADMIN)){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
 
         User user = userRepository.findById(requestDTO.userId()).get();
         user.updateRole(requestDTO.role());
@@ -614,7 +620,7 @@ public class UserService {
         }
 
         Long userIdFromToken = JWTProvider.getUserIdFromToken(accessToken);
-        if(!redisService.validateValue("accessToken", String.valueOf(userIdFromToken), accessToken)){
+        if(!redisService.validateValue(ACCESS_TOKEN_KEY_PREFIX, String.valueOf(userIdFromToken), accessToken)){
             throw new CustomException(ExceptionCode.ACCESS_TOKEN_WRONG);
         }
 
@@ -647,16 +653,16 @@ public class UserService {
 
     private Long checkLoginFailures(User user) throws MessagingException {
         // 하루 동안 5분 잠금이 세 번을 초과하면, 24시간 동안 로그인이 불가
-        Long loginFailNumDaily = redisService.getValueInLong("loginFailDaily", user.getId().toString());
+        Long loginFailNumDaily = redisService.getValueInLong(LOGIN_FAIL_DAILY_KEY_PREFIX, user.getId().toString());
         if (loginFailNumDaily >= 3L) {
             throw new CustomException(ExceptionCode.ACCOUNT_LOCKED);
         }
 
         // 로그이 실패 횟수가 3회 이상이면, 5분 동안 로그인 불가
-        Long loginFailNum = redisService.getValueInLong("loginFail", user.getId().toString());
+        Long loginFailNum = redisService.getValueInLong(LOGIN_FAIL_KEY_PREFIX, user.getId().toString());
         if(loginFailNum >= 3L) {
             loginFailNumDaily++;
-            redisService.storeValue("loginFailDaily", user.getId().toString(), loginFailNumDaily.toString(), 86400000L);  // 24시간
+            redisService.storeValue(LOGIN_FAIL_DAILY_KEY_PREFIX, user.getId().toString(), loginFailNumDaily.toString(), 86400000L);  // 24시간
 
             if(loginFailNumDaily == 3L){
                 sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), MAIL_TEMPLATE_FOR_LOCK_ACCOUNT, new HashMap<>());
@@ -695,9 +701,9 @@ public class UserService {
                     .build()
                     .toUriString();
         } else {
-            response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokenOrEmail.get("refreshToken")));
+            response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokenOrEmail.get(REFRESH_TOKEN_KEY_PREFIX)));
             redirectUri = UriComponentsBuilder.fromUriString(REDIRECT_HOME_URI)
-                    .queryParam("accessToken", URLEncoder.encode(tokenOrEmail.get("accessToken"), StandardCharsets.UTF_8))
+                    .queryParam("accessToken", URLEncoder.encode(tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX), StandardCharsets.UTF_8))
                     .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
                     .build()
                     .toUriString();
@@ -706,7 +712,7 @@ public class UserService {
     }
 
     public String createRefreshTokenCookie(String refreshToken) {
-        return ResponseCookie.from("refreshToken", refreshToken)
+        return ResponseCookie.from(REFRESH_TOKEN_KEY_PREFIX, refreshToken)
                 .httpOnly(true)
                 .secure(false)
                 .path("/")
@@ -733,33 +739,31 @@ public class UserService {
         String numbers = "0123456789";
         String upperCaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         String lowerCaseLetters = "abcdefghijklmnopqrstuvwxyz";
+        String allChars = specialChars + numbers + upperCaseLetters + lowerCaseLetters;
+
         SecureRandom random = new SecureRandom();
 
         // 각 범주에서 랜덤하게 하나씩 선택
-        String mandatoryChars =
-                Stream.of(specialChars, numbers, upperCaseLetters, lowerCaseLetters)
-                        .map(s -> s.charAt(random.nextInt(s.length())))
-                        .map(Object::toString)
-                        .collect(Collectors.joining());
+        StringBuilder password = new StringBuilder(8);
+        password.append(specialChars.charAt(random.nextInt(specialChars.length())));
+        password.append(numbers.charAt(random.nextInt(numbers.length())));
+        password.append(upperCaseLetters.charAt(random.nextInt(upperCaseLetters.length())));
+        password.append(lowerCaseLetters.charAt(random.nextInt(lowerCaseLetters.length())));
 
         // 나머지 자리를 전체 문자 집합에서 선택
-        String allChars = specialChars + numbers + upperCaseLetters + lowerCaseLetters;
-        String randomChars = IntStream.range(mandatoryChars.length(), 8)
-                .map(i -> random.nextInt(allChars.length()))
-                .mapToObj(allChars::charAt)
-                .map(Object::toString)
-                .collect(Collectors.joining());
+        for (int i = 4; i < 8; i++) {
+            password.append(allChars.charAt(random.nextInt(allChars.length())));
+        }
 
-        // 최종 문자열 생성을 위해 섞기
-        String verificationCode = Stream.of(mandatoryChars.split(""), randomChars.split(""))
-                .flatMap(Arrays::stream)
-                .collect(Collectors.collectingAndThen(Collectors.toList(), list -> {
-                    Collections.shuffle(list);
-                    return list.stream();
-                }))
-                .collect(Collectors.joining());
+        // 최종 문자열 섞기
+        List<Character> passwordChars = password.chars()
+                .mapToObj(c -> (char) c)
+                .collect(Collectors.toList());
+        Collections.shuffle(passwordChars);
 
-        return verificationCode;
+        return passwordChars.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining());
     }
 
     private Map<String, String> createToken(User user){
@@ -767,28 +771,28 @@ public class UserService {
         String refreshToken = JWTProvider.createRefreshToken(user);
 
         // Access Token 갱신
-        redisService.storeValue("accessToken", String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP_MILLI);
+        redisService.storeValue(ACCESS_TOKEN_KEY_PREFIX, String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP_MILLI);
 
         // Refresh Token 갱신
-        redisService.storeValue("refreshToken", String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP_MILLI);
+        redisService.storeValue(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP_MILLI);
 
         // Map으로 토큰들을 담아 반환
         Map<String, String> tokens = new HashMap<>();
-        tokens.put("accessToken", accessToken);
-        tokens.put("refreshToken", refreshToken);
+        tokens.put(ACCESS_TOKEN_KEY_PREFIX, accessToken);
+        tokens.put(REFRESH_TOKEN_KEY_PREFIX, refreshToken);
 
         return tokens;
     }
 
     private Map<String, String> createAccessToken(User user){
         String accessToken = JWTProvider.createAccessToken(user);
-        String refreshToken = redisService.getValueInStr("refreshToken", String.valueOf(user.getId()));
+        String refreshToken = redisService.getValueInStr(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(user.getId()));
 
-        redisService.storeValue("accessToken", String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP_MILLI);
+        redisService.storeValue(ACCESS_TOKEN_KEY_PREFIX, String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP_MILLI);
 
         Map<String, String> tokens = new HashMap<>();
-        tokens.put("accessToken", accessToken);
-        tokens.put("refreshToken", refreshToken);
+        tokens.put(ACCESS_TOKEN_KEY_PREFIX, accessToken);
+        tokens.put(REFRESH_TOKEN_KEY_PREFIX, refreshToken);
 
         return tokens;
     }
@@ -880,11 +884,10 @@ public class UserService {
 
     private void setAlarmQueue(User user) {
         // 알람 전송을 위한 큐 등록
-        String exchangeName = "alarm.exchange";
-        String queueName = "user." + user.getId();
-        String listenerId = "user." + user.getId();
+        String queueName = USER_QUEUE_PREFIX + user.getId();
+        String listenerId = USER_QUEUE_PREFIX + user.getId();
 
-        brokerService.registerDirectExQueue(exchangeName, queueName);
+        brokerService.registerDirectExQueue(ALARM_EXCHANGE, queueName);
         brokerService.registerAlarmListener(listenerId, queueName);
     }
 
