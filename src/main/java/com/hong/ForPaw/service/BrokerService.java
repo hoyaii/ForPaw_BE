@@ -49,15 +49,19 @@ public class BrokerService {
     private final MessageConverter converter;
     private final EntityManager entityManager;
 
+    private static final String CHAT_EXCHANGE = "chat.exchange";
+    private static final String ALARM_EXCHANGE = "alarm.exchange";
+    private static final String ROOM_PREFIX = "room.";
+    private static final String USER_PREFIX = "user.";
+
     @Transactional
     public void initChatListener(){
         chatRoomRepository.findAll()
                 .forEach(chatRoom -> {
-                    String exchangeName = "chat.exchange";
-                    String queueName = "room." + chatRoom.getId();
-                    String listenerId = "room." + chatRoom.getId();
+                    String queueName = ROOM_PREFIX + chatRoom.getId();
+                    String listenerId = ROOM_PREFIX + chatRoom.getId();
 
-                    registerDirectExQueue(exchangeName, queueName);
+                    registerDirectExQueue(CHAT_EXCHANGE, queueName);
                     registerChatListener(listenerId, queueName);
                 });
     }
@@ -66,11 +70,10 @@ public class BrokerService {
     public void initAlarmListener(){
         userRepository.findAll()
                 .forEach(user -> {
-                    String exchangeName = "alarm.exchange";
-                    String queueName = "user." + user.getId();
-                    String listenerId = "user." + user.getId();
+                    String queueName = USER_PREFIX + user.getId();
+                    String listenerId = USER_PREFIX + user.getId();
 
-                    registerDirectExQueue(exchangeName, queueName);
+                    registerDirectExQueue(ALARM_EXCHANGE, queueName);
                     registerAlarmListener(listenerId, queueName);
                 });
     }
@@ -182,17 +185,15 @@ public class BrokerService {
     }
 
     public void produceChatToRoom(Long chatRoomId, ChatRequest.MessageDTO message){
-        String exchangeName = "chat.exchange";
-        String routingKey = "room." + chatRoomId;
+        String routingKey = ROOM_PREFIX + chatRoomId;
 
-        rabbitTemplate.convertAndSend(exchangeName, routingKey, message);
+        rabbitTemplate.convertAndSend(CHAT_EXCHANGE, routingKey, message);
     }
 
     public void produceAlarmToUser(Long userId, AlarmRequest.AlarmDTO alarm) {
-        String exchangeName = "alarm.exchange";
-        String routingKey = "user." + userId;
+        String routingKey = USER_PREFIX + userId;
 
-        rabbitTemplate.convertAndSend(exchangeName, routingKey, alarm);
+        rabbitTemplate.convertAndSend(ALARM_EXCHANGE, routingKey, alarm);
     }
 
     private Date calculateExpireAt(LocalDateTime date, int months) {
