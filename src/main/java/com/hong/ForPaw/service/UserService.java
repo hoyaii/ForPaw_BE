@@ -157,12 +157,8 @@ public class UserService {
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String AUTH_CODE_GRANT_TYPE = "authorization_code";
     private static final String UNKNOWN = "unknown";
-    private static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
-    private static final String PROXY_CLIENT_IP_HEADER = "Proxy-Client-IP";
-    private static final String WL_PROXY_CLIENT_IP_HEADER = "WL-Proxy-Client-IP";
-    private static final String HTTP_CLIENT_IP_HEADER = "HTTP_CLIENT_IP";
-    private static final String HTTP_X_FORWARDED_FOR_HEADER = "HTTP_X_FORWARDED_FOR";
     private static final String UTF_EIGHT_ENCODING = "UTF-8";
+    private static final String[] IP_HEADER_CANDIDATES = {"X-Forwarded-For", "Proxy-Client-IP", "WL-Proxy-Client-IP", "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR"};
 
     @Transactional
     public void initSuperAdmin(){
@@ -939,30 +935,16 @@ public class UserService {
     }
 
     private String getClientIP(HttpServletRequest request) {
-        String ip = request.getHeader(X_FORWARDED_FOR_HEADER);
+        // IP_HEADER_CANDIDATES에 IP 주소를 얻기 위해 참조할 수 있는 헤더 이름 목록 존재
+        for (String header : IP_HEADER_CANDIDATES) {
+            String ip = request.getHeader(header);
 
-        // nginx와 같은 proxy 사용 시 대비
-        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-            ip = request.getHeader(PROXY_CLIENT_IP_HEADER);
+            // 해당 헤더가 비어 있지 않고, "unknown"이라는 값이 아닌 경우에만 해당 IP를 반환
+            if (ip != null && ip.length() != 0 && !UNKNOWN.equalsIgnoreCase(ip)) {
+                return ip;
+            }
         }
-
-        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-            ip = request.getHeader(WL_PROXY_CLIENT_IP_HEADER);
-        }
-
-        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-            ip = request.getHeader(HTTP_CLIENT_IP_HEADER);
-        }
-
-        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-            ip = request.getHeader(HTTP_X_FORWARDED_FOR_HEADER);
-        }
-
-        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-
-        return ip;
+        return request.getRemoteAddr();
     }
 
     private void setUserStatus(User user){
