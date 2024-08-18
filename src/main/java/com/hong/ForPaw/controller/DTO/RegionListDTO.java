@@ -5,7 +5,7 @@ import com.hong.ForPaw.domain.Province;
 
 import java.util.List;
 
-public record RegionsDTO(List<RegionDTO> regions) {
+public record RegionListDTO(List<RegionDTO> regions) {
 
     public record RegionDTO(Integer orgCd, Province orgdownNm, List<SubRegionDTO> subRegions) { }
 

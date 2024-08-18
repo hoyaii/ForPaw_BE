@@ -33,11 +33,15 @@ public class SearchService {
     private final GroupRepository groupRepository;
     private final MeetingRepository meetingRepository;
     private final RedisService redisService;
+    private static final String POST_LIKE_NUM_KEY_PREFIX = "postLikeNum";
+    private static final String SORT_BY_ID = "id";
 
     @Transactional(readOnly = true)
     public SearchResponse.SearchAllDTO searchAll(String keyword){
         checkKeywordEmpty(keyword);
-        Pageable pageable = PageRequest.of(0, 3, Sort.by(Sort.Direction.ASC, "id"));
+
+        // 전체 결과에서는 3개씩 보내줌
+        Pageable pageable = PageRequest.of(0, 3, Sort.by(Sort.Direction.ASC, SORT_BY_ID));
 
         // 보호소 검색
         List<SearchResponse.ShelterDTO> shelterDTOS = searchShelterList(keyword, pageable);
@@ -68,7 +72,7 @@ public class SearchService {
 
         return posts.getContent().stream()
                 .map(row -> {
-                    Long likeNum = redisService.getValueInLong("postLikeNum", ((Long) row[0]).toString());
+                    Long likeNum = redisService.getValueInLong(POST_LIKE_NUM_KEY_PREFIX, ((Long) row[0]).toString());
                     return new SearchResponse.PostDTO(
                         (Long) row[0],  // postId
                         PostType.valueOf((String) row[4]),  // postType (String을 PostType으로 변환)

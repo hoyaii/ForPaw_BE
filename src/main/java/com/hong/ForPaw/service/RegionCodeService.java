@@ -2,7 +2,7 @@ package com.hong.ForPaw.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hong.ForPaw.controller.DTO.RegionsDTO;
+import com.hong.ForPaw.controller.DTO.RegionListDTO;
 import com.hong.ForPaw.domain.RegionCode;
 import com.hong.ForPaw.repository.RegionCodeRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,12 +17,13 @@ public class RegionCodeService {
 
     private final RegionCodeRepository regionCodeRepository;
     private final ObjectMapper mapper;
+    private static final String REGION_CODE_FILE_PATH = "/sigungu.json";
 
     public void updateRegionCodeData() throws IOException {
-        InputStream inputStream = TypeReference.class.getResourceAsStream("/sigungu.json");
-        RegionsDTO json = mapper.readValue(inputStream, RegionsDTO.class);
+        InputStream inputStream = TypeReference.class.getResourceAsStream(REGION_CODE_FILE_PATH);
+        RegionListDTO regionListDTO = mapper.readValue(inputStream, RegionListDTO.class);
 
-        json.regions().stream()
+        regionListDTO.regions().stream()
                 .flatMap(region -> region.subRegions().stream()
                         .map(subRegion -> RegionCode.builder()
                                 .uprCd(region.orgCd())
