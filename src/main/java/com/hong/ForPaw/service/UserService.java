@@ -360,6 +360,23 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
+    public UserResponse.CheckLocalAccountExistDTO checkLocalAccountExist(UserRequest.EmailDTO requestDTO){
+        Optional<User> userOP = userRepository.findByEmail(requestDTO.email());
+        boolean isValid = userOP.isPresent();
+        boolean isLocal = false;
+
+        if(isValid){
+            isLocal = userOP.get().getAuthProvider().equals(AuthProvider.LOCAL);
+        }
+
+        // 계속 이메일을 보내는 건 방지. 3분 후에 다시 시도할 수 있다
+        if(redisService.isDateExist(EMAIL_CODE_KEY_PREFIX, requestDTO.email()))
+            throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
+
+        return new UserResponse.CheckLocalAccountExistDTO(isValid, isLocal);
+    }
+
+    @Transactional(readOnly = true)
     public UserResponse.CheckAccountExistDTO checkAccountExist(UserRequest.EmailDTO requestDTO){
         boolean isValid = userRepository.findByEmail(requestDTO.email()).isPresent();
 
@@ -371,29 +388,20 @@ public class UserService {
         return new UserResponse.CheckAccountExistDTO(isValid);
     }
 
-    @Transactional(readOnly = true)
-    public UserResponse.CheckAccountExistDTO checkLocalAccountExist(UserRequest.EmailDTO requestDTO){
-        checkIsLocalAccount(requestDTO.email());
-        return checkAccountExist(requestDTO);
-    }
-
     @Transactional
     public void resetPassword(UserRequest.ResetPasswordDTO requestDTO){
+        // 전송한 코드로 세션에서 해당 이메일을 꺼내옴 (비밀번호 재설정 시 코드 전송을 거침)
         String email = redisService.getValueInStr(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code());
-
-        // 해당 email이 계정 복구중이 아님. (verifyRecoveryCode()를 거쳐야 값이 존재한다)
         if(email == null){
             throw new CustomException(ExceptionCode.BAD_APPROACH);
         }
 
+        // CODE_TO_EMAIL 키 삭제
+        redisService.removeData(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code());
+
         User user = userRepository.findByEmail(email).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND)
         );
-
-        // 다시 한번 이메일 코드 체크
-        if(!redisService.validateValue(EMAIL_CODE_KEY_PREFIX + CODE_TYPE_RECOVERY, email, requestDTO.code()))
-            throw new CustomException(ExceptionCode.BAD_APPROACH);
-        redisService.removeData(EMAIL_CODE_KEY_PREFIX, email);
 
         // 새로운 비밀번호로 업데이트
         user.updatePassword(passwordEncoder.encode(requestDTO.newPassword()));

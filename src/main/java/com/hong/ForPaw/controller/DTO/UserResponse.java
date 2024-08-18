@@ -15,6 +15,8 @@ public class UserResponse {
 
     public record CheckAccountExistDTO(boolean isValid) {}
 
+    public record CheckLocalAccountExistDTO(boolean isValid, boolean isLocal) {}
+
     public record CheckNickNameDTO(boolean isDuplicate) {}
 
     public record AccessTokenDTO(String accessToken) {}

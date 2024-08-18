@@ -90,7 +90,7 @@ public class UserController {
     }
 
     @PostMapping("/accounts/withdraw/code")
-    public ResponseEntity<?> sendCodeForWithdraw(@RequestBody @Valid UserRequest.EmailDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) throws MessagingException {
+    public ResponseEntity<?> sendCodeForWithdraw(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
         UserResponse.CheckAccountExistDTO responseDTO = userService.checkAccountExist(requestDTO);
         userService.sendCodeByEmail(requestDTO, CODE_TYPE_WITHDRAW);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
@@ -98,7 +98,7 @@ public class UserController {
 
     @PostMapping("/accounts/recovery/code")
     public ResponseEntity<?> sendCodeForRecovery(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
-        UserResponse.CheckAccountExistDTO responseDTO = userService.checkLocalAccountExist(requestDTO);
+        UserResponse.CheckLocalAccountExistDTO responseDTO = userService.checkLocalAccountExist(requestDTO);
         userService.sendCodeByEmail(requestDTO, CODE_TYPE_RECOVERY);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
