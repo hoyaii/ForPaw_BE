@@ -28,6 +28,8 @@ public class UserController {
 
     private static final String AUTH_KAKAO = "KAKAO";
     private static final String AUTH_GOOGLE = "GOOGLE";
+    private static final String CODE_TYPE_WITHDRAW = "withdraw";
+    private static final String CODE_TYPE_RECOVERY = "recovery";
 
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody @Valid UserRequest.LoginDTO requestDTO, HttpServletRequest request) throws MessagingException {
@@ -63,21 +65,21 @@ public class UserController {
 
     @PostMapping("/accounts/check/email")
     public ResponseEntity<?> checkEmailAndSendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
-        UserResponse.CheckEmailExistDTO responseDTO = userService.checkEmailExistAndTTL(requestDTO);
+        UserResponse.CheckEmailExistDTO responseDTO = userService.checkEmailExist(requestDTO);
         userService.sendCodeByEmailWithValidation(requestDTO, responseDTO.isValid());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/accounts/verify/code")
-    public ResponseEntity<?> verifyCode(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO){
-        UserResponse.VerifyEmailCodeDTO responseDTO = userService.verifyCode(requestDTO);
+    public ResponseEntity<?> verifyCode(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO, @RequestParam String codeType){
+        UserResponse.VerifyEmailCodeDTO responseDTO = userService.verifyCode(requestDTO, codeType);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/accounts/resend/code")
-    public ResponseEntity<?> resendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
-        userService.checkSendCodeTTL(requestDTO);
-        userService.sendCodeByEmail(requestDTO);
+    public ResponseEntity<?> resendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO, @RequestParam String codeType) throws MessagingException {
+        userService.checkCodeTTL(requestDTO, codeType);
+        userService.sendCodeByEmail(requestDTO, codeType);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
@@ -90,21 +92,15 @@ public class UserController {
     @PostMapping("/accounts/withdraw/code")
     public ResponseEntity<?> sendCodeForWithdraw(@RequestBody @Valid UserRequest.EmailDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) throws MessagingException {
         UserResponse.CheckAccountExistDTO responseDTO = userService.checkAccountExist(requestDTO);
-        userService.sendCodeByEmail(requestDTO);
+        userService.sendCodeByEmail(requestDTO, CODE_TYPE_WITHDRAW);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @PostMapping("/accounts/recovery")
+    @PostMapping("/accounts/recovery/code")
     public ResponseEntity<?> sendCodeForRecovery(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
-        UserResponse.CheckAccountExistDTO responseDTO = userService.checkAccountExist(requestDTO);
-        userService.sendCodeByEmail(requestDTO);
+        UserResponse.CheckAccountExistDTO responseDTO = userService.checkLocalAccountExist(requestDTO);
+        userService.sendCodeByEmail(requestDTO, CODE_TYPE_RECOVERY);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
-    }
-
-    @PostMapping("/accounts/recovery/verify")
-    public ResponseEntity<?> verifyCodeForRecovery(@RequestBody @Valid UserRequest.VerifyCodeDTO requestDTO){
-        userService.verifyRecoveryCodeForRecovery(requestDTO);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
     @PostMapping("/accounts/recovery/reset")

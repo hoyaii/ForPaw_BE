@@ -144,7 +144,7 @@ public class UserService {
     private static final String ADMIN_NAME = "admin";
     private static final String MAIL_TEMPLATE_FOR_CODE = "verification_code_email.html";
     private static final String MAIL_TEMPLATE_FOR_LOCK_ACCOUNT = "lock_account.html";
-    private static final String EMAIL_CODE_KEY_PREFIX = "emailCode";
+    private static final String EMAIL_CODE_KEY_PREFIX = "code:";
     private static final String REFRESH_TOKEN_KEY_PREFIX = "refreshToken";
     private static final String ACCESS_TOKEN_KEY_PREFIX = "accessToken";
     private static final String LOGIN_FAIL_DAILY_KEY_PREFIX = "loginFailDaily";
@@ -159,6 +159,9 @@ public class UserService {
     private static final String UNKNOWN = "unknown";
     private static final String UTF_EIGHT_ENCODING = "UTF-8";
     private static final String[] IP_HEADER_CANDIDATES = {"X-Forwarded-For", "Proxy-Client-IP", "WL-Proxy-Client-IP", "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR"};
+    private static final String CODE_TYPE_WITHDRAW = "withdraw";
+    private static final String CODE_TYPE_RECOVERY = "recovery";
+    private static final String CODE_TYPE_JOIN = "join";
 
     @Transactional
     public void initSuperAdmin(){
@@ -299,7 +302,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserResponse.CheckEmailExistDTO checkEmailExistAndTTL(UserRequest.EmailDTO requestDTO){
+    public UserResponse.CheckEmailExistDTO checkEmailExist(UserRequest.EmailDTO requestDTO){
         boolean isValid = !userRepository.existsByEmailWithRemoved(requestDTO.email());
 
         // 계속 이메일을 보내는 건 방지. 3분 후에 다시 시도할 수 있다
@@ -311,7 +314,7 @@ public class UserService {
     }
 
     @Async
-    public void sendCodeByEmail(UserRequest.EmailDTO requestDTO) throws MessagingException {
+    public void sendCodeByEmail(UserRequest.EmailDTO requestDTO, String codeType) throws MessagingException {
         // 인증 코드 전송 및 레디스에 저장
         String verificationCode = generateVerificationCode();
 
@@ -321,30 +324,31 @@ public class UserService {
 
         sendMail(requestDTO.email(), VERIFICATION_CODE.getSubject(), MAIL_TEMPLATE_FOR_CODE, model);
 
-        redisService.storeValue(EMAIL_CODE_KEY_PREFIX, requestDTO.email(), verificationCode, 175 * 1000L); // 3분 동안 유효
+        redisService.storeValue(EMAIL_CODE_KEY_PREFIX + codeType, requestDTO.email(), verificationCode, 175 * 1000L); // 3분 동안 유효
     }
 
     @Async
     public void sendCodeByEmailWithValidation(UserRequest.EmailDTO requestDTO, boolean isValid) throws MessagingException {
         if(isValid){
-            sendCodeByEmail(requestDTO);
+            sendCodeByEmail(requestDTO, CODE_TYPE_JOIN);
         }
     }
 
-    public void checkSendCodeTTL(UserRequest.EmailDTO requestDTO){
+    public void checkCodeTTL(UserRequest.EmailDTO requestDTO, String codeType){
         // 재시도는 전송 3분 후에 가능하다
-        if(redisService.isDateExist(EMAIL_CODE_KEY_PREFIX, requestDTO.email())){
+        if(redisService.isDateExist(EMAIL_CODE_KEY_PREFIX + codeType, requestDTO.email())){
             throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
         }
     }
 
-    public UserResponse.VerifyEmailCodeDTO verifyCode(UserRequest.VerifyCodeDTO requestDTO){
+    public UserResponse.VerifyEmailCodeDTO verifyCode(UserRequest.VerifyCodeDTO requestDTO, String codeType){
         // 레디스를 통해 해당 코드가 유효한지 확인
-        if(!redisService.validateValue(EMAIL_CODE_KEY_PREFIX, requestDTO.email(), requestDTO.code()))
+        if(!redisService.validateValue(EMAIL_CODE_KEY_PREFIX + codeType, requestDTO.email(), requestDTO.code()))
             return new UserResponse.VerifyEmailCodeDTO(false);
 
-        // 검증 후 토큰 삭제
-        // redisService.removeData(EMAIL_CODE_KEY_PREFIX, requestDTO.email());
+        // RECOVERY의 경우, resetPassword()에서 서버에 요청으로 이메일과 비밀번호를 동시에 보내지 않도록, 코드에 대한 이메일을 저장
+        if(codeType.equals(CODE_TYPE_RECOVERY))
+            redisService.storeValue(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code(), requestDTO.email(), 5 * 60 * 1000L);
 
         return new UserResponse.VerifyEmailCodeDTO(true);
     }
@@ -367,12 +371,10 @@ public class UserService {
         return new UserResponse.CheckAccountExistDTO(isValid);
     }
 
-    public void verifyRecoveryCodeForRecovery(UserRequest.VerifyCodeDTO requestDTO){
-        if(!redisService.validateValue(EMAIL_CODE_KEY_PREFIX, requestDTO.email(), requestDTO.code()))
-            throw new CustomException(ExceptionCode.CODE_WRONG);
-
-        // resetPassword()에서 서버에 요청으로 이메일과 비밀번호를 동시에 보내지 않도록, 코드에 대한 이메일을 저장
-        redisService.storeValue(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code(), requestDTO.email(), 5 * 60 * 1000L);
+    @Transactional(readOnly = true)
+    public UserResponse.CheckAccountExistDTO checkLocalAccountExist(UserRequest.EmailDTO requestDTO){
+        checkIsLocalAccount(requestDTO.email());
+        return checkAccountExist(requestDTO);
     }
 
     @Transactional
@@ -389,7 +391,7 @@ public class UserService {
         );
 
         // 다시 한번 이메일 코드 체크
-        if(!redisService.validateValue(EMAIL_CODE_KEY_PREFIX, email, requestDTO.code()))
+        if(!redisService.validateValue(EMAIL_CODE_KEY_PREFIX + CODE_TYPE_RECOVERY, email, requestDTO.code()))
             throw new CustomException(ExceptionCode.BAD_APPROACH);
         redisService.removeData(EMAIL_CODE_KEY_PREFIX, email);
 
@@ -802,8 +804,8 @@ public class UserService {
             return response;
         }
 
-        // 로컬로 가입한 계정인지 체크
-        checkIsLocalAccount(email);
+        // 소셜 계정인지 체크
+        checkIsSocialAccount(email);
 
         // 소셜 로그인으로 가입한 계정이면 계속 진행
         User user = userRepository.findByEmailWithUserStatusAndRemoved(email).orElseThrow(
@@ -903,8 +905,14 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
     }
 
-    private void checkIsLocalAccount(String email) {
+    private void checkIsSocialAccount(String email) {
         if(userRepository.existsByEmailAndAuthProviders(email, List.of(AuthProvider.LOCAL))){
+            throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
+        }
+    }
+
+    public void checkIsLocalAccount(String email) {
+        if(userRepository.existsByEmailAndAuthProviders(email, List.of(AuthProvider.KAKAO, AuthProvider.GOOGLE))){
             throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
         }
     }
