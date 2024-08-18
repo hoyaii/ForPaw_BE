@@ -25,7 +25,7 @@ import java.util.Optional;
 public class AnimalController {
 
     private final AnimalService animalService;
-    private static final String DATE = "createdDate";
+    private static final String SORT_BY_DATE = "createdDate";
 
     // 테스트시에만 열어둠
     @GetMapping("/animals/import")
@@ -42,13 +42,13 @@ public class AnimalController {
 
     @GetMapping("/animals")
     public ResponseEntity<?> findAnimalList(@RequestParam String type,
-                                            @PageableDefault(size = 5, sort = DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+                                            @PageableDefault(size = 5, sort = SORT_BY_DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         AnimalResponse.FindAnimalListDTO responseDTO = animalService.findAnimalList(type, getUserIdSafely(userDetails), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/animals/like")
-    public ResponseEntity<?> findLikeAnimalList(@PageableDefault(size = 5, sort = DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findLikeAnimalList(@PageableDefault(size = 5, sort = SORT_BY_DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         AnimalResponse.FindLikeAnimalListDTO responseDTO = animalService.findLikeAnimalList(pageable, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }

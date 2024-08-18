@@ -21,7 +21,6 @@ public class ChatController {
 
     private final ChatService chatService;
 
-    // 테스트 시 MessageMapping => PostMapping으로 바꾸고, 응답이 없는 거 인지하고 있어야 함.
     @PostMapping("/chat/send")
     public ResponseEntity<?> sendMessage(@RequestBody ChatRequest.SendMessageDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) {
         ChatResponse.SendMessageDTO responseDTO = chatService.sendMessage(requestDTO, userDetails.getUser().getId(), userDetails.getUsername());

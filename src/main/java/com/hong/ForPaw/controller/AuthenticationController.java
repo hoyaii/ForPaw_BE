@@ -28,7 +28,7 @@ public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
     private final UserService userService;
-    private static final String ID = "id";
+    private static final String SORT_BY_ID = "id";
 
     @GetMapping("/admin/dashboard")
     public ResponseEntity<?> findDashboardStats(@AuthenticationPrincipal CustomUserDetails userDetails){
@@ -37,7 +37,7 @@ public class AuthenticationController {
     }
 
     @GetMapping("/admin/user")
-    public ResponseEntity<?> findUserList(@PageableDefault(sort = ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
+    public ResponseEntity<?> findUserList(@PageableDefault(sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
         AuthenticationResponse.FindUserListDTO responseDTO = authenticationService.findUserList(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
@@ -69,7 +69,7 @@ public class AuthenticationController {
 
     @GetMapping("/admin/adoption")
     public ResponseEntity<?> findApplyList(@RequestParam(required = false) ApplyStatus status,
-                                           @PageableDefault(size = 5, sort = ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+                                           @PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         AuthenticationResponse.FindApplyListDTO responseDTO = authenticationService.findApplyList(userDetails.getUser().getId(), status, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
@@ -82,7 +82,7 @@ public class AuthenticationController {
 
     @GetMapping("/admin/reports")
     public ResponseEntity<?> findReportList(@RequestParam(required = false) ReportStatus status,
-                                            @PageableDefault(size = 5, sort = ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+                                            @PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         AuthenticationResponse.FindReportListDTO responseDTO = authenticationService.findReportList(userDetails.getUser().getId(), status, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
@@ -95,7 +95,7 @@ public class AuthenticationController {
 
     @GetMapping("/admin/supports")
     public ResponseEntity<?> findSupportList(@RequestParam(required = false) InquiryStatus status,
-                                             @PageableDefault(size = 5, sort = ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+                                             @PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         AuthenticationResponse.FindSupportListDTO responseDTO = authenticationService.findSupportList(userDetails.getUser().getId(), status, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }

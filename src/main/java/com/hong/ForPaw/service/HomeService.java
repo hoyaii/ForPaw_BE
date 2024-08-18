@@ -29,6 +29,8 @@ public class HomeService {
     private final AnimalService animalService;
     private final FavoriteGroupRepository favoriteGroupRepository;
     private static final Province DEFAULT_PROVINCE = Province.DAEGU;
+    private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
+    private static final String SORT_BY_DATE = "createdDate";
 
     @Transactional(readOnly = true)
     public HomeResponse.FindHomeDTO findHome(Long userId){
@@ -37,7 +39,7 @@ public class HomeService {
 
         List<HomeResponse.AnimalDTO> animalDTOS = animalRepository.findByIds(recommendedAnimalIds).stream()
                 .map(animal -> {
-                    Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
+                    Long likeNum = redisService.getDataInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
 
                     return new HomeResponse.AnimalDTO(
                             animal.getId(),
@@ -53,7 +55,7 @@ public class HomeService {
                 .toList();
 
         // 2. 인기 글
-        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdDate"));
+        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, SORT_BY_DATE));
         List<PostResponse.PostDTO> postDTOS = postService.findPopularPostListByType(pageable, PostType.ADOPTION).posts();
 
         // 3. 추천 그룹

@@ -4,7 +4,6 @@ import com.hong.ForPaw.controller.DTO.PostRequest;
 import com.hong.ForPaw.controller.DTO.PostResponse;
 import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
-import com.hong.ForPaw.domain.District;
 import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.service.PostService;
 import jakarta.validation.Valid;
@@ -24,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class PostController {
 
     private final PostService postService;
-    private static final String ID = "id";
+    private static final String SORT_BY_ID = "id";
 
     @PostMapping("/posts")
     public ResponseEntity<?> createPost(@RequestBody @Valid PostRequest.CreatePostDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
@@ -39,50 +38,50 @@ public class PostController {
     }
 
     @GetMapping("/posts/adoption")
-    public ResponseEntity<?> findAdoptionPostList(@PageableDefault(size = 5, sort = ID, direction = Sort.Direction.DESC) Pageable pageable){
+    public ResponseEntity<?> findAdoptionPostList(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable){
         PostResponse.FindPostListDTO responseDTO = postService.findPostListByType(pageable, PostType.ADOPTION);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/fostering")
-    public ResponseEntity<?> findFosteringPostList(@PageableDefault(size = 5, sort = ID, direction = Sort.Direction.DESC) Pageable pageable){
+    public ResponseEntity<?> findFosteringPostList(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable){
         PostResponse.FindPostListDTO responseDTO = postService.findPostListByType(pageable, PostType.FOSTERING);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/question")
-    public ResponseEntity<?> findQuestionList(@PageableDefault(size = 5, sort = ID, direction = Sort.Direction.DESC) Pageable pageable){
+    public ResponseEntity<?> findQuestionList(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable){
         PostResponse.FindQnaListDTO responseDTO = postService.findQuestionList(pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/popular")
     public ResponseEntity<?> findPopularPostList(@RequestParam PostType type,
-                                                 @PageableDefault(size = 5, sort = ID, direction = Sort.Direction.DESC) Pageable pageable){
+                                                 @PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable){
         PostResponse.FindPostListDTO responseDTO = postService.findPopularPostListByType(pageable, type);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/myPost")
-    public ResponseEntity<?> findMyPostList(@PageableDefault(size = 5, sort = ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findMyPostList(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         PostResponse.FindMyPostListDTO responseDTO = postService.findMyPostList(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/myQuestion")
-    public ResponseEntity<?> findMyQuestionList(@PageableDefault(size = 5, sort = ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findMyQuestionList(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         PostResponse.FindQnaListDTO responseDTO = postService.findMyQuestionList(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/myAnswer")
-    public ResponseEntity<?> findMyAnswerList(@PageableDefault(size = 5, sort = ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findMyAnswerList(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         PostResponse.FindQnaListDTO responseDTO = postService.findMyAnswerList(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/myComment")
-    public ResponseEntity<?> findMyCommentList(@PageableDefault(size = 5, sort = ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+    public ResponseEntity<?> findMyCommentList(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         PostResponse.FindMyCommentListDTO responseDTO = postService.findMyCommentList(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
