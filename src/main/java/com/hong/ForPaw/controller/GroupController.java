@@ -96,7 +96,7 @@ public class GroupController {
     @GetMapping("/groups/{groupId}/notices")
     public ResponseEntity<?> findNoticeList(@PathVariable Long groupId,
                                             @PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
-        groupService.checkGroupAndMember(groupId, userDetails.getUser().getId());
+        groupService.checkGroupAndIsMember(groupId, userDetails.getUser().getId());
         List<GroupResponse.NoticeDTO> noticeDTOS = groupService.findNoticeList(userDetails.getUser().getId(), groupId, pageable);
         GroupResponse.FindNoticeListDTO responseDTO = new GroupResponse.FindNoticeListDTO(noticeDTOS);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
@@ -105,7 +105,7 @@ public class GroupController {
     @GetMapping("/groups/{groupId}/meetings")
     public ResponseEntity<?> findMeetingList(@PathVariable Long groupId,
                                              @PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
-        groupService.checkGroupAndMember(groupId, userDetails.getUser().getId());
+        groupService.checkGroupAndIsMember(groupId, userDetails.getUser().getId());
         List<GroupResponse.MeetingDTO> meetingDTOS = groupService.findMeetingList(groupId, pageable);
         GroupResponse.FindMeetingListDTO responseDTO = new GroupResponse.FindMeetingListDTO(meetingDTOS);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
