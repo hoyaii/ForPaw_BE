@@ -87,6 +87,11 @@ public class AnimalService {
     @Value("${animal.update.uri}")
     private String updateAnimalIntroduceURI;
 
+    private static final String DO_INTRODUCING = "소개글을 작성중입니다!";
+    private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
+    private static final String ANIMAL_SEARCH_KEY_PREFIX = "animalSearch";
+    private static final String ANIMAL_TYPE_DOG = "[개]";
+    private static final String ANIMAL_TYPE_CAT = "[고양이]";
     private static final Map<String, AnimalType> ANIMAL_TYPE_MAP = Map.of("dog", AnimalType.DOG, "cat", AnimalType.CAT, "other", AnimalType.OTHER);
 
     @Transactional
@@ -99,7 +104,7 @@ public class AnimalService {
                 .delayElements(Duration.ofMillis(75)) // 각 요청 사이에 0.075초 지연
                 .flatMap(shelter -> {
                     Long careRegNo = shelter.getId();
-                    URI uri = buildAnimalURI(serviceKey, careRegNo);
+                    URI uri = buildAnimalOpenApiURI(serviceKey, careRegNo);
 
                     return webClient.get()
                             .uri(uri)
@@ -149,14 +154,14 @@ public class AnimalService {
         // 1. 캐싱한 '좋아요 수' 삭제
         expiredAnimals.forEach(animal -> {
             updatedShelters.add(animal.getShelter());
-            redisService.removeData("animalLikeNum", animal.getId().toString());
+            redisService.removeData(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
         });
 
         // 2. 유저가 검색한 동물 기록에서 삭제
         List<User> users = userRepository.findAll();
         for(User user : users){
             expiredAnimals.forEach(animal -> {
-                String key = "animalSearch:" + user.getId();
+                String key = ANIMAL_SEARCH_KEY_PREFIX + ":" + user.getId();
                 redisService.deleteListElement(key, animal.getId().toString());
             });
         }
@@ -209,7 +214,7 @@ public class AnimalService {
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
-                    Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
+                    Long likeNum = redisService.getDataInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
 
                     return new AnimalResponse.AnimalDTO(
                         animal.getId(),
@@ -240,7 +245,7 @@ public class AnimalService {
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalRepository.findByIds(recommendedAnimalIds).stream()
                 .map(animal -> {
-                    Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
+                    Long likeNum = redisService.getDataInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
 
                     return new AnimalResponse.AnimalDTO(
                             animal.getId(),
@@ -270,7 +275,7 @@ public class AnimalService {
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
-                    Long likeNum = redisService.getDataInLong("animalLikeNum", animal.getId().toString());
+                    Long likeNum = redisService.getDataInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
 
                     return new AnimalResponse.AnimalDTO(
                             animal.getId(),
@@ -297,8 +302,8 @@ public class AnimalService {
     public AnimalResponse.FindAnimalByIdDTO findAnimalById(Long animalId, Long userId){
         // 로그인을 한 경우, 추천을 위해 검색한 동물의 id 저장 (5개까지만 저장된다)
         if(userId != null){
-            String key = "animalSearch:" + userId;
-            redisService.addListElementWithLimit(key, animalId.toString(), 5l);
+            String key = ANIMAL_SEARCH_KEY_PREFIX + ":" + userId;
+            redisService.addListElementWithLimit(key, animalId.toString(), 5L);
         }
 
         Animal animal = animalRepository.findById(animalId).orElseThrow(
@@ -339,7 +344,7 @@ public class AnimalService {
         // 좋아요가 이미 있다면 삭제, 없다면 추가
         if (favoriteAnimalOP.isPresent()) {
             favoriteAnimalRepository.delete(favoriteAnimalOP.get());
-            redisService.decrementCnt("animalLikeNum", animalId.toString(), 1L);
+            redisService.decrementCnt(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString(), 1L);
         }
         else {
             Animal animalRef = entityManager.getReference(Animal.class, animalId);
@@ -351,7 +356,7 @@ public class AnimalService {
                     .build();
 
             favoriteAnimalRepository.save(favoriteAnimal);
-            redisService.incrementCnt("animalLikeNum", animalId.toString(), 1L);
+            redisService.incrementCnt(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString(), 1L);
         }
     }
 
@@ -361,7 +366,7 @@ public class AnimalService {
         List<Long> animalIds = animalRepository.findAllIds();
 
         for (Long postId : animalIds) {
-            Long likeNum = redisService.getDataInLong("animalLikeNum", postId.toString());
+            Long likeNum = redisService.getDataInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, postId.toString());
 
             if (likeNum != null) {
                 animalRepository.updateLikeNum(likeNum, postId);
@@ -501,14 +506,14 @@ public class AnimalService {
                 .neuter(itemDTO.neuterYn())
                 .specialMark(itemDTO.specialMark())
                 .region(shelter.getRegionCode().getUprName() + " " + shelter.getRegionCode().getOrgName())
-                .introductionContent("소개글을 작성중입니다!")
+                .introductionContent(DO_INTRODUCING)
                 .build();
     }
 
     public AnimalType parseAnimalType(String input) {
-        if (input.startsWith("[개]")) {
+        if (input.startsWith(ANIMAL_TYPE_DOG)) {
             return AnimalType.DOG;
-        } else if (input.startsWith("[고양이]")) {
+        } else if (input.startsWith(ANIMAL_TYPE_CAT)) {
             return AnimalType.CAT;
         } else {
             return AnimalType.OTHER;
@@ -521,7 +526,7 @@ public class AnimalService {
         return animalNames[index];
     }
 
-    private URI buildAnimalURI(String serviceKey, Long careRegNo) {
+    private URI buildAnimalOpenApiURI(String serviceKey, Long careRegNo) {
         String url = animalURI + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
 
         try {
@@ -535,9 +540,7 @@ public class AnimalService {
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(kakaoGeoCodingURI);
         uriBuilder.queryParam("query", address);
 
-        URI uri = uriBuilder.build().encode().toUri();
-
-        return uri;
+        return uriBuilder.build().encode().toUri();
     }
 
     private URI buildGoogleGeocodingURI(String address) {
@@ -545,9 +548,7 @@ public class AnimalService {
         uriBuilder.queryParam("address", address);
         uriBuilder.queryParam("key", googleAPIKey);
 
-        URI uri = uriBuilder.build().encode().toUri();
-
-        return uri;
+        return uriBuilder.build().encode().toUri();
     }
 
     public List<Long> getRecommendedAnimalIdList(Long userId){
