@@ -55,6 +55,8 @@ public class PostService {
     public static final Long POST_READ_EXP = 60L * 60 * 24 * 360; // 1년
     private static final String POST_SCREENED = "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.";
     private static final String POST_READ_KEY_PREFIX = "user:readPosts:";
+    private static final String POST_LIKE_NUM_KEY_PREFIX = "postLikeNum";
+    private static final String COMMENT_LIKE_NUM_KEY_PREFIX = "commentLikeNum";
     private static final String COMMENT_DELETED = "삭제된 댓글 입니다.";
 
     @Transactional
@@ -90,7 +92,7 @@ public class PostService {
         postRepository.save(post);
 
         // 3개월 동안만 좋아요를 할 수 있다
-        redisService.storeValue("postLikeNum", post.getId().toString(), "0", POST_EXP);
+        redisService.storeValue(POST_LIKE_NUM_KEY_PREFIX, post.getId().toString(), "0", POST_EXP);
 
         return new PostResponse.CreatePostDTO(post.getId());
     }
@@ -147,7 +149,7 @@ public class PostService {
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
                     String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = getCachedLikeNum("postLikeNum", post.getId(), post::getLikeNum);
+                    Long likeNum = getCachedLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId(), post::getLikeNum);
 
                     return new PostResponse.PostDTO(
                             post.getId(),
@@ -173,7 +175,7 @@ public class PostService {
                 .map(PopularPost::getPost)
                 .map(post -> {
                     String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = getCachedLikeNum("postLikeNum", post.getId(), post::getLikeNum);
+                    Long likeNum = getCachedLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId(), post::getLikeNum);
 
                     return new PostResponse.PostDTO(
                             post.getId(),
@@ -218,7 +220,7 @@ public class PostService {
         List<PostResponse.MyPostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
                     String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = getCachedLikeNum("postLikeNum", post.getId(), post::getLikeNum);
+                    Long likeNum = getCachedLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId(), post::getLikeNum);
 
                     return new PostResponse.MyPostDTO(
                             post.getId(),
@@ -328,7 +330,7 @@ public class PostService {
         List<PostResponse.CommentDTO> commentDTOS = converCommentToCommentDTO(comments, likedCommentIds);
 
         // 좋아요 수
-        Long likeNum = getCachedLikeNum("postLikeNum", postId, post::getLikeNum);
+        Long likeNum = getCachedLikeNum(POST_LIKE_NUM_KEY_PREFIX, postId, post::getLikeNum);
 
         // 좋아요 여부
         boolean isLike = postLikeRepository.existsByPostIdAndUserId(postId, userId);
@@ -519,7 +521,7 @@ public class PostService {
             checkExpiration(postLikeOP.get().getCreatedDate());
 
             postLikeRepository.delete(postLikeOP.get());
-            redisService.decrementCnt("postLikeNum", postId.toString(), 1L);
+            redisService.decrementCnt(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), 1L);
         }
         else { // 좋아요를 누르지 않았다면, 좋아요 수를 증가키고, 엔티티 저장
             User userRef = entityManager.getReference(User.class, userId);
@@ -528,7 +530,7 @@ public class PostService {
             PostLike postLike = PostLike.builder().user(userRef).post(postRef).build();
 
             postLikeRepository.save(postLike);
-            redisService.incrementCnt("postLikeNum", postId.toString(), 1L);
+            redisService.incrementCnt(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), 1L);
         }
     }
 
@@ -539,7 +541,7 @@ public class PostService {
         List<Long> postIds = postRepository.findPostIdsWithinDate(threeMonthsAgo);
 
         for (Long postId : postIds) {
-            Long likeNum = redisService.getDataInLong("postLikeNum", postId.toString());
+            Long likeNum = redisService.getDataInLong(POST_LIKE_NUM_KEY_PREFIX, postId.toString());
 
             if (likeNum != null) {
                 postRepository.updateLikeNum(likeNum, postId);
@@ -574,7 +576,7 @@ public class PostService {
         postRepository.incrementCommentNum(postId);
 
         // 3개월 동안만 좋아요를 할 수 있다
-        redisService.storeValue("commentLikeNum", comment.getId().toString(), "0", POST_EXP);
+        redisService.storeValue(COMMENT_LIKE_NUM_KEY_PREFIX, comment.getId().toString(), "0", POST_EXP);
 
         // 알람 생성
         String content = "새로운 댓글: " + requestDTO.content();
@@ -616,7 +618,7 @@ public class PostService {
         postRepository.incrementCommentNum(postId);
 
         // 3개월 동안만 좋아요를 할 수 있다
-        redisService.storeValue("commentLikeNum", comment.getId().toString(), "0", POST_EXP);
+        redisService.storeValue(COMMENT_LIKE_NUM_KEY_PREFIX, comment.getId().toString(), "0", POST_EXP);
 
         // 알람 생성
         String content = "새로운 대댓글: " + requestDTO.content();
@@ -685,7 +687,7 @@ public class PostService {
             checkExpiration(commentLikeOP.get().getCreatedDate());
 
             commentLikeRepository.delete(commentLikeOP.get());
-            redisService.decrementCnt("commentLikeNum", commentId.toString(), 1L);
+            redisService.decrementCnt(COMMENT_LIKE_NUM_KEY_PREFIX, commentId.toString(), 1L);
         }
         else{ // 좋아요를 누르지 않았다면, 좋아요 수를 증가키고, 엔티티 저장
             User userRef = entityManager.getReference(User.class, userId);
@@ -694,7 +696,7 @@ public class PostService {
             CommentLike commentLike = CommentLike.builder().user(userRef).comment(commentRef).build();
 
             commentLikeRepository.save(commentLike);
-            redisService.incrementCnt("commentLikeNum", commentId.toString(), 1L);
+            redisService.incrementCnt(COMMENT_LIKE_NUM_KEY_PREFIX, commentId.toString(), 1L);
         }
     }
 
@@ -837,7 +839,7 @@ public class PostService {
         Map<Long, PostResponse.CommentDTO> commentMap = new HashMap<>();
 
         comments.forEach(comment -> {
-            Long likeNum = getCachedLikeNum("commentLikeNum", comment.getId(), comment::getLikeNum);
+            Long likeNum = getCachedLikeNum(COMMENT_LIKE_NUM_KEY_PREFIX, comment.getId(), comment::getLikeNum);
 
             // 부모 댓글이면, CommentDTO로 변환해서 commentDTOS 리스트에 추가
             if (comment.getParent() == null) {
@@ -855,8 +857,7 @@ public class PostService {
                 commentDTOS.add(commentDTO);
                 commentMap.put(comment.getId(), commentDTO);
             } else { // 자식 댓글이면, ReplyDTO로 변환해서 부모 댓글의 replies 리스트에 추가
-                // 삭제된 대댓글
-                if (comment.getRemovedAt() != null) {
+                if (comment.getRemovedAt() != null) { // 삭제된 대댓글
                     // 마지막 대댓글이 아니면, '삭제된 댓글입니다' 처리. 마지막 대댓글이면, 보이지 않음
                     if (!commentRepository.existsByParentIdAndDateAfter(comment.getParent().getId(), comment.getCreatedDate())) {
                         return;
@@ -892,13 +893,11 @@ public class PostService {
     }
 
     private void createAlarm(Long userId, String content, String redirectURL, AlarmType alarmType) {
-        LocalDateTime date = LocalDateTime.now();
-
         AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
                 userId,
                 content,
                 redirectURL,
-                date,
+                LocalDateTime.now(),
                 alarmType);
 
         brokerService.produceAlarmToUser(userId, alarmDTO);
