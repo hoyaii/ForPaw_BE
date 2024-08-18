@@ -638,6 +638,17 @@ public class UserService {
         return new UserResponse.FindCommunityRecord(user.getNickName(), user.getEmail(), adoptionNum + fosteringNum, commentNum, questionNum, answerNum);
     }
 
+    @Transactional
+    public void checkAlreadySend(String email, String codeType){
+        if(!userRepository.existsByEmail(email)){
+            throw new CustomException(ExceptionCode.CODE_NOT_SENDED);
+        }
+
+        if(redisService.isDateExist(EMAIL_CODE_KEY_PREFIX + codeType, email)){
+            throw new CustomException(ExceptionCode.CODE_ALREADY_SENDED);
+        }
+    }
+
     private Long checkLoginFailures(User user) throws MessagingException {
         // 하루 동안 5분 잠금이 세 번을 초과하면, 24시간 동안 로그인이 불가
         Long loginFailNumDaily = redisService.getValueInLong(LOGIN_FAIL_DAILY_KEY_PREFIX, user.getId().toString());
