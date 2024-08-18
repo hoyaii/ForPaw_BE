@@ -3,6 +3,7 @@ package com.hong.ForPaw.core.errors;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.core.utils.EnumUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -17,6 +18,7 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import java.io.IOException;
 
 @ControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<?> customError(CustomException e) {
@@ -67,5 +69,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleIOException(IOException ex) {
         String errorMessage = "입출력 오류가 발생했습니다: " + ex.getMessage();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiUtils.error(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> handleIllegalArgumentException(IllegalArgumentException ex) {
+        String errorMessage = "잘못된 요청입니다: " + ex.getMessage();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
     }
 }

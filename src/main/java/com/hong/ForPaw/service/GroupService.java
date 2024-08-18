@@ -177,7 +177,7 @@ public class GroupService {
         }
 
         // 이 API의 페이지네이션은 고정적으로 0페이지/5개만 보내줄 것이다.
-        Pageable pageable = createPageable(0, 5, SORT_BY_ID);
+        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, SORT_BY_ID));
 
         // 좋아요한 그룹 리스트 (로그인 하지 않았으면 빈 리스트)
         List<Long> likedGroupIdList = userId != null ? favoriteGroupRepository.findGroupIdByUserId(userId) : Collections.emptyList();
@@ -282,7 +282,7 @@ public class GroupService {
         );
 
         // 정기 모임과 공지사항은 0페이지의 5개만 보여준다.
-        Pageable pageable = createPageable(0, 5, SORT_BY_ID);
+        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, SORT_BY_ID));
 
         // 정기 모임
         List<GroupResponse.MeetingDTO> meetingDTOS = findMeetingList(groupId, pageable);
@@ -884,18 +884,14 @@ public class GroupService {
         return userId != null ? favoriteGroupRepository.findGroupIdByUserId(userId) : Collections.emptyList();
     }
 
-    private Pageable createPageable(int page, int size, String sortProperty) {
-        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
-    }
-
-    public void checkIsMember(Long groupId, Long userId){
+    private void checkIsMember(Long groupId, Long userId){
         Set<GroupRole> roles = EnumSet.of(GroupRole.USER, GroupRole.ADMIN, GroupRole.CREATOR);
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(groupUser -> roles.contains(groupUser.getGroupRole()))
                 .orElseThrow(() -> new CustomException(ExceptionCode.GROUP_NOT_MEMBER));
     }
 
-    public void checkAlreadyMemberOrApplier(Long groupId, Long userId){
+    private void checkAlreadyMemberOrApplier(Long groupId, Long userId){
         Set<GroupRole> roles = EnumSet.of(GroupRole.USER, GroupRole.ADMIN, GroupRole.CREATOR, GroupRole.TEMP);
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(groupUser -> roles.contains(groupUser.getGroupRole()))
@@ -990,13 +986,11 @@ public class GroupService {
     }
 
     private void createAlarm(Long userId, String content, String redirectURL, AlarmType alarmType) {
-        LocalDateTime date = LocalDateTime.now();
-
         AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
                 userId,
                 content,
                 redirectURL,
-                date,
+                LocalDateTime.now(),
                 alarmType);
 
         brokerService.produceAlarmToUser(userId, alarmDTO);
