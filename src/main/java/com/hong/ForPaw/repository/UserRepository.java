@@ -75,7 +75,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Modifying
     @Query("DELETE FROM User u WHERE u.removedAt <= :cutoffDate")
-    void deleteAllWithRemovedBefore(LocalDateTime cutoffDate);
+    void hardDeleteRemovedBefore(LocalDateTime cutoffDate);
 
     // Spring Data JPA 메서드는 외래키 제약 조건 때문에 작동하지 않음 => Post나 Comment를 남겨둬야 하기 때문에 Spring Data JPA 말고 직접 업데이트 쿼리를 날린다
     @Modifying

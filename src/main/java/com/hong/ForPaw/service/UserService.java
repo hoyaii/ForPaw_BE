@@ -69,7 +69,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static com.hong.ForPaw.core.utils.MailTemplate.ACCOUNT_SUSPENSION;
 import static com.hong.ForPaw.core.utils.MailTemplate.VERIFICATION_CODE;
@@ -103,37 +102,37 @@ public class UserService {
     private final EntityManager entityManager;
 
     @Value("${spring.mail.username}")
-    private String fromEmail;
+    private String SERVICE_MAIL_ACCOUNT;
 
     @Value("${kakao.key}")
-    private String kakaoAPIKey;
+    private String KAKAO_API_KEY;
 
     @Value("${kakao.oauth.token.uri}")
-    private String kakaoTokenURI;
+    private String KAKAO_TOKEN_URI;
 
     @Value("${kakao.oauth.userInfo.uri}")
-    private String kakaoUserInfoURI;
+    private String KAKAO_USER_INFO_URI;
 
     @Value("${google.client.id}")
-    private String googleClientId;
+    private String GOOGLE_CLIENT_ID;
 
     @Value("${google.oauth.token.uri}")
-    private String googleTokenURI;
+    private String GOOGLE_TOKEN_URI;
 
     @Value("${google.client.passowrd}")
-    private String googleClientSecret;
+    private String GOOGLE_CLIENT_SECRET;
 
     @Value("${google.oauth.redirect.uri}")
-    private String googleRedirectURI;
+    private String GOOGLE_REDIRECT_URI;
 
     @Value("${google.oauth.userInfo.uri}")
-    private String googleUserInfoURI;
+    private String GOOGLE_USER_INFO_URI;
 
     @Value("${admin.email}")
-    private String adminEmail;
+    private String ADMIN_EMAIL;
 
     @Value("${admin.password}")
-    private String adminPassword;
+    private String ADMIN_PWD;
 
     @Value("${social.join.redirect.uri}")
     private String REDIRECT_JOIN_URI;
@@ -153,16 +152,27 @@ public class UserService {
     private static final String CODE_TO_EMAIL_KEY_PREFIX = "codeToEmail";
     private static final String USER_QUEUE_PREFIX = "user.";
     private static final String ALARM_EXCHANGE = "alarm.exchange";
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String USER_AGENT_HEADER = "User-Agent";
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String AUTH_CODE_GRANT_TYPE = "authorization_code";
+    private static final String UNKNOWN = "unknown";
+    private static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
+    private static final String PROXY_CLIENT_IP_HEADER = "Proxy-Client-IP";
+    private static final String WL_PROXY_CLIENT_IP_HEADER = "WL-Proxy-Client-IP";
+    private static final String HTTP_CLIENT_IP_HEADER = "HTTP_CLIENT_IP";
+    private static final String HTTP_X_FORWARDED_FOR_HEADER = "HTTP_X_FORWARDED_FOR";
+    private static final String UTF_EIGHT_ENCODING = "UTF-8";
 
     @Transactional
     public void initSuperAdmin(){
         // SuperAdmin이 등록되어 있지 않다면 등록
         if(!userRepository.existsByNickname(ADMIN_NAME)){
             User admin = User.builder()
-                    .email(adminEmail)
+                    .email(ADMIN_EMAIL)
                     .name(ADMIN_NAME)
                     .nickName(ADMIN_NAME)
-                    .password(passwordEncoder.encode(adminPassword))
+                    .password(passwordEncoder.encode(ADMIN_PWD))
                     .role(UserRole.SUPER)
                     .build();
             userRepository.save(admin);
@@ -532,12 +542,11 @@ public class UserService {
     @Scheduled(cron = "0 30 0 * * ?")
     public void deleteExpiredUserData(){
         LocalDateTime sixMonthsAgo = LocalDateTime.now().minus(6, ChronoUnit.MONTHS);
-        userRepository.deleteAllWithRemovedBefore(sixMonthsAgo);
+        userRepository.hardDeleteRemovedBefore(sixMonthsAgo);
     }
 
     @Transactional
     public UserResponse.SubmitInquiryDTO submitInquiry(UserRequest.SubmitInquiry requestDTO, Long userId){
-        // 프록시 객체
         User user = entityManager.getReference(User.class, userId);
 
         Inquiry inquiry = Inquiry.builder()
@@ -561,7 +570,7 @@ public class UserService {
         );
 
         // 권한 체크
-        checkInquiryAuthority(userId, inquiry.getQuestioner());
+        checkWriterAuthority(userId, inquiry.getQuestioner());
 
         inquiry.updateCustomerInquiry(requestDTO.title(), requestDTO.description(), requestDTO.contactMail());
     }
@@ -578,10 +587,6 @@ public class UserService {
                         inquiry.getCreatedDate()))
                 .toList();
 
-        if(inquiryDTOS.isEmpty()){
-            throw new CustomException(ExceptionCode.INQUIRY_NOT_FOUND);
-        }
-
         return new UserResponse.FindInquiryListDTO(inquiryDTOS);
     }
 
@@ -592,7 +597,7 @@ public class UserService {
         );
 
         // 권한 체크
-        checkInquiryAuthority(userId, inquiry.getQuestioner());
+        checkWriterAuthority(userId, inquiry.getQuestioner());
 
         // 답변
         List<InquiryAnswer> answers = answerRepository.findAllByInquiryId(inquiryId);
@@ -672,7 +677,7 @@ public class UserService {
     @Async
     public void sendMail(String toEmail, String subject, String templateName, Map<String, Object> templateModel) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, UTF_EIGHT_ENCODING);
 
         // 템플릿 설정
         Context context = new Context();
@@ -680,7 +685,7 @@ public class UserService {
         String htmlContent = templateEngine.process(templateName, context);
         helper.setText(htmlContent, true);
 
-        helper.setFrom(fromEmail);
+        helper.setFrom(SERVICE_MAIL_ACCOUNT);
         helper.setTo(toEmail);
         helper.setSubject(subject);
 
@@ -824,12 +829,12 @@ public class UserService {
 
     private KakaoOauthDTO.TokenDTO getKakaoToken(String code) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("grant_type", "authorization_code");
-        formData.add("client_id", kakaoAPIKey);
+        formData.add("grant_type", AUTH_CODE_GRANT_TYPE);
+        formData.add("client_id", KAKAO_API_KEY);
         formData.add("code", code);
 
         Mono<KakaoOauthDTO.TokenDTO> response = webClient.post()
-                .uri(kakaoTokenURI)
+                .uri(KAKAO_TOKEN_URI)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(formData))
                 .retrieve()
@@ -840,8 +845,8 @@ public class UserService {
 
     private KakaoOauthDTO.UserInfoDTO getKakaoUserInfo(String token) {
         Flux<KakaoOauthDTO.UserInfoDTO> response = webClient.get()
-                .uri(kakaoUserInfoURI)
-                .header("Authorization", "Bearer " + token)
+                .uri(KAKAO_USER_INFO_URI)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .retrieve()
                 .bodyToFlux(KakaoOauthDTO.UserInfoDTO.class);
 
@@ -852,13 +857,13 @@ public class UserService {
         String decode = URLDecoder.decode(code, StandardCharsets.UTF_8);
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("code", decode);
-        formData.add("client_id", googleClientId);
-        formData.add("client_secret", googleClientSecret);
-        formData.add("redirect_uri", googleRedirectURI);
-        formData.add("grant_type", "authorization_code");
+        formData.add("client_id", GOOGLE_CLIENT_ID);
+        formData.add("client_secret", GOOGLE_CLIENT_SECRET);
+        formData.add("redirect_uri", GOOGLE_REDIRECT_URI);
+        formData.add("grant_type", AUTH_CODE_GRANT_TYPE);
 
         Mono<GoogleOauthDTO.TokenDTO> response = webClient.post()
-                .uri(googleTokenURI)
+                .uri(GOOGLE_TOKEN_URI)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(formData))
                 .retrieve()
@@ -869,8 +874,8 @@ public class UserService {
 
     private GoogleOauthDTO.UserInfoDTO getGoogleUserInfo(String token) {
         Flux<GoogleOauthDTO.UserInfoDTO> response = webClient.get()
-                .uri(googleUserInfoURI)
-                .header("Authorization", "Bearer " + token)
+                .uri(GOOGLE_USER_INFO_URI)
+                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
                 .retrieve()
                 .bodyToFlux(GoogleOauthDTO.UserInfoDTO.class);
 
@@ -884,68 +889,6 @@ public class UserService {
 
         brokerService.registerDirectExQueue(ALARM_EXCHANGE, queueName);
         brokerService.registerAlarmListener(listenerId, queueName);
-    }
-
-    private void checkInquiryAuthority(Long accessorId, User writer){
-        if(!accessorId.equals(writer.getId())){
-            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        }
-    }
-
-    private void checkAccountSuspension(User user){
-        if(!user.getStatus().isActive()){
-            throw new CustomException(ExceptionCode.USER_SUSPENDED);
-        }
-    }
-
-    public void recordLoginAttempt(User user, HttpServletRequest request) {
-        String clientIp = getClientIP(request);
-        String userAgent = request.getHeader("User-Agent");
-
-        LoginAttempt attempt = LoginAttempt.builder()
-                .user(user)
-                .clientIp(clientIp)
-                .userAgent(userAgent)
-                .build();
-
-        loginAttemptRepository.save(attempt);
-    }
-
-    private String getClientIP(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-
-        // nginx와 같은 proxy를 사용 대비 로직
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_CLIENT_IP");
-        }
-
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
-        }
-
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-
-        return ip;
-    }
-
-    private void setUserStatus(User user){
-        UserStatus status = UserStatus.builder()
-                .user(user)
-                .isActive(true)
-                .build();
-
-        userStatusRepository.save(status);
-        user.updateStatus(status);
     }
 
     private void checkAlreadyJoin(String email) {
@@ -968,5 +911,67 @@ public class UserService {
         if(userRepository.existsByEmailAndAuthProviders(email, List.of(AuthProvider.LOCAL))){
             throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
         }
+    }
+
+    private void checkWriterAuthority(Long accessorId, User writer){
+        if(!accessorId.equals(writer.getId())){
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
+    }
+
+    private void checkAccountSuspension(User user){
+        if(!user.getStatus().isActive()){
+            throw new CustomException(ExceptionCode.USER_SUSPENDED);
+        }
+    }
+
+    public void recordLoginAttempt(User user, HttpServletRequest request) {
+        String clientIp = getClientIP(request);
+        String userAgent = request.getHeader(USER_AGENT_HEADER);
+
+        LoginAttempt attempt = LoginAttempt.builder()
+                .user(user)
+                .clientIp(clientIp)
+                .userAgent(userAgent)
+                .build();
+
+        loginAttemptRepository.save(attempt);
+    }
+
+    private String getClientIP(HttpServletRequest request) {
+        String ip = request.getHeader(X_FORWARDED_FOR_HEADER);
+
+        // nginx와 같은 proxy 사용 시 대비
+        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+            ip = request.getHeader(PROXY_CLIENT_IP_HEADER);
+        }
+
+        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+            ip = request.getHeader(WL_PROXY_CLIENT_IP_HEADER);
+        }
+
+        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+            ip = request.getHeader(HTTP_CLIENT_IP_HEADER);
+        }
+
+        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+            ip = request.getHeader(HTTP_X_FORWARDED_FOR_HEADER);
+        }
+
+        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+
+        return ip;
+    }
+
+    private void setUserStatus(User user){
+        UserStatus status = UserStatus.builder()
+                .user(user)
+                .isActive(true)
+                .build();
+
+        userStatusRepository.save(status);
+        user.updateStatus(status);
     }
 }
