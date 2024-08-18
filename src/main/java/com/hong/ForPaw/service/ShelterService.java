@@ -49,6 +49,7 @@ public class ShelterService {
     @Value("${openAPI.shelter.uri}")
     private String baseUrl;
 
+    private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
     private static final Map<String, AnimalType> ANIMAL_TYPE_MAP = Map.of("dog", AnimalType.DOG, "cat", AnimalType.CAT, "other", AnimalType.OTHER);
 
     @Transactional
@@ -116,14 +117,13 @@ public class ShelterService {
     public ShelterResponse.FindShelterAnimalsByIdDTO findShelterAnimalListById(Long shelterId, Long userId, String type, Pageable pageable){
         AnimalType animalType = converStringToAnimalType(type);
         Page<Animal> animalPage = animalRepository.findByShelterIdAndType(animalType, shelterId, pageable);
-        boolean isLastPage = !animalPage.hasNext();
 
         // 사용자가 '좋아요' 표시한 Animal의 ID 목록, 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findAnimalIdsByUserId(userId) : new ArrayList<>();
 
         List<ShelterResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
-                    Long likeNum = redisService.getValueInLong("animalLikeNum", animal.getId().toString());
+                    Long likeNum = redisService.getValueInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
 
                     return new ShelterResponse.AnimalDTO(
                             animal.getId(),
@@ -143,7 +143,7 @@ public class ShelterService {
                 })
                 .collect(Collectors.toList());
 
-        return new ShelterResponse.FindShelterAnimalsByIdDTO(animalDTOS, isLastPage);
+        return new ShelterResponse.FindShelterAnimalsByIdDTO(animalDTOS, !animalPage.hasNext());
     }
 
     private List<Shelter> convertResponseToShelter(String response, RegionCode regionCode, List<Long> existShelterIds) throws IOException {
@@ -174,11 +174,8 @@ public class ShelterService {
     }
 
     private AnimalType converStringToAnimalType(String sort) {
-        if(sort.equals("date")) {
-            return null;
-        }
-
-        return Optional.ofNullable(ANIMAL_TYPE_MAP.get(sort))
-                .orElseThrow(() -> new CustomException(ExceptionCode.BAD_APPROACH));
+        return sort.equals("date") ? null :
+                Optional.ofNullable(ANIMAL_TYPE_MAP.get(sort))
+                        .orElseThrow(() -> new CustomException(ExceptionCode.BAD_APPROACH));
     }
 }
