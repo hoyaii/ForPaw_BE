@@ -159,9 +159,7 @@ public class UserService {
     private static final String UNKNOWN = "unknown";
     private static final String UTF_EIGHT_ENCODING = "UTF-8";
     private static final String[] IP_HEADER_CANDIDATES = {"X-Forwarded-For", "Proxy-Client-IP", "WL-Proxy-Client-IP", "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR"};
-    private static final String CODE_TYPE_WITHDRAW = "withdraw";
     private static final String CODE_TYPE_RECOVERY = "recovery";
-    private static final String CODE_TYPE_JOIN = "join";
 
     @Transactional
     public void initSuperAdmin(){
@@ -302,19 +300,13 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserResponse.CheckEmailExistDTO checkEmailExist(UserRequest.EmailDTO requestDTO){
-        boolean isValid = !userRepository.existsByEmailWithRemoved(requestDTO.email());
-
-        // 계속 이메일을 보내는 건 방지. 3분 후에 다시 시도할 수 있다
-        if(redisService.isDateExist(EMAIL_CODE_KEY_PREFIX, requestDTO.email())){
-            throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
-        }
-
+    public UserResponse.CheckEmailExistDTO checkEmailExist(String email){
+        boolean isValid = !userRepository.existsByEmailWithRemoved(email);
         return new UserResponse.CheckEmailExistDTO(isValid);
     }
 
     @Async
-    public void sendCodeByEmail(UserRequest.EmailDTO requestDTO, String codeType) throws MessagingException {
+    public void sendCodeByEmail(String email, String codeType) throws MessagingException {
         // 인증 코드 전송 및 레디스에 저장
         String verificationCode = generateVerificationCode();
 
@@ -322,22 +314,21 @@ public class UserService {
         Map<String, Object> model = new HashMap<>();
         model.put("code", verificationCode);
 
-        sendMail(requestDTO.email(), VERIFICATION_CODE.getSubject(), MAIL_TEMPLATE_FOR_CODE, model);
+        sendMail(email, VERIFICATION_CODE.getSubject(), MAIL_TEMPLATE_FOR_CODE, model);
 
-        redisService.storeValue(EMAIL_CODE_KEY_PREFIX + codeType, requestDTO.email(), verificationCode, 175 * 1000L); // 3분 동안 유효
+        redisService.storeValue(EMAIL_CODE_KEY_PREFIX + codeType, email, verificationCode, 175 * 1000L); // 3분 동안 유효
     }
 
     @Async
-    public void sendCodeByEmailWithValidation(UserRequest.EmailDTO requestDTO, boolean isValid) throws MessagingException {
-        if(isValid){
-            sendCodeByEmail(requestDTO, CODE_TYPE_JOIN);
-        }
-    }
-
-    public void checkCodeTTL(UserRequest.EmailDTO requestDTO, String codeType){
-        // 재시도는 전송 3분 후에 가능하다
-        if(redisService.isDateExist(EMAIL_CODE_KEY_PREFIX + codeType, requestDTO.email())){
+    public void sendCodeWithValidation(String email, String codeType, boolean isValid) throws MessagingException {
+        // TTL 체크
+        if(redisService.isDateExist(EMAIL_CODE_KEY_PREFIX + codeType, email)){
             throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
+        }
+
+        // 유효한 경우에만 메일 전송
+        if(isValid){
+            sendCodeByEmail(email, codeType);
         }
     }
 
@@ -369,22 +360,12 @@ public class UserService {
             isLocal = userOP.get().getAuthProvider().equals(AuthProvider.LOCAL);
         }
 
-        // 계속 이메일을 보내는 건 방지. 3분 후에 다시 시도할 수 있다
-        if(redisService.isDateExist(EMAIL_CODE_KEY_PREFIX, requestDTO.email()))
-            throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
-
         return new UserResponse.CheckLocalAccountExistDTO(isValid, isLocal);
     }
 
     @Transactional(readOnly = true)
     public UserResponse.CheckAccountExistDTO checkAccountExist(UserRequest.EmailDTO requestDTO){
-        boolean isValid = userRepository.findByEmail(requestDTO.email()).isPresent();
-
-        // 계속 이메일을 보내는 건 방지. 3분 후에 다시 시도할 수 있다
-        if(redisService.isDateExist(EMAIL_CODE_KEY_PREFIX, requestDTO.email())){
-            throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
-        }
-
+        boolean isValid = userRepository.existsByEmail(requestDTO.email());
         return new UserResponse.CheckAccountExistDTO(isValid);
     }
 
