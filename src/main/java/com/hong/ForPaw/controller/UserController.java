@@ -145,13 +145,6 @@ public class UserController {
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(tokens.get("accessToken"))));
     }
 
-    // 관리자 페이지용
-    @PatchMapping("/accounts/role")
-    public ResponseEntity<?> updateRole(@RequestBody @Valid UserRequest.UpdateRoleDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
-        userService.updateRole(requestDTO, userDetails.getUser().getRole());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
-    }
-
     @DeleteMapping("/accounts/withdraw")
     public ResponseEntity<?> withdrawMember(@AuthenticationPrincipal CustomUserDetails userDetails){
         userService.withdrawMember(userDetails.getUser().getId());

@@ -142,6 +142,7 @@ public class UserService {
     private String REDIRECT_HOME_URI;
 
     private final SpringTemplateEngine templateEngine;
+    private static final String ADMIN_NAME = "admin";
     private static final String MAIL_TEMPLATE_FOR_CODE = "verification_code_email.html";
     private static final String MAIL_TEMPLATE_FOR_LOCK_ACCOUNT = "lock_account.html";
     private static final String EMAIL_CODE_KEY_PREFIX = "emailCode";
@@ -156,22 +157,20 @@ public class UserService {
     @Transactional
     public void initSuperAdmin(){
         // SuperAdmin이 등록되어 있지 않다면 등록
-        if(!userRepository.existsByNickname("admin")){
+        if(!userRepository.existsByNickname(ADMIN_NAME)){
             User admin = User.builder()
                     .email(adminEmail)
-                    .name("admin")
-                    .nickName("admin")
+                    .name(ADMIN_NAME)
+                    .nickName(ADMIN_NAME)
                     .password(passwordEncoder.encode(adminPassword))
                     .role(UserRole.SUPER)
                     .build();
-
             userRepository.save(admin);
 
             UserStatus status = UserStatus.builder()
                     .user(admin)
                     .isActive(true)
                     .build();
-
             userStatusRepository.save(status);
             admin.updateStatus(status);
 
@@ -408,13 +407,15 @@ public class UserService {
 
     @Transactional
     public void updatePassword(UserRequest.UpdatePasswordDTO requestDTO, Long userId){
-        User user = userRepository.findById(userId).get();
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
 
-        // verifyPassword()로 일치 여부를 확인하지만, 해당 단계를 거치지 않고 인위적으로 요청을 보낼 수 있어서 한 번더 검증
-        if(!passwordEncoder.matches(requestDTO.curPassword(), user.getPassword())){
+        // 현재 비민번호 값이 맞는지 검증
+        if(!passwordEncoder.matches(requestDTO.curPassword(), user.getPassword()))
             throw new CustomException(ExceptionCode.USER_PASSWORD_MATCH_WRONG);
-        }
 
+        // 새 비밀번호와 새 비밀번호 확인값이 맞는지 검증
         if (!requestDTO.newPassword().equals(requestDTO.newPasswordConfirm()))
             throw new CustomException(ExceptionCode.USER_PASSWORD_MATCH_WRONG);
 
@@ -453,29 +454,19 @@ public class UserService {
             throw new CustomException(ExceptionCode.TOKEN_WRONG);
         }
 
+        // 리프레쉬 토큰에서 추출한 userId
         Long userId = JWTProvider.getUserIdFromToken(refreshToken);
 
-        // 토큰 만료 여부 체크
+        // 리프레쉬 토큰 만료 여부 체크
         if(!redisService.isDateExist(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(userId)))
             throw new CustomException(ExceptionCode.TOKEN_EXPIRED);
 
-        // 탈퇴한 회원의 refreshToken이 요청으로 왔으면, USER_NOT_FOUND 에러 발생
+        // 유효하지 않는 유저의 토큰이면 에러 발생
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
         return createAccessToken(user);
-    }
-
-    @Transactional
-    public void updateRole(UserRequest.UpdateRoleDTO requestDTO, UserRole role){
-        // 관리자만 사용 가능
-        if(role.equals(UserRole.ADMIN)){
-            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        }
-
-        User user = userRepository.findById(requestDTO.userId()).get();
-        user.updateRole(requestDTO.role());
     }
 
     // 게시글, 댓글, 좋아요은 남겨둔다. (정책에 따라 변경 가능)
@@ -512,14 +503,14 @@ public class UserService {
         favoriteAnimalRepository.deleteAllByUserId(userId);
         favoriteGroupRepository.deleteByGroupId(userId);
         chatUserRepository.deleteByUserId(userId);
-        groupUserRepository.findByUserIdWithGroup(userId).forEach(
-                groupUser -> {
+        groupUserRepository.findByUserIdWithGroup(userId)
+                .forEach(groupUser -> {
                     groupUser.getGroup().decrementParticipantNum();
                     groupUserRepository.delete(groupUser);
                 }
         );
-        meetingUserRepository.findByUserIdWithMeeting(userId).forEach(
-                meetingUser -> {
+        meetingUserRepository.findByUserIdWithMeeting(userId)
+                .forEach(meetingUser -> {
                     meetingUser.getMeeting().decrementParticipantNum();
                     meetingUserRepository.delete(meetingUser);
                 }
@@ -527,6 +518,10 @@ public class UserService {
 
         // 유저 상태 변경
         user.getStatus().updateIsActive(false);
+
+        // 세션에 저장된 토큰 삭제
+        redisService.removeData(ACCESS_TOKEN_KEY_PREFIX, userId.toString());
+        redisService.removeData(REFRESH_TOKEN_KEY_PREFIX, userId.toString());
 
         // 유저 삭제 (soft delete 처리) => soft delete의 side effect 고려 해야함
         userRepository.deleteById(userId);

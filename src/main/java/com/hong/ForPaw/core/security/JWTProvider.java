@@ -30,33 +30,29 @@ public class JWTProvider {
 
     // access token 생성
     public static String createAccessToken(User user) {
-        String jwt = create(user, ACCESS_EXP_MILLI);
-        return jwt;
+        return create(user, ACCESS_EXP_MILLI);
     }
 
     // refresh token 생성
     public static String createRefreshToken(User user) {
-        String jwt = create(user, REFRESH_EXP_MILLI);
-        return jwt;
+        return create(user, REFRESH_EXP_MILLI);
     }
 
     public static String create(User user, Long exp) {
-        String jwt = JWT.create()
+        return JWT.create()
                 .withSubject(user.getEmail())
                 .withExpiresAt(new Date(System.currentTimeMillis() + exp))
                 .withClaim("id", user.getId())
                 .withClaim("role", user.getRole().ordinal())
                 .withClaim("nickName", user.getNickName())
                 .sign(Algorithm.HMAC512(SECRET));
-        return jwt;
     }
 
     public static DecodedJWT verify(String jwt) throws SignatureVerificationException, TokenExpiredException {
         // "Bearer " 접두사가 있다면 제거
         jwt = jwt.replace(JWTProvider.TOKEN_PREFIX, "");
-        DecodedJWT decodedJWT = JWT.require(Algorithm.HMAC512(SECRET))
+        return JWT.require(Algorithm.HMAC512(SECRET))
                 .build().verify(jwt);
-        return decodedJWT;
     }
 
     public static Long getUserIdFromToken(String token) {

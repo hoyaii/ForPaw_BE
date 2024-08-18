@@ -98,7 +98,7 @@ public class RedisService {
 
     public void removeData(String key) { redisTemplate.delete(key); }
 
-    public void deleteListElement(String key, String value){
+    public void removeListElement(String key, String value){
         ListOperations<String, String> listOps = redisTemplate.opsForList();
         listOps.remove(key, 0, value);
     }

@@ -161,7 +161,7 @@ public class AnimalService {
         for(User user : users){
             expiredAnimals.forEach(animal -> {
                 String key = ANIMAL_SEARCH_KEY_PREFIX + ":" + user.getId();
-                redisService.deleteListElement(key, animal.getId().toString());
+                redisService.removeListElement(key, animal.getId().toString());
             });
         }
 
