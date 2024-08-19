@@ -186,13 +186,11 @@ public class BrokerService {
 
     public void produceChatToRoom(Long chatRoomId, ChatRequest.MessageDTO message){
         String routingKey = ROOM_QUEUE_PREFIX + chatRoomId;
-
         rabbitTemplate.convertAndSend(CHAT_EXCHANGE, routingKey, message);
     }
 
     public void produceAlarmToUser(Long userId, AlarmRequest.AlarmDTO alarm) {
         String routingKey = USER_QUEUE_PREFIX + userId;
-
         rabbitTemplate.convertAndSend(ALARM_EXCHANGE, routingKey, alarm);
     }
 

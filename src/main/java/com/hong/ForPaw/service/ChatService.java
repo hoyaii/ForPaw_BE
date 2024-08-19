@@ -36,7 +36,6 @@ public class ChatService {
     private final ChatImageRepository chatImageRepository;
     private final BrokerService brokerService;
     private static final String SORT_BY_ID = "id";
-    private static final String SORT_BY_DATE = "date";
 
     @Transactional
     public ChatResponse.SendMessageDTO sendMessage(ChatRequest.SendMessageDTO requestDTO, Long senderId, String senderNickName){
@@ -82,7 +81,7 @@ public class ChatService {
 
                     // 마지막으로 읽은 페이지 (인덱스/50)
                     Long lastReadMessageIdx = chatUser.getLastMessageIdx();
-                    Long offset = 0L;
+                    long offset = 0L;
 
                     // 채팅방에서 메시지를 읽은 적이 있다면
                     if (lastMessageId != null) {
@@ -108,12 +107,9 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatResponse.FindMessageListInRoomDTO findMessageListInRoom(Long chatRoomId, Long userId, Integer page){
+    public ChatResponse.FindMessageListInRoomDTO findMessageListInRoom(Long chatRoomId, Long userId, Pageable pageable){
         // 권한 체크
         ChatUser chatUser = checkChatAuthority(userId, chatRoomId);
-        String nickName = userRepository.findNickname(userId);
-
-        Pageable pageable = createDescSortedPageable(page, 50, SORT_BY_DATE);
 
         Page<Message> messages = messageRepository.findByChatRoomId(chatRoomId, pageable);
         List<ChatResponse.MessageDTO> messageDTOS = new ArrayList<>(messages.getContent().stream()
@@ -143,6 +139,9 @@ public class ChatService {
             chatUser.updateLastMessage(lastMessage.messageId(), chatNum - 1);
         }
 
+        // 채팅방에 들어가는 유저의 닉네임
+        String nickName = userRepository.findNickname(userId);
+
         return new ChatResponse.FindMessageListInRoomDTO(chatUser.getLastMessageId(), nickName, messageDTOS);
     }
 
@@ -159,8 +158,8 @@ public class ChatService {
                         user.getProfileURL()))
                 .toList();
 
-        // 채팅방의 이미지
-        Pageable pageable = createDescSortedPageable(0, 6, SORT_BY_ID);
+        // 채팅방의 이미지 => 처음 조회해오는 이미지는 6개로 고정
+        Pageable pageable = PageRequest.of(0, 6, Sort.by(Sort.Direction.DESC, SORT_BY_ID));
         List<ChatResponse.ChatImageDTO> chatImageDTOS = chatImageRepository.findByChatRoomId(chatRoomId, pageable).getContent().stream()
                 .map(chatImage -> new ChatResponse.ChatImageDTO(chatImage.getImageURL()))
                 .toList();
@@ -169,12 +168,11 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatResponse.FindChatRoomImagesDTO findChatRoomImages(Long chatRoomId, Long userId, Integer page){
+    public ChatResponse.FindChatRoomImagesDTO findChatRoomImages(Long chatRoomId, Long userId, Pageable pageable){
         // 권한 체크
         checkChatAuthority(userId, chatRoomId);
 
         // 채팅방의 이미지
-        Pageable pageable = createDescSortedPageable(page, 6, SORT_BY_ID);
         List<ChatResponse.ChatImageDTO> chatImageDTOS = chatImageRepository.findByChatRoomId(chatRoomId, pageable).getContent().stream()
                 .map(chatImage -> new ChatResponse.ChatImageDTO(chatImage.getImageURL()))
                 .toList();
@@ -203,9 +201,5 @@ public class ChatService {
         }
 
         return chatUserOP.get();
-    }
-
-    private Pageable createDescSortedPageable(int page, int size, String sortProperty) {
-        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty));
     }
 }

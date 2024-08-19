@@ -6,6 +6,9 @@ import com.hong.ForPaw.core.security.CustomUserDetails;
 import com.hong.ForPaw.core.utils.ApiUtils;
 import com.hong.ForPaw.service.ChatService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -20,6 +23,8 @@ import org.springframework.web.bind.annotation.*;
 public class ChatController {
 
     private final ChatService chatService;
+    private static final String SORT_BY_DATE = "date";
+    private static final String SORT_BY_ID = "id";
 
     @PostMapping("/chat/send")
     public ResponseEntity<?> sendMessage(@RequestBody ChatRequest.SendMessageDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) {
@@ -34,8 +39,9 @@ public class ChatController {
     }
 
     @GetMapping("/chatRooms/{chatRoomId}/messages")
-    public ResponseEntity<?> findMessageListInRoom(@PathVariable Long chatRoomId, @RequestParam Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
-        ChatResponse.FindMessageListInRoomDTO responseDTO = chatService.findMessageListInRoom(chatRoomId, userDetails.getUser().getId(), page);
+    public ResponseEntity<?> findMessageListInRoom(@PathVariable Long chatRoomId,
+                                                   @PageableDefault(size = 50, sort = SORT_BY_DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+        ChatResponse.FindMessageListInRoomDTO responseDTO = chatService.findMessageListInRoom(chatRoomId, userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -46,8 +52,9 @@ public class ChatController {
     }
 
     @GetMapping("/chatRooms/{chatRoomId}/images")
-    public ResponseEntity<?> findChatRoomImages(@PathVariable Long chatRoomId, @RequestParam Integer page, @AuthenticationPrincipal CustomUserDetails userDetails){
-        ChatResponse.FindChatRoomImagesDTO responseDTO = chatService.findChatRoomImages(chatRoomId, userDetails.getUser().getId(), page);
+    public ResponseEntity<?> findChatRoomImages(@PathVariable Long chatRoomId,
+                                                @PageableDefault(size = 6, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
+        ChatResponse.FindChatRoomImagesDTO responseDTO = chatService.findChatRoomImages(chatRoomId, userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
