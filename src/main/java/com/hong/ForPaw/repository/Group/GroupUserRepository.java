@@ -61,8 +61,9 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
     @EntityGraph(attributePaths = {"user"})
     @Query("SELECT gu FROM GroupUser gu " +
             "JOIN gu.group g " +
-            "WHERE g.id = :groupId")
-    List<GroupUser> findByGroupIdWithUser(@Param("groupId") Long groupId);
+            "WHERE g.id = :groupId " +
+            "ORDER BY gu.createdDate ASC")
+    List<GroupUser> findByGroupIdWithUserInAsc(@Param("groupId") Long groupId);
 
     @Query("SELECT COUNT(gu) > 0 FROM GroupUser gu " +
             "JOIN gu.group g " +

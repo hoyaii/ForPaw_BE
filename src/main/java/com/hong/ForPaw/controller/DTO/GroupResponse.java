@@ -102,7 +102,8 @@ public class GroupResponse {
     public record MemberDTO(Long id,
                             String name,
                             GroupRole role,
-                            String profileURL) {}
+                            String profileURL,
+                            LocalDateTime joinDate) {}
 
     public record MemberDetailDTO(Long id,
                             String nickName,

@@ -293,7 +293,7 @@ public class GroupService {
         // 가입자
         List<GroupResponse.MemberDTO> memberDTOS = findMemberList(groupId);
 
-        return new GroupResponse.FindGroupDetailByIdDTO(group.getProfileURL(), group.getName(),group.getDescription(), noticeDTOS, meetingDTOS, memberDTOS);
+        return new GroupResponse.FindGroupDetailByIdDTO(group.getProfileURL(), group.getName(), group.getDescription(), noticeDTOS, meetingDTOS, memberDTOS);
     }
 
     // 공지사항 추가조회
@@ -950,7 +950,7 @@ public class GroupService {
 
     private List<GroupResponse.MemberDTO> findMemberList(Long groupId){
         // user를 패치조인 해서 조회
-        List<GroupUser> groupUsers = groupUserRepository.findByGroupIdWithUser(groupId);
+        List<GroupUser> groupUsers = groupUserRepository.findByGroupIdWithUserInAsc(groupId);
 
         return groupUsers.stream()
                 .filter(groupUser -> !groupUser.getGroupRole().equals(GroupRole.TEMP)) // 가입 승인 상태가 아니면 제외
@@ -958,7 +958,8 @@ public class GroupService {
                         groupUser.getUser().getId(),
                         groupUser.getUser().getNickName(),
                         groupUser.getGroupRole(),
-                        groupUser.getUser().getProfileURL()))
+                        groupUser.getUser().getProfileURL(),
+                        groupUser.getCreatedDate()))
                 .collect(Collectors.toList());
     }
 
