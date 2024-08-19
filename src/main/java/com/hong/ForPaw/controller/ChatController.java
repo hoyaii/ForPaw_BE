@@ -70,8 +70,8 @@ public class ChatController {
     @GetMapping("/chatRooms/{chatRoomId}/links")
     public ResponseEntity<?> findChatRoomLinkList(@PathVariable Long chatRoomId,
                                                   @PageableDefault(size = 6, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
-        //List<ChatResponse.ObjectDTO> objectDTOS = chatService.findFileObjectList(chatRoomId, userDetails.getUser().getId(), pageable);
-        ChatResponse.FindObjectListDTO responseDTO = new ChatResponse.FindObjectListDTO(objectDTOS);
+        List<ChatResponse.LinkObjectDTO> objectDTOS = chatService.findLinkObjectList(chatRoomId, userDetails.getUser().getId(), pageable);
+        ChatResponse.FindChatRoomLinkListDTO responseDTO = new ChatResponse.FindChatRoomLinkListDTO(objectDTOS);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

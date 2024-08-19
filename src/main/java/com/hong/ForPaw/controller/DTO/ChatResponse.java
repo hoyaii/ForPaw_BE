@@ -35,6 +35,10 @@ public class ChatResponse {
                                  List<ChatObjectDTO> objects,
                                  LocalDateTime date){}
 
+    public record LinkObjectDTO(String messageId,
+                                String linkURL,
+                                LocalDateTime date){}
+
     public record ChatUserDTO(Long userId,
                               String nickName,
                               String profileURL) {}
@@ -47,13 +51,11 @@ public class ChatResponse {
                           LocalDateTime lastMessageTime,
                           Long offset) {}
 
-    public record ImagesAndFilesDTO(List<ImageObjectDTO> images, List<ImageObjectDTO> files) {}
-
     public record FindChatRoomImageList(List<ImageObjectDTO> images) {}
 
     public record FindChatRoomFileListDTO(List<FileObjectDTO> files) {}
 
-    public record FindLinkObjectsDTO(List<ImageObjectDTO> links) {}
+    public record FindChatRoomLinkListDTO(List<LinkObjectDTO> links) {}
 
     public record ReadMessageDTO(String id) {}
 }

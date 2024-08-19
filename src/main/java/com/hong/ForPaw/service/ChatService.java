@@ -226,6 +226,29 @@ public class ChatService {
     }
 
     @Transactional
+    public List<ChatResponse.LinkObjectDTO> findLinkObjectList(Long chatRoomId, Long userId, Pageable pageable){
+        // 권한 체크
+        checkChatAuthority(userId, chatRoomId);
+
+        List<ChatResponse.LinkObjectDTO> linkObjectDTOS = new ArrayList<>();
+
+        Page<Message> messages = messageRepository.findByChatRoomIdAndLinkURLIsNotNull(chatRoomId, pageable);
+        messages.getContent().forEach(message -> {
+            ChatResponse.LinkObjectDTO fileObjectDTO = new ChatResponse.LinkObjectDTO(
+                    message.getId(),
+                    message.getLinkURL(),
+                    message.getDate());
+
+            linkObjectDTOS.add(fileObjectDTO);
+        });
+
+        // 역순으로 정렬
+        Collections.reverse(linkObjectDTOS);
+
+        return linkObjectDTOS;
+    }
+
+    @Transactional
     public ChatResponse.ReadMessageDTO readMessage(String messageId){
         // 권한 체크
         Message message = messageRepository.findById(messageId).orElseThrow(

@@ -16,8 +16,8 @@ public interface MessageRepository extends MongoRepository<Message, String> {
     @Query("{ 'chatRoomId': ?0, 'objectURLs': { $exists: true, $ne: [], $not: { $size: 0 } } }")
     Page<Message> findByChatRoomIdWithObjects(Long chatRoomId, Pageable pageable);
 
-    @Query("{ 'chatRoomId': ?0, 'messageType': 'IMAGE' }")
-    Page<Message> findImageTypedByChatRoomId(Long chatRoomId, Pageable pageable);
+    Page<Message> findByChatRoomIdAndLinkURLIsNotNull(Long chatRoomId, Pageable pageable);
+
 
     Page<Message> findByChatRoomIdAndMessageType(Long chatRoomId, MessageType messageType, Pageable pageable);
 
