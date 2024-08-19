@@ -10,8 +10,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
 import java.util.List;
 
 @Document
@@ -32,20 +30,23 @@ public class Message implements Serializable {
 
     private String content;
 
-    private List<String> imageURLs;
+    private MessageType messageType;
+
+    private List<String> objectURLs;
 
     @Indexed(expireAfterSeconds = 7890048) // 3개월 후 자동 삭제
     private LocalDateTime date;
 
     @Builder
-    public Message(String id, Long chatRoomId, Long senderId, String nickName, String profileURL, String content, List<String> imageURL, LocalDateTime date) {
+    public Message(String id, Long chatRoomId, Long senderId, String nickName, String profileURL, MessageType messageType, String content, List<String> objectURLs, LocalDateTime date) {
         this.id = id;
         this.chatRoomId = chatRoomId;
         this.senderId = senderId;
         this.nickName = nickName;
         this.profileURL = profileURL;
         this.content = content;
-        this.imageURLs = imageURL;
+        this.messageType = messageType;
+        this.objectURLs = objectURLs;
         this.date = date;
     }
 }

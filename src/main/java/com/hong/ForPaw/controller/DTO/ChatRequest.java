@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+import com.hong.ForPaw.domain.Chat.MessageType;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
@@ -17,15 +18,17 @@ public class ChatRequest {
             Long chatRoomId,
             @NotNull(message = "내용을 입력해주세요.")
             String content,
-            List<ChatImageDTO> images) {}
+            MessageType messageType,
+            List<ChatObjectDTO> objects) {}
 
-    public record ChatImageDTO(String imageURL){}
+    public record ChatObjectDTO(String objectURL){}
 
     public record MessageDTO(String messageId,
                              String nickName,
                              String profileURL,
                              String content,
-                             List<ChatImageDTO> images,
+                             MessageType messageType,
+                             List<ChatObjectDTO> objects,
                              @JsonSerialize(using = LocalDateTimeSerializer.class)
                              @JsonDeserialize(using = LocalDateTimeDeserializer.class)
                              @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS")

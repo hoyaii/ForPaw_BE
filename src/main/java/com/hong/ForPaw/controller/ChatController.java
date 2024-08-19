@@ -11,8 +11,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -54,7 +52,7 @@ public class ChatController {
     @GetMapping("/chatRooms/{chatRoomId}/images")
     public ResponseEntity<?> findChatRoomImages(@PathVariable Long chatRoomId,
                                                 @PageableDefault(size = 6, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
-        ChatResponse.FindChatRoomImagesDTO responseDTO = chatService.findChatRoomImages(chatRoomId, userDetails.getUser().getId(), pageable);
+        ChatResponse.FindChatRoomObjectsDTO responseDTO = chatService.findChatRoomObjects(chatRoomId, userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

@@ -7,10 +7,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "chatImage_tb")
+@Table(name = "chatObject_tb")
 @NoArgsConstructor(access =  AccessLevel.PROTECTED)
 @Getter
-public class ChatImage {
+public class ChatObject {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,13 +21,13 @@ public class ChatImage {
     private ChatRoom chatRoom;
 
     @Column
-    private String imageURL;
+    private String objectURL;
 
     @Builder
-    public ChatImage(Long id, ChatRoom chatRoom, String imageURL) {
+    public ChatObject(Long id, ChatRoom chatRoom, String objectURL) {
         this.id = id;
         this.chatRoom = chatRoom;
-        this.imageURL = imageURL;
+        this.objectURL = objectURL;
     }
 
     public void updateChatRoom(ChatRoom chatRoom){

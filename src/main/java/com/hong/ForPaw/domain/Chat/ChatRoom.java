@@ -12,8 +12,6 @@ import org.hibernate.annotations.BatchSize;
 import java.util.ArrayList;
 import java.util.List;
 
-import static jakarta.persistence.FetchType.LAZY;
-
 @Entity
 @Table(name = "chatRoom_tb")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -33,7 +31,7 @@ public class ChatRoom extends TimeStamp {
 
     @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 10)
-    private List<ChatImage> chatImages = new ArrayList<>();
+    private List<ChatObject> chatImages = new ArrayList<>();
 
     @Builder
     public ChatRoom(Group group, String name) {
@@ -41,7 +39,7 @@ public class ChatRoom extends TimeStamp {
         this.name = name;
     }
 
-    public void addImage(ChatImage chatImage) {
+    public void addImage(ChatObject chatImage) {
         chatImages.add(chatImage);
         chatImage.updateChatRoom(this);
     }

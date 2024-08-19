@@ -1,5 +1,7 @@
 package com.hong.ForPaw.controller.DTO;
 
+import com.hong.ForPaw.domain.Chat.MessageType;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -13,19 +15,20 @@ public class ChatResponse {
                              String nickName,
                              String profileURL,
                              String content,
-                             List<ChatImageDTO> images,
+                             MessageType messageType,
+                             List<ChatObjectDTO> objects,
                              LocalDateTime date,
                              boolean isMine) {}
 
-    public record FindChatRoomDrawerDTO(List<DrawerImageDTO> images, List<ChatUserDTO> users) {}
+    public record FindChatRoomDrawerDTO(List<DrawerObjectDTO> images, List<DrawerObjectDTO> files, List<ChatUserDTO> users) {}
 
-    public record ChatImageDTO(String imageURL) {}
+    public record ChatObjectDTO(String objectURL) {}
 
-    public record DrawerImageDTO(String messageId,
-                                 String nickName,
-                                 String profileURL,
-                                 List<ChatImageDTO> images,
-                                 LocalDateTime date){}
+    public record DrawerObjectDTO(String messageId,
+                                  String nickName,
+                                  String profileURL,
+                                  List<ChatObjectDTO> objects,
+                                  LocalDateTime date){}
 
     public record ChatUserDTO(Long userId,
                               String nickName,
@@ -39,7 +42,7 @@ public class ChatResponse {
                           LocalDateTime lastMessageTime,
                           Long offset) {}
 
-    public record FindChatRoomImagesDTO(List<DrawerImageDTO> images) {}
+    public record FindChatRoomObjectsDTO(List<DrawerObjectDTO> images, List<DrawerObjectDTO> files) {}
 
     public record ReadMessageDTO(String id) {}
 }

@@ -4,7 +4,7 @@ import com.hong.ForPaw.controller.DTO.AlarmRequest;
 import com.hong.ForPaw.controller.DTO.ChatRequest;
 import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
-import com.hong.ForPaw.domain.Chat.ChatImage;
+import com.hong.ForPaw.domain.Chat.ChatObject;
 import com.hong.ForPaw.domain.Chat.ChatRoom;
 import com.hong.ForPaw.domain.Chat.Message;
 import com.hong.ForPaw.domain.User.User;
@@ -106,10 +106,10 @@ public class BrokerService {
             ChatRequest.MessageDTO messageDTO = (ChatRequest.MessageDTO) converter.fromMessage(m);
 
             // 메시지 저장
-            List<String> imageURLs = Optional.ofNullable(messageDTO.images())
+            List<String> objectURLs = Optional.ofNullable(messageDTO.objects())
                     .orElse(Collections.emptyList())
                     .stream()
-                    .map(ChatRequest.ChatImageDTO::imageURL)
+                    .map(ChatRequest.ChatObjectDTO::objectURL)
                     .toList();
 
             Message message = Message.builder()
@@ -117,7 +117,8 @@ public class BrokerService {
                     .nickName(messageDTO.nickName())
                     .profileURL(messageDTO.profileURL())
                     .content(messageDTO.content())
-                    .imageURL(imageURLs)
+                    .messageType(messageDTO.messageType())
+                    .objectURLs(objectURLs)
                     .date(messageDTO.date())
                     .chatRoomId(messageDTO.chatRoomId())
                     .senderId(messageDTO.senderId())
@@ -126,18 +127,18 @@ public class BrokerService {
             messageRepository.save(message);
 
             // 이미지 저장
-            if (messageDTO.images() != null && !messageDTO.images().isEmpty()) {
-                List<ChatImage> chatImages = messageDTO.images().stream()
-                        .map(imageDTO -> {
+            if (messageDTO.objects() != null && !messageDTO.objects().isEmpty()) {
+                List<ChatObject> chatObjects = messageDTO.objects().stream()
+                        .map(objectDTO -> {
                             ChatRoom chatRoomRef = entityManager.getReference(ChatRoom.class, messageDTO.chatRoomId());
-                            return ChatImage.builder()
+                            return ChatObject.builder()
                                     .chatRoom(chatRoomRef)
-                                    .imageURL(imageDTO.imageURL())
+                                    .objectURL(objectDTO.objectURL())
                                     .build();
                         })
                         .collect(Collectors.toList());
 
-                chatImageRepository.saveAll(chatImages);
+                chatImageRepository.saveAll(chatObjects);
             }
 
             // 알람 전송
