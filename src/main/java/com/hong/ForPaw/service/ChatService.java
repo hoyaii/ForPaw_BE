@@ -110,7 +110,9 @@ public class ChatService {
     @Transactional
     public ChatResponse.FindMessageListInRoomDTO findMessageListInRoom(Long chatRoomId, Long userId, Pageable pageable){
         // 권한 체크
-        ChatUser chatUser = checkChatAuthority(userId, chatRoomId);
+        ChatUser chatUser = chatUserRepository.findByUserIdAndChatRoomIdWithChatRoom(userId, chatRoomId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_FORBIDDEN)
+        );
 
         Page<Message> messages = messageRepository.findByChatRoomId(chatRoomId, pageable);
         List<ChatResponse.MessageDTO> messageDTOS = new ArrayList<>(messages.getContent().stream()
@@ -143,7 +145,7 @@ public class ChatService {
         // 채팅방에 들어가는 유저의 닉네임
         String nickName = userRepository.findNickname(userId);
 
-        return new ChatResponse.FindMessageListInRoomDTO(chatUser.getLastMessageId(), nickName, messageDTOS);
+        return new ChatResponse.FindMessageListInRoomDTO(chatUser.getChatRoom().getName(), chatUser.getLastMessageId(), nickName, messageDTOS);
     }
 
     @Transactional
