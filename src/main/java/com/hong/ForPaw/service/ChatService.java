@@ -7,7 +7,6 @@ import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Chat.ChatUser;
 import com.hong.ForPaw.domain.Chat.Message;
 import com.hong.ForPaw.domain.Chat.MessageType;
-import com.hong.ForPaw.repository.Chat.ChatImageRepository;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Chat.MessageRepository;
@@ -162,25 +161,68 @@ public class ChatService {
                         user.getProfileURL()))
                 .toList();
 
-        // 채팅방의 S3 객체 => 처음 조회해오는 객체는 9개로 고정
-        Pageable pageable = PageRequest.of(0, 9, Sort.by(Sort.Direction.DESC, SORT_BY_DATE));
-        Page<Message> messages = messageRepository.findByChatRoomIdWithObjectsOrLink(chatRoomId, pageable);
-        ChatResponse.ImagesAndFilesDTO imagesAndFilesDTO = getObjectDTOSByType(messages);
-        List<ChatResponse.DrawerObjectDTO> linkObjectDTOS = getLinkObjectDTOS(messages);
+        // 채팅방의 S3 객체 => 처음 조회해오는 객체는 6개로 고정
+        Pageable pageable = PageRequest.of(0, 6, Sort.by(Sort.Direction.DESC, SORT_BY_DATE));
+        List<ChatResponse.ImageObjectDTO> imageObjectDTOS = findImageObjectList(chatRoomId, userId, pageable);
 
-        return new ChatResponse.FindChatRoomDrawerDTO(imagesAndFilesDTO.images(), imagesAndFilesDTO.files(), linkObjectDTOS, chatUserDTOS);
+        return new ChatResponse.FindChatRoomDrawerDTO(imageObjectDTOS, chatUserDTOS);
     }
 
     @Transactional
-    public ChatResponse.FindChatRoomObjectsDTO findChatRoomObjects(Long chatRoomId, Long userId, Pageable pageable){
+    public List<ChatResponse.ImageObjectDTO> findImageObjectList(Long chatRoomId, Long userId, Pageable pageable){
         // 권한 체크
         checkChatAuthority(userId, chatRoomId);
 
-        Page<Message> messages = messageRepository.findByChatRoomIdWithObjectsOrLink(chatRoomId, pageable);
-        ChatResponse.ImagesAndFilesDTO imagesAndFilesDTO = getObjectDTOSByType(messages);
-        List<ChatResponse.DrawerObjectDTO> linkObjectDTOS = getLinkObjectDTOS(messages);
+        List<ChatResponse.ImageObjectDTO> imageObjectDTOS = new ArrayList<>();
 
-        return new ChatResponse.FindChatRoomObjectsDTO(imagesAndFilesDTO.images(), imagesAndFilesDTO.files(), linkObjectDTOS);
+        Page<Message> messages = messageRepository.findByChatRoomIdAndMessageType(chatRoomId, MessageType.IMAGE, pageable);
+        messages.getContent().forEach(message -> {
+            List<ChatResponse.ChatObjectDTO> chatObjectDTOS = message.getObjectURLs().stream()
+                    .map(ChatResponse.ChatObjectDTO::new)
+                    .toList();
+
+            ChatResponse.ImageObjectDTO imageObjectDTO = new ChatResponse.ImageObjectDTO(
+                    message.getId(),
+                    message.getNickName(),
+                    message.getProfileURL(),
+                    chatObjectDTOS,
+                    message.getDate());
+
+            imageObjectDTOS.add(imageObjectDTO);
+        });
+
+        // 역순으로 정렬
+        Collections.reverse(imageObjectDTOS);
+
+        return imageObjectDTOS;
+    }
+
+    @Transactional
+    public List<ChatResponse.FileObjectDTO> findFileObjectList(Long chatRoomId, Long userId, Pageable pageable){
+        // 권한 체크
+        checkChatAuthority(userId, chatRoomId);
+
+        List<ChatResponse.FileObjectDTO> fileObjectDTOS = new ArrayList<>();
+
+        Page<Message> messages = messageRepository.findByChatRoomIdAndMessageType(chatRoomId, MessageType.FILE, pageable);
+        messages.getContent().forEach(message -> {
+            List<ChatResponse.ChatObjectDTO> chatObjectDTOS = message.getObjectURLs().stream()
+                    .map(ChatResponse.ChatObjectDTO::new)
+                    .toList();
+
+            ChatResponse.FileObjectDTO fileObjectDTO = new ChatResponse.FileObjectDTO(
+                    message.getId(),
+                    message.getContent(),
+                    chatObjectDTOS,
+                    message.getDate());
+
+            fileObjectDTOS.add(fileObjectDTO);
+        });
+
+        // 역순으로 정렬
+        Collections.reverse(fileObjectDTOS);
+
+        return fileObjectDTOS;
     }
 
     @Transactional
@@ -194,60 +236,6 @@ public class ChatService {
         chatUser.updateLastMessage(message.getId(), chatUser.getLastMessageIdx() + 1);
 
         return new ChatResponse.ReadMessageDTO(messageId);
-    }
-
-    private ChatResponse.ImagesAndFilesDTO getObjectDTOSByType(Page<Message> messages) {
-        List<ChatResponse.DrawerObjectDTO> imageObjectDTOS = new ArrayList<>();
-        List<ChatResponse.DrawerObjectDTO> fileObjectDTOS = new ArrayList<>();
-
-        // 메시지 타입에 따라 이미지와 파일 리스트를 분리
-        messages.getContent().forEach(message -> {
-            List<ChatResponse.ChatObjectDTO> objectDTOS = message.getObjectURLs().stream()
-                    .map(ChatResponse.ChatObjectDTO::new)
-                    .toList();
-
-            ChatResponse.DrawerObjectDTO drawerObjectDTO = new ChatResponse.DrawerObjectDTO(
-                    message.getId(),
-                    message.getNickName(),
-                    message.getProfileURL(),
-                    objectDTOS,
-                    message.getDate());
-
-            // 메시지 타입에 따라 분류
-            if (message.getMessageType().equals(MessageType.IMAGE)) {
-                imageObjectDTOS.add(drawerObjectDTO);
-            } else if (message.getMessageType().equals(MessageType.FILE)) {
-                fileObjectDTOS.add(drawerObjectDTO);
-            }
-        });
-
-        // 역순으로 정렬
-        Collections.reverse(imageObjectDTOS);
-        Collections.reverse(fileObjectDTOS);
-
-        return new ChatResponse.ImagesAndFilesDTO(imageObjectDTOS, fileObjectDTOS);
-    }
-    
-    private List<ChatResponse.DrawerObjectDTO> getLinkObjectDTOS(Page<Message> messages){
-        List<ChatResponse.DrawerObjectDTO> linkObjectDTOS = new ArrayList<>();
-
-        messages.getContent().stream()
-                .filter(message -> message.getLinkURL() != null)
-                .forEach(message -> {
-                    List<ChatResponse.ChatObjectDTO> objectDTOS = new ArrayList<>();
-                    objectDTOS.add(new ChatResponse.ChatObjectDTO(message.getLinkURL()));
-
-                    ChatResponse.DrawerObjectDTO drawerObjectDTO = new ChatResponse.DrawerObjectDTO(
-                            message.getId(),
-                            message.getNickName(),
-                            message.getProfileURL(),
-                            objectDTOS,
-                            message.getDate());
-
-                    linkObjectDTOS.add(drawerObjectDTO);
-                });
-
-        return linkObjectDTOS;
     }
 
     private ChatUser checkChatAuthority(Long userId, Long chatRoomId){

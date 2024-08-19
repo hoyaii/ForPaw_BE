@@ -20,15 +20,20 @@ public class ChatResponse {
                              LocalDateTime date,
                              boolean isMine) {}
 
-    public record FindChatRoomDrawerDTO(List<DrawerObjectDTO> images, List<DrawerObjectDTO> files, List<DrawerObjectDTO> links, List<ChatUserDTO> users) {}
+    public record FindChatRoomDrawerDTO(List<ImageObjectDTO> images, List<ChatUserDTO> users) {}
 
     public record ChatObjectDTO(String objectURL) {}
 
-    public record DrawerObjectDTO(String messageId,
-                                  String nickName,
-                                  String profileURL,
-                                  List<ChatObjectDTO> objects,
-                                  LocalDateTime date){}
+    public record ImageObjectDTO(String messageId,
+                                 String nickName,
+                                 String profileURL,
+                                 List<ChatObjectDTO> objects,
+                                 LocalDateTime date){}
+
+    public record FileObjectDTO(String messageId,
+                                 String fileName,
+                                 List<ChatObjectDTO> objects,
+                                 LocalDateTime date){}
 
     public record ChatUserDTO(Long userId,
                               String nickName,
@@ -42,9 +47,13 @@ public class ChatResponse {
                           LocalDateTime lastMessageTime,
                           Long offset) {}
 
-    public record ImagesAndFilesDTO(List<DrawerObjectDTO> images, List<DrawerObjectDTO> files) {}
+    public record ImagesAndFilesDTO(List<ImageObjectDTO> images, List<ImageObjectDTO> files) {}
 
-    public record FindChatRoomObjectsDTO(List<DrawerObjectDTO> images, List<DrawerObjectDTO> files, List<DrawerObjectDTO> links) {}
+    public record FindChatRoomImageList(List<ImageObjectDTO> images) {}
+
+    public record FindChatRoomFileListDTO(List<FileObjectDTO> files) {}
+
+    public record FindLinkObjectsDTO(List<ImageObjectDTO> links) {}
 
     public record ReadMessageDTO(String id) {}
 }

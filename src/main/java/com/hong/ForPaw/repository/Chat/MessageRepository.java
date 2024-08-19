@@ -1,6 +1,7 @@
 package com.hong.ForPaw.repository.Chat;
 
 import com.hong.ForPaw.domain.Chat.Message;
+import com.hong.ForPaw.domain.Chat.MessageType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -12,8 +13,14 @@ public interface MessageRepository extends MongoRepository<Message, String> {
 
     Page<Message> findByChatRoomId(Long chatRoomId, Pageable pageable);
 
-    @Query("{ '$or': [ { 'objectURLs': { $exists: true, $ne: [], $not: { $size: 0 } } }, { 'linkURL': { $ne: null } } ], 'chatRoomId': ?0 }")
-    Page<Message> findByChatRoomIdWithObjectsOrLink(Long chatRoomId, Pageable pageable);
+    @Query("{ 'chatRoomId': ?0, 'objectURLs': { $exists: true, $ne: [], $not: { $size: 0 } } }")
+    Page<Message> findByChatRoomIdWithObjects(Long chatRoomId, Pageable pageable);
+
+    @Query("{ 'chatRoomId': ?0, 'messageType': 'IMAGE' }")
+    Page<Message> findImageTypedByChatRoomId(Long chatRoomId, Pageable pageable);
+
+    Page<Message> findByChatRoomIdAndMessageType(Long chatRoomId, MessageType messageType, Pageable pageable);
+
 
     Integer countByChatRoomId(Long chatRoomId);
 }
