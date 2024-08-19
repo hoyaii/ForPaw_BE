@@ -27,7 +27,7 @@ public interface FavoriteAnimalRepository extends JpaRepository<FavoriteAnimal, 
             "JOIN fa.animal a " +
             "JOIN fa.user u " +
             "WHERE u.id = :userId AND a.removedAt IS NULL")
-    Page<Animal> findAnimalsByUserId(@Param("userId") Long userId, Pageable pageable);
+    List<Animal> findAnimalsByUserId(@Param("userId") Long userId);
 
     @Query("SELECT a.id FROM FavoriteAnimal fa " +
             "JOIN fa.animal a " +

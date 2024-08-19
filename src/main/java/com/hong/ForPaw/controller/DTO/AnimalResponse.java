@@ -11,7 +11,7 @@ public class AnimalResponse {
 
     public record FindRecommendedAnimalList(List<AnimalDTO> animals) {}
 
-    public record FindLikeAnimalListDTO(List<AnimalDTO> animals, boolean isLastPage) {}
+    public record FindLikeAnimalListDTO(List<AnimalDTO> animals) {}
 
     public record AnimalDTO(Long id,
                             String name,

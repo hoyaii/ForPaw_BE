@@ -268,11 +268,10 @@ public class AnimalService {
     }
 
     @Transactional(readOnly = true)
-    public AnimalResponse.FindLikeAnimalListDTO findLikeAnimalList(Pageable pageable, Long userId){
-        Page<Animal> animalPage = favoriteAnimalRepository.findAnimalsByUserId(userId, pageable);
-        boolean isLastPage = !animalPage.hasNext();
+    public AnimalResponse.FindLikeAnimalListDTO findLikeAnimalList(Long userId){
+        List<Animal> animalPage = favoriteAnimalRepository.findAnimalsByUserId(userId);
 
-        List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
+        List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.stream()
                 .map(animal -> {
                     Long likeNum = redisService.getValueInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
 
@@ -294,7 +293,7 @@ public class AnimalService {
                 })
                 .collect(Collectors.toList());
 
-        return new AnimalResponse.FindLikeAnimalListDTO(animalDTOS, isLastPage);
+        return new AnimalResponse.FindLikeAnimalListDTO(animalDTOS);
     }
 
     @Transactional(readOnly = true)
