@@ -36,6 +36,7 @@ public class ChatService {
     private final ChatImageRepository chatImageRepository;
     private final BrokerService brokerService;
     private static final String SORT_BY_ID = "id";
+    private static final String SORT_BY_DATE = "date";
 
     @Transactional
     public ChatResponse.SendMessageDTO sendMessage(ChatRequest.SendMessageDTO requestDTO, Long senderId, String senderNickName){
@@ -159,12 +160,11 @@ public class ChatService {
                 .toList();
 
         // 채팅방의 이미지 => 처음 조회해오는 이미지는 6개로 고정
-        Pageable pageable = PageRequest.of(0, 6, Sort.by(Sort.Direction.DESC, SORT_BY_ID));
-        List<ChatResponse.ChatImageDTO> chatImageDTOS = chatImageRepository.findByChatRoomId(chatRoomId, pageable).getContent().stream()
-                .map(chatImage -> new ChatResponse.ChatImageDTO(chatImage.getImageURL()))
-                .toList();
+        Pageable pageable = PageRequest.of(0, 9, Sort.by(Sort.Direction.DESC, SORT_BY_DATE));
+        List<ChatResponse.DrawerImageDTO> drawerImageDTOS = getDrawerImageDTOS(chatRoomId, pageable);
+        Collections.reverse(drawerImageDTOS);
 
-        return new ChatResponse.FindChatRoomDrawerDTO(chatImageDTOS, chatUserDTOS);
+        return new ChatResponse.FindChatRoomDrawerDTO(drawerImageDTOS, chatUserDTOS);
     }
 
     @Transactional
@@ -173,11 +173,10 @@ public class ChatService {
         checkChatAuthority(userId, chatRoomId);
 
         // 채팅방의 이미지
-        List<ChatResponse.ChatImageDTO> chatImageDTOS = chatImageRepository.findByChatRoomId(chatRoomId, pageable).getContent().stream()
-                .map(chatImage -> new ChatResponse.ChatImageDTO(chatImage.getImageURL()))
-                .toList();
+        List<ChatResponse.DrawerImageDTO> drawerImageDTOS = getDrawerImageDTOS(chatRoomId, pageable);
+        Collections.reverse(drawerImageDTOS);
 
-        return new ChatResponse.FindChatRoomImagesDTO(chatImageDTOS);
+        return new ChatResponse.FindChatRoomImagesDTO(drawerImageDTOS);
     }
 
     @Transactional
@@ -191,6 +190,24 @@ public class ChatService {
         chatUser.updateLastMessage(message.getId(), chatUser.getLastMessageIdx() + 1);
 
         return new ChatResponse.ReadMessageDTO(messageId);
+    }
+
+    private List<ChatResponse.DrawerImageDTO> getDrawerImageDTOS(Long chatRoomId, Pageable pageable) {
+        Page<Message> messages = messageRepository.findByChatRoomIdWithImages(chatRoomId, pageable);
+        return new ArrayList<>(messages.getContent().stream()
+                .map(message -> {
+                    List<ChatResponse.ChatImageDTO> imageDTOS = message.getImageURLs().stream()
+                            .map(ChatResponse.ChatImageDTO::new)
+                            .toList();
+
+                    return new ChatResponse.DrawerImageDTO(
+                            message.getId(),
+                            message.getNickName(),
+                            message.getProfileURL(),
+                            imageDTOS,
+                            message.getDate());
+                })
+                .toList());
     }
 
     private ChatUser checkChatAuthority(Long userId, Long chatRoomId){
