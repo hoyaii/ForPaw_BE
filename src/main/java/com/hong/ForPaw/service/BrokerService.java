@@ -30,6 +30,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,6 +55,8 @@ public class BrokerService {
     private static final String ALARM_EXCHANGE = "alarm.exchange";
     private static final String ROOM_QUEUE_PREFIX = "room.";
     private static final String USER_QUEUE_PREFIX = "user.";
+    private static final String URL_REGEX = "(https?://[\\w\\-\\._~:/?#\\[\\]@!$&'()*+,;=%]+)";
+    private static final Pattern URL_PATTERN = Pattern.compile(URL_REGEX);
 
     @Transactional
     public void initChatListener(){
@@ -112,6 +116,9 @@ public class BrokerService {
                     .map(ChatRequest.ChatObjectDTO::objectURL)
                     .toList();
 
+            // content에서 첫 번째 URL 추출
+            String linkURL = extractFirstURL(messageDTO.content());
+
             Message message = Message.builder()
                     .id(messageDTO.messageId())
                     .nickName(messageDTO.nickName())
@@ -122,6 +129,7 @@ public class BrokerService {
                     .date(messageDTO.date())
                     .chatRoomId(messageDTO.chatRoomId())
                     .senderId(messageDTO.senderId())
+                    .linkURL(linkURL)
                     .build();
 
             messageRepository.save(message);
@@ -193,6 +201,15 @@ public class BrokerService {
     public void produceAlarmToUser(Long userId, AlarmRequest.AlarmDTO alarm) {
         String routingKey = USER_QUEUE_PREFIX + userId;
         rabbitTemplate.convertAndSend(ALARM_EXCHANGE, routingKey, alarm);
+    }
+
+    private String extractFirstURL(String content) {
+        Matcher matcher = URL_PATTERN.matcher(content);
+        if (matcher.find()) {
+            return matcher.group();
+        }
+
+        return null;
     }
 
     private Date calculateExpireAt(LocalDateTime date, int months) {

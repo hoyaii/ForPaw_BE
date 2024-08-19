@@ -9,7 +9,8 @@ public enum MessageType {
 
     TEXT("텍스트"),
     IMAGE("이미지"),
-    FILE("기타파일");
+    FILE("기타파일"),
+    LINK("링크");
 
     private String value;
 }

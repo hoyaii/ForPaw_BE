@@ -12,8 +12,8 @@ public interface MessageRepository extends MongoRepository<Message, String> {
 
     Page<Message> findByChatRoomId(Long chatRoomId, Pageable pageable);
 
-    @Query("{ 'chatRoomId': ?0, 'objectURLs': { $exists: true, $ne: [], $not: { $size: 0 } } }")
-    Page<Message> findByChatRoomIdWithObjects(Long chatRoomId, Pageable pageable);
+    @Query("{ '$or': [ { 'objectURLs': { $exists: true, $ne: [], $not: { $size: 0 } } }, { 'linkURL': { $ne: null } } ], 'chatRoomId': ?0 }")
+    Page<Message> findByChatRoomIdWithObjectsOrLink(Long chatRoomId, Pageable pageable);
 
     Integer countByChatRoomId(Long chatRoomId);
 }

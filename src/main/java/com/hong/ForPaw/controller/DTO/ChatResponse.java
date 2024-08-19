@@ -20,7 +20,7 @@ public class ChatResponse {
                              LocalDateTime date,
                              boolean isMine) {}
 
-    public record FindChatRoomDrawerDTO(List<DrawerObjectDTO> images, List<DrawerObjectDTO> files, List<ChatUserDTO> users) {}
+    public record FindChatRoomDrawerDTO(List<DrawerObjectDTO> images, List<DrawerObjectDTO> files, List<DrawerObjectDTO> links, List<ChatUserDTO> users) {}
 
     public record ChatObjectDTO(String objectURL) {}
 
@@ -42,7 +42,9 @@ public class ChatResponse {
                           LocalDateTime lastMessageTime,
                           Long offset) {}
 
-    public record FindChatRoomObjectsDTO(List<DrawerObjectDTO> images, List<DrawerObjectDTO> files) {}
+    public record ImagesAndFilesDTO(List<DrawerObjectDTO> images, List<DrawerObjectDTO> files) {}
+
+    public record FindChatRoomObjectsDTO(List<DrawerObjectDTO> images, List<DrawerObjectDTO> files, List<DrawerObjectDTO> links) {}
 
     public record ReadMessageDTO(String id) {}
 }
