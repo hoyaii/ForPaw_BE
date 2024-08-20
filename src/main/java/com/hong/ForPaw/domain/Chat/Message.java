@@ -36,6 +36,8 @@ public class Message implements Serializable {
 
     private String linkURL;
 
+    private LinkMetadata metadata;
+
     @Indexed(expireAfterSeconds = 7890048) // 3개월 후 자동 삭제
     private LocalDateTime date;
 
