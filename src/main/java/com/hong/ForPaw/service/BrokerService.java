@@ -4,12 +4,9 @@ import com.hong.ForPaw.controller.DTO.AlarmRequest;
 import com.hong.ForPaw.controller.DTO.ChatRequest;
 import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
-import com.hong.ForPaw.domain.Chat.ChatObject;
-import com.hong.ForPaw.domain.Chat.ChatRoom;
 import com.hong.ForPaw.domain.Chat.Message;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
-import com.hong.ForPaw.repository.Chat.ChatImageRepository;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
 import com.hong.ForPaw.repository.Chat.MessageRepository;
 import com.hong.ForPaw.repository.UserRepository;
@@ -41,7 +38,6 @@ public class BrokerService {
     private final AlarmRepository alarmRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
-    private final ChatImageRepository chatImageRepository;
     private final MessageRepository messageRepository;
     private final RabbitListenerEndpointRegistry rabbitListenerEndpointRegistry;
     private final SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory;
@@ -133,21 +129,6 @@ public class BrokerService {
                     .build();
 
             messageRepository.save(message);
-
-            // 이미지 저장
-            if (messageDTO.objects() != null && !messageDTO.objects().isEmpty()) {
-                List<ChatObject> chatObjects = messageDTO.objects().stream()
-                        .map(objectDTO -> {
-                            ChatRoom chatRoomRef = entityManager.getReference(ChatRoom.class, messageDTO.chatRoomId());
-                            return ChatObject.builder()
-                                    .chatRoom(chatRoomRef)
-                                    .objectURL(objectDTO.objectURL())
-                                    .build();
-                        })
-                        .collect(Collectors.toList());
-
-                chatImageRepository.saveAll(chatObjects);
-            }
 
             // 알람 전송
             chatRoomRepository.findUsersByChatRoomId(messageDTO.chatRoomId())

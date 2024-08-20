@@ -29,19 +29,10 @@ public class ChatRoom extends TimeStamp {
     @Column
     private String name;
 
-    @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
-    @BatchSize(size = 10)
-    private List<ChatObject> chatImages = new ArrayList<>();
-
     @Builder
     public ChatRoom(Group group, String name) {
         this.group = group;
         this.name = name;
-    }
-
-    public void addImage(ChatObject chatImage) {
-        chatImages.add(chatImage);
-        chatImage.updateChatRoom(this);
     }
 
     public void updateName(String name){
