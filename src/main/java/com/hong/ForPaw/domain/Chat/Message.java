@@ -42,7 +42,7 @@ public class Message implements Serializable {
     private LocalDateTime date;
 
     @Builder
-    public Message(String id, Long chatRoomId, Long senderId, String nickName, String profileURL, MessageType messageType, String content, List<String> objectURLs, String linkURL, LocalDateTime date) {
+    public Message(String id, Long chatRoomId, Long senderId, String nickName, String profileURL, MessageType messageType, String content, List<String> objectURLs, String linkURL, LinkMetadata metadata, LocalDateTime date) {
         this.id = id;
         this.chatRoomId = chatRoomId;
         this.senderId = senderId;
@@ -52,6 +52,7 @@ public class Message implements Serializable {
         this.messageType = messageType;
         this.objectURLs = objectURLs;
         this.linkURL = linkURL;
+        this.metadata = metadata;
         this.date = date;
     }
 }

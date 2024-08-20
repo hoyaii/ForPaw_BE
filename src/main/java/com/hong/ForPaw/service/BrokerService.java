@@ -2,8 +2,11 @@ package com.hong.ForPaw.service;
 
 import com.hong.ForPaw.controller.DTO.AlarmRequest;
 import com.hong.ForPaw.controller.DTO.ChatRequest;
+import com.hong.ForPaw.controller.DTO.MetaDataDTO;
+import com.hong.ForPaw.core.utils.MetaDataUtils;
 import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
+import com.hong.ForPaw.domain.Chat.LinkMetadata;
 import com.hong.ForPaw.domain.Chat.Message;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
@@ -21,6 +24,7 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
@@ -114,6 +118,12 @@ public class BrokerService {
 
             // content에서 첫 번째 URL 추출
             String linkURL = extractFirstURL(messageDTO.content());
+            LinkMetadata metadata = null;
+
+            // linkeURL이 존재하면 메타 데이터 추출
+            if(linkURL != null) {
+                 metadata = MetaDataUtils.fetchMetadata(linkURL);
+            }
 
             Message message = Message.builder()
                     .id(messageDTO.messageId())
@@ -126,6 +136,7 @@ public class BrokerService {
                     .chatRoomId(messageDTO.chatRoomId())
                     .senderId(messageDTO.senderId())
                     .linkURL(linkURL)
+                    .metadata(metadata)
                     .build();
 
             messageRepository.save(message);
