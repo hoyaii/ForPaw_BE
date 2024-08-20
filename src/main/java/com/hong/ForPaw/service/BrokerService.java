@@ -118,7 +118,7 @@ public class BrokerService {
             String linkURL = null;
             LinkMetadata metadata = null;
 
-            if(messageDTO.messageType().equals(MessageType.TEXT)){
+            if(messageDTO.messageType() != null && messageDTO.messageType().equals(MessageType.TEXT)){
                 linkURL = extractFirstURL(messageDTO.content());
 
                 // linkeURL이 존재하면 메타 데이터 추출
