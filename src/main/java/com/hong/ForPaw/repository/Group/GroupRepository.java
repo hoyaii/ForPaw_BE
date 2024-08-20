@@ -2,6 +2,7 @@ package com.hong.ForPaw.repository.Group;
 
 import com.hong.ForPaw.domain.Group.Group;
 import com.hong.ForPaw.domain.District;
+import com.hong.ForPaw.domain.Group.GroupRole;
 import com.hong.ForPaw.domain.Province;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,16 +19,20 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
     @Query("SELECT g FROM Group g WHERE g.province = :province AND g.district = :district " +
             "AND (:userId IS NULL OR g.id NOT IN " +
-            "(SELECT g.id FROM GroupUser gu JOIN gu.group g JOIN gu.user u WHERE u.id = :userId))")
+            "(SELECT g.id FROM GroupUser gu JOIN gu.group g JOIN gu.user u WHERE u.id = :userId AND gu.groupRole != :role))")
     Page<Group> findByProvinceAndDistrictWithoutMyGroup(@Param("province") Province province,
                                                         @Param("district") District district,
                                                         @Param("userId") Long userId,
+                                                        @Param("role") GroupRole role,
                                                         Pageable pageable);
 
     @Query("SELECT g FROM Group g WHERE g.province = :province " +
             "AND (:userId IS NULL OR g.id NOT IN " +
-            "(SELECT g.id FROM GroupUser gu JOIN gu.group g JOIN gu.user u WHERE u.id = :userId))")
-    Page<Group> findByProvinceWithoutMyGroup(@Param("province") Province province, @Param("userId") Long userId, Pageable pageable);
+            "(SELECT g.id FROM GroupUser gu JOIN gu.group g JOIN gu.user u WHERE u.id = :userId AND gu.groupRole != :role))")
+    Page<Group> findByProvinceWithoutMyGroup(@Param("province") Province province,
+                                             @Param("userId") Long userId,
+                                             @Param("role") GroupRole role,
+                                             Pageable pageable);
 
     @Query("SELECT g FROM Group g WHERE (:userId IS NULL OR g.id NOT IN " +
             "(SELECT g.id FROM GroupUser gu JOIN gu.group g JOIN gu.user u WHERE u.id = :userId))")

@@ -200,7 +200,7 @@ public class GroupService {
 
     @Transactional(readOnly = true)
     public List<GroupResponse.LocalGroupDTO> findLocalGroupList(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable){
-        Page<Group> localGroupPage = groupRepository.findByProvinceAndDistrictWithoutMyGroup(province, district, userId, pageable);
+        Page<Group> localGroupPage = groupRepository.findByProvinceAndDistrictWithoutMyGroup(province, district, userId, GroupRole.TEMP, pageable);
 
         return localGroupPage.getContent().stream()
                 .map(group -> {
@@ -230,7 +230,7 @@ public class GroupService {
                         .flatMap(userRepository::findProvinceById))
                 .orElse(DEFAULT_PROVINCE);
 
-        Page<Group> newGroupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, pageable);
+        Page<Group> newGroupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, GroupRole.TEMP, pageable);
 
         return newGroupPage.getContent().stream()
                 .map(group -> new GroupResponse.NewGroupDTO(
@@ -837,7 +837,7 @@ public class GroupService {
         Sort sort = Sort.by(Sort.Order.desc(SORT_BY_LIKE_NUM), Sort.Order.desc(SORT_BY_PARTICIPANT_NUM));
         Pageable pageable = PageRequest.of(0, 30, sort);
 
-        Page<Group> groupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, pageable);
+        Page<Group> groupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, GroupRole.TEMP, pageable);
         List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = groupPage.getContent().stream()
                 .map(group -> {
                     Long likeNum = redisService.getValueInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
