@@ -3,6 +3,10 @@ package com.hong.ForPaw.core.utils;
 import com.hong.ForPaw.domain.Chat.LinkMetadata;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 import org.jsoup.nodes.Document;
 
@@ -11,9 +15,14 @@ import java.util.Objects;
 public class MetaDataUtils {
 
     public static LinkMetadata fetchMetadata(String url) {
-        // RestTemplate을 사용하여 웹 페이지의 HTML을 가져옴
+        // User-Agent 설정
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36");
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
         RestTemplate restTemplate = new RestTemplate();
-        String html = restTemplate.getForObject(url, String.class);
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+        String html = response.getBody();
 
         // JSoup을 사용하여 HTML 파싱
         Document doc = Jsoup.parse(Objects.requireNonNull(html));
