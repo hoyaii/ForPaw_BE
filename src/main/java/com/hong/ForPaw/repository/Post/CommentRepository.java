@@ -63,10 +63,15 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     void deleteByPostId(Long postId);
 
     @Modifying
-    @Query("UPDATE Comment c SET c.removedAt = NOW() WHERE c.id= :id")
-    void deleteById(@Param("id") Long id);
+    @Query("UPDATE Comment c SET c.removedAt = NOW() WHERE c.id= :commentId")
+    void deleteById(@Param("commentId") Long commentId);
 
     @Modifying
-    @Query("DELETE FROM Comment c WHERE c.post.id IN (SELECT p.id FROM Post p WHERE p.group.id = :groupId )")
-    void hardDeleteByGroupId(@Param("groupId") Long groupId);
+    @Query("DELETE FROM Comment c WHERE c.post.id IN (SELECT p.id FROM Post p WHERE p.group.id = :groupId ) AND c.parent IS NOT NULL")
+    void hardDeleteChildByGroupId(@Param("groupId") Long groupId);
+
+    // 자식 댓글 => 부모 댓글 순으로 삭제해야 Foregin 키 제약에 걸리지 않음
+    @Modifying
+    @Query("DELETE FROM Comment c WHERE c.post.id IN (SELECT p.id FROM Post p WHERE p.group.id = :groupId ) AND c.parent IS NULL")
+    void hardDeleteParentByGroupId(@Param("groupId") Long groupId);
 }

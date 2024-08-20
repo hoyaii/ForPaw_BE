@@ -645,7 +645,8 @@ public class GroupService {
         // 그룹과 관련된 게시글, 댓글 관련 데이터 삭제
         postLikeRepository.deleteByGroupId(groupId);
         commentLikeRepository.deleteByGroupId(groupId);
-        commentRepository.hardDeleteByGroupId(groupId);
+        commentRepository.hardDeleteChildByGroupId(groupId);
+        commentRepository.hardDeleteParentByGroupId(groupId);
         postImageRepository.deleteByGroupId(groupId);
         postRepository.hardDeleteByGroupId(groupId);
 
