@@ -79,6 +79,6 @@ public class Group extends TimeStamp {
     }
 
     public void decrementParticipantNum(){
-        this.participantNum = this.participantNum + 1;
+        this.participantNum = this.participantNum - 1;
     }
 }
