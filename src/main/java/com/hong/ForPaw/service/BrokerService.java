@@ -2,7 +2,6 @@ package com.hong.ForPaw.service;
 
 import com.hong.ForPaw.controller.DTO.AlarmRequest;
 import com.hong.ForPaw.controller.DTO.ChatRequest;
-import com.hong.ForPaw.controller.DTO.MetaDataDTO;
 import com.hong.ForPaw.core.utils.MetaDataUtils;
 import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
@@ -24,7 +23,6 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
@@ -33,7 +31,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor

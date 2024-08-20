@@ -237,6 +237,10 @@ public class ChatService {
             ChatResponse.LinkObjectDTO fileObjectDTO = new ChatResponse.LinkObjectDTO(
                     message.getId(),
                     message.getLinkURL(),
+                    message.getMetadata().getTitle(),
+                    message.getMetadata().getDescription(),
+                    message.getMetadata().getImage(),
+                    message.getMetadata().getOgUrl(),
                     message.getDate());
 
             linkObjectDTOS.add(fileObjectDTO);

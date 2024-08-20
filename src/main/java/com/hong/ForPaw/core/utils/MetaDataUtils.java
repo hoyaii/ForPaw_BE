@@ -1,13 +1,11 @@
 package com.hong.ForPaw.core.utils;
 
-import com.hong.ForPaw.controller.DTO.MetaDataDTO;
 import com.hong.ForPaw.domain.Chat.LinkMetadata;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.springframework.web.client.RestTemplate;
 import org.jsoup.nodes.Document;
 
-import java.io.IOException;
 import java.util.Objects;
 
 public class MetaDataUtils {
