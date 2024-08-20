@@ -1,6 +1,7 @@
 package com.hong.ForPaw.controller.DTO;
 
 import com.hong.ForPaw.domain.District;
+import com.hong.ForPaw.domain.Post.PostType;
 import com.hong.ForPaw.domain.Province;
 
 import java.time.LocalDateTime;
@@ -10,7 +11,7 @@ public class HomeResponse {
 
     public record FindHomeDTO(List<AnimalDTO> animals,
                               List<GroupResponse.RecommendGroupDTO> groups,
-                              List<PostResponse.PostDTO> posts) {}
+                              List<PostDTO> posts) {}
 
     public record AnimalDTO(Long id,
                             String name,
@@ -40,5 +41,6 @@ public class HomeResponse {
                           LocalDateTime date,
                           Long commentNum,
                           Long likeNum,
-                          String imageURL){}
+                          String imageURL,
+                          PostType postType){}
 }

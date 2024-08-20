@@ -14,7 +14,11 @@ public interface PopularPostRepository extends JpaRepository<PopularPost, Long> 
 
     @EntityGraph(attributePaths = {"post"})
     @Query("SELECT p FROM PopularPost p WHERE p.postType = :postType")
-    Page<PopularPost> findAllWithPost(PostType postType, Pageable pageable);
+    Page<PopularPost> findByPostTypeWithPost(PostType postType, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"post"})
+    @Query("SELECT p FROM PopularPost p")
+    Page<PopularPost> findAllWithPost(Pageable pageable);
 
     @Modifying
     @Query("DELETE FROM PopularPost p WHERE p.post.id = :postId")

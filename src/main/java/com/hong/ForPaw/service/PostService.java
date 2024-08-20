@@ -169,7 +169,7 @@ public class PostService {
     @Transactional(readOnly = true)
     public PostResponse.FindPostListDTO findPopularPostListByType(Pageable pageable, PostType postType) {
         // Post를 패치조인하여 조회
-        Page<PopularPost> popularPostPage = popularPostRepository.findAllWithPost(postType, pageable);
+        Page<PopularPost> popularPostPage = popularPostRepository.findByPostTypeWithPost(postType, pageable);
 
         List<PostResponse.PostDTO> postDTOS = popularPostPage.getContent().stream()
                 .map(PopularPost::getPost)
