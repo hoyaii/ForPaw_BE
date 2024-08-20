@@ -121,13 +121,17 @@ public class ChatService {
                             .map(ChatResponse.ChatObjectDTO::new)
                             .toList();
 
+                    // 링크 메타 데이터가 있으면 => 타입은 LINK
+                    MessageType messageType = (message.getMetadata() != null) ? MessageType.LINK : message.getMessageType();
+
                     return new ChatResponse.MessageDTO(
                             message.getId(),
                             message.getNickName(),
                             message.getProfileURL(),
                             message.getContent(),
-                            message.getMessageType(),
+                            messageType,
                             imageDTOS,
+                            message.getMetadata(),
                             message.getDate(),
                             message.getSenderId().equals(userId));
                 })

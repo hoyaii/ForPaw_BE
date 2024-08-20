@@ -1,5 +1,6 @@
 package com.hong.ForPaw.controller.DTO;
 
+import com.hong.ForPaw.domain.Chat.LinkMetadata;
 import com.hong.ForPaw.domain.Chat.MessageType;
 
 import java.time.LocalDateTime;
@@ -17,6 +18,7 @@ public class ChatResponse {
                              String content,
                              MessageType messageType,
                              List<ChatObjectDTO> objects,
+                             LinkMetadata linkMetadata,
                              LocalDateTime date,
                              boolean isMine) {}
 
