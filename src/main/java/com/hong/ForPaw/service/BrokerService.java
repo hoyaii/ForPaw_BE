@@ -7,6 +7,7 @@ import com.hong.ForPaw.domain.Alarm.Alarm;
 import com.hong.ForPaw.domain.Alarm.AlarmType;
 import com.hong.ForPaw.domain.Chat.LinkMetadata;
 import com.hong.ForPaw.domain.Chat.Message;
+import com.hong.ForPaw.domain.Chat.MessageType;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.repository.Alarm.AlarmRepository;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
@@ -113,13 +114,17 @@ public class BrokerService {
                     .map(ChatRequest.ChatObjectDTO::objectURL)
                     .toList();
 
-            // content에서 첫 번째 URL 추출
-            String linkURL = extractFirstURL(messageDTO.content());
+            // 1st content에서 URL 추출 => 2nd URL의 metaData 추출
+            String linkURL = null;
             LinkMetadata metadata = null;
 
-            // linkeURL이 존재하면 메타 데이터 추출
-            if(linkURL != null) {
-                 metadata = MetaDataUtils.fetchMetadata(linkURL);
+            if(messageDTO.messageType().equals(MessageType.TEXT)){
+                linkURL = extractFirstURL(messageDTO.content());
+
+                // linkeURL이 존재하면 메타 데이터 추출
+                if(linkURL != null) {
+                    metadata = MetaDataUtils.fetchMetadata(linkURL);
+                }
             }
 
             Message message = Message.builder()

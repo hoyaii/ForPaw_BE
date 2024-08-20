@@ -5,6 +5,7 @@ import com.hong.ForPaw.controller.DTO.ChatResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Chat.ChatUser;
+import com.hong.ForPaw.domain.Chat.LinkMetadata;
 import com.hong.ForPaw.domain.Chat.Message;
 import com.hong.ForPaw.domain.Chat.MessageType;
 import com.hong.ForPaw.repository.Chat.ChatRoomRepository;
@@ -234,13 +235,14 @@ public class ChatService {
 
         Page<Message> messages = messageRepository.findByChatRoomIdAndLinkURLIsNotNull(chatRoomId, pageable);
         messages.getContent().forEach(message -> {
+            LinkMetadata metadata = message.getMetadata();
             ChatResponse.LinkObjectDTO fileObjectDTO = new ChatResponse.LinkObjectDTO(
                     message.getId(),
                     message.getLinkURL(),
-                    message.getMetadata().getTitle(),
-                    message.getMetadata().getDescription(),
-                    message.getMetadata().getImage(),
-                    message.getMetadata().getOgUrl(),
+                    Optional.ofNullable(metadata).map(LinkMetadata::getTitle).orElse(null),
+                    Optional.ofNullable(metadata).map(LinkMetadata::getDescription).orElse(null),
+                    Optional.ofNullable(metadata).map(LinkMetadata::getImage).orElse(null),
+                    Optional.ofNullable(metadata).map(LinkMetadata::getOgUrl).orElse(null),
                     message.getDate());
 
             linkObjectDTOS.add(fileObjectDTO);
