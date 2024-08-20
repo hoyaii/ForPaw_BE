@@ -49,6 +49,7 @@ public class GroupService {
     private final MeetingUserRepository meetingUserRepository;
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
+    private final PostImageRepository postImageRepository;
     private final CommentRepository commentRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final ChatRoomRepository chatRoomRepository;
@@ -645,6 +646,7 @@ public class GroupService {
         postLikeRepository.deleteByGroupId(groupId);
         commentLikeRepository.deleteByGroupId(groupId);
         commentRepository.hardDeleteByGroupId(groupId);
+        postImageRepository.deleteByGroupId(groupId);
         postRepository.hardDeleteByGroupId(groupId);
 
         // 레디스에 저장된 좋아요 수 삭제

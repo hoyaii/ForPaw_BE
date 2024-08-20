@@ -17,5 +17,10 @@ public interface PostImageRepository extends JpaRepository<PostImage, Long> {
     @Query("DELETE PostImage pi WHERE pi.post.id = :postId")
     void deleteByPostId(@Param("postId") Long postId);
 
+    @Modifying
+    @Query("DELETE FROM PostImage pi " +
+            "WHERE pi.post.id IN (SELECT p.id FROM Post p JOIN p.group g WHERE g.id = :groupId)")
+    void deleteByGroupId(@Param("groupId") Long groupId);
+
     void deleteByPostIdAndIdNotIn(Long postId, List<Long> retainedImageIds);
 }
