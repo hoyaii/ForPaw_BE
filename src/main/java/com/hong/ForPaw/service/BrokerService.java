@@ -107,25 +107,19 @@ public class BrokerService {
         endpoint.setMessageListener(m -> {
             ChatRequest.MessageDTO messageDTO = (ChatRequest.MessageDTO) converter.fromMessage(m);
 
+            // 1st content에서 URL 추출 => 2nd URL의 metaData 추출
+            String linkURL = Optional.ofNullable(messageDTO.messageType())
+                    .filter(type -> type.equals(MessageType.TEXT))
+                    .map(type -> extractFirstURL(messageDTO.content()))
+                    .orElse(null);
+            LinkMetadata metadata = (linkURL != null) ? MetaDataUtils.fetchMetadata(linkURL) : null;
+
             // 메시지 저장
             List<String> objectURLs = Optional.ofNullable(messageDTO.objects())
                     .orElse(Collections.emptyList())
                     .stream()
                     .map(ChatRequest.ChatObjectDTO::objectURL)
                     .toList();
-
-            // 1st content에서 URL 추출 => 2nd URL의 metaData 추출
-            String linkURL = null;
-            LinkMetadata metadata = null;
-
-            if(messageDTO.messageType() != null && messageDTO.messageType().equals(MessageType.TEXT)){
-                linkURL = extractFirstURL(messageDTO.content());
-
-                // linkeURL이 존재하면 메타 데이터 추출
-                if(linkURL != null) {
-                    metadata = MetaDataUtils.fetchMetadata(linkURL);
-                }
-            }
 
             Message message = Message.builder()
                     .id(messageDTO.messageId())
@@ -204,10 +198,5 @@ public class BrokerService {
         }
 
         return null;
-    }
-
-    private Date calculateExpireAt(LocalDateTime date, int months) {
-        LocalDateTime expireDateTime = date.plusMonths(months);
-        return Date.from(expireDateTime.atZone(ZoneId.systemDefault()).toInstant());
     }
 }
