@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+import com.hong.ForPaw.domain.Chat.LinkMetadata;
 import com.hong.ForPaw.domain.Chat.MessageType;
 import jakarta.validation.constraints.NotNull;
 
@@ -34,7 +35,9 @@ public class ChatRequest {
                              @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS")
                              LocalDateTime date,
                              Long chatRoomId,
-                             Long senderId) {}
+                             Long senderId,
+                             String linkURL,
+                             LinkMetadata metadata) {}
 
     public record ReadMessageDTO(
             @NotNull(message = "채팅방 ID를 입력해주세요.")

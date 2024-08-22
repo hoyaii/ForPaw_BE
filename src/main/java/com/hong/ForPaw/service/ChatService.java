@@ -4,6 +4,7 @@ import com.hong.ForPaw.controller.DTO.ChatRequest;
 import com.hong.ForPaw.controller.DTO.ChatResponse;
 import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
+import com.hong.ForPaw.core.utils.MetaDataUtils;
 import com.hong.ForPaw.domain.Chat.ChatUser;
 import com.hong.ForPaw.domain.Chat.LinkMetadata;
 import com.hong.ForPaw.domain.Chat.Message;
@@ -23,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +39,8 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final BrokerService brokerService;
     private static final String SORT_BY_DATE = "date";
+    private static final String URL_REGEX = "(https?://[\\w\\-\\._~:/?#\\[\\]@!$&'()*+,;=%]+)";
+    private static final Pattern URL_PATTERN = Pattern.compile(URL_REGEX);
 
     @Transactional
     public ChatResponse.SendMessageDTO sendMessage(ChatRequest.SendMessageDTO requestDTO, Long senderId, String senderNickName){
@@ -50,16 +55,25 @@ public class ChatService {
         String messageId = UUID.randomUUID().toString();
         LocalDateTime sendDate = LocalDateTime.now();
 
+        // 1st content에서 URL 추출 => 2nd URL의 metaData 추출
+        String linkURL = Optional.ofNullable(requestDTO.messageType())
+                .filter(type -> type.equals(MessageType.TEXT))
+                .map(type -> extractFirstURL(requestDTO.content()))
+                .orElse(null);
+        LinkMetadata metadata = (linkURL != null) ? MetaDataUtils.fetchMetadata(linkURL) : null;
+
         ChatRequest.MessageDTO messageDTO = new ChatRequest.MessageDTO(
                 messageId,
                 senderNickName,
                 profileURL,
                 requestDTO.content(),
-                requestDTO.messageType(),
+                (metadata != null) ? MessageType.LINK : requestDTO.messageType(),
                 requestDTO.objects(),
                 sendDate,
                 requestDTO.chatRoomId(),
-                senderId
+                senderId,
+                linkURL,
+                metadata
         );
 
         // 메시지 브로커에 비동기로 전송 (알람과 이미지는 비동기로 처리)
@@ -279,5 +293,14 @@ public class ChatService {
         }
 
         return chatUserOP.get();
+    }
+
+    private String extractFirstURL(String content) {
+        Matcher matcher = URL_PATTERN.matcher(content);
+        if (matcher.find()) {
+            return matcher.group();
+        }
+
+        return null;
     }
 }

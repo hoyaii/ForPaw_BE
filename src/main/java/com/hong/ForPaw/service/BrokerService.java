@@ -107,13 +107,6 @@ public class BrokerService {
         endpoint.setMessageListener(m -> {
             ChatRequest.MessageDTO messageDTO = (ChatRequest.MessageDTO) converter.fromMessage(m);
 
-            // 1st content에서 URL 추출 => 2nd URL의 metaData 추출
-            String linkURL = Optional.ofNullable(messageDTO.messageType())
-                    .filter(type -> type.equals(MessageType.TEXT))
-                    .map(type -> extractFirstURL(messageDTO.content()))
-                    .orElse(null);
-            LinkMetadata metadata = (linkURL != null) ? MetaDataUtils.fetchMetadata(linkURL) : null;
-
             // 메시지 저장
             List<String> objectURLs = Optional.ofNullable(messageDTO.objects())
                     .orElse(Collections.emptyList())
@@ -131,8 +124,8 @@ public class BrokerService {
                     .date(messageDTO.date())
                     .chatRoomId(messageDTO.chatRoomId())
                     .senderId(messageDTO.senderId())
-                    .linkURL(linkURL)
-                    .metadata(metadata)
+                    .linkURL(messageDTO.linkURL())
+                    .metadata(messageDTO.metadata())
                     .build();
 
             messageRepository.save(message);
@@ -189,14 +182,5 @@ public class BrokerService {
     public void produceAlarmToUser(Long userId, AlarmRequest.AlarmDTO alarm) {
         String routingKey = USER_QUEUE_PREFIX + userId;
         rabbitTemplate.convertAndSend(ALARM_EXCHANGE, routingKey, alarm);
-    }
-
-    private String extractFirstURL(String content) {
-        Matcher matcher = URL_PATTERN.matcher(content);
-        if (matcher.find()) {
-            return matcher.group();
-        }
-
-        return null;
     }
 }
