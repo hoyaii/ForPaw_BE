@@ -18,9 +18,9 @@ public class MetaDataUtils {
         // JSoup을 사용하여 HTML 파싱
         Document doc = Jsoup.parse(Objects.requireNonNull(html));
 
-        // 디버깅을 위해 예쁘게 포맷된 HTML을 출력
-        System.out.println("Fetched HTML Document (Pretty Printed):");
-        System.out.println(doc.outerHtml());  // 포맷팅된 HTML 출력
+        // 디버깅을 위해 HTML을 출력
+        //System.out.println("Fetched HTML Document (Pretty Printed):");
+        //System.out.println(doc.outerHtml());
 
         // 메타데이터 추출
         String title = getMetaTagContent(doc, "og:title", "title");
@@ -28,7 +28,10 @@ public class MetaDataUtils {
         String image = getMetaTagContent(doc, "og:image", null);
         String ogUrl = getMetaTagContent(doc, "og:url", null);
 
-        return new LinkMetadata(title, description, image, ogUrl != null ? ogUrl : url);
+        // 아이콘 추출
+        String icon = getIconLink(doc);
+
+        return new LinkMetadata(title, description, image, ogUrl != null ? ogUrl : url, icon);
     }
 
     private static String getMetaTagContent(Document doc, String ogTag, String fallbackTag) {
@@ -43,6 +46,21 @@ public class MetaDataUtils {
             if (fallbackMetaTag != null) {
                 return fallbackMetaTag.text();
             }
+        }
+        return null;
+    }
+
+    private static String getIconLink(Document doc) {
+        Element iconTag = doc.selectFirst("link[rel=icon]");
+
+        // 만약 기본 아이콘이 없다면 apple-touch-icon 검색
+        if (iconTag == null) {
+            iconTag = doc.selectFirst("link[rel=apple-touch-icon]");
+        }
+
+        // 아이콘 링크 반환
+        if (iconTag != null) {
+            return iconTag.attr("href");
         }
         return null;
     }

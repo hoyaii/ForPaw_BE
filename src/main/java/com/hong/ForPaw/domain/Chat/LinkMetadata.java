@@ -15,12 +15,14 @@ public class LinkMetadata {
     private String description;
     private String image;
     private String ogUrl;
+    private String icon;
 
     @Builder
-    public LinkMetadata(String title, String description, String image, String ogUrl) {
+    public LinkMetadata(String title, String description, String image, String ogUrl, String icon) {
         this.title = title;
         this.description = description;
         this.image = image;
         this.ogUrl = ogUrl;
+        this.icon = icon;
     }
 }
