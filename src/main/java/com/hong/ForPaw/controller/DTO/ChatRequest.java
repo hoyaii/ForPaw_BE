@@ -36,8 +36,7 @@ public class ChatRequest {
                              LocalDateTime date,
                              Long chatRoomId,
                              Long senderId,
-                             String linkURL,
-                             LinkMetadata metadata) {}
+                             LinkMetadata linkMetadata) {}
 
     public record ReadMessageDTO(
             @NotNull(message = "채팅방 ID를 입력해주세요.")

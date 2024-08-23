@@ -124,8 +124,7 @@ public class BrokerService {
                     .date(messageDTO.date())
                     .chatRoomId(messageDTO.chatRoomId())
                     .senderId(messageDTO.senderId())
-                    .linkURL(messageDTO.linkURL())
-                    .metadata(messageDTO.metadata())
+                    .metadata(messageDTO.linkMetadata())
                     .build();
 
             messageRepository.save(message);

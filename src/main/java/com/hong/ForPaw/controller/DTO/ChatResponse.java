@@ -38,7 +38,6 @@ public class ChatResponse {
                                  LocalDateTime date){}
 
     public record LinkObjectDTO(String messageId,
-                                String linkURL,
                                 String title,
                                 String description,
                                 String image,

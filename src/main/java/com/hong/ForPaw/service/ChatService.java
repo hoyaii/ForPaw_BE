@@ -72,7 +72,6 @@ public class ChatService {
                 sendDate,
                 requestDTO.chatRoomId(),
                 senderId,
-                linkURL,
                 metadata
         );
 
@@ -256,7 +255,6 @@ public class ChatService {
             LinkMetadata metadata = message.getMetadata();
             ChatResponse.LinkObjectDTO fileObjectDTO = new ChatResponse.LinkObjectDTO(
                     message.getId(),
-                    message.getLinkURL(),
                     Optional.ofNullable(metadata).map(LinkMetadata::getTitle).orElse(null),
                     Optional.ofNullable(metadata).map(LinkMetadata::getDescription).orElse(null),
                     Optional.ofNullable(metadata).map(LinkMetadata::getImage).orElse(null),
