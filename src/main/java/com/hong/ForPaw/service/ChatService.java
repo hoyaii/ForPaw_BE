@@ -181,13 +181,13 @@ public class ChatService {
 
         // 채팅방의 S3 객체 => 처음 조회해오는 객체는 6개로 고정
         Pageable pageable = PageRequest.of(0, 6, Sort.by(Sort.Direction.DESC, SORT_BY_DATE));
-        List<ChatResponse.ImageObjectDTO> imageObjectDTOS = findImageObjectList(chatRoomId, userId, pageable);
+        List<ChatResponse.ImageObjectDTO> imageObjectDTOS = findImageObjectList(chatRoomId, userId, pageable).images();
 
         return new ChatResponse.FindChatRoomDrawerDTO(imageObjectDTOS, chatUserDTOS);
     }
 
     @Transactional
-    public List<ChatResponse.ImageObjectDTO> findImageObjectList(Long chatRoomId, Long userId, Pageable pageable){
+    public ChatResponse.FindImageObjectListDTO findImageObjectList(Long chatRoomId, Long userId, Pageable pageable){
         // 권한 체크
         checkChatAuthority(userId, chatRoomId);
 
@@ -212,11 +212,11 @@ public class ChatService {
         // 역순으로 정렬
         Collections.reverse(imageObjectDTOS);
 
-        return imageObjectDTOS;
+        return new ChatResponse.FindImageObjectListDTO(imageObjectDTOS, messages.isLast());
     }
 
     @Transactional
-    public List<ChatResponse.FileObjectDTO> findFileObjectList(Long chatRoomId, Long userId, Pageable pageable){
+    public ChatResponse.FindFileObjectList findFileObjectList(Long chatRoomId, Long userId, Pageable pageable){
         // 권한 체크
         checkChatAuthority(userId, chatRoomId);
 
@@ -240,17 +240,17 @@ public class ChatService {
         // 역순으로 정렬
         Collections.reverse(fileObjectDTOS);
 
-        return fileObjectDTOS;
+        return new ChatResponse.FindFileObjectList(fileObjectDTOS, messages.isLast());
     }
 
     @Transactional
-    public List<ChatResponse.LinkObjectDTO> findLinkObjectList(Long chatRoomId, Long userId, Pageable pageable){
+    public ChatResponse.FindLinkObjectList findLinkObjectList(Long chatRoomId, Long userId, Pageable pageable){
         // 권한 체크
         checkChatAuthority(userId, chatRoomId);
 
         List<ChatResponse.LinkObjectDTO> linkObjectDTOS = new ArrayList<>();
 
-        Page<Message> messages = messageRepository.findByChatRoomIdAndLinkURLIsNotNull(chatRoomId, pageable);
+        Page<Message> messages = messageRepository.findByChatRoomIdAndMetadataOgUrlIsNotNull(chatRoomId, pageable);
         messages.getContent().forEach(message -> {
             LinkMetadata metadata = message.getMetadata();
             ChatResponse.LinkObjectDTO fileObjectDTO = new ChatResponse.LinkObjectDTO(
@@ -267,7 +267,7 @@ public class ChatService {
         // 역순으로 정렬
         Collections.reverse(linkObjectDTOS);
 
-        return linkObjectDTOS;
+        return new ChatResponse.FindLinkObjectList(linkObjectDTOS, messages.isLast());
     }
 
     @Transactional

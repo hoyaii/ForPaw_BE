@@ -56,11 +56,11 @@ public class ChatResponse {
                           LocalDateTime lastMessageTime,
                           Long offset) {}
 
-    public record FindChatRoomImageList(List<ImageObjectDTO> images) {}
+    public record FindImageObjectListDTO(List<ImageObjectDTO> images, boolean isLastPage) {}
 
-    public record FindChatRoomFileListDTO(List<FileObjectDTO> files) {}
+    public record FindFileObjectList(List<FileObjectDTO> files, boolean isLastPage) {}
 
-    public record FindChatRoomLinkListDTO(List<LinkObjectDTO> links) {}
+    public record FindLinkObjectList(List<LinkObjectDTO> links, boolean isLastPage) {}
 
     public record ReadMessageDTO(String id) {}
 }
