@@ -209,7 +209,8 @@ public class UserService {
         // 비밀번호가 일치하지 않음
         if(!passwordEncoder.matches(requestDTO.password(), user.getPassword())){
             redisService.storeValue(LOGIN_FAIL_KEY_PREFIX, user.getId().toString(), Long.toString(++loginFailNum), 300000L); // 5분
-            throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG);
+            String message = String.format("로그인에 실패했습니다. 이메일 또는 비밀번호를 확인해 주세요. (%d회 실패)", loginFailNum);
+            throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG, message);
         }
 
         // 로그인 IP 로깅
@@ -815,7 +816,7 @@ public class UserService {
             return response;
         }
 
-        // 로컬로 이미 가입 했는지 체크
+        // 로컬로 이미 가입 했는지 체크 => 로컬로 가입 했으면 그냥 리턴
         if(userRepository.existsByEmailAndAuthProviders(email, List.of(AuthProvider.LOCAL))){
             return new HashMap<>();
         }
