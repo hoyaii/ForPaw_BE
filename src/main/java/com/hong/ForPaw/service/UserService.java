@@ -140,6 +140,9 @@ public class UserService {
     @Value("${social.home.redirect.uri}")
     private String REDIRECT_HOME_URI;
 
+    @Value("${social.login.redirect.uri}")
+    private String REDIRECT_LOGIN_URI;
+
     private final SpringTemplateEngine templateEngine;
     private static final String ADMIN_NAME = "admin";
     private static final String MAIL_TEMPLATE_FOR_CODE = "verification_code_email.html";
@@ -147,6 +150,7 @@ public class UserService {
     private static final String EMAIL_CODE_KEY_PREFIX = "code:";
     private static final String REFRESH_TOKEN_KEY_PREFIX = "refreshToken";
     private static final String ACCESS_TOKEN_KEY_PREFIX = "accessToken";
+    private static final String EMAIL = "email";
     private static final String LOGIN_FAIL_DAILY_KEY_PREFIX = "loginFailDaily";
     private static final String LOGIN_FAIL_KEY_PREFIX = "loginFail";
     private static final String CODE_TO_EMAIL_KEY_PREFIX = "codeToEmail";
@@ -692,20 +696,27 @@ public class UserService {
 
     public void processOAuthRedirect(Map<String, String> tokenOrEmail, String authProvider, HttpServletResponse response) throws IOException {
         String redirectUri;
-        if(tokenOrEmail.get("email") != null) {
+        if(tokenOrEmail.get(EMAIL) != null) {
             redirectUri = UriComponentsBuilder.fromUriString(REDIRECT_JOIN_URI)
-                    .queryParam("email", URLEncoder.encode(tokenOrEmail.get("email"), StandardCharsets.UTF_8))
+                    .queryParam("email", URLEncoder.encode(tokenOrEmail.get(EMAIL), StandardCharsets.UTF_8))
                     .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
                     .build()
                     .toUriString();
-        } else {
+        } else if(tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX) != null) {
             response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokenOrEmail.get(REFRESH_TOKEN_KEY_PREFIX)));
             redirectUri = UriComponentsBuilder.fromUriString(REDIRECT_HOME_URI)
                     .queryParam("accessToken", URLEncoder.encode(tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX), StandardCharsets.UTF_8))
                     .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
                     .build()
                     .toUriString();
+        } else{
+            redirectUri = UriComponentsBuilder.fromUriString(REDIRECT_LOGIN_URI)
+                    .queryParam("isDuplicate", URLEncoder.encode("true", StandardCharsets.UTF_8))
+                    .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
+                    .build()
+                    .toUriString();
         }
+
         response.sendRedirect(redirectUri);
     }
 
@@ -804,8 +815,10 @@ public class UserService {
             return response;
         }
 
-        // 소셜 계정인지 체크
-        checkIsSocialAccount(email);
+        // 로컬로 이미 가입 했는지 체크
+        if(userRepository.existsByEmailAndAuthProviders(email, List.of(AuthProvider.LOCAL))){
+            return new HashMap<>();
+        }
 
         // 소셜 로그인으로 가입한 계정이면 계속 진행
         User user = userRepository.findByEmailWithUserStatusAndRemoved(email).orElseThrow(
@@ -907,12 +920,6 @@ public class UserService {
 
     private void checkIsSocialAccount(String email) {
         if(userRepository.existsByEmailAndAuthProviders(email, List.of(AuthProvider.LOCAL))){
-            throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
-        }
-    }
-
-    public void checkIsLocalAccount(String email) {
-        if(userRepository.existsByEmailAndAuthProviders(email, List.of(AuthProvider.KAKAO, AuthProvider.GOOGLE))){
             throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
         }
     }
