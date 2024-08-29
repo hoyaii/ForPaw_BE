@@ -1,31 +1,37 @@
 package com.hong.ForPaw.core.utils;
 
 import com.hong.ForPaw.domain.Chat.LinkMetadata;
+import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.jsoup.nodes.Document;
 
+import java.io.IOException;
 import java.util.Objects;
+import java.util.Optional;
 
 public class MetaDataUtils {
 
     public static LinkMetadata fetchMetadata(String url) {
-        // RestTemplate을 사용하여 웹 페이지의 HTML을 가져옴
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3");
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-        String html = response.getBody();
-
         // Jsoup을 사용하여 파싱
-        Document doc = Jsoup.parse(Objects.requireNonNull(html));
+        Document doc = null;
+        try {
+            doc = Jsoup.connect(url)
+                    .userAgent("PostmanRuntime/7.41.2")
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "*/*")
+                    .header("Accept-Encoding", "gzip, deflate, br")
+                    .header("Connection", "keep-alive")
+                    .get();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         // 메타데이터 추출
         String title = getMetaTagContent(doc, "og:title", "title");
