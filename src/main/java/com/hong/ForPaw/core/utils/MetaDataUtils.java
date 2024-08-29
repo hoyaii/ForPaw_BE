@@ -3,6 +3,10 @@ package com.hong.ForPaw.core.utils;
 import com.hong.ForPaw.domain.Chat.LinkMetadata;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 import org.jsoup.nodes.Document;
 
@@ -12,15 +16,16 @@ public class MetaDataUtils {
 
     public static LinkMetadata fetchMetadata(String url) {
         // RestTemplate을 사용하여 웹 페이지의 HTML을 가져옴
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3");
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
         RestTemplate restTemplate = new RestTemplate();
-        String html = restTemplate.getForObject(url, String.class);
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+        String html = response.getBody();
 
-        // JSoup을 사용하여 HTML 파싱
+        // Jsoup을 사용하여 파싱
         Document doc = Jsoup.parse(Objects.requireNonNull(html));
-
-        // 디버깅을 위해 HTML을 출력
-        //System.out.println("Fetched HTML Document (Pretty Printed):");
-        //System.out.println(doc.outerHtml());
 
         // 메타데이터 추출
         String title = getMetaTagContent(doc, "og:title", "title");
