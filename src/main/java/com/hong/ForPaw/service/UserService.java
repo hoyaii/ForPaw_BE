@@ -919,12 +919,6 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
     }
 
-    private void checkIsSocialAccount(String email) {
-        if(userRepository.existsByEmailAndAuthProviders(email, List.of(AuthProvider.LOCAL))){
-            throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
-        }
-    }
-
     private void checkWriterAuthority(Long accessorId, User writer){
         if(!accessorId.equals(writer.getId())){
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
