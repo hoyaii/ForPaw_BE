@@ -9,6 +9,7 @@ import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Apply.Apply;
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Authentication.Visit;
+import com.hong.ForPaw.domain.FAQ.FAQ;
 import com.hong.ForPaw.domain.Inquiry.Inquiry;
 import com.hong.ForPaw.domain.Inquiry.InquiryAnswer;
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
@@ -422,7 +423,16 @@ public class AuthenticationService {
         return new AuthenticationResponse.AnswerInquiryDTO(inquiryId);
     }
 
+    @Transactional(readOnly = true)
+    public AuthenticationResponse.FindFAQListDTO findFAQList(){
+        List<FAQ> faqs = faqRepository.findAll();
 
+        List<AuthenticationResponse.FaqDTO> faqDTOS = faqs.stream()
+                .map(faq -> new AuthenticationResponse.FaqDTO(faq.getQuestion(), faq.getAnswer(), faq.getType(), faq.isTop()))
+                .toList();
+
+        return new AuthenticationResponse.FindFAQListDTO(faqDTOS);
+    }
 
     private String getPreviousHourKey() {
         LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);

@@ -2,6 +2,7 @@ package com.hong.ForPaw.controller.DTO;
 
 
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
+import com.hong.ForPaw.domain.FAQ.FaqType;
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
 import com.hong.ForPaw.domain.Inquiry.InquiryType;
 import com.hong.ForPaw.domain.Report.ContentType;
@@ -100,4 +101,11 @@ public class AuthenticationResponse {
                                      String description){}
 
     public record AnswerInquiryDTO(Long id){}
+
+    public record FindFAQListDTO(List<FaqDTO> faqs){}
+
+    public record FaqDTO(String question,
+                         String answer,
+                         FaqType type,
+                         boolean isTop){}
 }

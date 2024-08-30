@@ -25,10 +25,14 @@ public class FAQ {
     @Column
     private FaqType type;
 
+    @Column
+    private boolean isTop;
+
     @Builder
-    public FAQ(String question, String answer, FaqType type) {
+    public FAQ(String question, String answer, FaqType type, boolean isTop) {
         this.question = question;
         this.answer = answer;
         this.type = type;
+        this.isTop = isTop;
     }
 }
