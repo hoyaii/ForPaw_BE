@@ -111,4 +111,10 @@ public class AuthenticationController {
         AuthenticationResponse.AnswerInquiryDTO responseDTO = authenticationService.answerInquiry(requestDTO, userDetails.getUser().getId(), inquiryId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
+
+    @GetMapping("/faq")
+    public ResponseEntity<?> findFaqList(){
+        AuthenticationResponse.FindFAQListDTO responseDTO = authenticationService.findFAQList();
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
 }
