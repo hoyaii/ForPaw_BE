@@ -1,4 +1,4 @@
-package com.hong.ForPaw.domain;
+package com.hong.ForPaw.domain.FAQ;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -23,10 +23,10 @@ public class FAQ {
     private String answer;
 
     @Column
-    private String type;
+    private FaqType type;
 
     @Builder
-    public FAQ(String question, String answer, String type) {
+    public FAQ(String question, String answer, FaqType type) {
         this.question = question;
         this.answer = answer;
         this.type = type;

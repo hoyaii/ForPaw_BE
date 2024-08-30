@@ -20,15 +20,12 @@ import com.hong.ForPaw.domain.Report.ReportStatus;
 import com.hong.ForPaw.domain.User.User;
 import com.hong.ForPaw.domain.User.UserRole;
 import com.hong.ForPaw.domain.User.UserStatus;
+import com.hong.ForPaw.repository.*;
 import com.hong.ForPaw.repository.Animal.AnimalRepository;
-import com.hong.ForPaw.repository.ApplyRepository;
 import com.hong.ForPaw.repository.Authentication.VisitRepository;
 import com.hong.ForPaw.repository.Inquiry.InquiryAnswerRepository;
 import com.hong.ForPaw.repository.Inquiry.InquiryRepository;
 import com.hong.ForPaw.repository.Post.*;
-import com.hong.ForPaw.repository.ReportRepository;
-import com.hong.ForPaw.repository.UserRepository;
-import com.hong.ForPaw.repository.UserStatusRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -62,6 +59,7 @@ public class AuthenticationService {
     private final EntityManager entityManager;
     private final RedisService redisService;
     private final UserStatusRepository userStatusRepository;
+    private final FaqRepository faqRepository;
 
     private static final String POST_SCREENED = "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.";
     private static final String COMMENT_SCREENED = "커뮤니티 규정을 위반하여 가려진 댓글입니다.";
@@ -423,6 +421,8 @@ public class AuthenticationService {
 
         return new AuthenticationResponse.AnswerInquiryDTO(inquiryId);
     }
+
+
 
     private String getPreviousHourKey() {
         LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
