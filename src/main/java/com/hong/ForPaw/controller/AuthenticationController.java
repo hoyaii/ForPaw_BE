@@ -117,4 +117,10 @@ public class AuthenticationController {
         AuthenticationResponse.FindFAQListDTO responseDTO = authenticationService.findFAQList();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
+
+    @PostMapping("/faq")
+    public ResponseEntity<?> createFAQ(@RequestBody @Valid AuthenticationRequest.CreateFaqDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails){
+        authenticationService.createFAQ(requestDTO, userDetails.getUser().getId());
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
 }

@@ -23,6 +23,7 @@ public class FAQ {
     private String answer;
 
     @Column
+    @Enumerated(EnumType.STRING)
     private FaqType type;
 
     @Column

@@ -435,7 +435,9 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public void createFAQ(AuthenticationRequest.CreateFaqDTO requestDTO){
+    public void createFAQ(AuthenticationRequest.CreateFaqDTO requestDTO, Long adminId){
+        checkAdminAuthority(adminId);
+
         FAQ faq = FAQ.builder()
                 .question(requestDTO.question())
                 .answer(requestDTO.answer())
