@@ -54,7 +54,8 @@ public class ChatResponse {
                           String name,
                           String lastMessageContent,
                           LocalDateTime lastMessageTime,
-                          Long offset) {}
+                          Long offset,
+                          String profileURL) {}
 
     public record FindImageObjectListDTO(List<ImageObjectDTO> images, boolean isLastPage) {}
 

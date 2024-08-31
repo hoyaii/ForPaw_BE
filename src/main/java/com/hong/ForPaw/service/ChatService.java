@@ -113,7 +113,8 @@ public class ChatService {
                             chatUser.getChatRoom().getName(),
                             lastMessageContent,
                             lastMessageDate,
-                            offset);
+                            offset,
+                            chatUser.getChatRoom().getGroup().getProfileURL());
                 })
                 .collect(Collectors.toList());
 

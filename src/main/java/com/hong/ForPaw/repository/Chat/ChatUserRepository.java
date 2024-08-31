@@ -24,8 +24,9 @@ public interface ChatUserRepository extends JpaRepository<ChatUser, Long> {
             "WHERE u.id = :userId AND cr.id = :chatRoomId")
     Optional<ChatUser> findByUserIdAndChatRoomIdWithChatRoom(@Param("userId") Long userId, @Param("chatRoomId") Long chatRoomId);
 
-    @EntityGraph(attributePaths = {"chatRoom"})
     @Query("SELECT cu FROM ChatUser cu " +
+            "JOIN FETCH cu.chatRoom cr " +
+            "JOIN FETCH cr.group g " +
             "JOIN cu.user u " +
             "WHERE u.id = :userId")
     List<ChatUser> findByUserIdWithChatRoom(@Param("userId") Long userId);
