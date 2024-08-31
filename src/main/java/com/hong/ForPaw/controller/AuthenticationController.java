@@ -113,7 +113,7 @@ public class AuthenticationController {
     }
 
     @GetMapping("/faq")
-    public ResponseEntity<?> findFaqList(){
+    public ResponseEntity<?> findFAQList(){
         AuthenticationResponse.FindFAQListDTO responseDTO = authenticationService.findFAQList();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }

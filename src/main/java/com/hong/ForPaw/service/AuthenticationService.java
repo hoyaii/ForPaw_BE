@@ -434,6 +434,18 @@ public class AuthenticationService {
         return new AuthenticationResponse.FindFAQListDTO(faqDTOS);
     }
 
+    @Transactional
+    public void createFAQ(AuthenticationRequest.CreateFaqDTO requestDTO){
+        FAQ faq = FAQ.builder()
+                .question(requestDTO.question())
+                .answer(requestDTO.answer())
+                .type(requestDTO.type())
+                .isTop(requestDTO.isTop())
+                .build();
+
+        faqRepository.save(faq);
+    }
+
     private String getPreviousHourKey() {
         LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");

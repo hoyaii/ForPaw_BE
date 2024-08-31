@@ -1,6 +1,7 @@
 package com.hong.ForPaw.controller.DTO;
 
 import com.hong.ForPaw.domain.Apply.ApplyStatus;
+import com.hong.ForPaw.domain.FAQ.FaqType;
 import com.hong.ForPaw.domain.Report.ContentType;
 import com.hong.ForPaw.domain.User.UserRole;
 import jakarta.validation.constraints.NotBlank;
@@ -41,4 +42,13 @@ public class AuthenticationRequest {
     public record AnswerInquiryDTO(
             @NotBlank(message = "답변 내용을 입력해주세요.")
             String content){}
+
+    public record CreateFaqDTO(
+            @NotBlank(message = "질문 내용을 입력해주세요.")
+            String question,
+            @NotBlank(message = "답변 내용을 입력해주세요.")
+            String answer,
+            @NotNull(message = "FAQ 타입을 입력해주세요.")
+            FaqType type,
+            boolean isTop){}
 }
