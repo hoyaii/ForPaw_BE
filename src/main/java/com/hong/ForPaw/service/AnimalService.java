@@ -178,6 +178,42 @@ public class AnimalService {
         requestAnimalIntroduction()
                 .doOnError(error -> log.info("소개글 업데이트 요청 실패"))
                 .subscribe();
+
+        // 6. 중복 보호소 처리
+        List<Shelter> duplicateShelters = shelterRepository.findDuplicateShelters();
+
+        Map<String, List<Shelter>> dupliShelterMap = duplicateShelters.stream()
+                .collect(Collectors.groupingBy(Shelter::getCareTel));
+
+        for (Map.Entry<String, List<Shelter>> entry : dupliShelterMap.entrySet()) {
+            List<Shelter> shelters = entry.getValue();
+
+            // 첫 번째 Shelter로 다른 Shelter들의 동물들을 옮김
+            if (shelters.size() > 1) {
+                // isDuplicate가 false인 첫 번째 Shelter를 targetShelter로 지정
+                Shelter targetShelter = shelters.stream()
+                        .filter(shelter -> !shelter.isDuplicate())
+                        .findFirst()
+                        .orElse(shelters.get(0)); // 만약 모든 shelter가 isDuplicate=true일 경우 첫 번째 shelter를 기본값으로 설정
+
+                // 만약 모든 shelter가 isDuplicate=true인 예외 대비
+                shelterRepository.updateIsDuplicate(targetShelter.getId(), false);
+
+                for (int i = 1; i < shelters.size(); i++) {
+                    Shelter duplicateShelter = shelters.get(i);
+
+                    // 중복된 Shelter의 모든 동물들을 조회
+                    List<Animal> animalsToMove = animalRepository.findByShelter(duplicateShelter);
+
+                    // 해당 동물들의 보호소를 첫 번째 Shelter로 변경
+                    for (Animal animal : animalsToMove) {
+                        animalRepository.updateShelter(targetShelter, animal.getId());
+                    }
+
+                    shelterRepository.updateIsDuplicate(duplicateShelter.getId(), true);
+                }
+            }
+        }
     }
 
     @Transactional

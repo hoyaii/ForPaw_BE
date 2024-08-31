@@ -4,6 +4,7 @@ import com.hong.ForPaw.domain.Animal.Animal;
 import com.hong.ForPaw.domain.Animal.AnimalType;
 import com.hong.ForPaw.domain.District;
 import com.hong.ForPaw.domain.Province;
+import com.hong.ForPaw.domain.Shelter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -12,6 +13,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -63,6 +65,8 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
             "WHERE a.removedAt IS NULL AND r.uprName = :province ORDER BY a.id ASC")
     List<Long> findIdsByProvince(Province province, Pageable pageable);
 
+    List<Animal> findByShelter(Shelter shelter);
+
     @Query("SELECT COUNT(a) FROM Animal a " +
             "JOIN a.shelter s " +
             "WHERE s.id = :shelterId AND a.removedAt IS NULL")
@@ -85,4 +89,9 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
     @Modifying
     @Query("UPDATE Animal a SET a.likeNum = :likeNum WHERE a.id = :animalId AND a.removedAt IS NULL")
     void updateLikeNum(@Param("likeNum") Long likeNum, @Param("animalId") Long animalId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Animal a SET a.shelter = :shelter WHERE a.id = :animalId")
+    void updateShelter(@Param("shelter") Shelter shelter, @Param("animalId") Long animalId);
 }

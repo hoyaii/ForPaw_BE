@@ -120,4 +120,8 @@ public class Animal extends TimeStamp {
     public void decrementInquiryNum(){
         this.inquiryNum -= 1;
     }
+
+    public void updateShelter(Shelter shelter){
+        this.shelter = shelter;
+    }
 }
