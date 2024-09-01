@@ -547,6 +547,8 @@ public class UserService {
                 .description(requestDTO.description())
                 .contactMail(requestDTO.contactMail())
                 .status(InquiryStatus.PROCESSING)
+                .type(requestDTO.inquiryType())
+                .imageURL(requestDTO.imageURL())
                 .build();
 
         inquiryRepository.save(inquiry);

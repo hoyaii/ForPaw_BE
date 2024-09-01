@@ -7,10 +7,12 @@ import lombok.Getter;
 @Getter
 public enum InquiryType {
 
-    ADOPTION("입양 문의"),
-    USE("이용 문의"),
-    ERROR("오류 문의"),
-    OTHER("기타 문의");
+    INQUIRY("이용 문의"),
+    ADOPTION("입양"),
+    VOLUNTEERING("봉사활동"),
+    COMMUNITY("커뮤니티"),
+    MEMBERSHIP("회원/계정"),
+    OTHERS("기타");
 
     private String value;
 }

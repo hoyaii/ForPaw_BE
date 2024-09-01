@@ -39,14 +39,18 @@ public class Inquiry extends TimeStamp {
     @Column
     private String contactMail;
 
+    @Column
+    private String imageURL;
+
     @Builder
-    public Inquiry(User questioner, InquiryType type, InquiryStatus status, String title, String description, String contactMail) {
+    public Inquiry(User questioner, InquiryType type, InquiryStatus status, String title, String description, String contactMail, String imageURL) {
         this.questioner = questioner;
         this.type = type;
         this.status = status;
         this.title = title;
         this.description = description;
         this.contactMail = contactMail;
+        this.imageURL = imageURL;
     }
 
     public void updateCustomerInquiry(String title, String description, String contactMail){
