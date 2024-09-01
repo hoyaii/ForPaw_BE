@@ -25,11 +25,11 @@ public class ShelterController {
     private static final String SORT_BY_DATE = "createdDate";
 
     // 테스트 시에만 API를 열어둠
-    //@GetMapping("/shelters/import")
-    //public ResponseEntity<?> loadShelter(@AuthenticationPrincipal CustomUserDetails userDetails) {
-    //    shelterService.updateShelterData();
-    //    return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
-    //}
+    @GetMapping("/shelters/import")
+    public ResponseEntity<?> loadShelter(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        shelterService.updateShelterData();
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
+    }
 
     @GetMapping("/shelters")
     public ResponseEntity<?> findShelterList(){
@@ -47,6 +47,12 @@ public class ShelterController {
     public ResponseEntity<?> findShelterAnimalsById(@PathVariable Long shelterId, @RequestParam String type,
                                                     @PageableDefault(size = 5, sort = SORT_BY_DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails){
         ShelterResponse.FindShelterAnimalsByIdDTO responseDTO = shelterService.findShelterAnimalListById(shelterId, getUserIdSafely(userDetails), type, pageable);
+        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
+    }
+
+    @GetMapping("/shelters/addr")
+    public ResponseEntity<?> findShelterListWithAddr(){
+        ShelterResponse.FindShelterListWithAddr responseDTO = shelterService.findShelterListWithAddr();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

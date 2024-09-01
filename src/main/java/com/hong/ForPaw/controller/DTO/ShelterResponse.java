@@ -1,6 +1,7 @@
 package com.hong.ForPaw.controller.DTO;
 
 import java.util.List;
+import java.util.Map;
 
 public class ShelterResponse {
 
@@ -15,6 +16,10 @@ public class ShelterResponse {
                                          Long animalCnt) {}
 
     public record FindShelterAnimalsByIdDTO(List<AnimalDTO> animals, boolean isLastPage) {}
+
+    public record FindShelterListWithAddr(Map<String, List<DistrictDTO>> province) {}
+
+    public record DistrictDTO(Map<String, List<String>> district){}
 
     public record AnimalDTO(Long id,
                             String name,
