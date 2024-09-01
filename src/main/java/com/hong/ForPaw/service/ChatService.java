@@ -210,9 +210,6 @@ public class ChatService {
             imageObjectDTOS.add(imageObjectDTO);
         });
 
-        // 역순으로 정렬
-        Collections.reverse(imageObjectDTOS);
-
         return new ChatResponse.FindImageObjectListDTO(imageObjectDTOS, messages.isLast());
     }
 
@@ -238,9 +235,6 @@ public class ChatService {
             fileObjectDTOS.add(fileObjectDTO);
         });
 
-        // 역순으로 정렬
-        Collections.reverse(fileObjectDTOS);
-
         return new ChatResponse.FindFileObjectList(fileObjectDTOS, messages.isLast());
     }
 
@@ -264,9 +258,6 @@ public class ChatService {
 
             linkObjectDTOS.add(fileObjectDTO);
         });
-
-        // 역순으로 정렬
-        Collections.reverse(linkObjectDTOS);
 
         return new ChatResponse.FindLinkObjectList(linkObjectDTOS, messages.isLast());
     }
