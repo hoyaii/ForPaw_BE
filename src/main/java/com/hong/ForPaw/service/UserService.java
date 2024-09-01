@@ -586,11 +586,16 @@ public class UserService {
         List<UserResponse.InquiryDTO> inquiryDTOS = customerInquiries.stream()
                 .map(inquiry -> {
                     InquiryAnswer answer = inquiryAnswerMap.get(inquiry.getId());
-                    UserResponse.AnswerDTO answerDTO = new UserResponse.AnswerDTO(
-                            answer.getId(),
-                            answer.getContent(),
-                            answer.getCreatedDate(),
-                            answer.getAnswerer().getName());
+                    UserResponse.AnswerDTO answerDTO = null;
+
+                    if (answer != null) {
+                        answerDTO = new UserResponse.AnswerDTO(
+                                answer.getId(),
+                                answer.getContent(),
+                                answer.getCreatedDate(),
+                                answer.getAnswerer().getName()
+                        );
+                    }
 
                     return new UserResponse.InquiryDTO(
                             inquiry.getId(),

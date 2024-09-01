@@ -22,7 +22,7 @@ public class Inquiry extends TimeStamp {
     @JoinColumn(name = "questioner_id")
     private User questioner;
 
-    @Column
+    @Column(length = 20)
     @Enumerated(EnumType.STRING)
     private InquiryType type;
 
