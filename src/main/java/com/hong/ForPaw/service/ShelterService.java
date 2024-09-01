@@ -150,7 +150,7 @@ public class ShelterService {
 
     @Transactional(readOnly = true)
     public ShelterResponse.FindShelterListWithAddr findShelterListWithAddr() {
-        List<Shelter> shelters = shelterRepository.findAllWithAnimalAndLatitude();
+        List<Shelter> shelters = shelterRepository.findAll();
 
         // Province와 District로 보호소를 그룹화
         Map<Province, Map<District, List<Shelter>>> groupedShelters = shelters.stream()

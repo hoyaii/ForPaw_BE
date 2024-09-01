@@ -195,8 +195,8 @@ public class AuthenticationService {
                         Optional.ofNullable(latestVisitMap.get(user.getId()))
                                 .map(Visit::getDate)
                                 .orElse(null),
-                        processingApplyMap.get(user.getId()),
-                        processedApplyMap.get(user.getId()),
+                        processingApplyMap.get(user.getId()) != null ? processingApplyMap.get(user.getId()) : 0L,
+                        processedApplyMap.get(user.getId()) != null ? processedApplyMap.get(user.getId()) : 0L,
                         user.getRole(),
                         user.getStatus().isActive(),
                         user.getStatus().getSuspensionStart(),
@@ -217,7 +217,7 @@ public class AuthenticationService {
         );
 
         // 현재 유저의 Role과 동일한 값이 요청으로 들어옴
-        if(user.getRole().equals(user.getRole())){
+        if(requestDTO.role().equals(user.getRole())){
             throw new CustomException(ExceptionCode.SAME_STATUS);
         }
 
