@@ -573,37 +573,38 @@ public class UserService {
     public UserResponse.FindInquiryListDTO findInquiryList(Long userId){
         List<Inquiry> customerInquiries = inquiryRepository.findAllByQuestionerId(userId);
 
+        List<Long> inquiryIds = customerInquiries.stream()
+                .map(Inquiry::getId)
+                .toList();
+
+        // 답변
+        List<InquiryAnswer> answers = answerRepository.findAllByInquiryIdsWithAnswerer(inquiryIds);
+        Map<Long, InquiryAnswer> inquiryAnswerMap = answers.stream()
+                .collect(Collectors.toMap(inquiryAnswer -> inquiryAnswer.getInquiry().getId(), inquiryAnswer -> inquiryAnswer)
+                );
+
         List<UserResponse.InquiryDTO> inquiryDTOS = customerInquiries.stream()
-                .map(inquiry -> new UserResponse.InquiryDTO(
-                        inquiry.getId(),
-                        inquiry.getTitle(),
-                        inquiry.getStatus(),
-                        inquiry.getCreatedDate()))
+                .map(inquiry -> {
+                    InquiryAnswer answer = inquiryAnswerMap.get(inquiry.getId());
+                    UserResponse.AnswerDTO answerDTO = new UserResponse.AnswerDTO(
+                            answer.getId(),
+                            answer.getContent(),
+                            answer.getCreatedDate(),
+                            answer.getAnswerer().getName());
+
+                    return new UserResponse.InquiryDTO(
+                            inquiry.getId(),
+                            inquiry.getTitle(),
+                            inquiry.getDescription(),
+                            inquiry.getStatus(),
+                            inquiry.getImageURL(),
+                            inquiry.getType(),
+                            inquiry.getCreatedDate(),
+                            answerDTO);
+                })
                 .toList();
 
         return new UserResponse.FindInquiryListDTO(inquiryDTOS);
-    }
-
-    @Transactional(readOnly = true)
-    public UserResponse.FindInquiryByIdDTO findInquiryById(Long userId, Long inquiryId){
-        Inquiry inquiry = inquiryRepository.findById(inquiryId).orElseThrow(
-                () -> new CustomException(ExceptionCode.INQUIRY_NOT_FOUND)
-        );
-
-        // 권한 체크
-        checkWriterAuthority(userId, inquiry.getQuestioner());
-
-        // 답변
-        List<InquiryAnswer> answers = answerRepository.findAllByInquiryId(inquiryId);
-        List<UserResponse.AnswerDTO> answerDTOS = answers.stream()
-                .map(answer -> new UserResponse.AnswerDTO(
-                        answer.getId(),
-                        answer.getContent(),
-                        answer.getCreatedDate(),
-                        answer.getAnswerer().getName()))
-                .toList();
-
-        return new UserResponse.FindInquiryByIdDTO(inquiry.getTitle(), inquiry.getDescription(), inquiry.getStatus(), inquiry.getCreatedDate(), answerDTOS);
     }
 
     @Transactional(readOnly = true)

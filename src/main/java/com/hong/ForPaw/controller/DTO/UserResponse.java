@@ -3,6 +3,7 @@ package com.hong.ForPaw.controller.DTO;
 
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
 import com.hong.ForPaw.domain.District;
+import com.hong.ForPaw.domain.Inquiry.InquiryType;
 import com.hong.ForPaw.domain.Province;
 
 import java.time.LocalDateTime;
@@ -38,14 +39,12 @@ public class UserResponse {
 
     public record InquiryDTO(Long id,
                              String title,
+                             String description,
                              InquiryStatus status,
-                             LocalDateTime createdDate) {}
-
-    public record FindInquiryByIdDTO(String title,
-                                     String description,
-                                     InquiryStatus status,
-                                     LocalDateTime createdDate,
-                                     List<AnswerDTO> answers){}
+                             String imageURL,
+                             InquiryType inquiryType,
+                             LocalDateTime createdDate,
+                             AnswerDTO answer) {}
 
     public record AnswerDTO(Long id,
                             String content,

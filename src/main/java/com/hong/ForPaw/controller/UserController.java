@@ -165,12 +165,6 @@ public class UserController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @GetMapping("/supports/{inquiryId}")
-    public ResponseEntity<?> findInquiryById(@PathVariable Long inquiryId, @AuthenticationPrincipal CustomUserDetails userDetails){
-        UserResponse.FindInquiryByIdDTO responseDTO = userService.findInquiryById(userDetails.getUser().getId(), inquiryId);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
-    }
-
     @PostMapping("/validate/accessToken")
     public ResponseEntity<?> validateAccessToken(@CookieValue String accessToken){
         UserResponse.ValidateAccessTokenDTO responseDTO = userService.validateAccessToken(accessToken);
