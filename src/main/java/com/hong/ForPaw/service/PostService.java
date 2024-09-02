@@ -29,9 +29,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -149,7 +147,7 @@ public class PostService {
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
                     String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = getCachedLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId(), post::getLikeNum);
+                    Long likeNum = getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId());
 
                     return new PostResponse.PostDTO(
                             post.getId(),
@@ -175,7 +173,7 @@ public class PostService {
                 .map(PopularPost::getPost)
                 .map(post -> {
                     String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = getCachedLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId(), post::getLikeNum);
+                    Long likeNum = getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId());
 
                     return new PostResponse.PostDTO(
                             post.getId(),
@@ -220,7 +218,7 @@ public class PostService {
         List<PostResponse.MyPostDTO> postDTOS = postPage.getContent().stream()
                 .map(post -> {
                     String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = getCachedLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId(), post::getLikeNum);
+                    Long likeNum = getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId());
 
                     return new PostResponse.MyPostDTO(
                             post.getId(),
@@ -330,7 +328,7 @@ public class PostService {
         List<PostResponse.CommentDTO> commentDTOS = converCommentToCommentDTO(comments, likedCommentIds);
 
         // 좋아요 수
-        Long likeNum = getCachedLikeNum(POST_LIKE_NUM_KEY_PREFIX, postId, post::getLikeNum);
+        Long likeNum = getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, postId);
 
         // 좋아요 여부
         boolean isLike = postLikeRepository.existsByPostIdAndUserId(postId, userId);
@@ -525,21 +523,6 @@ public class PostService {
 
             postLikeRepository.save(postLike);
             redisService.incrementValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), 1L);
-        }
-    }
-
-    @Scheduled(cron = "0 25 0 * * *")
-    @Transactional
-    public void syncLikes() {
-        LocalDateTime threeMonthsAgo = LocalDateTime.now().minus(3, ChronoUnit.MONTHS);
-        List<Long> postIds = postRepository.findPostIdsWithinDate(threeMonthsAgo);
-
-        for (Long postId : postIds) {
-            Long likeNum = redisService.getValueInLong(POST_LIKE_NUM_KEY_PREFIX, postId.toString());
-
-            if (likeNum != null) {
-                postRepository.updateLikeNum(likeNum, postId);
-            }
         }
     }
 
@@ -756,7 +739,7 @@ public class PostService {
         // 포인트가 10이 넘으면 popularPosts 리스트에 추가
         List<Post> popularPosts = posts.stream()
                 .peek(post -> {
-                    double hotPoint = post.getReadCnt() * 0.001 + post.getCommentNum() + post.getLikeNum() * 5;
+                    double hotPoint = post.getReadCnt() * 0.001 + post.getCommentNum() + getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId()) * 5;
                     post.updateHotPoint(hotPoint);
                 })
                 .filter(post -> post.getHotPoint() > 10.0)
@@ -833,7 +816,7 @@ public class PostService {
         Map<Long, PostResponse.CommentDTO> commentMap = new HashMap<>();
 
         comments.forEach(comment -> {
-            Long likeNum = getCachedLikeNum(COMMENT_LIKE_NUM_KEY_PREFIX, comment.getId(), comment::getLikeNum);
+            Long likeNum = getCachedCommentLikeNum(COMMENT_LIKE_NUM_KEY_PREFIX, comment.getId());
 
             // 부모 댓글이면, CommentDTO로 변환해서 commentDTOS 리스트에 추가
             if (comment.getParent() == null) {
@@ -877,12 +860,25 @@ public class PostService {
         return commentDTOS;
     }
 
-    private Long getCachedLikeNum(String keyPrefix, Long key, Supplier<Long> dbFallback) {
-        Long likeNum = redisService.getValueInLong(keyPrefix, key.toString());
+    private Long getCachedPostLikeNum(String keyPrefix, Long key) {
+        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
 
         if (likeNum == null) {
-            likeNum = dbFallback.get();
+            likeNum = postRepository.countLikesByPostId(key);
+            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), POST_EXP);
         }
+
+        return likeNum;
+    }
+
+    private Long getCachedCommentLikeNum(String keyPrefix, Long key) {
+        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
+
+        if (likeNum == null) {
+            likeNum = commentRepository.countLikesByCommentId(key);
+            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), POST_EXP);
+        }
+
         return likeNum;
     }
 

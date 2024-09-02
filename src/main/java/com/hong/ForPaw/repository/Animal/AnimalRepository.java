@@ -72,6 +72,9 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
             "WHERE s.id = :shelterId AND a.removedAt IS NULL")
     Long countByShelterId(@Param("shelterId") Long shelterId);
 
+    @Query("SELECT COUNT(fa) FROM FavoriteAnimal fa WHERE fa.animal.id = :animalId")
+    Long countLikesByAnimalId(@Param("animalId") Long animalId);
+
     @Query("SELECT COUNT(a) > 0 FROM Animal a WHERE a.id = :animalId AND a.removedAt IS NULL")
     boolean existsById(@Param("animalId") Long animalId);
 
@@ -85,10 +88,6 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
 
     @Query("SELECT COUNT(a) FROM Animal a WHERE a.removedAt IS NULL")
     Long countAnimal();
-
-    @Modifying
-    @Query("UPDATE Animal a SET a.likeNum = :likeNum WHERE a.id = :animalId AND a.removedAt IS NULL")
-    void updateLikeNum(@Param("likeNum") Long likeNum, @Param("animalId") Long animalId);
 
     @Modifying
     @Transactional

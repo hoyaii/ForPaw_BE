@@ -91,6 +91,7 @@ public class AnimalService {
     private static final String ANIMAL_SEARCH_KEY_PREFIX = "animalSearch";
     private static final String ANIMAL_TYPE_DOG = "[개]";
     private static final String ANIMAL_TYPE_CAT = "[고양이]";
+    public static final Long ANIMAL_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
     private static final Map<String, AnimalType> ANIMAL_TYPE_MAP = Map.of("dog", AnimalType.DOG, "cat", AnimalType.CAT, "other", AnimalType.OTHER);
 
     @Transactional
@@ -216,8 +217,7 @@ public class AnimalService {
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
-                    Long likeNum = redisService.getValueInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
-
+                    Long likeNum = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
                     return new AnimalResponse.AnimalDTO(
                         animal.getId(),
                         animal.getName(),
@@ -247,8 +247,7 @@ public class AnimalService {
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalRepository.findByIds(recommendedAnimalIds).stream()
                 .map(animal -> {
-                    Long likeNum = redisService.getValueInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
-
+                    Long likeNum = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
                     return new AnimalResponse.AnimalDTO(
                             animal.getId(),
                             animal.getName(),
@@ -276,8 +275,7 @@ public class AnimalService {
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.stream()
                 .map(animal -> {
-                    Long likeNum = redisService.getValueInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
-
+                    Long likeNum = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
                     return new AnimalResponse.AnimalDTO(
                             animal.getId(),
                             animal.getName(),
@@ -358,20 +356,6 @@ public class AnimalService {
 
             favoriteAnimalRepository.save(favoriteAnimal);
             redisService.incrementValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString(), 1L);
-        }
-    }
-
-    @Scheduled(cron = "0 20 0 * * *")
-    @Transactional
-    public void syncLikes() {
-        List<Long> animalIds = animalRepository.findAllIds();
-
-        for (Long postId : animalIds) {
-            Long likeNum = redisService.getValueInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, postId.toString());
-
-            if (likeNum != null) {
-                animalRepository.updateLikeNum(likeNum, postId);
-            }
         }
     }
 
@@ -671,5 +655,16 @@ public class AnimalService {
                     // targetShelter가 중복된 상태가 아닌 경우 이를 갱신
                     shelterRepository.updateIsDuplicate(targetShelter.getId(), false);
                 });
+    }
+
+    private Long getCachedLikeNum(String keyPrefix, Long key) {
+        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
+
+        if (likeNum == null) {
+            likeNum = animalRepository.countLikesByAnimalId(key);
+            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), ANIMAL_EXP);
+        }
+
+        return likeNum;
     }
 }

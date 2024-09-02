@@ -85,9 +85,6 @@ public class Animal extends TimeStamp {
     private String introductionContent;
 
     @Column
-    private Long likeNum = 0L;
-
-    @Column
     private Long inquiryNum = 0L;
 
     @Column(name = "removed_at")

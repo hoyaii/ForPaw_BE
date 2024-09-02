@@ -68,6 +68,7 @@ public class GroupService {
     private static final String GROUP_LIKE_NUM_KEY_PREFIX = "groupLikeNum";
     private static final String ROOM_QUEUE_PREFIX = "room.";
     private static final String CHAT_EXCHANGE = "chat.exchange";
+    public static final Long GROUP_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
 
     @Transactional
     public GroupResponse.CreateGroupDTO createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId){
@@ -204,8 +205,7 @@ public class GroupService {
 
         return localGroupPage.getContent().stream()
                 .map(group -> {
-                    Long likeNum = redisService.getValueInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
-
+                    Long likeNum = getCachedLikeNum(GROUP_LIKE_NUM_KEY_PREFIX, group.getId());
                     return new GroupResponse.LocalGroupDTO(
                             group.getId(),
                             group.getName(),
@@ -258,8 +258,7 @@ public class GroupService {
 
         return joinedGroups.stream()
                 .map(group -> {
-                    Long likeNum = redisService.getValueInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
-
+                    Long likeNum = getCachedLikeNum(GROUP_LIKE_NUM_KEY_PREFIX, group.getId());
                     return new GroupResponse.MyGroupDTO(
                             group.getId(),
                             group.getName(),
@@ -614,20 +613,6 @@ public class GroupService {
         }
     }
 
-    @Scheduled(cron = "0 15 0 * * *")
-    @Transactional
-    public void syncLikes() {
-        List<Long> groupIds = groupRepository.findAllIds();
-
-        for (Long groupId : groupIds) {
-            Long likeNum = redisService.getValueInLong(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString());
-
-            if (likeNum != null) {
-                groupRepository.updateLikeNum(likeNum, groupId);
-            }
-        }
-    }
-
     @Transactional
     public void deleteGroup(Long groupId, Long userId){
         // 존재하지 않는 그룹이면 에러
@@ -834,13 +819,13 @@ public class GroupService {
     @Transactional(readOnly = true)
     public List<GroupResponse.RecommendGroupDTO> findRecommendGroupList(Long userId, Province province, List<Long> likedGroupIds){
         // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순
-        Sort sort = Sort.by(Sort.Order.desc(SORT_BY_LIKE_NUM), Sort.Order.desc(SORT_BY_PARTICIPANT_NUM));
+        Sort sort = Sort.by(Sort.Order.desc(SORT_BY_PARTICIPANT_NUM));
         Pageable pageable = PageRequest.of(0, 30, sort);
 
         Page<Group> groupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, GroupRole.TEMP, pageable);
         List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = groupPage.getContent().stream()
                 .map(group -> {
-                    Long likeNum = redisService.getValueInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
+                    Long likeNum = getCachedLikeNum(GROUP_LIKE_NUM_KEY_PREFIX, group.getId());
                     return new GroupResponse.RecommendGroupDTO(
                             group.getId(),
                             group.getName(),
@@ -991,7 +976,7 @@ public class GroupService {
 
         return groupRepository.findAllWithoutMyGroup(userId, pageable).getContent().stream()
                 .map(group -> {
-                    Long likeNum = redisService.getValueInLong(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString());
+                    Long likeNum = getCachedLikeNum(GROUP_LIKE_NUM_KEY_PREFIX, group.getId());
                     return new GroupResponse.RecommendGroupDTO(
                             group.getId(),
                             group.getName(),
@@ -1005,5 +990,16 @@ public class GroupService {
                             likedGroupIds.contains(group.getId()));
                 })
                 .collect(Collectors.toList());
+    }
+
+    private Long getCachedLikeNum(String keyPrefix, Long key) {
+        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
+
+        if (likeNum == null) {
+            likeNum = groupRepository.countLikesByGroupId(key);
+            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), GROUP_EXP);
+        }
+
+        return likeNum;
     }
 }

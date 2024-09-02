@@ -57,9 +57,6 @@ public class Post extends TimeStamp {
     private String content;
 
     @Column
-    private Long likeNum = 0L;
-
-    @Column
     private Long answerNum = 0L;
 
     @Column

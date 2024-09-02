@@ -52,6 +52,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             "WHERE p.id = :parentId AND c.createdDate > :date AND c.removedAt IS NULL")
     boolean existsByParentIdAndDateAfter(Long parentId, LocalDateTime date);
 
+    @Query("SELECT COUNT(cl) FROM CommentLike cl WHERE cl.comment.id = :commentId")
+    Long countLikesByCommentId(@Param("commentId") Long commentId);
+
     @Query("SELECT COUNT(c) FROM Comment c WHERE c.createdDate >= :date AND c.removedAt IS NULL")
     Long countALlWithinDate(LocalDateTime date);
 

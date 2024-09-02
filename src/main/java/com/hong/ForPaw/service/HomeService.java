@@ -28,12 +28,15 @@ import java.util.function.Supplier;
 public class HomeService {
 
     private final AnimalRepository animalRepository;
+    private final PostRepository postRepository;
     private final PopularPostRepository popularPostRepository;
     private final GroupService groupService;
     private final RedisService redisService;
     private final AnimalService animalService;
     private final FavoriteGroupRepository favoriteGroupRepository;
     private static final Province DEFAULT_PROVINCE = Province.DAEGU;
+    public static final Long POST_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
+    public static final Long ANIMAL_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
     private static final String POST_LIKE_NUM_KEY_PREFIX = "postLikeNum";
     private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
     private static final String SORT_BY_DATE = "createdDate";
@@ -45,8 +48,7 @@ public class HomeService {
 
         List<HomeResponse.AnimalDTO> animalDTOS = animalRepository.findByIds(recommendedAnimalIds).stream()
                 .map(animal -> {
-                    Long likeNum = redisService.getValueInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
-
+                    Long likeNum = getCachedAnimalLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
                     return new HomeResponse.AnimalDTO(
                             animal.getId(),
                             animal.getName(),
@@ -67,7 +69,7 @@ public class HomeService {
                 .map(PopularPost::getPost)
                 .map(post -> {
                     String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = getCachedLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId(), post::getLikeNum);
+                    Long likeNum = getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId());
 
                     return new HomeResponse.PostDTO(
                             post.getId(),
@@ -89,12 +91,25 @@ public class HomeService {
         return new HomeResponse.FindHomeDTO(animalDTOS, groupDTOS, postDTOS);
     }
 
-    private Long getCachedLikeNum(String keyPrefix, Long key, Supplier<Long> dbFallback) {
-        Long likeNum = redisService.getValueInLong(keyPrefix, key.toString());
+    private Long getCachedPostLikeNum(String keyPrefix, Long key) {
+        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
 
         if (likeNum == null) {
-            likeNum = dbFallback.get();
+            likeNum = postRepository.countLikesByPostId(key);
+            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), POST_EXP);
         }
+
+        return likeNum;
+    }
+
+    private Long getCachedAnimalLikeNum(String keyPrefix, Long key) {
+        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
+
+        if (likeNum == null) {
+            likeNum = animalRepository.countLikesByAnimalId(key);
+            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), ANIMAL_EXP);
+        }
+
         return likeNum;
     }
 }

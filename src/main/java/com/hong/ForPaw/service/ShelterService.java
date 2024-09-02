@@ -52,6 +52,7 @@ public class ShelterService {
     private String baseUrl;
 
     private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
+    public static final Long ANIMAL_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
     private static final Map<String, AnimalType> ANIMAL_TYPE_MAP = Map.of("dog", AnimalType.DOG, "cat", AnimalType.CAT, "other", AnimalType.OTHER);
 
     @Transactional
@@ -125,8 +126,7 @@ public class ShelterService {
 
         List<ShelterResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
-                    Long likeNum = redisService.getValueInLong(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
-
+                    Long likeNum = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
                     return new ShelterResponse.AnimalDTO(
                             animal.getId(),
                             animal.getName(),
@@ -212,5 +212,16 @@ public class ShelterService {
         return sort.equals("date") ? null :
                 Optional.ofNullable(ANIMAL_TYPE_MAP.get(sort))
                         .orElseThrow(() -> new CustomException(ExceptionCode.BAD_APPROACH));
+    }
+
+    private Long getCachedLikeNum(String keyPrefix, Long key) {
+        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
+
+        if (likeNum == null) {
+            likeNum = animalRepository.countLikesByAnimalId(key);
+            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), ANIMAL_EXP);
+        }
+
+        return likeNum;
     }
 }

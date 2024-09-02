@@ -57,6 +57,12 @@ public class RedisService {
                 .orElse(0L);
     }
 
+    public Long getValueInLongWithNull(String type, String id) {
+        return Optional.ofNullable(redisTemplate.opsForValue().get(buildKey(type, id)))
+                .map(Long::valueOf)
+                .orElse(null);
+    }
+
     public Set<String> getMembersOfSet(String key) {
         SetOperations<String, String> setOps = redisTemplate.opsForSet();
         return setOps.members(key);

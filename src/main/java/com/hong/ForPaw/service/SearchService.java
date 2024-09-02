@@ -34,6 +34,7 @@ public class SearchService {
     private final MeetingRepository meetingRepository;
     private final RedisService redisService;
     private static final String POST_LIKE_NUM_KEY_PREFIX = "postLikeNum";
+    public static final Long POST_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
     private static final String SORT_BY_ID = "id";
 
     @Transactional(readOnly = true)
@@ -72,7 +73,8 @@ public class SearchService {
 
         return posts.getContent().stream()
                 .map(row -> {
-                    Long likeNum = redisService.getValueInLong(POST_LIKE_NUM_KEY_PREFIX, ((Long) row[0]).toString());
+                    Long likeNum = getCachedLikeNum(POST_LIKE_NUM_KEY_PREFIX, ((Long) row[0]));
+
                     return new SearchResponse.PostDTO(
                         (Long) row[0],  // postId
                         PostType.valueOf((String) row[4]),  // postType (String을 PostType으로 변환)
@@ -135,5 +137,16 @@ public class SearchService {
         }
 
         return modifiedKeyword.toString().trim();
+    }
+
+    private Long getCachedLikeNum(String keyPrefix, Long key) {
+        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
+
+        if (likeNum == null) {
+            likeNum = postRepository.countLikesByPostId(key);
+            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), POST_EXP);
+        }
+
+        return likeNum;
     }
 }

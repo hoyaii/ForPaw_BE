@@ -46,12 +46,11 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     @Query("SELECT g.id FROM Group g")
     List<Long> findAllIds();
 
+    @Query("SELECT COUNT(fg) FROM FavoriteGroup fg WHERE fg.group.id = :groupId")
+    Long countLikesByGroupId(@Param("groupId") Long groupId);
+
     boolean existsByName(String name);
 
     @Query("SELECT COUNT(g) > 0 FROM Group g WHERE g.id != :id AND g.name = :name")
     boolean existsByNameExcludingId(@Param("name") String name, @Param("id") Long id);
-
-    @Modifying
-    @Query("UPDATE Group g SET g.likeNum = :likeNum WHERE g.id = :groupId")
-    void updateLikeNum(@Param("likeNum") Long likeNum, @Param("groupId") Long groupId);
 }
