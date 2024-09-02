@@ -118,7 +118,7 @@ public class Animal extends TimeStamp {
         this.inquiryNum -= 1;
     }
 
-    public void updateShelter(Shelter shelter){
-        this.shelter = shelter;
+    public void updateProfileURL(String profileURL){
+        this.profileURL = profileURL;
     }
 }

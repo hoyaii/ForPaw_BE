@@ -485,7 +485,7 @@ public class AnimalService {
                 .weight(itemDTO.weight())
                 .noticeSdt(LocalDate.parse(itemDTO.noticeSdt(), formatter))
                 .noticeEdt(LocalDate.parse(itemDTO.noticeEdt(), formatter))
-                .profileURL(itemDTO.popfile())
+                .profileURL(convertHttpToHttps(itemDTO.popfile()))
                 .processState(itemDTO.processState())
                 .gender(itemDTO.sexCd())
                 .neuter(itemDTO.neuterYn())
@@ -666,5 +666,13 @@ public class AnimalService {
         }
 
         return likeNum;
+    }
+
+    public String convertHttpToHttps(String url) {
+        if (Objects.requireNonNull(url).startsWith("http://")) {
+            return url.replaceFirst("http://", "https://");
+        }
+
+        return url;
     }
 }
