@@ -288,12 +288,13 @@ public class UserService {
                 .nickName(requestDTO.nickName())
                 .email(requestDTO.email())
                 .password(passwordEncoder.encode(generatePassword())) // 임의의 비밀번호로 생성
-                .role(UserRole.USER)
+                .role(requestDTO.isShelterOwns() ? UserRole.SHELTER : UserRole.USER)
                 .profileURL(requestDTO.profileURL())
                 .province(requestDTO.province())
                 .district(requestDTO.district())
                 .subDistrict(requestDTO.subDistrict())
                 .authProvider(requestDTO.authProvider())
+                .isMarketingAgreed(requestDTO.isMarketingAgreed())
                 .build();
 
         userRepository.save(user);

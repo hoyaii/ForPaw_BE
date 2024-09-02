@@ -29,7 +29,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -54,6 +56,7 @@ public class PostService {
     private static final String POST_SCREENED = "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.";
     private static final String POST_READ_KEY_PREFIX = "user:readPosts:";
     private static final String POST_LIKE_NUM_KEY_PREFIX = "postLikeNum";
+    private static final String POST_VIEW_NUM_PREFIX = "postViewNum";
     private static final String COMMENT_LIKE_NUM_KEY_PREFIX = "commentLikeNum";
     private static final String COMMENT_DELETED = "삭제된 댓글 입니다.";
 
@@ -91,6 +94,9 @@ public class PostService {
 
         // 3개월 동안만 좋아요를 할 수 있다
         redisService.storeValue(POST_LIKE_NUM_KEY_PREFIX, post.getId().toString(), "0", POST_EXP);
+
+        // 조회 수
+        redisService.storeValue(POST_VIEW_NUM_PREFIX, post.getId().toString(), "0", POST_EXP);
 
         return new PostResponse.CreatePostDTO(post.getId());
     }
@@ -333,6 +339,9 @@ public class PostService {
         // 좋아요 여부
         boolean isLike = postLikeRepository.existsByPostIdAndUserId(postId, userId);
 
+        // 조회 수 증가
+        redisService.incrementValue(POST_VIEW_NUM_PREFIX, postId.toString(), 1L);
+
         // 공지 사항의 경우, 게시글 읽음 여부를 저장 (1년동안)
         if(post.getPostType().equals(PostType.NOTICE)){
             String key = POST_READ_KEY_PREFIX + userId;
@@ -384,6 +393,9 @@ public class PostService {
                             isMineForAnswer);
                 })
                 .collect(Collectors.toList());
+
+        // 조회 수 증가
+        redisService.incrementValue(POST_VIEW_NUM_PREFIX, postId.toString(), 1L);
 
         return new PostResponse.FindQnaByIdDTO(post.getUser().getNickName(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), postImageDTOS, answerDTOS, isMineForQuestion);
     }
@@ -735,11 +747,26 @@ public class PostService {
         processPopularPosts(fosteringPosts, PostType.FOSTERING);
     }
 
+    @Scheduled(cron = "0 25 0 * * *")
+    @Transactional
+    public void syncViewNum() {
+        LocalDateTime oneWeeksAgo = LocalDateTime.now().minus(1, ChronoUnit.WEEKS);
+        List<Post> posts = postRepository.findPostIdsWithinDate(oneWeeksAgo);
+
+        for (Post post : posts) {
+            Long readCnt = redisService.getValueInLongWithNull(POST_VIEW_NUM_PREFIX, post.getId().toString());
+
+            if (readCnt != null) {
+                post.updateReadCnt(readCnt);
+            }
+        }
+    }
+
     private void processPopularPosts(List<Post> posts, PostType postType){
         // 포인트가 10이 넘으면 popularPosts 리스트에 추가
         List<Post> popularPosts = posts.stream()
                 .peek(post -> {
-                    double hotPoint = post.getReadCnt() * 0.001 + post.getCommentNum() + getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId()) * 5;
+                    double hotPoint = getCachedPostViewNum(POST_VIEW_NUM_PREFIX, post.getId(), post::getReadCnt) * 0.001 + post.getCommentNum() + getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId()) * 5;
                     post.updateHotPoint(hotPoint);
                 })
                 .filter(post -> post.getHotPoint() > 10.0)
@@ -880,6 +907,16 @@ public class PostService {
         }
 
         return likeNum;
+    }
+
+    private Long getCachedPostViewNum(String keyPrefix, Long key, Supplier<Long> dbFallback) {
+        Long viewNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
+
+        if (viewNum == null) {
+            viewNum = dbFallback.get();
+        }
+
+        return viewNum;
     }
 
     private void createAlarm(Long userId, String content, String redirectURL, AlarmType alarmType) {

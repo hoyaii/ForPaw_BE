@@ -89,7 +89,9 @@ public class UserRequest {
             @NotBlank(message = "프로필을 입력해주세요.")
             String profileURL,
             @NotNull(message = "가입 경로를 입력해주세요.")
-            AuthProvider authProvider) {}
+            AuthProvider authProvider,
+            boolean isShelterOwns,
+            boolean isMarketingAgreed) {}
 
     public record CurPasswordDTO(@NotBlank String password) {}
 
