@@ -29,7 +29,9 @@ public class UserResponse {
                              District district,
                              String subDistrict,
                              String profileURL,
-                             boolean isSocialJoined) {}
+                             boolean isSocialJoined,
+                             boolean isShelterOwns,
+                             boolean isMarketingAgreed) {}
 
     public record VerifyEmailCodeDTO(boolean isMatching) {}
 

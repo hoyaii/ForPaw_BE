@@ -257,12 +257,13 @@ public class UserService {
                 .nickName(requestDTO.nickName())
                 .email(requestDTO.email())
                 .password(passwordEncoder.encode(requestDTO.password()))
-                .role(UserRole.USER)
+                .role(requestDTO.isShelterOwns() ? UserRole.SHELTER : UserRole.USER) // 보호소가 관리하는 계정이면 Role은 SHELTER
                 .profileURL(requestDTO.profileURL())
                 .province(requestDTO.province())
                 .district(requestDTO.district())
                 .subDistrict(requestDTO.subDistrict())
                 .authProvider(AuthProvider.LOCAL)
+                .isMarketingAgreed(requestDTO.isMarketingAgreed())
                 .build();
 
         userRepository.save(user);
@@ -430,10 +431,22 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        // 소셜 회원가입으로 가입
+        // 소셜 회원가입으로 가입했는지 여부
         boolean isSocialJoined = !user.getAuthProvider().equals(AuthProvider.LOCAL);
 
-        return new UserResponse.ProfileDTO(user.getEmail(), user.getName(), user.getNickName(), user.getProvince(), user.getDistrict(), user.getSubDistrict(), user.getProfileURL(), isSocialJoined);
+        // 보호소에서 관리하는 계정인지 여부
+        boolean isShelterOwns = user.getRole().equals(UserRole.SHELTER);
+
+        return new UserResponse.ProfileDTO(user.getEmail(),
+                user.getName(),
+                user.getNickName(),
+                user.getProvince(),
+                user.getDistrict(),
+                user.getSubDistrict(),
+                user.getProfileURL(),
+                isSocialJoined,
+                isShelterOwns,
+                user.isMarketingAgreed());
     }
 
     @Transactional
@@ -732,7 +745,7 @@ public class UserService {
     public String createRefreshTokenCookie(String refreshToken) {
         return ResponseCookie.from(REFRESH_TOKEN_KEY_PREFIX, refreshToken)
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)
                 .path("/")
                 .sameSite("Lax")
                 .maxAge(JWTProvider.REFRESH_EXP_SEC)

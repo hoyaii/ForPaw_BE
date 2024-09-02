@@ -68,7 +68,9 @@ public class UserRequest {
             String password,
             @NotBlank(message = "비밀번호를 입력해주세요.")
             String passwordConfirm,
-            String profileURL) {}
+            String profileURL,
+            boolean isShelterOwns,
+            boolean isMarketingAgreed) {}
 
     public record SocialJoinDTO(
             @NotBlank(message = "이메일을 입력해주세요.")
