@@ -39,7 +39,7 @@ public class AuthenticationResponse {
                                   Long newComment,
                                   Long newAdoptApplication) {}
 
-    public record FindUserListDTO(List<ApplicantDTO> users){}
+    public record FindUserListDTO(List<ApplicantDTO> users, int totalPages){}
 
     public record ApplicantDTO(Long id,
                                String nickName,
@@ -71,9 +71,9 @@ public class AuthenticationResponse {
                            ApplyStatus status
     ){};
 
-    public record FindApplyListDTO(List<ApplyDTO> applies){}
+    public record FindApplyListDTO(List<ApplyDTO> applies, int totalPages){}
 
-    public record FindReportListDTO(List<ReportDTO> reports){}
+    public record FindReportListDTO(List<ReportDTO> reports, int totalPages){}
 
     public record ReportDTO(Long id,
                             LocalDateTime reportDate,
@@ -86,7 +86,7 @@ public class AuthenticationResponse {
                             String offenderNickName,
                             ReportStatus status){}
 
-    public record FindSupportListDTO(List<InquiryDTO> inquiries){}
+    public record FindSupportListDTO(List<InquiryDTO> inquiries, int totalPages){}
 
     public record InquiryDTO(Long id,
                              LocalDateTime date,

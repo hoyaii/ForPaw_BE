@@ -185,9 +185,9 @@ public class AuthenticationService {
                         Collectors.counting()
                 ));
 
-        Page<User> users = userRepository.findAll(pageable);
+        Page<User> userPage = userRepository.findAll(pageable);
 
-        List<AuthenticationResponse.ApplicantDTO> applicantDTOS = users.getContent().stream()
+        List<AuthenticationResponse.ApplicantDTO> applicantDTOS = userPage.getContent().stream()
                 .map(user -> new AuthenticationResponse.ApplicantDTO(
                         user.getId(),
                         user.getNickName(),
@@ -205,7 +205,7 @@ public class AuthenticationService {
                 ))
                 .toList();
 
-        return new AuthenticationResponse.FindUserListDTO(applicantDTOS);
+        return new AuthenticationResponse.FindUserListDTO(applicantDTOS, userPage.getTotalPages());
     }
 
     @Transactional
@@ -299,7 +299,7 @@ public class AuthenticationService {
                     );
                 }).toList();
 
-        return new AuthenticationResponse.FindApplyListDTO(applyDTOS);
+        return new AuthenticationResponse.FindApplyListDTO(applyDTOS, applyPage.getTotalPages());
     }
 
     @Transactional
@@ -322,7 +322,9 @@ public class AuthenticationService {
     public AuthenticationResponse.FindReportListDTO findReportList(Long adminId, ReportStatus status, Pageable pageable){
         checkAdminAuthority(adminId);
 
-        List<AuthenticationResponse.ReportDTO> reportDTOS = reportRepository.findAllByStatus(status, pageable).getContent().stream()
+        Page<Report> reportPage = reportRepository.findAllByStatus(status, pageable);
+
+        List<AuthenticationResponse.ReportDTO> reportDTOS = reportPage.getContent().stream()
                 .map(report -> new AuthenticationResponse.ReportDTO(
                         report.getId(),
                         report.getCreatedDate(),
@@ -336,7 +338,7 @@ public class AuthenticationService {
                         report.getStatus())
                 ).toList();
 
-        return new AuthenticationResponse.FindReportListDTO(reportDTOS);
+        return new AuthenticationResponse.FindReportListDTO(reportDTOS, reportPage.getTotalPages());
     }
 
     @Transactional
@@ -371,7 +373,9 @@ public class AuthenticationService {
     public AuthenticationResponse.FindSupportListDTO findSupportList(Long adminId, InquiryStatus status, Pageable pageable){
         checkAdminAuthority(adminId);
 
-        List<AuthenticationResponse.InquiryDTO> inquiryDTOS = inquiryRepository.findByStatusWithUser(status, pageable).getContent().stream()
+        Page<Inquiry> inquiryPage = inquiryRepository.findByStatusWithUser(status, pageable);
+
+        List<AuthenticationResponse.InquiryDTO> inquiryDTOS = inquiryPage.getContent().stream()
                 .map(inquiry -> new AuthenticationResponse.InquiryDTO(
                         inquiry.getId(),
                         inquiry.getCreatedDate(),
@@ -382,7 +386,7 @@ public class AuthenticationService {
                 )
                 .toList();
 
-        return new AuthenticationResponse.FindSupportListDTO(inquiryDTOS);
+        return new AuthenticationResponse.FindSupportListDTO(inquiryDTOS, inquiryPage.getTotalPages());
     }
 
     @Transactional(readOnly = true)
