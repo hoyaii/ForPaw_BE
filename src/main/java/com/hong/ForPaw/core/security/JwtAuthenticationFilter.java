@@ -80,8 +80,8 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
                 refreshToken = JWTProvider.createRefreshToken(user);
 
                 updateToken(user, accessToken, refreshToken);
-                CookieUtils.setCookieToResponse(JWTProvider.ACCESS_TOKEN_COOKIE_KEY, accessToken, JWTProvider.ACCESS_EXP_SEC, false, false, response);
-                CookieUtils.setCookieToResponse(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, refreshToken, JWTProvider.REFRESH_EXP_SEC, false, true, response);
+                CookieUtils.setCookieToResponse(JWTProvider.ACCESS_TOKEN_COOKIE_KEY, accessToken, JWTProvider.ACCESS_EXP_SEC, true, false, response);
+                CookieUtils.setCookieToResponse(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, refreshToken, JWTProvider.REFRESH_EXP_SEC, true, true, response);
             }
         }
 

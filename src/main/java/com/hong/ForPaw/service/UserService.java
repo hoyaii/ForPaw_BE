@@ -732,7 +732,7 @@ public class UserService {
     public String createRefreshTokenCookie(String refreshToken) {
         return ResponseCookie.from(REFRESH_TOKEN_KEY_PREFIX, refreshToken)
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/")
                 .sameSite("Lax")
                 .maxAge(JWTProvider.REFRESH_EXP_SEC)
