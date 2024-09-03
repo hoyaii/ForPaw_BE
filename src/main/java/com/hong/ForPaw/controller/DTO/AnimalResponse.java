@@ -58,7 +58,9 @@ public class AnimalResponse {
                            String age,
                            String userName,
                            String tel,
-                           String residence,
+                           String roadNameAddress,
+                           String addressDetail,
+                           String zipCode,
                            ApplyStatus status){ }
 
     public record RecommendationDTO(List<Long> recommendedAnimals) {}

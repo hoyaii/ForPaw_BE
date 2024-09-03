@@ -405,7 +405,9 @@ public class AnimalService {
                         apply.getAnimal().getAge(),
                         apply.getName(),
                         apply.getTel(),
+                        apply.getRoadNameAddress(),
                         apply.getAddressDetail(),
+                        apply.getZipCode(),
                         apply.getStatus()))
                 .collect(Collectors.toList());
 
