@@ -292,7 +292,7 @@ public class AuthenticationService {
                             animal.getAge(),
                             apply.getName(),
                             apply.getTel(),
-                            apply.getResidence(),
+                            apply.getAddressDetail(),
                             animal.getShelter().getName(),
                             animal.getShelter().getCareTel(),
                             apply.getStatus()

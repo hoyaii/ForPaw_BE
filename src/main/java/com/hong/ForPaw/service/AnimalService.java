@@ -379,7 +379,9 @@ public class AnimalService {
                 .status(ApplyStatus.PROCESSING)
                 .name(requestDTO.name())
                 .tel(requestDTO.tel())
-                .residence(requestDTO.residence())
+                .roadNameAddress(requestDTO.roadNameAddress())
+                .addressDetail(requestDTO.addressDetail())
+                .zipCode(requestDTO.zipCode())
                 .build();
 
         applyRepository.save(apply);
@@ -403,7 +405,7 @@ public class AnimalService {
                         apply.getAnimal().getAge(),
                         apply.getName(),
                         apply.getTel(),
-                        apply.getResidence(),
+                        apply.getAddressDetail(),
                         apply.getStatus()))
                 .collect(Collectors.toList());
 

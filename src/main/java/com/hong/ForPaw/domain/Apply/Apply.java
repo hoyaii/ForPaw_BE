@@ -42,25 +42,33 @@ public class Apply extends TimeStamp {
     private String tel;
 
     @Column
-    private String residence;
+    private String roadNameAddress;
+
+    @Column
+    private String addressDetail;
+
+    @Column
+    private String zipCode;
 
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
 
     @Builder
-    public Apply(User user, Animal animal, ApplyStatus status, String name, String tel, String residence) {
+    public Apply(User user, Animal animal, ApplyStatus status, String name, String tel, String  roadNameAddress, String addressDetail, String zipCode) {
         this.user = user;
         this.animal = animal;
         this.status = status;
         this.name = name;
         this.tel = tel;
-        this.residence = residence;
+        this.addressDetail = addressDetail;
+        this.roadNameAddress = roadNameAddress;
+        this.zipCode = zipCode;
     }
 
     public void updateApply(String name, String tel, String residence){
         this.name = name;
         this.tel = tel;
-        this.residence = residence;
+        this.addressDetail = residence;
     }
 
     public void updateApplyStatus(ApplyStatus applyStatus){
