@@ -65,10 +65,12 @@ public class Apply extends TimeStamp {
         this.zipCode = zipCode;
     }
 
-    public void updateApply(String name, String tel, String residence){
+    public void updateApply(String name, String tel, String roadNameAddress, String addressDetail, String zipCode){
         this.name = name;
         this.tel = tel;
-        this.addressDetail = residence;
+        this.roadNameAddress = roadNameAddress;
+        this.addressDetail = addressDetail;
+        this.zipCode = zipCode;
     }
 
     public void updateApplyStatus(ApplyStatus applyStatus){

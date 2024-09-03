@@ -423,7 +423,11 @@ public class AnimalService {
                 () -> new CustomException(ExceptionCode.APPLY_NOT_FOUND)
         );
 
-        apply.updateApply(requestDTO.name(), requestDTO.tel(), requestDTO.residence());
+        apply.updateApply(requestDTO.name(),
+                requestDTO.tel(),
+                requestDTO.roadNameAddress(),
+                requestDTO.addressDetail(),
+                requestDTO.zipCode());
     }
 
     @Transactional
