@@ -13,4 +13,7 @@ public interface InquiryAnswerRepository extends JpaRepository<InquiryAnswer, Lo
     @EntityGraph(attributePaths = {"answerer"})
     @Query("SELECT ia FROM InquiryAnswer ia WHERE ia.inquiry.id IN :inquiryIds")
     List<InquiryAnswer> findAllByInquiryIdsWithAnswerer(@Param("inquiryIds") List<Long> inquiryIds);
+
+    @Query("SELECT COUNT(ia) > 0 FROM InquiryAnswer ia WHERE ia.inquiry.id = :inquiryId")
+    boolean existsByInquiryId(@Param("inquiryId") Long inquiryId);
 }

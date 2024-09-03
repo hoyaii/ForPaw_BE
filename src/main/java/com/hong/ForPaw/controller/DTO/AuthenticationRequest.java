@@ -32,12 +32,9 @@ public class AuthenticationRequest {
     public record ProcessReportDTO(
             @NotNull(message = "신고 내역의 ID를 입력해주세요.")
             Long id,
-            @NotNull(message = "정지 여부를 선택해주세요.")
-            Boolean hasSuspension,
-            @NotNull(message = "정지 기간을 입력해주세요.")
-            Long suspensionDays,
-            @NotNull(message = "컨텐츠 가림 여부를 선택해주세요.")
-            Boolean hasBlocking){}
+            boolean hasSuspension,
+            long suspensionDays,
+            boolean hasBlocking){}
 
     public record AnswerInquiryDTO(
             @NotBlank(message = "답변 내용을 입력해주세요.")

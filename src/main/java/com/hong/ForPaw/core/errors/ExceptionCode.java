@@ -34,6 +34,7 @@ public enum ExceptionCode {
 
     // 고객 문의 관련 에러
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, "문의 내역이 존재하지 않습니다"),
+    INQUIRY_ALREADY_ANSWER(HttpStatus.BAD_REQUEST, "이미 답변을 하였습니다."),
 
     // 신고 관련 에러
     WRONG_REPORT_TARGET(HttpStatus.BAD_REQUEST, "잘못된 컨텐츠 타입 입니다."),

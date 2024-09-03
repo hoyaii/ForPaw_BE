@@ -415,6 +415,11 @@ public class AuthenticationService {
                 () -> new CustomException(ExceptionCode.INQUIRY_NOT_FOUND)
         );
 
+        // 답변은 하나만 할 수 있음
+        if(inquiryAnswerRepository.existsByInquiryId(inquiryId)){
+            throw new CustomException(ExceptionCode.INQUIRY_ALREADY_ANSWER);
+        }
+
         User adminRef = entityManager.getReference(User.class, adminId);
         InquiryAnswer answer = InquiryAnswer.builder()
                 .answerer(adminRef)
