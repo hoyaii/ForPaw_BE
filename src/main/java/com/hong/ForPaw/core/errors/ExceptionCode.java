@@ -58,6 +58,7 @@ public enum ExceptionCode {
     ANIMAL_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 동물을 찾을 수 없습니다."),
     ANIMAL_NOT_EXIST(HttpStatus.NOT_FOUND, "목록에 동물이 존재하지 않습니다."),
     ANIMAL_ALREADY_APPLY(HttpStatus.BAD_REQUEST, "이미 지원하였습니다."),
+    ANIMAL_APPLY_PROCESSED(HttpStatus.BAD_REQUEST, "지원서가 이미 처리되었습니다."),
     APPLY_NOT_FOUND(HttpStatus.BAD_REQUEST, "지원서가 존재하지 않습니다."),
     SHELTER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 보호소를 찾을 수 없습니다."),
     WRONG_ANIMAL_TYPE(HttpStatus.BAD_REQUEST, "잘못된 sort 타입 입니다. (date, dog, cat, other)"),

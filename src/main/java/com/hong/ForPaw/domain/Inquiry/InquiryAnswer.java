@@ -22,7 +22,7 @@ public class InquiryAnswer extends TimeStamp {
     @JoinColumn(name = "user_id")
     private User answerer;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inquiry_id")
     private Inquiry inquiry;
 

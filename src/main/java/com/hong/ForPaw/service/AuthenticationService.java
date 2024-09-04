@@ -310,6 +310,11 @@ public class AuthenticationService {
             () -> new CustomException(ExceptionCode.APPLY_NOT_FOUND)
         );
 
+        // 이미 처리 됌
+        if(apply.getStatus().equals(ApplyStatus.PROCESSED)){
+            throw new CustomException(ExceptionCode.ANIMAL_APPLY_PROCESSED);
+        }
+
         // 현재 상태와 동일한 값이 요청으로 들어옴
         if(requestDTO.status().equals(apply.getStatus())){
             throw new CustomException(ExceptionCode.SAME_STATUS);
@@ -348,6 +353,11 @@ public class AuthenticationService {
         Report report = reportRepository.findById(requestDTO.id()).orElseThrow(
                 () -> new CustomException(ExceptionCode.REPORT_NOT_FOUND)
         );
+
+        // 이미 처리함
+        if(report.getStatus().equals(ReportStatus.PROCESSED)){
+            throw new CustomException(ExceptionCode.ALREADY_REPORTED);
+        }
 
         // 유저 정지 처리
         if(requestDTO.hasSuspension()){
@@ -397,14 +407,12 @@ public class AuthenticationService {
                 () -> new CustomException(ExceptionCode.INQUIRY_NOT_FOUND)
         );
 
-        AuthenticationResponse.FindSupportByIdDTO findSupportByIdDTO = new AuthenticationResponse.FindSupportByIdDTO(
+        return new AuthenticationResponse.FindSupportByIdDTO(
                 inquiry.getId(),
                 inquiry.getQuestioner().getNickName(),
                 inquiry.getTitle(),
                 inquiry.getDescription()
         );
-
-        return findSupportByIdDTO;
     }
 
     @Transactional
@@ -428,6 +436,9 @@ public class AuthenticationService {
                 .build();
 
         inquiryAnswerRepository.save(answer);
+
+        // 문의글은 처리 완료
+        inquiry.updateStatus(InquiryStatus.PROCESSED);
 
         return new AuthenticationResponse.AnswerInquiryDTO(inquiryId);
     }

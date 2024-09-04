@@ -58,4 +58,8 @@ public class Inquiry extends TimeStamp {
         this.description = description;
         this.contactMail = contactMail;
     }
+
+    public void updateStatus(InquiryStatus status){
+        this.status = status;
+    }
 }
