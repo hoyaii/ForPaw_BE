@@ -48,9 +48,7 @@ public class UserResponse {
                              LocalDateTime createdDate,
                              AnswerDTO answer) {}
 
-    public record AnswerDTO(Long id,
-                            String content,
-                            LocalDateTime answeredDate,
+    public record AnswerDTO(String content,
                             String answeredBy){}
 
     public record VerifyPasswordDTO(boolean isMatching){}

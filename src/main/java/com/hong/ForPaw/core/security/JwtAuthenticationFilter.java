@@ -72,10 +72,10 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         User user = authenticateAccessToken(accessToken);
 
         // 3rd 엑세스 토큰에 인증 정보가 없음 => 리프레쉬 토큰이라도 날아온다면 사용해서 검증
-        if (user == null) {
+        /*if (user == null) {
             user = authenticateRefreshToken(refreshToken);
 
-            /* 액세스 토큰과 리프레시 토큰 갱신 (재발급 로직)
+            // 액세스 토큰과 리프레시 토큰 갱신 (재발급 로직)
             if (user != null) {
                 accessToken = JWTProvider.createAccessToken(user);
                 refreshToken = JWTProvider.createRefreshToken(user);
@@ -83,8 +83,8 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
                 updateToken(user, accessToken, refreshToken);
                 CookieUtils.setCookieToResponse(JWTProvider.ACCESS_TOKEN_COOKIE_KEY, accessToken, JWTProvider.ACCESS_EXP_SEC, true, false, response);
                 CookieUtils.setCookieToResponse(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, refreshToken, JWTProvider.REFRESH_EXP_SEC, true, true, response);
-            }*/
-        }
+            }
+        }*/
 
         // 엑세스 토큰과 리프레쉬 토큰 모두 검증 실패 (만료 됐거나 잘못된 형식)
         if (user == null) {

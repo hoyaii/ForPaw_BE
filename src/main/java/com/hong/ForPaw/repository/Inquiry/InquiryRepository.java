@@ -15,6 +15,7 @@ import java.util.List;
 @Repository
 public interface InquiryRepository extends JpaRepository<Inquiry, Long> {
 
+    @EntityGraph(attributePaths = {"answerer"})
     List<Inquiry> findAllByQuestionerId(Long questionerId);
 
     @EntityGraph(attributePaths = {"questioner"})

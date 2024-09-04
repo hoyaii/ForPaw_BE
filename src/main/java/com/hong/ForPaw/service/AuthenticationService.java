@@ -11,7 +11,6 @@ import com.hong.ForPaw.domain.Apply.ApplyStatus;
 import com.hong.ForPaw.domain.Authentication.Visit;
 import com.hong.ForPaw.domain.FAQ.FAQ;
 import com.hong.ForPaw.domain.Inquiry.Inquiry;
-import com.hong.ForPaw.domain.Inquiry.InquiryAnswer;
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
 import com.hong.ForPaw.domain.Post.Comment;
 import com.hong.ForPaw.domain.Post.Post;
@@ -24,7 +23,6 @@ import com.hong.ForPaw.domain.User.UserStatus;
 import com.hong.ForPaw.repository.*;
 import com.hong.ForPaw.repository.Animal.AnimalRepository;
 import com.hong.ForPaw.repository.Authentication.VisitRepository;
-import com.hong.ForPaw.repository.Inquiry.InquiryAnswerRepository;
 import com.hong.ForPaw.repository.Inquiry.InquiryRepository;
 import com.hong.ForPaw.repository.Post.*;
 import jakarta.persistence.EntityManager;
@@ -56,7 +54,6 @@ public class AuthenticationService {
     private final ReportRepository reportRepository;
     private final ApplyRepository applyRepository;
     private final InquiryRepository inquiryRepository;
-    private final InquiryAnswerRepository inquiryAnswerRepository;
     private final EntityManager entityManager;
     private final RedisService redisService;
     private final UserStatusRepository userStatusRepository;
@@ -424,18 +421,12 @@ public class AuthenticationService {
         );
 
         // 답변은 하나만 할 수 있음
-        if(inquiryAnswerRepository.existsByInquiryId(inquiryId)){
+        if(inquiry.getAnswer() != null){
             throw new CustomException(ExceptionCode.INQUIRY_ALREADY_ANSWER);
         }
 
         User adminRef = entityManager.getReference(User.class, adminId);
-        InquiryAnswer answer = InquiryAnswer.builder()
-                .answerer(adminRef)
-                .inquiry(inquiry)
-                .content(requestDTO.content())
-                .build();
-
-        inquiryAnswerRepository.save(answer);
+        inquiry.updateAnswer(requestDTO.content(), adminRef);
 
         // 문의글은 처리 완료
         inquiry.updateStatus(InquiryStatus.PROCESSED);

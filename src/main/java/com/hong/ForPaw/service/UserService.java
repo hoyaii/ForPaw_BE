@@ -8,7 +8,6 @@ import com.hong.ForPaw.core.errors.CustomException;
 import com.hong.ForPaw.core.errors.ExceptionCode;
 import com.hong.ForPaw.domain.Authentication.LoginAttempt;
 import com.hong.ForPaw.domain.Group.GroupRole;
-import com.hong.ForPaw.domain.Inquiry.InquiryAnswer;
 import com.hong.ForPaw.domain.Inquiry.Inquiry;
 import com.hong.ForPaw.domain.Inquiry.InquiryStatus;
 import com.hong.ForPaw.domain.Post.PostType;
@@ -24,7 +23,6 @@ import com.hong.ForPaw.repository.Chat.ChatUserRepository;
 import com.hong.ForPaw.repository.Group.FavoriteGroupRepository;
 import com.hong.ForPaw.repository.Group.GroupUserRepository;
 import com.hong.ForPaw.repository.Group.MeetingUserRepository;
-import com.hong.ForPaw.repository.Inquiry.InquiryAnswerRepository;
 import com.hong.ForPaw.repository.Inquiry.InquiryRepository;
 import com.hong.ForPaw.repository.Post.CommentLikeRepository;
 import com.hong.ForPaw.repository.Post.CommentRepository;
@@ -89,7 +87,6 @@ public class UserService {
     private final CommentLikeRepository commentLikeRepository;
     private final InquiryRepository inquiryRepository;
     private final PostRepository postRepository;
-    private final InquiryAnswerRepository answerRepository;
     private final LoginAttemptRepository loginAttemptRepository;
     private final UserStatusRepository userStatusRepository;
     private final VisitRepository visitRepository;
@@ -587,27 +584,14 @@ public class UserService {
     public UserResponse.FindInquiryListDTO findInquiryList(Long userId){
         List<Inquiry> customerInquiries = inquiryRepository.findAllByQuestionerId(userId);
 
-        List<Long> inquiryIds = customerInquiries.stream()
-                .map(Inquiry::getId)
-                .toList();
-
-        // 답변
-        List<InquiryAnswer> answers = answerRepository.findAllByInquiryIdsWithAnswerer(inquiryIds);
-        Map<Long, InquiryAnswer> inquiryAnswerMap = answers.stream()
-                .collect(Collectors.toMap(inquiryAnswer -> inquiryAnswer.getInquiry().getId(), inquiryAnswer -> inquiryAnswer)
-                );
-
         List<UserResponse.InquiryDTO> inquiryDTOS = customerInquiries.stream()
                 .map(inquiry -> {
-                    InquiryAnswer answer = inquiryAnswerMap.get(inquiry.getId());
                     UserResponse.AnswerDTO answerDTO = null;
 
-                    if (answer != null) {
+                    if(inquiry.getAnswer() != null){
                         answerDTO = new UserResponse.AnswerDTO(
-                                answer.getId(),
-                                answer.getContent(),
-                                answer.getCreatedDate(),
-                                answer.getAnswerer().getName()
+                                inquiry.getAnswer(),
+                                inquiry.getAnswerer().getName()
                         );
                     }
 
