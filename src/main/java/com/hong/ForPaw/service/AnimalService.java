@@ -328,7 +328,8 @@ public class AnimalService {
                 animal.getProcessState(),
                 animal.getNeuter(),
                 animal.getIntroductionTitle(),
-                animal.getIntroductionContent());
+                animal.getIntroductionContent(),
+                animal.isAdopted());
     }
 
     @Transactional
@@ -362,20 +363,24 @@ public class AnimalService {
     @Transactional
     public AnimalResponse.CreateApplyDTO applyAdoption(AnimalRequest.ApplyAdoptionDTO requestDTO, Long userId, Long animalId){
         // 동물이 존재하지 않으면 에러
-        if(!animalRepository.existsById(animalId)){
+        Animal animal = animalRepository.findById(animalId).orElseThrow(
+                () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
+        );
+
+        // 이미 입양된 동물이면 에러
+        if(animal.isAdopted()){
             throw new CustomException(ExceptionCode.ANIMAL_NOT_FOUND);
         }
+
         // 이미 지원하였으면 에러
         if(applyRepository.existsByUserIdAndAnimalId(userId, animalId)){
             throw new CustomException(ExceptionCode.ANIMAL_ALREADY_APPLY);
         }
 
-        Animal animalRef = entityManager.getReference(Animal.class, animalId);
         User userRef = entityManager.getReference(User.class, userId);
-
         Apply apply = Apply.builder()
                 .user(userRef)
-                .animal(animalRef)
+                .animal(animal)
                 .status(ApplyStatus.PROCESSING)
                 .name(requestDTO.name())
                 .tel(requestDTO.tel())

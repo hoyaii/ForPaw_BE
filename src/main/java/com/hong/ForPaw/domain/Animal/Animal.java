@@ -87,11 +87,14 @@ public class Animal extends TimeStamp {
     @Column
     private Long inquiryNum = 0L;
 
+    @Column
+    private boolean isAdopted;
+
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
 
     @Builder
-    public Animal(Long id, Shelter shelter, LocalDate happenDt, String happenPlace, String kind, AnimalType category, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark, String name, String region, String introductionContent, String introductionTitle) {
+    public Animal(Long id, Shelter shelter, LocalDate happenDt, String happenPlace, String kind, AnimalType category, String color, String age, String weight, LocalDate noticeSdt, LocalDate noticeEdt, String profileURL, String processState, String gender, String neuter, String specialMark, String name, String region, String introductionContent, String introductionTitle, boolean isAdopted) {
         this.id = id;
         this.shelter = shelter;
         this.happenDt = happenDt;
@@ -112,13 +115,14 @@ public class Animal extends TimeStamp {
         this.region = region;
         this.introductionContent = introductionContent;
         this.introductionTitle = introductionTitle;
+        this.isAdopted = false;
     }
 
     public void decrementInquiryNum(){
         this.inquiryNum -= 1;
     }
 
-    public void updateProfileURL(String profileURL){
-        this.profileURL = profileURL;
+    public void finishAdoption(){
+        this.isAdopted = true;
     }
 }

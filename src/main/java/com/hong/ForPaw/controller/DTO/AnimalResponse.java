@@ -45,7 +45,8 @@ public class AnimalResponse {
                                     String processState,
                                     String neuter,
                                     String introductionTitle,
-                                    String introductionContent){}
+                                    String introductionContent,
+                                    boolean isAdopted){}
 
     public record FindApplyListDTO(List<ApplyDTO> applies) { }
 

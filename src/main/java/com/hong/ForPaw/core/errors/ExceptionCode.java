@@ -56,6 +56,7 @@ public enum ExceptionCode {
 
     // 동물 관련 에러
     ANIMAL_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 동물을 찾을 수 없습니다."),
+    ANIMAL_ALREADY_ADOPTED(HttpStatus.BAD_REQUEST, "이미 입양된 동물입니다."),
     ANIMAL_NOT_EXIST(HttpStatus.NOT_FOUND, "목록에 동물이 존재하지 않습니다."),
     ANIMAL_ALREADY_APPLY(HttpStatus.BAD_REQUEST, "이미 지원하였습니다."),
     ANIMAL_APPLY_PROCESSED(HttpStatus.BAD_REQUEST, "지원서가 이미 처리되었습니다."),

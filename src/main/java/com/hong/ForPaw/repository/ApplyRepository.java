@@ -21,8 +21,9 @@ public interface ApplyRepository extends JpaRepository<Apply, Long> {
     @Query("SELECT a FROM Apply a WHERE a.removedAt IS NULL")
     List<Apply> findAll();
 
+    @EntityGraph(attributePaths = {"animal"})
     @Query("SELECT a FROM Apply a WHERE a.id = :id AND a.removedAt IS NULL")
-    Optional<Apply> findById(@Param("id") Long id);
+    Optional<Apply> findByIdWithAnimal(@Param("id") Long id);
 
     @EntityGraph(attributePaths = {"animal"})
     @Query("SELECT a FROM Apply a " +

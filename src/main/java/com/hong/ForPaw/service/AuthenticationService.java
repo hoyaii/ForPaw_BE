@@ -303,7 +303,7 @@ public class AuthenticationService {
     public void changeApplyStatus(AuthenticationRequest.ChangeApplyStatusDTO requestDTO, Long adminId){
         checkAdminAuthority(adminId);
 
-        Apply apply = applyRepository.findById(requestDTO.id()).orElseThrow(
+        Apply apply = applyRepository.findByIdWithAnimal(requestDTO.id()).orElseThrow(
             () -> new CustomException(ExceptionCode.APPLY_NOT_FOUND)
         );
 
@@ -312,12 +312,13 @@ public class AuthenticationService {
             throw new CustomException(ExceptionCode.ANIMAL_APPLY_PROCESSED);
         }
 
-        // 현재 상태와 동일한 값이 요청으로 들어옴
-        if(requestDTO.status().equals(apply.getStatus())){
-            throw new CustomException(ExceptionCode.SAME_STATUS);
-        }
-
+        // 지원서 상태 변경
         apply.updateApplyStatus(requestDTO.status());
+
+        // 입양이 완료된거면 입양 완료 상태로 변경
+        if(requestDTO.status().equals(ApplyStatus.PROCESSED)){
+            apply.getAnimal().finishAdoption();
+        }
     }
 
     @Transactional(readOnly = true)
