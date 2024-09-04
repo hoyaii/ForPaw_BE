@@ -394,11 +394,12 @@ public class AnimalService {
 
     @Transactional(readOnly = true)
     public AnimalResponse.FindApplyListDTO findApplyList(Long userId){
-        List<Apply> applies = applyRepository.findAllByUserId(userId);
+        List<Apply> applies = applyRepository.findAllByUserIdWithAnimal(userId);
 
         List<AnimalResponse.ApplyDTO> applyDTOS = applies.stream()
                 .map(apply -> new AnimalResponse.ApplyDTO(
                         apply.getId(),
+                        apply.getAnimal().getId(),
                         apply.getAnimal().getName(),
                         apply.getAnimal().getKind(),
                         apply.getAnimal().getGender(),

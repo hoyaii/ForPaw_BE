@@ -51,7 +51,8 @@ public class AnimalResponse {
 
     public record CreateApplyDTO(Long id) {}
 
-    public record ApplyDTO(Long id,
+    public record ApplyDTO(Long applyId,
+                           Long animalId,
                            String animalName,
                            String kind,
                            String gender,

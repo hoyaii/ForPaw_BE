@@ -24,10 +24,11 @@ public interface ApplyRepository extends JpaRepository<Apply, Long> {
     @Query("SELECT a FROM Apply a WHERE a.id = :id AND a.removedAt IS NULL")
     Optional<Apply> findById(@Param("id") Long id);
 
+    @EntityGraph(attributePaths = {"animal"})
     @Query("SELECT a FROM Apply a " +
             "JOIN a.user u " +
             "WHERE u.id = :userId AND a.removedAt IS NULL")
-    List<Apply> findAllByUserId(@Param("userId") Long userId);
+    List<Apply> findAllByUserIdWithAnimal(@Param("userId") Long userId);
 
     @Query("SELECT a FROM Apply a WHERE a.status = 'PROCESSING' AND a.removedAt IS NULL")
     List<Apply> findAllProcessing();
