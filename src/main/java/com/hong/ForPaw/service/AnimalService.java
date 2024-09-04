@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -571,6 +572,10 @@ public class AnimalService {
         // 조회 기록이 없어서, 추천하는 ID 목록이 없으면 사용자 위치 기반으로 가져온다
         if (recommendedAnimalIds.isEmpty()) {
             recommendedAnimalIds = findAnimalIdListByUserLocation(userId);
+        }
+
+        if (recommendedAnimalIds.isEmpty()) {
+            recommendedAnimalIds = animalRepository.findAllIds(pageable).getContent();
         }
 
         return recommendedAnimalIds;

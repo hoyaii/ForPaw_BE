@@ -37,6 +37,7 @@ public class UserController {
         Map<String, String> tokens = userService.login(requestDTO, request);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, userService.createRefreshTokenCookie(tokens.get("refreshToken")))
+                .header(HttpHeaders.SET_COOKIE, userService.createAccessTokenCookie(tokens.get("accessToken")))
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokens.get("accessToken"))));
     }
 

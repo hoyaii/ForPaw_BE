@@ -737,6 +737,16 @@ public class UserService {
                 .build().toString();
     }
 
+    public String createAccessTokenCookie(String refreshToken) {
+        return ResponseCookie.from(REFRESH_TOKEN_KEY_PREFIX, refreshToken)
+                .httpOnly(false)
+                .secure(true)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(JWTProvider.REFRESH_EXP_SEC)
+                .build().toString();
+    }
+
     // 알파벳, 숫자를 조합해서 인증 코드 생성
     private String generateVerificationCode() {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
