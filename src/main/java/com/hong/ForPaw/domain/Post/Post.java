@@ -68,6 +68,9 @@ public class Post extends TimeStamp {
     @Column
     private Double hotPoint = 0.0;
 
+    @Column
+    private boolean isBlocked;
+
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
 
@@ -78,11 +81,7 @@ public class Post extends TimeStamp {
         this.postType = postType;
         this.title = title;
         this.content = content;
-    }
-
-    public void updateTitleAndContent(String title, String content){
-        this.title = title;
-        this.content = content;
+        this.isBlocked = false;
     }
 
     // 연관관계 메서드
@@ -96,6 +95,15 @@ public class Post extends TimeStamp {
         child.updateParent(this);
     }
 
+    public void updateTitleAndContent(String title, String content){
+        this.title = title;
+        this.content = content;
+    }
+
+    public void updateTitle(String title){
+        this.title = title;
+    }
+
     public void updateParent(Post parent){
         this.parent = parent;
     }
@@ -105,4 +113,6 @@ public class Post extends TimeStamp {
     }
 
     public void updateHotPoint(Double hotPoint) { this.hotPoint = hotPoint;}
+
+    public void processBlock() { this.isBlocked = true;}
 }

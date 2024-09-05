@@ -505,7 +505,8 @@ public class AuthenticationService {
             Post post = postRepository.findById(report.getContentId()).orElseThrow(
                     () -> new CustomException(ExceptionCode.BAD_APPROACH)
             );
-            post.updateTitleAndContent(POST_SCREENED, POST_SCREENED);
+            post.updateTitle(POST_SCREENED);
+            post.processBlock();
         }
         // 댓글은 가림 처리
         else if (report.getContentType() == ContentType.COMMENT) {

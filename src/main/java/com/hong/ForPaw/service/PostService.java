@@ -163,7 +163,8 @@ public class PostService {
                             post.getCreatedDate(),
                             post.getCommentNum(),
                             likeNum,
-                            imageURL);
+                            imageURL,
+                            post.isBlocked());
                 })
                 .toList();
 
@@ -189,7 +190,8 @@ public class PostService {
                             post.getCreatedDate(),
                             post.getCommentNum(),
                             likeNum,
-                            imageURL);
+                            imageURL,
+                            post.isBlocked());
                 })
                 .toList();
 

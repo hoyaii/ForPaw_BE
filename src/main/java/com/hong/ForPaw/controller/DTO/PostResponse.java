@@ -27,7 +27,8 @@ public class PostResponse {
                           LocalDateTime date,
                           Long commentNum,
                           Long likeNum,
-                          String imageURL){}
+                          String imageURL,
+                          boolean isBlocked){}
 
     public record QnaDTO(Long id,
                          String nickName,
