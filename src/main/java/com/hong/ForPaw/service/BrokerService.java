@@ -133,7 +133,7 @@ public class BrokerService {
             chatRoomRepository.findUsersByChatRoomId(messageDTO.chatRoomId())
                     .forEach(user -> {
                         String content = "새로문 메시지: " + messageDTO.content();
-                        String redirectURL = "chatRooms/" + messageDTO.chatRoomId();
+                        String redirectURL = "/chatting/" + messageDTO.chatRoomId();
                         LocalDateTime date = LocalDateTime.now();
 
                         AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(

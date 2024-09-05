@@ -39,7 +39,7 @@ public class Alarm extends TimeStamp {
     private LocalDateTime readDate;
 
     // "ALTER TABLE alarm_tb MODIFY COLUMN alarm_type VARCHAR(20)"을 통해 늘려야함
-    @Column
+    @Column(length = 20)
     @Enumerated(EnumType.STRING)
     private AlarmType alarmType;
 

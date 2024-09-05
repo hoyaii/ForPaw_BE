@@ -139,7 +139,7 @@ public class PostService {
 
         // 알림 생성
         String content = "새로운 답변: " + requestDTO.content();
-        String redirectURL = "post/"+parentPostId+"/entire";
+        String redirectURL = "/community/question/" + parentPostId;
         createAlarm(parentPost.getUser().getId(), content, redirectURL, AlarmType.ANSWER);
 
         return new PostResponse.CreateAnswerDTO(post.getId());
@@ -546,7 +546,11 @@ public class PostService {
         );
 
         // 질문글에는 댓글을 달 수 없다 (댓글 대신 답변이 달리니)
-        if(postRepository.findPostTypeById(postId).get().equals(PostType.QUESTION)){
+        PostType postType = postRepository.findPostTypeById(postId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
+        );
+
+        if(postType.equals(PostType.QUESTION)){
             throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
         }
 
@@ -569,7 +573,8 @@ public class PostService {
 
         // 알람 생성
         String content = "새로운 댓글: " + requestDTO.content();
-        String redirectURL = "post/"+postId;
+        String queryParam = postType.name().toLowerCase();
+        String redirectURL = "/community/" + postId + "?type=" + queryParam;
         createAlarm(writerId, content, redirectURL, AlarmType.COMMENT);
 
         return new PostResponse.CreateCommentDTO(comment.getId());
@@ -611,7 +616,9 @@ public class PostService {
 
         // 알람 생성
         String content = "새로운 대댓글: " + requestDTO.content();
-        String redirectURL = "posts/"+postId;
+        PostType postType = postRepository.findPostTypeById(postId).get();
+        String queryParam = postType.name().toLowerCase();
+        String redirectURL = "/community/" + postId + "?type=" + queryParam;
         createAlarm(parentComment.getUser().getId(), content, redirectURL, AlarmType.COMMENT);
 
         return new PostResponse.CreateCommentDTO(comment.getId());

@@ -38,7 +38,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
-        Enumeration<String> headerNames = request.getHeaderNames();
+        /*Enumeration<String> headerNames = request.getHeaderNames();
         System.out.println("*********************************************************************");
         if (headerNames != null) {
             while (headerNames.hasMoreElements()) {
@@ -47,7 +47,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
                 System.out.println(headerName + ": " + headerValue);
             }
         }
-        System.out.println("*********************************************************************");
+        System.out.println("*********************************************************************");*/
 
         // 엑세스 토큰은 '헤더'에서 추출
         String authorizationHeader = request.getHeader(JWTProvider.AUTHORIZATION);
@@ -76,14 +76,14 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
             user = authenticateRefreshToken(refreshToken);
 
             // 액세스 토큰과 리프레시 토큰 갱신 (재발급 로직)
-            /*if (user != null) {
+            if (user != null) {
                 accessToken = JWTProvider.createAccessToken(user);
                 refreshToken = JWTProvider.createRefreshToken(user);
 
                 updateToken(user, accessToken, refreshToken);
                 CookieUtils.setCookieToResponse(JWTProvider.ACCESS_TOKEN_COOKIE_KEY, accessToken, JWTProvider.ACCESS_EXP_SEC, true, false, response);
                 CookieUtils.setCookieToResponse(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, refreshToken, JWTProvider.REFRESH_EXP_SEC, true, true, response);
-            }*/
+            }
         }
 
         // 엑세스 토큰과 리프레쉬 토큰 모두 검증 실패 (만료 됐거나 잘못된 형식)

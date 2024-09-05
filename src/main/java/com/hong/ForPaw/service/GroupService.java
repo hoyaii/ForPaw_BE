@@ -506,7 +506,7 @@ public class GroupService {
 
         // 알람 생성
         String content = "가입이 승인 되었습니다!";
-        String redirectURL = "groups/" + groupId + "/detail";
+        String redirectURL = "/volunteer/" + groupId;
         createAlarm(applicantId, content, redirectURL, AlarmType.JOIN);
 
         // 신청자는 그룹 채팅방에 참여됨
@@ -542,7 +542,7 @@ public class GroupService {
 
         // 알람 생성
         String content = "가입이 거절 되었습니다.";
-        String redirectURL = "groups/" + groupId + "/detail";
+        String redirectURL = "/volunteer/" + groupId;
         createAlarm(applicantId, content, redirectURL, AlarmType.JOIN);
     }
 
@@ -580,7 +580,7 @@ public class GroupService {
 
         for(User user : users){
             String content = "공지: " + requestDTO.title();
-            String redirectURL = "posts/" + notice.getId() + "/entire";
+            String redirectURL = "/volunteer/" + groupId + "/notices/" + notice.getId();
             createAlarm(user.getId(), content, redirectURL, AlarmType.NOTICE);
         }
 
@@ -722,7 +722,7 @@ public class GroupService {
 
         for(User user : users){
             String content = "새로운 정기 모임: " + requestDTO.name();
-            String redirectURL = "groups/" + groupId + "/meetings/"+meeting.getId();
+            String redirectURL = "/volunteer/" + groupId;
             createAlarm(user.getId(), content, redirectURL, AlarmType.NEW_MEETING);
         }
         
