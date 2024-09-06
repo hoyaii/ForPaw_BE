@@ -567,15 +567,15 @@ public class AnimalService {
                 .retrieve()
                 .bodyToMono(AnimalResponse.RecommendationDTO.class)
                 .map(AnimalResponse.RecommendationDTO::recommendedAnimals)
+                .onErrorResume(e -> {
+                    log.info("FastAPI 호술 시 에러 발생: " + e.getMessage());
+                    return Mono.just(Collections.emptyList());
+                })
                 .block();
 
         // 조회 기록이 없어서, 추천하는 ID 목록이 없으면 사용자 위치 기반으로 가져온다
         if (recommendedAnimalIds.isEmpty()) {
             recommendedAnimalIds = findAnimalIdListByUserLocation(userId);
-        }
-
-        if (recommendedAnimalIds.isEmpty()) {
-            recommendedAnimalIds = animalRepository.findAllIds(pageable).getContent();
         }
 
         return recommendedAnimalIds;
