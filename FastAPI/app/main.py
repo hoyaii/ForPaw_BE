@@ -1,7 +1,7 @@
 # main.py
 from fastapi import FastAPI, BackgroundTasks
 import random
-from app.services import load_and_vectorize_animal_data, get_similar_animals, update_new_animals, redis_client, generate_animal_introduction, get_animal_ids_with_null_title, update_animal_introductions, schedule_process_animal_introduction
+from app.services import load_and_vectorize_animal_data, get_similar_animals, update_animal_matrix, redis_client, generate_animal_introduction, get_animal_ids_with_null_title, update_animal_introductions, schedule_process_animal_introduction
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from functools import partial
@@ -19,11 +19,11 @@ async def lifespan(app: FastAPI):
     scheduler = AsyncIOScheduler()
 
     # 매일 자정 10분에 process_animal_introduction 실행
-    scheduler.add_job(schedule_process_animal_introduction, 'cron', hour=0, minute=10)
+    # scheduler.add_job(schedule_process_animal_introduction, 'cron', hour=0, minute=10)
 
     # 매일 16시 26분에 update_new_animals 실행
-    scheduler.add_job(partial(update_new_animals, animal_index, animal_matrix), 'cron', hour=16, minute=26)
-    scheduler.start()
+    #scheduler.add_job(partial(update_animal_matrix, animal_index, animal_matrix), 'cron', hour=16, minute=26)
+    #scheduler.start()
 
     try:
         yield
@@ -60,6 +60,8 @@ async def recommend_animal(request: RecommendRequest):
 
 @app.post("/introduce/animal")
 async def process_animal_introduction(background_tasks: BackgroundTasks):
+    update_animal_matrix(animal_index, animal_matrix)
+
     animal_ids = await get_animal_ids_with_null_title()
     background_tasks.add_task(update_animal_introductions, animal_ids)
     

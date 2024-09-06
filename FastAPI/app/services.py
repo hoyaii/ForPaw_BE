@@ -85,7 +85,7 @@ async def get_similar_animals(animal_id, animal_index, animal_matrix):
     return similar_animal_ids
 
 # MySQL에 저장된 새로운 동물 데이터를 백터 DB에 업데이트
-async def update_new_animals(animal_index, animal_matrix):
+async def update_animal_matrix(animal_index, animal_matrix):
     async with get_db_session(AsyncSessionLocal) as db:
         # 현재 animal_index에서 기존의 모든 동물 ID를 가져옴
         animals = await find_all_animals(db)
