@@ -211,7 +211,8 @@ public class PostService {
                         post.getTitle(),
                         post.getContent(),
                         post.getCreatedDate(),
-                        post.getAnswerNum()))
+                        post.getAnswerNum(),
+                        post.isBlocked()))
                 .collect(Collectors.toList());
 
         return new PostResponse.FindQnaListDTO(qnaDTOS, postPage.isLast());
@@ -237,6 +238,7 @@ public class PostService {
                             post.getCommentNum(),
                             likeNum,
                             imageURL,
+                            post.isBlocked(),
                             post.getPostType().toString().toLowerCase());
                 })
                 .toList();
@@ -258,7 +260,8 @@ public class PostService {
                         post.getTitle(),
                         post.getContent(),
                         post.getCreatedDate(),
-                        post.getAnswerNum()))
+                        post.getAnswerNum(),
+                        post.isBlocked()))
                 .toList();
 
         return new PostResponse.FindQnaListDTO(qnaDTOS, postPage.isLast());
@@ -280,7 +283,8 @@ public class PostService {
                         post.getTitle(),
                         post.getContent(),
                         post.getCreatedDate(),
-                        post.getAnswerNum()))
+                        post.getAnswerNum(),
+                        post.isBlocked()))
                 .toList();
 
         return new PostResponse.FindQnaListDTO(qnaDTOS, postPage.isLast());
@@ -299,7 +303,8 @@ public class PostService {
                         comment.getContent(),
                         comment.getCreatedDate(),
                         comment.getPost().getTitle(),
-                        comment.getPost().getCommentNum()
+                        comment.getPost().getCommentNum(),
+                        comment.getPost().isBlocked()
                 ))
                 .toList();
 

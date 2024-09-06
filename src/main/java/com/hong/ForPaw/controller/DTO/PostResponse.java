@@ -36,7 +36,8 @@ public class PostResponse {
                          String title,
                          String content,
                          LocalDateTime date,
-                         Long answerNum) {}
+                         Long answerNum,
+                         boolean isBlocked) {}
 
     public record MyPostDTO(Long id,
                            String nickName,
@@ -46,6 +47,7 @@ public class PostResponse {
                            Long commentNum,
                            Long likeNum,
                            String imageURL,
+                           boolean isBlocked,
                            String postType) {}
 
     public record PostImageDTO(Long id, String imageURL) {}
@@ -101,7 +103,8 @@ public class PostResponse {
                                String content,
                                LocalDateTime date,
                                String title,
-                               Long commentNum){}
+                               Long commentNum,
+                               boolean isBlocked){}
 
     public record ReplyDTO(Long id,
                            String nickName,
