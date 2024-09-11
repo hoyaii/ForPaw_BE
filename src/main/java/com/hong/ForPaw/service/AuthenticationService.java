@@ -133,7 +133,10 @@ public class AuthenticationService {
             ));
 
         List<AuthenticationResponse.HourlyVisitorDTO> hourlyVisitorDTOS = hourlyVisitors.entrySet().stream()
-                .map(entry -> new AuthenticationResponse.HourlyVisitorDTO(LocalDateTime.of(LocalDate.now(), entry.getKey()), entry.getValue()))
+                .map(entry -> new AuthenticationResponse.HourlyVisitorDTO(
+                        LocalDateTime.of(LocalDate.now(),
+                                entry.getKey()),
+                        entry.getValue()))
                 .sorted(Comparator.comparing(AuthenticationResponse.HourlyVisitorDTO::hour))
                 .collect(Collectors.toList());
 

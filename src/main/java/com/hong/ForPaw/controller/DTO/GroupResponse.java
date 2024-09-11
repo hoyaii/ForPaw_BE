@@ -20,7 +20,7 @@ public class GroupResponse {
 
     public record FindAllGroupListDTO(List<RecommendGroupDTO> recommendGroups,
                                       List<NewGroupDTO> newGroups,
-                                      List<LocalGroupDTO> localGroups,
+                                      //List<LocalGroupDTO> localGroups,
                                       List<MyGroupDTO> myGroups) {}
 
     public record FindLocalGroupListDTO(List<LocalGroupDTO> localGroups) {}
@@ -40,7 +40,9 @@ public class GroupResponse {
                                     District district,
                                     String profileURL,
                                     Long likeNum,
-                                    boolean isLike) {}
+                                    boolean isLike,
+                                    boolean isShelterOwns,
+                                    String shelterName) {}
 
     public record NewGroupDTO(Long id,
                               String name,
@@ -58,7 +60,9 @@ public class GroupResponse {
                                 District district,
                                 String profileURL,
                                 Long likeNum,
-                                boolean isLike) {}
+                                boolean isLike,
+                                boolean isShelterOwns,
+                                String shelterName) {}
 
     public record MyGroupDTO(Long id,
                              String name,
@@ -69,7 +73,9 @@ public class GroupResponse {
                              District district,
                              String profileURL,
                              Long likeNum,
-                             boolean isLike) {}
+                             boolean isLike,
+                             boolean isShelterOwns,
+                             String shelterName) {}
 
     public record FindGroupDetailByIdDTO(String profileURL,
                                          String name,

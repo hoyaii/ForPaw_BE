@@ -86,6 +86,8 @@ public class GroupService {
                 .category(requestDTO.category())
                 .profileURL(requestDTO.profileURL())
                 .maxNum(requestDTO.maxNum())
+                .isShelterOwns(requestDTO.isShelterOwns())
+                .shelterName(requestDTO.shelterName())
                 .build();
 
         groupRepository.save(group);
@@ -138,7 +140,16 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
 
-        return new GroupResponse.FindGroupByIdDTO(group.getName(), group.getProvince(), group.getDistrict(), group.getSubDistrict(), group.getDescription(), group.getCategory(), group.getProfileURL(), group.getMaxNum());
+        return new GroupResponse.FindGroupByIdDTO(
+                group.getName(),
+                group.getProvince(),
+                group.getDistrict(),
+                group.getSubDistrict(),
+                group.getDescription(),
+                group.getCategory(),
+                group.getProfileURL(),
+                group.getMaxNum()
+        );
     }
 
     @Transactional
@@ -188,7 +199,7 @@ public class GroupService {
         List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = findRecommendGroupList(userId, province, likedGroupIdList);
 
         // 지역 그룹 찾기
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = findLocalGroupList(userId, province, district, likedGroupIdList, pageable);
+        // List<GroupResponse.LocalGroupDTO> localGroupDTOS = findLocalGroupList(userId, province, district, likedGroupIdList, pageable);
 
         // 새 그룹 찾기
         List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroupList(userId, province, pageable);
@@ -196,7 +207,7 @@ public class GroupService {
         // 내 그룹 찾기, 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
         List<GroupResponse.MyGroupDTO> myGroupDTOS = userId != null ? findMyGroupList(userId, likedGroupIdList, pageable) : Collections.emptyList();
 
-        return new GroupResponse.FindAllGroupListDTO(recommendGroupDTOS, newGroupDTOS, localGroupDTOS, myGroupDTOS);
+        return new GroupResponse.FindAllGroupListDTO(recommendGroupDTOS, newGroupDTOS, myGroupDTOS);
     }
 
     @Transactional(readOnly = true)
@@ -216,7 +227,9 @@ public class GroupService {
                             group.getDistrict(),
                             group.getProfileURL(),
                             likeNum,
-                            likedGroupIds.contains(group.getId()));
+                            likedGroupIds.contains(group.getId()),
+                            group.isShelterOwns(),
+                            group.getShelterName());
                 })
                 .collect(Collectors.toList());
     }
@@ -269,7 +282,9 @@ public class GroupService {
                             group.getDistrict(),
                             group.getProfileURL(),
                             likeNum,
-                            likedGroupIds.contains(group.getId()));
+                            likedGroupIds.contains(group.getId()),
+                            group.isShelterOwns(),
+                            group.getShelterName());
                 })
                 .collect(Collectors.toList());
     }
@@ -836,7 +851,9 @@ public class GroupService {
                             group.getDistrict(),
                             group.getProfileURL(),
                             likeNum,
-                            likedGroupIds.contains(group.getId()));
+                            likedGroupIds.contains(group.getId()),
+                            group.isShelterOwns(),
+                            group.getShelterName());
                 })
                 .collect(Collectors.toList());
 
@@ -987,7 +1004,9 @@ public class GroupService {
                             group.getDistrict(),
                             group.getProfileURL(),
                             likeNum,
-                            likedGroupIds.contains(group.getId()));
+                            likedGroupIds.contains(group.getId()),
+                            group.isShelterOwns(),
+                            group.getShelterName());
                 })
                 .collect(Collectors.toList());
     }

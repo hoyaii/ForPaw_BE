@@ -25,7 +25,9 @@ public class GroupRequest {
             String category,
             @NotBlank
             String profileURL,
-            Long maxNum){}
+            Long maxNum,
+            boolean isShelterOwns,
+            String shelterName){}
 
     public record UpdateGroupDTO(
             @NotBlank(message = "그룹의 이름을 입력해주세요.")

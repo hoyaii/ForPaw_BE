@@ -48,8 +48,14 @@ public class Group extends TimeStamp {
     @Column
     private Long participantNum = 0L;
 
+    @Column
+    private boolean isShelterOwns;
+
+    @Column
+    private String shelterName;
+
     @Builder
-    public Group(String name, Province province, District district, String subDistrict, String description, String category, String profileURL, Long maxNum) {
+    public Group(String name, Province province, District district, String subDistrict, String description, String category, String profileURL, Long maxNum, boolean isShelterOwns, String shelterName) {
         this.name = name;
         this.province = province;
         this.district = district;
@@ -58,6 +64,8 @@ public class Group extends TimeStamp {
         this.category = category;
         this.profileURL = profileURL;
         this.maxNum = maxNum;
+        this.isShelterOwns = false;
+        this.shelterName = shelterName;
     }
 
     public void updateInfo(String name, Province province, District district, String subDistrict, String description, String category, String profileURL, Long maxNum){
