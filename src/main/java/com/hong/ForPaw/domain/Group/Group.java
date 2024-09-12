@@ -64,7 +64,7 @@ public class Group extends TimeStamp {
         this.category = category;
         this.profileURL = profileURL;
         this.maxNum = maxNum;
-        this.isShelterOwns = false;
+        this.isShelterOwns = isShelterOwns;
         this.shelterName = shelterName;
     }
 
