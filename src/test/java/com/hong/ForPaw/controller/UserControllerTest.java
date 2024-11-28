@@ -1,9 +1,9 @@
 package com.hong.ForPaw.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hong.ForPaw.controller.DTO.UserRequest;
-import com.hong.ForPaw.domain.District;
-import com.hong.ForPaw.domain.Province;
+import com.hong.forapw.controller.dto.UserRequest;
+import com.hong.forapw.domain.District;
+import com.hong.forapw.domain.Province;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
