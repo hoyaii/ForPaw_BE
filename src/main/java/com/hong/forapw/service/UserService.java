@@ -133,7 +133,6 @@ public class UserService {
     @Value("${social.login.redirect.uri}")
     private String redirectLoginUri;
 
-    private final SpringTemplateEngine templateEngine;
     private static final String ADMIN_NAME = "admin";
     private static final String MAIL_TEMPLATE_FOR_CODE = "verification_code_email.html";
     private static final String MAIL_TEMPLATE_FOR_LOCK_ACCOUNT = "lock_account.html";
@@ -151,7 +150,6 @@ public class UserService {
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String AUTH_CODE_GRANT_TYPE = "authorization_code";
     private static final String UNKNOWN = "unknown";
-    private static final String UTF_EIGHT_ENCODING = "UTF-8";
     private static final String[] IP_HEADER_CANDIDATES = {"X-Forwarded-For", "Proxy-Client-IP", "WL-Proxy-Client-IP", "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR"};
     private static final String CODE_TYPE_RECOVERY = "recovery";
     private static final long VERIFICATION_CODE_EXPIRATION_MS = 175 * 1000L;
@@ -300,16 +298,10 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserResponse.CheckLocalAccountExistDTO checkLocalAccountExist(UserRequest.EmailDTO requestDTO){
-        Optional<User> userOP = userRepository.findByEmail(requestDTO.email());
-        boolean isValid = userOP.isPresent();
-        boolean isLocal = false;
-
-        if(isValid){
-            isLocal = userOP.get().getAuthProvider().equals(AuthProvider.LOCAL);
-        }
-
-        return new UserResponse.CheckLocalAccountExistDTO(isValid, isLocal);
+    public UserResponse.CheckLocalAccountExistDTO checkLocalAccountExist(UserRequest.EmailDTO requestDTO) {
+        return userRepository.findByEmail(requestDTO.email())
+                .map(user -> new UserResponse.CheckLocalAccountExistDTO(true, user.isLocalJoined()))
+                .orElse(new UserResponse.CheckLocalAccountExistDTO(false, false));
     }
 
     @Transactional(readOnly = true)
