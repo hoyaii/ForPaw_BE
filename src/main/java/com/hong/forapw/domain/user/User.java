@@ -23,7 +23,7 @@ public class User extends TimeStamp {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user")
     private UserStatus status;
 
     @Column
@@ -104,5 +104,9 @@ public class User extends TimeStamp {
 
     public void updateStatus(UserStatus status) {
         this.status = status;
+    }
+
+    public boolean isExitMember(){
+        return this.removedAt != null;
     }
 }

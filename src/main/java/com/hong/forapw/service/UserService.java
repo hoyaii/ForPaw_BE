@@ -192,25 +192,14 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
         );
 
-        // 탈퇴한 계정
-        if(user.getRemovedAt() != null){
-            throw new CustomException(ExceptionCode.USER_ALREADY_EXIT);
-        }
-
-        // 계정 정지 상태 체크
-        checkAccountSuspension(user);
-
-        // 로그인 횟수 체크 => 실패 회수 초과 시 에러 던짐
+        checkIsExitMember(user);
+        checkIsActiveMember(user);
         Long loginFailNum = checkLoginFailures(user);
 
-        // 비밀번호가 일치하지 않음
-        if(!passwordEncoder.matches(requestDTO.password(), user.getPassword())){
-            redisService.storeValue(LOGIN_FAIL_KEY_PREFIX, user.getId().toString(), Long.toString(++loginFailNum), 300000L); // 5분
-            String message = String.format("로그인에 실패했습니다. 이메일 또는 비밀번호를 확인해 주세요. (%d회 실패)", loginFailNum);
-            throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG, message);
+        if(isPasswordUnmatched(requestDTO, user)){
+            infoLoginFail(user, loginFailNum);
         }
 
-        // 로그인 IP 로깅
         recordLoginAttempt(user, request);
 
         return createToken(user);
@@ -847,7 +836,7 @@ public class UserService {
         }
 
         // 정지 상태 체크
-        checkAccountSuspension(user);
+        checkIsActiveMember(user);
 
         // 로그인 IP 로깅
         recordLoginAttempt(user, request);
@@ -941,7 +930,23 @@ public class UserService {
         }
     }
 
-    private void checkAccountSuspension(User user){
+    private void checkIsExitMember(User user) {
+        if(user.isExitMember()){
+            throw new CustomException(ExceptionCode.USER_ALREADY_EXIT);
+        }
+    }
+
+    private boolean isPasswordUnmatched(UserRequest.LoginDTO requestDTO, User user) {
+        return !passwordEncoder.matches(requestDTO.password(), user.getPassword());
+    }
+
+    private void infoLoginFail(User user, Long loginFailNum) {
+        redisService.storeValue(LOGIN_FAIL_KEY_PREFIX, user.getId().toString(), Long.toString(++loginFailNum), 300000L); // 5분
+        String message = String.format("로그인에 실패했습니다. 이메일 또는 비밀번호를 확인해 주세요. (%d회 실패)", loginFailNum);
+        throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG, message);
+    }
+
+    private void checkIsActiveMember(User user){
         if(!user.getStatus().isActive()){
             throw new CustomException(ExceptionCode.USER_SUSPENDED);
         }
