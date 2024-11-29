@@ -1,4 +1,4 @@
-package com.hong.forapw.core.utils;
+package com.hong.forapw.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -20,7 +20,7 @@ import java.util.stream.IntStream;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class EmailUtils {
+public class EmailService {
 
     private final TemplateEngine templateEngine;
     private final JavaMailSender mailSender;

@@ -6,7 +6,6 @@ import com.hong.forapw.controller.dto.UserRequest;
 import com.hong.forapw.controller.dto.UserResponse;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
-import com.hong.forapw.core.utils.EmailUtils;
 import com.hong.forapw.domain.authentication.LoginAttempt;
 import com.hong.forapw.domain.group.GroupRole;
 import com.hong.forapw.domain.inquiry.Inquiry;
@@ -64,7 +63,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.hong.forapw.core.utils.EmailUtils.generateVerificationCode;
+import static com.hong.forapw.service.EmailService.generateVerificationCode;
 import static com.hong.forapw.core.utils.MailTemplate.ACCOUNT_SUSPENSION;
 import static com.hong.forapw.core.utils.MailTemplate.VERIFICATION_CODE;
 
@@ -93,7 +92,7 @@ public class UserService {
     private final WebClient webClient;
     private final BrokerService brokerService;
     private final EntityManager entityManager;
-    private final EmailUtils mailUtils;
+    private final EmailService emailService;
 
     @Value("${kakao.key}")
     private String kakaoApiKey;
@@ -282,7 +281,7 @@ public class UserService {
         storeVerificationCode(email, codeType, verificationCode);
 
         Map<String, Object> templateModel = createTemplateModel(verificationCode);
-        mailUtils.sendMail(email, VERIFICATION_CODE.getSubject(), MAIL_TEMPLATE_FOR_CODE, templateModel);
+        emailService.sendMail(email, VERIFICATION_CODE.getSubject(), MAIL_TEMPLATE_FOR_CODE, templateModel);
     }
 
     public UserResponse.VerifyEmailCodeDTO verifyCode(UserRequest.VerifyCodeDTO requestDTO, String codeType){
@@ -623,7 +622,7 @@ public class UserService {
             redisService.storeValue(LOGIN_FAIL_DAILY_KEY_PREFIX, user.getId().toString(), loginFailNumDaily.toString(), 86400000L);  // 24시간
 
             if(loginFailNumDaily == 3L){
-                mailUtils.sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), MAIL_TEMPLATE_FOR_LOCK_ACCOUNT, new HashMap<>());
+                emailService.sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), MAIL_TEMPLATE_FOR_LOCK_ACCOUNT, new HashMap<>());
             }
 
             throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
