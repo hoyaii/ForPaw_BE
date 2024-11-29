@@ -188,7 +188,7 @@ public class UserService {
 
     @Transactional
     public Map<String, String> login(UserRequest.LoginDTO requestDTO, HttpServletRequest request) throws MessagingException {
-        User user = userRepository.findByEmailWithUserStatusAndRemoved(requestDTO.email()).orElseThrow(
+        User user = userRepository.findByEmailWithRemoved(requestDTO.email()).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
         );
 
@@ -207,13 +207,12 @@ public class UserService {
 
     @Transactional
     public Map<String, String> kakaoLogin(String code, HttpServletRequest request) {
-        // 카카오 엑세스 토큰 획득 => 유저 정보 획득
         KakaoOauthDTO.TokenDTO token = getKakaoToken(code);
         KakaoOauthDTO.UserInfoDTO userInfo = getKakaoUserInfo(token.access_token());
 
         String email = userInfo.kakao_account().email();
 
-        return processOAuthLogin(email, request);
+        return processSocialLogin(email, request);
     }
 
     @Transactional
@@ -224,7 +223,7 @@ public class UserService {
 
         String email = userInfoDTO.email();
 
-        return processOAuthLogin(email, request);
+        return processSocialLogin(email, request);
     }
 
     @Transactional
@@ -812,36 +811,30 @@ public class UserService {
         return tokens;
     }
 
-    private Map<String, String> processOAuthLogin(String email, HttpServletRequest request) {
-        // 아예 가입되어 있지 않음 => email을 넘겨서 소셜 회원가입을 진행하도록 함
-        boolean isNotJoined = userRepository.findByEmail(email).isEmpty();
-        if(isNotJoined){
-            Map<String, String> response = new HashMap<>();
-            response.put("email", email);
-            return response;
+    private Map<String, String> processSocialLogin(String email, HttpServletRequest request) {
+        Optional<User> userOP = userRepository.findByEmailWithRemoved(email);
+        if (userOP.isEmpty()) {
+            return createEmailMap(email);
         }
 
-        // 로컬로 이미 가입 했는지 체크 => 로컬로 가입 했으면 그냥 리턴
-        if(userRepository.existsByEmailAndAuthProviders(email, List.of(AuthProvider.LOCAL))){
-            return new HashMap<>();
-        }
-
-        // 소셜 로그인으로 가입한 계정이면 계속 진행
-        User user = userRepository.findByEmailWithUserStatusAndRemoved(email).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
-        );
-
-        if(user.getRemovedAt() != null){
-            throw new CustomException(ExceptionCode.USER_ALREADY_EXIT);
-        }
-
-        // 정지 상태 체크
+        User user = userOP.get();
+        checkIsExitMember(user);
         checkIsActiveMember(user);
+        checkIsLocalJoined(user);
 
-        // 로그인 IP 로깅
         recordLoginAttempt(user, request);
 
         return createToken(user);
+    }
+
+    private Map<String, String> createEmailMap(String email) {
+        return Map.of("email", email);
+    }
+
+    private void checkIsLocalJoined(User user){
+        if(user.isLocalJoined()){
+            throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
+        }
     }
 
     private KakaoOauthDTO.TokenDTO getKakaoToken(String code) {
@@ -947,7 +940,7 @@ public class UserService {
     }
 
     private void checkIsActiveMember(User user){
-        if(!user.getStatus().isActive()){
+        if(user.isUnActive()){
             throw new CustomException(ExceptionCode.USER_SUSPENDED);
         }
     }

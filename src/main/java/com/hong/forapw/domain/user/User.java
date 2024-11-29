@@ -109,4 +109,12 @@ public class User extends TimeStamp {
     public boolean isExitMember(){
         return this.removedAt != null;
     }
+
+    public boolean isUnActive(){
+        return !this.status.isActive();
+    }
+
+    public boolean isLocalJoined(){
+        return this.authProvider.equals(AuthProvider.LOCAL);
+    }
 }
