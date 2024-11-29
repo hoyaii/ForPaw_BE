@@ -650,7 +650,7 @@ public class GroupService {
         postRepository.hardDeleteByGroupId(groupId);
 
         // 레디스에 저장된 좋아요 수 삭제
-        redisService.removeData(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString());
+        redisService.removeValue(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString());
 
         // 그룹 채팅방 삭제
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId).orElseThrow(

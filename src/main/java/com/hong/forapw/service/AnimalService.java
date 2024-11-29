@@ -156,7 +156,7 @@ public class AnimalService {
         // 1. 캐싱한 '좋아요 수' 삭제
         expiredAnimals.forEach(animal -> {
             updatedShelters.add(animal.getShelter());
-            redisService.removeData(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
+            redisService.removeValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
         });
 
         // 2. 유저가 검색한 동물 기록에서 삭제
@@ -304,7 +304,7 @@ public class AnimalService {
         // 로그인을 한 경우, 추천을 위해 검색한 동물의 id 저장 (5개까지만 저장된다)
         if (userId != null) {
             String key = ANIMAL_SEARCH_KEY_PREFIX + ":" + userId;
-            redisService.addListElementWithLimit(key, animalId.toString(), 5L);
+            redisService.addListElement(key, animalId.toString(), 5L);
         }
 
         Animal animal = animalRepository.findById(animalId).orElseThrow(

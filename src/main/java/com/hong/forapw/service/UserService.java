@@ -38,7 +38,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -326,13 +325,13 @@ public class UserService {
     @Transactional
     public void resetPassword(UserRequest.ResetPasswordDTO requestDTO){
         // 전송한 코드로 세션에서 해당 이메일을 꺼내옴 (비밀번호 재설정 시 코드 전송을 거침)
-        String email = redisService.getValueInStr(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code());
+        String email = redisService.getValueInString(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code());
         if(email == null){
             throw new CustomException(ExceptionCode.BAD_APPROACH);
         }
 
         // CODE_TO_EMAIL 키 삭제
-        redisService.removeData(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code());
+        redisService.removeValue(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code());
 
         User user = userRepository.findByEmail(email).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND)
@@ -483,8 +482,8 @@ public class UserService {
         user.getStatus().updateIsActive(false);
 
         // 세션에 저장된 토큰 삭제
-        redisService.removeData(ACCESS_TOKEN_KEY_PREFIX, userId.toString());
-        redisService.removeData(REFRESH_TOKEN_KEY_PREFIX, userId.toString());
+        redisService.removeValue(ACCESS_TOKEN_KEY_PREFIX, userId.toString());
+        redisService.removeValue(REFRESH_TOKEN_KEY_PREFIX, userId.toString());
 
         // 유저 삭제 (soft delete 처리) => soft delete의 side effect 고려 해야함
         userRepository.deleteById(userId);
@@ -753,7 +752,7 @@ public class UserService {
 
     private Map<String, String> createAccessToken(User user){
         String accessToken = JWTProvider.createAccessToken(user);
-        String refreshToken = redisService.getValueInStr(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(user.getId()));
+        String refreshToken = redisService.getValueInString(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(user.getId()));
 
         redisService.storeValue(ACCESS_TOKEN_KEY_PREFIX, String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP_MILLI);
 

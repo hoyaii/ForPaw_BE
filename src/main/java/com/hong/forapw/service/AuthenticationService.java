@@ -80,7 +80,7 @@ public class AuthenticationService {
             visitRepository.save(visit);
         });
 
-        redisService.removeData(key);
+        redisService.removeValue(key);
     }
 
     @Transactional(readOnly = true)
