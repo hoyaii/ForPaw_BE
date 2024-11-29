@@ -196,7 +196,7 @@ public class UserService {
         checkIsActiveMember(user);
         Long loginFailNum = checkLoginFailures(user);
 
-        if(isPasswordUnmatched(requestDTO, user)){
+        if(isPasswordUnmatched(requestDTO.password(), user)){
             infoLoginFail(user, loginFailNum);
         }
 
@@ -209,7 +209,6 @@ public class UserService {
     public Map<String, String> kakaoLogin(String code, HttpServletRequest request) {
         KakaoOauthDTO.TokenDTO token = getKakaoToken(code);
         KakaoOauthDTO.UserInfoDTO userInfo = getKakaoUserInfo(token.access_token());
-
         String email = userInfo.kakao_account().email();
 
         return processSocialLogin(email, request);
@@ -217,10 +216,8 @@ public class UserService {
 
     @Transactional
     public Map<String, String> googleLogin(String code, HttpServletRequest request){
-        // 구글 엑세스 토큰 획득
         GoogleOauthDTO.TokenDTO token = getGoogleToken(code);
         GoogleOauthDTO.UserInfoDTO userInfoDTO = getGoogleUserInfo(token.access_token());
-
         String email = userInfoDTO.email();
 
         return processSocialLogin(email, request);
@@ -228,13 +225,8 @@ public class UserService {
 
     @Transactional
     public void join(UserRequest.JoinDTO requestDTO){
-        if (!requestDTO.password().equals(requestDTO.passwordConfirm()))
-            throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
-
-        // 이미 가입된 계정인지 체크
+        checkPasswordConfirmation(requestDTO);
         checkAlreadyJoin(requestDTO.email());
-
-        // 중복된 닉네임 다시 체크 (프론트에서 체크하고 이중 체크)
         checkDuplicateNickname(requestDTO.nickName());
 
         User user = User.builder()
@@ -250,13 +242,9 @@ public class UserService {
                 .authProvider(AuthProvider.LOCAL)
                 .isMarketingAgreed(requestDTO.isMarketingAgreed())
                 .build();
-
         userRepository.save(user);
 
-        // 유저 상태 설정
         setUserStatus(user);
-
-        // 알람 사용을 위한 설정
         setAlarmQueue(user);
     }
 
@@ -901,15 +889,20 @@ public class UserService {
         brokerService.registerAlarmListener(listenerId, queueName);
     }
 
-    private void checkAlreadyJoin(String email) {
-        // 로컬 회원 가입을 통해 이미 가입함
-        if(userRepository.existsByEmailAndAuthProviders(email, List.of(AuthProvider.LOCAL)))
-            throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
+    private void checkPasswordConfirmation(UserRequest.JoinDTO requestDTO) {
+        if (!requestDTO.password().equals(requestDTO.passwordConfirm()))
+            throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
+    }
 
-        // 소셜 회원 가입을 통해 이미 가입함
-        if(userRepository.existsByEmailAndAuthProviders(email, List.of(AuthProvider.KAKAO, AuthProvider.GOOGLE))){
-            throw new CustomException(ExceptionCode.JOINED_BY_SOCIAL);
-        }
+    private void checkAlreadyJoin(String email) {
+        userRepository.findAuthProviderByEmail(email).ifPresent(authProvider -> {
+            if (authProvider == AuthProvider.LOCAL) {
+                throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
+            }
+            if (authProvider == AuthProvider.GOOGLE || authProvider == AuthProvider.KAKAO) {
+                throw new CustomException(ExceptionCode.JOINED_BY_SOCIAL);
+            }
+        });
     }
 
     private void checkDuplicateNickname(String nickName) {
@@ -929,8 +922,8 @@ public class UserService {
         }
     }
 
-    private boolean isPasswordUnmatched(UserRequest.LoginDTO requestDTO, User user) {
-        return !passwordEncoder.matches(requestDTO.password(), user.getPassword());
+    private boolean isPasswordUnmatched(String password, User user) {
+        return !passwordEncoder.matches(password, user.getPassword());
     }
 
     private void infoLoginFail(User user, Long loginFailNum) {
