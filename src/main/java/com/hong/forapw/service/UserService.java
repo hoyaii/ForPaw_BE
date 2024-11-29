@@ -284,14 +284,11 @@ public class UserService {
         emailService.sendMail(email, VERIFICATION_CODE.getSubject(), MAIL_TEMPLATE_FOR_CODE, templateModel);
     }
 
-    public UserResponse.VerifyEmailCodeDTO verifyCode(UserRequest.VerifyCodeDTO requestDTO, String codeType){
-        // 레디스를 통해 해당 코드가 유효한지 확인
-        if(!redisService.validateValue(EMAIL_CODE_KEY_PREFIX + codeType, requestDTO.email(), requestDTO.code()))
+    public UserResponse.VerifyEmailCodeDTO verifyCode(UserRequest.VerifyCodeDTO requestDTO, String codeType) {
+        if (redisService.isNotStoredValue(getCodeTypeKey(codeType), requestDTO.email(), requestDTO.code()))
             return new UserResponse.VerifyEmailCodeDTO(false);
 
-        // RECOVERY의 경우, resetPassword()에서 서버에 요청으로 이메일과 비밀번호를 동시에 보내지 않도록, 코드에 대한 이메일을 저장
-        if(codeType.equals(CODE_TYPE_RECOVERY))
-            redisService.storeValue(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code(), requestDTO.email(), 5 * 60 * 1000L);
+        cacheVerificationInfoIfRecovery(requestDTO, codeType);
 
         return new UserResponse.VerifyEmailCodeDTO(true);
     }
@@ -566,7 +563,7 @@ public class UserService {
         }
 
         Long userIdFromToken = JWTProvider.getUserIdFromToken(accessToken);
-        if(!redisService.validateValue(ACCESS_TOKEN_KEY_PREFIX, String.valueOf(userIdFromToken), accessToken)){
+        if(!redisService.isStoredValue(ACCESS_TOKEN_KEY_PREFIX, String.valueOf(userIdFromToken), accessToken)){
             throw new CustomException(ExceptionCode.ACCESS_TOKEN_WRONG);
         }
 
@@ -676,6 +673,11 @@ public class UserService {
                 .sameSite("Lax")
                 .maxAge(JWTProvider.REFRESH_EXP_SEC)
                 .build().toString();
+    }
+
+    private void cacheVerificationInfoIfRecovery(UserRequest.VerifyCodeDTO requestDTO, String codeType) {
+        if (CODE_TYPE_RECOVERY.equals(codeType))
+            redisService.storeValue(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code(), requestDTO.email(), 5 * 60 * 1000L);
     }
 
     // 알파벳, 숫자, 특수문자가 모두 포함되도록 해서 임시 비밀번호 생성
