@@ -35,6 +35,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
@@ -69,7 +70,7 @@ import static com.hong.forapw.core.utils.MailTemplate.VERIFICATION_CODE;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Slf4j
 public class UserService {
 
     private final PasswordEncoder passwordEncoder;
@@ -312,21 +313,13 @@ public class UserService {
 
     @Transactional
     public void resetPassword(UserRequest.ResetPasswordDTO requestDTO){
-        // 전송한 코드로 세션에서 해당 이메일을 꺼내옴 (비밀번호 재설정 시 코드 전송을 거침)
-        String email = redisService.getValueInString(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code());
+        String email = getEmailByVerificationCode(requestDTO);
         if(email == null){
             throw new CustomException(ExceptionCode.BAD_APPROACH);
         }
 
-        // CODE_TO_EMAIL 키 삭제
         redisService.removeValue(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code());
-
-        User user = userRepository.findByEmail(email).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND)
-        );
-
-        // 새로운 비밀번호로 업데이트
-        user.updatePassword(passwordEncoder.encode(requestDTO.newPassword()));
+        updatePassword(email, requestDTO.newPassword());
     }
 
     // 재설정 화면에서 실시간으로 일치여부를 확인하기 위해 사용
@@ -709,6 +702,18 @@ public class UserService {
         Map<String, Object> templateModel = new HashMap<>();
         templateModel.put(MODEL_KEY_CODE, verificationCode);
         return templateModel;
+    }
+
+    private String getEmailByVerificationCode(UserRequest.ResetPasswordDTO requestDTO) {
+        return redisService.getValueInString(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code());
+    }
+
+    private void updatePassword(String email, String newPassword) {
+        User user = userRepository.findByEmail(email).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND)
+        );
+
+        user.updatePassword(passwordEncoder.encode(newPassword));
     }
 
     private void checkAlreadySendCode(String email, String codeType) {
