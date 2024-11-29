@@ -1,4 +1,3 @@
-
 <img width="1000" alt="시스템 구성도" src="./images/1.png">
 
  </br>
@@ -274,6 +273,7 @@ https://github.com/user-attachments/assets/239a0d1a-fd2b-4c8a-ae5a-95ac1300bdb2
 | 이름   | 역할 | 내용 |
 |:----:|:----:|------|
 | 이한홍  | BE (리드) | <ul><li>REST API 및 DB 설계</li><li>Figma를 활용한 관리자 페이지 UI/UX 디자인</li><li>공공 데이터 API를 활용한 유기 동물 데이터 수집 및 처리 구현</li><li>JWT와 OAuth 2.0을 활용한 Google, Kakao 소셜 로그인 및 인증 기능 구현</li><li>FastAPI와 OpenAI API를 활용한 유기 동물 소개글 자동 생성 로직 구현</li><li>RabbitMQ를 활용한 실시간 단체 채팅 기능 구현</li><li>AWS EC2 배포 및 Jenkins를 활용한 CI/CD 파이프라인 구축</li><li>API 개발 (API #1 ~ #102)</li></ul> |
-| 이종일  | FE | <ul><li>전체적인 레이아웃 구현</li><li>회원가입, 프로필 관리, 보호동물, 보호소, 커뮤니티, 채팅, 지도 구현</li></ul> |
+| 이종일  | FE | <ul><li>전체적인 레이아웃 구현</li><li>SSR을 활용하여 사용자 요청에 따른 효율적인 동적 데이터 처리 구현</li><li>SSR과 JWT 토큰 기반 인증으로 효율적인 로그인 상태 관리 및 접근 제어 로직 개발</li><li>WebSocket을 활용한 실시간 메시지 송수신 단체 채팅방 구현</li><li>S3를 활용하여 채팅방에서 사진 및 파일 업로드 기능 추가</li><li>구글 맵 API를 활용하여 보호소 위치 시각화</li><li>입력 폼에서 실시간 피드백을 제공하는 마이크로 메시지 로직 설계 및 구현</li></ul> |
 | 장재영  | FE | <ul><li>봉사활동, 검색, 관리자 페이지 구현</li></ul> |
 | 박정우  | BE | <ul><li>Spring Boot를 활용한 관리자 페이지 API 개발 (API #103 ~ #114)</li></ul> |
+
