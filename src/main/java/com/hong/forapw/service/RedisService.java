@@ -79,7 +79,7 @@ public class RedisService {
         return ttl != null ? ttl : -2L;
     }
 
-    public boolean isDateExist(String type, String id) {
+    public boolean isValueExist(String type, String id) {
         return Boolean.TRUE.equals(redisTemplate.hasKey(buildKey(type, id)));
     }
 

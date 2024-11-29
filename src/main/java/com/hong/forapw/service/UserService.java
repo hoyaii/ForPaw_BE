@@ -6,6 +6,7 @@ import com.hong.forapw.controller.dto.UserRequest;
 import com.hong.forapw.controller.dto.UserResponse;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
+import com.hong.forapw.core.utils.EmailUtils;
 import com.hong.forapw.domain.authentication.LoginAttempt;
 import com.hong.forapw.domain.group.GroupRole;
 import com.hong.forapw.domain.inquiry.Inquiry;
@@ -31,7 +32,6 @@ import com.hong.forapw.repository.post.PostRepository;
 import com.hong.forapw.repository.UserRepository;
 import com.hong.forapw.repository.UserStatusRepository;
 import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -39,7 +39,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -52,7 +51,6 @@ import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
-import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -66,8 +64,8 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
+import static com.hong.forapw.core.utils.EmailUtils.generateVerificationCode;
 import static com.hong.forapw.core.utils.MailTemplate.ACCOUNT_SUSPENSION;
 import static com.hong.forapw.core.utils.MailTemplate.VERIFICATION_CODE;
 
@@ -93,13 +91,10 @@ public class UserService {
     private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final FavoriteGroupRepository favoriteGroupRepository;
     private final RedisService redisService;
-    private final JavaMailSender mailSender;
     private final WebClient webClient;
     private final BrokerService brokerService;
     private final EntityManager entityManager;
-
-    @Value("${spring.mail.username}")
-    private String serviceMailAccount;
+    private final EmailUtils mailUtils;
 
     @Value("${kakao.key}")
     private String kakaoApiKey;
@@ -161,10 +156,12 @@ public class UserService {
     private static final String UTF_EIGHT_ENCODING = "UTF-8";
     private static final String[] IP_HEADER_CANDIDATES = {"X-Forwarded-For", "Proxy-Client-IP", "WL-Proxy-Client-IP", "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR"};
     private static final String CODE_TYPE_RECOVERY = "recovery";
+    private static final long VERIFICATION_CODE_EXPIRATION_MS = 175 * 1000L;
+    private static final String MODEL_KEY_CODE = "code";
 
+    // 테스트 기간에만 사용하고, 운영에는 사용 X
     @Transactional
     public void initSuperAdmin(){
-        // SuperAdmin이 등록되어 있지 않다면 등록
         if(!userRepository.existsByNickname(ADMIN_NAME)){
             User admin = User.builder()
                     .email(adminEmail)
@@ -250,10 +247,7 @@ public class UserService {
 
     @Transactional
     public void socialJoin(UserRequest.SocialJoinDTO requestDTO){
-        // 악의적 접근 방지를 위한 이중 체크
         checkAlreadyJoin(requestDTO.email());
-
-        // 중복된 닉네임 다시 체크 (프론트에서 체크하고 이중 체크)
         checkDuplicateNickname(requestDTO.nickName());
 
         User user = User.builder()
@@ -269,13 +263,9 @@ public class UserService {
                 .authProvider(requestDTO.authProvider())
                 .isMarketingAgreed(requestDTO.isMarketingAgreed())
                 .build();
-
         userRepository.save(user);
 
-        // 유저 상태 설정
         setUserStatus(user);
-
-        // 알람 사용을 위한 설정
         setAlarmQueue(user);
     }
 
@@ -286,30 +276,14 @@ public class UserService {
     }
 
     @Async
-    public void sendCodeByEmail(String email, String codeType) throws MessagingException {
-        // 인증 코드 전송 및 레디스에 저장
+    public void sendCodeByEmail(String email, String codeType) {
+        checkAlreadySendCode(email, codeType);
+
         String verificationCode = generateVerificationCode();
+        storeVerificationCode(email, codeType, verificationCode);
 
-        // 메일 전송 템플릿 보낼 데이터는 map에 담음
-        Map<String, Object> model = new HashMap<>();
-        model.put("code", verificationCode);
-
-        sendMail(email, VERIFICATION_CODE.getSubject(), MAIL_TEMPLATE_FOR_CODE, model);
-
-        redisService.storeValue(EMAIL_CODE_KEY_PREFIX + codeType, email, verificationCode, 175 * 1000L); // 3분 동안 유효
-    }
-
-    @Async
-    public void sendCodeWithValidation(String email, String codeType, boolean isValid) throws MessagingException {
-        // TTL 체크
-        if(redisService.isDateExist(EMAIL_CODE_KEY_PREFIX + codeType, email)){
-            throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
-        }
-
-        // 유효한 경우에만 메일 전송
-        if(isValid){
-            sendCodeByEmail(email, codeType);
-        }
+        Map<String, Object> templateModel = createTemplateModel(verificationCode);
+        mailUtils.sendMail(email, VERIFICATION_CODE.getSubject(), MAIL_TEMPLATE_FOR_CODE, templateModel);
     }
 
     public UserResponse.VerifyEmailCodeDTO verifyCode(UserRequest.VerifyCodeDTO requestDTO, String codeType){
@@ -447,7 +421,7 @@ public class UserService {
         Long userId = JWTProvider.getUserIdFromToken(refreshToken);
 
         // 리프레쉬 토큰 만료 여부 체크
-        if(!redisService.isDateExist(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(userId)))
+        if(!redisService.isValueExist(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(userId)))
             throw new CustomException(ExceptionCode.TOKEN_EXPIRED);
 
         // 유효하지 않는 유저의 토큰이면 에러 발생
@@ -631,7 +605,7 @@ public class UserService {
             throw new CustomException(ExceptionCode.CODE_NOT_SENDED);
         }
 
-        if(redisService.isDateExist(EMAIL_CODE_KEY_PREFIX + codeType, email)){
+        if(redisService.isValueExist(EMAIL_CODE_KEY_PREFIX + codeType, email)){
             throw new CustomException(ExceptionCode.CODE_ALREADY_SENDED);
         }
     }
@@ -650,7 +624,7 @@ public class UserService {
             redisService.storeValue(LOGIN_FAIL_DAILY_KEY_PREFIX, user.getId().toString(), loginFailNumDaily.toString(), 86400000L);  // 24시간
 
             if(loginFailNumDaily == 3L){
-                sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), MAIL_TEMPLATE_FOR_LOCK_ACCOUNT, new HashMap<>());
+                mailUtils.sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), MAIL_TEMPLATE_FOR_LOCK_ACCOUNT, new HashMap<>());
             }
 
             throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
@@ -659,23 +633,6 @@ public class UserService {
         return loginFailNum;
     }
 
-    @Async
-    public void sendMail(String toEmail, String subject, String templateName, Map<String, Object> templateModel) throws MessagingException {
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, UTF_EIGHT_ENCODING);
-
-        // 템플릿 설정
-        Context context = new Context();
-        templateModel.forEach(context::setVariable);
-        String htmlContent = templateEngine.process(templateName, context);
-        helper.setText(htmlContent, true);
-
-        helper.setFrom(serviceMailAccount);
-        helper.setTo(toEmail);
-        helper.setSubject(subject);
-
-        mailSender.send(message);
-    }
 
     public void processOAuthRedirect(Map<String, String> tokenOrEmail, String authProvider, HttpServletResponse response) throws IOException {
         String redirectUri;
@@ -723,18 +680,6 @@ public class UserService {
                 .build().toString();
     }
 
-    // 알파벳, 숫자를 조합해서 인증 코드 생성
-    private String generateVerificationCode() {
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        SecureRandom random = new SecureRandom();
-
-        return IntStream.range(0, 8) // 8자리
-                .map(i -> random.nextInt(chars.length()))
-                .mapToObj(chars::charAt)
-                .map(Object::toString)
-                .collect(Collectors.joining());
-    }
-
     // 알파벳, 숫자, 특수문자가 모두 포함되도록 해서 임시 비밀번호 생성
     private String generatePassword() {
         String specialChars = "!@#$%^&*";
@@ -766,6 +711,26 @@ public class UserService {
         return passwordChars.stream()
                 .map(String::valueOf)
                 .collect(Collectors.joining());
+    }
+
+    private Map<String, Object> createTemplateModel(String verificationCode) {
+        Map<String, Object> templateModel = new HashMap<>();
+        templateModel.put(MODEL_KEY_CODE, verificationCode);
+        return templateModel;
+    }
+
+    private void checkAlreadySendCode(String email, String codeType) {
+        if (redisService.isValueExist(getCodeTypeKey(codeType), email)) {
+            throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
+        }
+    }
+
+    private void storeVerificationCode(String email, String codeType, String verificationCode) {
+        redisService.storeValue(getCodeTypeKey(codeType), email, verificationCode, VERIFICATION_CODE_EXPIRATION_MS);
+    }
+
+    private String getCodeTypeKey(String codeType) {
+        return UserService.EMAIL_CODE_KEY_PREFIX + codeType;
     }
 
     private Map<String, String> createToken(User user){
@@ -881,7 +846,6 @@ public class UserService {
     }
 
     private void setAlarmQueue(User user) {
-        // 알람 전송을 위한 큐 등록
         String queueName = USER_QUEUE_PREFIX + user.getId();
         String listenerId = USER_QUEUE_PREFIX + user.getId();
 

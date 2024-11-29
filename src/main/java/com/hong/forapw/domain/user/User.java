@@ -45,19 +45,16 @@ public class User extends TimeStamp {
     @Column
     private String profileURL;
 
-    // 활동 지역 - 시/도
     @Column
     @Enumerated(EnumType.STRING)
-    private Province province;
+    private Province province; // 활동 지역 - 시/도
 
-    // 활동 지역 - 군/구/시
     @Column
     @Enumerated(EnumType.STRING)
-    private District district;
+    private District district; // 활동 지역 - 군/구/시
 
-    // 활동 지역 - 동/읍/면
     @Column
-    private String subDistrict;
+    private String subDistrict; // 활동 지역 - 동/읍/면
 
     @Column
     @Enumerated(EnumType.STRING)

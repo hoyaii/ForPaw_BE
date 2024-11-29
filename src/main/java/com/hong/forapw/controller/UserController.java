@@ -66,9 +66,9 @@ public class UserController {
     }
 
     @PostMapping("/accounts/check/email")
-    public ResponseEntity<?> checkEmailAndSendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
+    public ResponseEntity<?> checkEmailAndSendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) {
         UserResponse.CheckEmailExistDTO responseDTO = userService.checkEmailExist(requestDTO.email());
-        userService.sendCodeWithValidation(requestDTO.email(), CODE_TYPE_JOIN, responseDTO.isValid());
+        if(responseDTO.isValid()) userService.sendCodeByEmail(requestDTO.email(), CODE_TYPE_JOIN);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -80,7 +80,7 @@ public class UserController {
 
     @PostMapping("/accounts/resend/code")
     public ResponseEntity<?> resendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO, @RequestParam String codeType) throws MessagingException {
-        userService.sendCodeWithValidation(requestDTO.email(), codeType, true);
+        userService.sendCodeByEmail(requestDTO.email(), codeType);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
@@ -91,16 +91,16 @@ public class UserController {
     }
 
     @PostMapping("/accounts/withdraw/code")
-    public ResponseEntity<?> sendCodeForWithdraw(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
+    public ResponseEntity<?> sendCodeForWithdraw(@RequestBody @Valid UserRequest.EmailDTO requestDTO) {
         UserResponse.CheckAccountExistDTO responseDTO = userService.checkAccountExist(requestDTO);
-        userService.sendCodeWithValidation(requestDTO.email(), CODE_TYPE_WITHDRAW, responseDTO.isValid());
+        if(responseDTO.isValid()) userService.sendCodeByEmail(requestDTO.email(), CODE_TYPE_WITHDRAW);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/accounts/recovery/code")
-    public ResponseEntity<?> sendCodeForRecovery(@RequestBody @Valid UserRequest.EmailDTO requestDTO) throws MessagingException {
+    public ResponseEntity<?> sendCodeForRecovery(@RequestBody @Valid UserRequest.EmailDTO requestDTO) {
         UserResponse.CheckLocalAccountExistDTO responseDTO = userService.checkLocalAccountExist(requestDTO);
-        userService.sendCodeWithValidation(requestDTO.email(), CODE_TYPE_RECOVERY, responseDTO.isValid());
+        if(responseDTO.isValid()) userService.sendCodeByEmail(requestDTO.email(), CODE_TYPE_RECOVERY);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
