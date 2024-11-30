@@ -104,22 +104,19 @@ public class AnimalService {
 
         Flux.fromIterable(shelters)
                 .delayElements(Duration.ofMillis(75)) // 각 요청 사이에 0.075초 지연
-                .flatMap(shelter -> {
-                    Long careRegNo = shelter.getId();
-                    URI uri = buildAnimalOpenApiURI(serviceKey, careRegNo);
-
-                    return webClient.get()
-                            .uri(uri)
-                            .retrieve()
-                            .bodyToMono(String.class)
-                            .retry(3)
-                            .flatMap(response -> updateShelterByAnimalData(response, shelter) // 동물 데이터로 보호소 업데이트
-                                    .then(Mono.just(response)))
-                            .flatMapMany(response -> convertResponseToAnimal(response, shelter, existAnimalIds) // 동물 엔티티 컬렉션으로 변환
-                                    .onErrorResume(e -> Flux.empty()))
-                            .collectList()
-                            .doOnNext(animalRepository::saveAll);
-                })
+                .flatMap(shelter -> buildAnimalOpenApiURI(serviceKey, shelter.getId())
+                        .flatMap(uri -> webClient.get()
+                                .uri(uri)
+                                .retrieve()
+                                .bodyToMono(String.class)
+                                .retry(3)
+                                .flatMap(response -> updateShelterByAnimalData(response, shelter) // 동물 데이터로 보호소 업데이트
+                                        .then(Mono.just(response)))
+                                .flatMapMany(response -> convertResponseToAnimal(response, shelter, existAnimalIds) // 동물 엔티티 컬렉션으로 변환
+                                        .onErrorResume(e -> Flux.empty()))
+                                .collectList()
+                                .doOnNext(animalRepository::saveAll))
+                        .onErrorResume(e -> Mono.empty())) // URI 생성 실패 시 shelter 무시
                 .then()
                 .doOnTerminate(this::updateShelterAddressByGoogle) // loadAnimalData가 완료되면 updateShelterAddressByGoogle 실행
                 .subscribe();
@@ -526,13 +523,13 @@ public class AnimalService {
         return animalNames[index];
     }
 
-    private URI buildAnimalOpenApiURI(String serviceKey, Long careRegNo) {
+    private Mono<URI> buildAnimalOpenApiURI(String serviceKey, Long careRegNo) {
         String url = animalURI + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
 
         try {
-            return new URI(url);
+            return Mono.just(new URI(url));
         } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
+            return Mono.empty();
         }
     }
 

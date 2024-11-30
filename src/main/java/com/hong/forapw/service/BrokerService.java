@@ -5,6 +5,7 @@ import com.hong.forapw.controller.dto.ChatRequest;
 import com.hong.forapw.domain.alarm.Alarm;
 import com.hong.forapw.domain.alarm.AlarmType;
 import com.hong.forapw.domain.chat.Message;
+import com.hong.forapw.domain.group.GroupRole;
 import com.hong.forapw.domain.user.User;
 import com.hong.forapw.repository.alarm.AlarmRepository;
 import com.hong.forapw.repository.chat.ChatRoomRepository;
@@ -124,7 +125,7 @@ public class BrokerService {
             messageRepository.save(message);
 
             // 알람 전송
-            chatRoomRepository.findUsersByChatRoomId(messageDTO.chatRoomId())
+            chatRoomRepository.findUsersByChatRoomIdExcludingRole(messageDTO.chatRoomId(), GroupRole.TEMP)
                     .forEach(user -> {
                         String content = "새로문 메시지: " + messageDTO.content();
                         String redirectURL = "/chatting/" + messageDTO.chatRoomId();

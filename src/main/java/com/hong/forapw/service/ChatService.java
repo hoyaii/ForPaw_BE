@@ -9,6 +9,7 @@ import com.hong.forapw.domain.chat.ChatUser;
 import com.hong.forapw.domain.chat.LinkMetadata;
 import com.hong.forapw.domain.chat.Message;
 import com.hong.forapw.domain.chat.MessageType;
+import com.hong.forapw.domain.group.GroupRole;
 import com.hong.forapw.repository.chat.ChatRoomRepository;
 import com.hong.forapw.repository.chat.ChatUserRepository;
 import com.hong.forapw.repository.chat.MessageRepository;
@@ -173,7 +174,7 @@ public class ChatService {
         checkChatAuthority(userId, chatRoomId);
 
         // 채팅방에 참여한 유저
-        List<ChatResponse.ChatUserDTO> chatUserDTOS = chatRoomRepository.findUsersByChatRoomId(chatRoomId).stream()
+        List<ChatResponse.ChatUserDTO> chatUserDTOS = chatRoomRepository.findUsersByChatRoomIdExcludingRole(chatRoomId, GroupRole.TEMP).stream()
                 .map(user -> new ChatResponse.ChatUserDTO(
                         user.getId(),
                         user.getNickname(),
