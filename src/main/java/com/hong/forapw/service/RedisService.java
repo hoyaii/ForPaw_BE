@@ -70,6 +70,10 @@ public class RedisService {
         return Boolean.TRUE.equals(redisTemplate.hasKey(buildKey(type, id)));
     }
 
+    public boolean isValueNotExist(String type, String id) {
+        return !Boolean.TRUE.equals(redisTemplate.hasKey(buildKey(type, id)));
+    }
+
     public boolean isNotStoredValue(String type, String id, String value) {
         String storedValue = redisTemplate.opsForValue().get(buildKey(type, id));
         return (storedValue == null) || !storedValue.equals(value);

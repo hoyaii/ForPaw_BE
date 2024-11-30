@@ -381,20 +381,13 @@ public class UserService {
         );
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Map<String, String> updateAccessToken(String refreshToken) {
-        if (JWTProvider.isInvalidJwtFormat(refreshToken)) {
-            throw new CustomException(ExceptionCode.TOKEN_WRONG);
-        }
+        checkTokenFormat(refreshToken);
 
-        // 리프레쉬 토큰에서 추출한 userId
         Long userId = JWTProvider.extractUserIdFromToken(refreshToken);
+        checkIsAccessTokenStored(userId);
 
-        // 리프레쉬 토큰 만료 여부 체크
-        if (!redisService.isValueExist(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(userId)))
-            throw new CustomException(ExceptionCode.TOKEN_EXPIRED);
-
-        // 유효하지 않는 유저의 토큰이면 에러 발생
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
@@ -533,9 +526,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserResponse.ValidateAccessTokenDTO validateAccessToken(@CookieValue String accessToken) {
-        if (JWTProvider.isInvalidJwtFormat(accessToken)) {
-            throw new CustomException(ExceptionCode.TOKEN_WRONG);
-        }
+        checkTokenFormat(accessToken);
 
         Long userIdFromToken = JWTProvider.extractUserIdFromToken(accessToken);
         if (!redisService.isStoredValue(ACCESS_TOKEN_KEY_PREFIX, String.valueOf(userIdFromToken), accessToken)) {
@@ -878,6 +869,11 @@ public class UserService {
         }
     }
 
+    private void checkIsAccessTokenStored(Long userId) {
+        if (redisService.isValueNotExist(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(userId)))
+            throw new CustomException(ExceptionCode.TOKEN_EXPIRED);
+    }
+
     private boolean isPasswordUnmatched(User user, String inputPassword) {
         return !passwordEncoder.matches(user.getPassword(), inputPassword);
     }
@@ -935,5 +931,11 @@ public class UserService {
 
         userStatusRepository.save(status);
         user.updateStatus(status);
+    }
+
+    private void checkTokenFormat(String refreshToken) {
+        if (JWTProvider.isInvalidJwtFormat(refreshToken)) {
+            throw new CustomException(ExceptionCode.TOKEN_WRONG);
+        }
     }
 }
