@@ -95,6 +95,10 @@ public class User extends TimeStamp {
         this.profileURL = profileURL;
     }
 
+    public void deactivateUser(){
+        status.updateActiveness(false);
+    }
+
     public void updateRole(UserRole role) {
         this.role = role;
     }

@@ -7,7 +7,7 @@ import com.hong.forapw.controller.dto.UserResponse;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.domain.authentication.LoginAttempt;
-import com.hong.forapw.domain.group.GroupRole;
+import com.hong.forapw.domain.group.GroupUser;
 import com.hong.forapw.domain.inquiry.Inquiry;
 import com.hong.forapw.domain.inquiry.InquiryStatus;
 import com.hong.forapw.domain.post.PostType;
@@ -30,7 +30,6 @@ import com.hong.forapw.repository.post.PostLikeRepository;
 import com.hong.forapw.repository.post.PostRepository;
 import com.hong.forapw.repository.UserRepository;
 import com.hong.forapw.repository.UserStatusRepository;
-import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -180,12 +179,12 @@ public class UserService {
     }
 
     @Transactional
-    public Map<String, String> login(UserRequest.LoginDTO requestDTO, HttpServletRequest request) throws MessagingException {
+    public Map<String, String> login(UserRequest.LoginDTO requestDTO, HttpServletRequest request) {
         User user = userRepository.findByEmailWithRemoved(requestDTO.email()).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
         );
 
-        checkIsExitMember(user);
+        checkAlreadyExit(user);
         checkIsActiveMember(user);
         Long loginFailNum = checkLoginFailures(user);
 
@@ -402,55 +401,14 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        // 이미 탈퇴한 회원이면 예외
-        if (user.getRemovedAt() != null) {
-            throw new CustomException(ExceptionCode.USER_ALREADY_EXIT);
-        }
-        ;
+        checkAlreadyExit(user);
+        checkIsGroupCreator(user);
 
-        // 그룹장 상태에서는 탈퇴 불가능
-        groupUserRepository.findAllByUserId(userId)
-                .forEach(groupUser -> {
-                    groupUser.getGroupRole().equals(GroupRole.CREATOR);
-                    throw new CustomException(ExceptionCode.CREATOR_CANT_EXIT);
-                });
+        deleteUserRelatedData(userId);
+        deleteUserAssociations(userId);
+        deleteTokenInSession(userId);
+        user.deactivateUser();
 
-        // 알람 삭제
-        alarmRepository.deleteByUserId(userId);
-
-        // 방문 기록 삭제
-        visitRepository.deleteByUserId(userId);
-
-        // 로그인 기록 삭제
-        loginAttemptRepository.deleteByUserId(userId);
-
-        // 중간 테이블 역할의 엔티티 삭제
-        postLikeRepository.deleteByUserId(userId);
-        commentLikeRepository.deleteByUserId(userId);
-        favoriteAnimalRepository.deleteAllByUserId(userId);
-        favoriteGroupRepository.deleteByGroupId(userId);
-        chatUserRepository.deleteByUserId(userId);
-        groupUserRepository.findByUserIdWithGroup(userId)
-                .forEach(groupUser -> {
-                            groupUser.getGroup().decrementParticipantNum();
-                            groupUserRepository.delete(groupUser);
-                        }
-                );
-        meetingUserRepository.findByUserIdWithMeeting(userId)
-                .forEach(meetingUser -> {
-                            meetingUser.getMeeting().decrementParticipantNum();
-                            meetingUserRepository.delete(meetingUser);
-                        }
-                );
-
-        // 유저 상태 변경
-        user.getStatus().updateIsActive(false);
-
-        // 세션에 저장된 토큰 삭제
-        redisService.removeValue(ACCESS_TOKEN_KEY_PREFIX, userId.toString());
-        redisService.removeValue(REFRESH_TOKEN_KEY_PREFIX, userId.toString());
-
-        // 유저 삭제 (soft delete 처리) => soft delete의 side effect 고려 해야함
         userRepository.deleteById(userId);
     }
 
@@ -749,7 +707,7 @@ public class UserService {
         }
 
         User user = userOP.get();
-        checkIsExitMember(user);
+        checkAlreadyExit(user);
         checkIsActiveMember(user);
         checkIsLocalJoined(user);
 
@@ -831,6 +789,16 @@ public class UserService {
         brokerService.registerAlarmListener(listenerId, queueName);
     }
 
+    private void checkIsGroupCreator(User user) {
+        groupUserRepository.findAllByUser(user)
+                .stream()
+                .filter(GroupUser::isCreator)
+                .findFirst()
+                .ifPresent(groupUser -> {
+                    throw new CustomException(ExceptionCode.CREATOR_CANT_EXIT);
+                });
+    }
+
     private void checkConfirmPasswordCorrect(String password, String confirmPassword) {
         if (!password.equals(confirmPassword))
             throw new CustomException(ExceptionCode.USER_PASSWORD_MATCH_WRONG);
@@ -863,7 +831,7 @@ public class UserService {
         }
     }
 
-    private void checkIsExitMember(User user) {
+    private void checkAlreadyExit(User user) {
         if (user.isExitMember()) {
             throw new CustomException(ExceptionCode.USER_ALREADY_EXIT);
         }
@@ -888,6 +856,45 @@ public class UserService {
         if (user.isUnActive()) {
             throw new CustomException(ExceptionCode.USER_SUSPENDED);
         }
+    }
+
+    private void deleteUserRelatedData(Long userId) {
+        alarmRepository.deleteByUserId(userId);
+        visitRepository.deleteByUserId(userId);
+        loginAttemptRepository.deleteByUserId(userId);
+    }
+
+    private void deleteUserAssociations(Long userId) {
+        postLikeRepository.deleteByUserId(userId);
+        commentLikeRepository.deleteByUserId(userId);
+        favoriteAnimalRepository.deleteAllByUserId(userId);
+        favoriteGroupRepository.deleteByGroupId(userId);
+        chatUserRepository.deleteByUserId(userId);
+        deleteAllGroupUserData(userId);
+        deleteAllMeetingUserData(userId);
+    }
+
+    private void deleteAllMeetingUserData(Long userId) {
+        meetingUserRepository.findByUserIdWithMeeting(userId)
+                .forEach(meetingUser -> {
+                            meetingUser.getMeeting().decrementParticipantNum();
+                            meetingUserRepository.delete(meetingUser);
+                        }
+                );
+    }
+
+    private void deleteAllGroupUserData(Long userId) {
+        groupUserRepository.findByUserIdWithGroup(userId)
+                .forEach(groupUser -> {
+                            groupUser.getGroup().decrementParticipantNum();
+                            groupUserRepository.delete(groupUser);
+                        }
+                );
+    }
+
+    private void deleteTokenInSession(Long userId) {
+        redisService.removeValue(ACCESS_TOKEN_KEY_PREFIX, userId.toString());
+        redisService.removeValue(REFRESH_TOKEN_KEY_PREFIX, userId.toString());
     }
 
     public void recordLoginAttempt(User user, HttpServletRequest request) {

@@ -44,4 +44,8 @@ public class GroupUser extends TimeStamp {
     public void updateRole(GroupRole groupRole) {
         this.groupRole = groupRole;
     }
+
+    public boolean isCreator(){
+        return groupRole == GroupRole.CREATOR;
+    }
 }

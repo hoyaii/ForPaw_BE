@@ -57,7 +57,7 @@ public class UserStatus {
         this.suspensionReason = null;
     }
 
-    public void updateIsActive(boolean isActive) {
+    public void updateActiveness(boolean isActive) {
         this.isActive = isActive;
     }
 }

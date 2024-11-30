@@ -22,7 +22,7 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
 
     Optional<GroupUser> findByGroupIdAndUserId(Long groupId, Long userId);
 
-    List<GroupUser> findAllByUserId(Long userId);
+    List<GroupUser> findAllByUser(User user);
 
     @EntityGraph(attributePaths = {"group"})
     @Query("SELECT gu FROM GroupUser gu " +
