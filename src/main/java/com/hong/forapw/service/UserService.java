@@ -353,12 +353,6 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        // 소셜 회원가입으로 가입했는지 여부
-        boolean isSocialJoined = !user.getAuthProvider().equals(AuthProvider.LOCAL);
-
-        // 보호소에서 관리하는 계정인지 여부
-        boolean isShelterOwns = user.getRole().equals(UserRole.SHELTER);
-
         return new UserResponse.ProfileDTO(user.getEmail(),
                 user.getName(),
                 user.getNickName(),
@@ -366,8 +360,8 @@ public class UserService {
                 user.getDistrict(),
                 user.getSubDistrict(),
                 user.getProfileURL(),
-                isSocialJoined,
-                isShelterOwns,
+                user.isSocialJoined(),
+                user.isShelterOwns(),
                 user.isMarketingAgreed());
     }
 
