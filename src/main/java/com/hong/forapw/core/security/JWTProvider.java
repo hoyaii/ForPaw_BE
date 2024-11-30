@@ -6,6 +6,7 @@ import com.auth0.jwt.exceptions.SignatureVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.hong.forapw.domain.user.User;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 import com.auth0.jwt.JWT;
@@ -25,8 +26,27 @@ public class JWTProvider {
     public static final String TOKEN_PREFIX = "Bearer ";
     public static final String AUTHORIZATION = "Authorization";
     public static final String SECRET = "MySecretKey";
-    public static final String REFRESH_TOKEN_COOKIE_KEY = "refreshToken";
-    public static final String ACCESS_TOKEN_COOKIE_KEY = "accessToken";
+    public static final String REFRESH_TOKEN_KEY_PREFIX = "refreshToken";
+
+    public static String createRefreshTokenCookie(String refreshToken) {
+        return ResponseCookie.from(REFRESH_TOKEN_KEY_PREFIX, refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(JWTProvider.REFRESH_EXP_SEC)
+                .build().toString();
+    }
+
+    public static String createAccessTokenCookie(String refreshToken) {
+        return ResponseCookie.from(REFRESH_TOKEN_KEY_PREFIX, refreshToken)
+                .httpOnly(false)
+                .secure(true)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(JWTProvider.REFRESH_EXP_SEC)
+                .build().toString();
+    }
 
     public static String createAccessToken(User user) {
         return create(user, ACCESS_EXP_MILLI);

@@ -23,11 +23,15 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Set;
 
 @Slf4j
 public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
     private final RedisService redisService;
+
+    public static final String REFRESH_TOKEN_COOKIE_KEY = "refreshToken";
+    public static final String ACCESS_TOKEN_COOKIE_KEY = "accessToken";
 
     public JwtAuthenticationFilter(AuthenticationManager authenticationManager, RedisService redisService) {
         super(authenticationManager);
@@ -44,7 +48,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
                 authorizationHeader.replace(JWTProvider.TOKEN_PREFIX, "") : null;
 
         // 리프레쉬 토큰은 '쿠키'에서 추출
-        String refreshToken = CookieUtils.getCookieFromRequest(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, request);
+        String refreshToken = CookieUtils.getCookieFromRequest(JWTProvider.REFRESH_TOKEN_KEY_PREFIX, request);
 
         // 1st 토큰 값이 존재하는지 체크
         if (checkIsTokenEmpty(accessToken, refreshToken)) {
@@ -81,7 +85,8 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         redisService.addSetElement(createVisitKey(), user.getId());
 
         // Request 쿠키와 Response 쿠키 동기화
-        CookieUtils.syncHttpResponseCookiesFromHttpRequest(request, response, JWTProvider.ACCESS_TOKEN_COOKIE_KEY, JWTProvider.REFRESH_TOKEN_COOKIE_KEY);
+        Set<String> excludedCookies = Set.of(ACCESS_TOKEN_COOKIE_KEY, REFRESH_TOKEN_COOKIE_KEY);
+        CookieUtils.syncRequestCookiesToResponse(request, response, excludedCookies);
 
         // 엑세스 토큰은 HTTP Header로 리턴
         // response.setHeader(HttpHeaders.AUTHORIZATION, JWTProvider.TOKEN_PREFIX + accessToken);

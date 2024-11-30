@@ -61,6 +61,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.hong.forapw.core.security.JWTProvider.createRefreshTokenCookie;
 import static com.hong.forapw.service.EmailService.generateVerificationCode;
 import static com.hong.forapw.core.utils.MailTemplate.ACCOUNT_SUSPENSION;
 import static com.hong.forapw.core.utils.MailTemplate.VERIFICATION_CODE;
@@ -582,25 +583,7 @@ public class UserService {
         response.sendRedirect(redirectUri);
     }
 
-    public String createRefreshTokenCookie(String refreshToken) {
-        return ResponseCookie.from(REFRESH_TOKEN_KEY_PREFIX, refreshToken)
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .sameSite("Lax")
-                .maxAge(JWTProvider.REFRESH_EXP_SEC)
-                .build().toString();
-    }
 
-    public String createAccessTokenCookie(String refreshToken) {
-        return ResponseCookie.from(REFRESH_TOKEN_KEY_PREFIX, refreshToken)
-                .httpOnly(false)
-                .secure(true)
-                .path("/")
-                .sameSite("Lax")
-                .maxAge(JWTProvider.REFRESH_EXP_SEC)
-                .build().toString();
-    }
 
     private void cacheVerificationInfoIfRecovery(UserRequest.VerifyCodeDTO requestDTO, String codeType) {
         if (CODE_TYPE_RECOVERY.equals(codeType))

@@ -19,6 +19,9 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.util.Map;
 
+import static com.hong.forapw.core.security.JWTProvider.createRefreshTokenCookie;
+
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
@@ -31,14 +34,15 @@ public class UserController {
     private static final String CODE_TYPE_JOIN = "join";
     private static final String CODE_TYPE_WITHDRAW = "withdraw";
     private static final String CODE_TYPE_RECOVERY = "recovery";
+    private static final String REFRESH_TOKEN = "refreshToken";
+    private static final String ACCESS_TOKEN = "accessToken";
 
     @PostMapping("/auth/login")
-    public ResponseEntity<?> login(@RequestBody @Valid UserRequest.LoginDTO requestDTO, HttpServletRequest request) throws MessagingException {
+    public ResponseEntity<?> login(@RequestBody @Valid UserRequest.LoginDTO requestDTO, HttpServletRequest request) {
         Map<String, String> tokens = userService.login(requestDTO, request);
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, userService.createRefreshTokenCookie(tokens.get("refreshToken")))
-                .header(HttpHeaders.SET_COOKIE, userService.createAccessTokenCookie(tokens.get("accessToken")))
-                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokens.get("accessToken"))));
+                .header(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokens.get(REFRESH_TOKEN)))
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokens.get(ACCESS_TOKEN))));
     }
 
     @GetMapping("/auth/login/kakao")
@@ -138,8 +142,8 @@ public class UserController {
     public ResponseEntity<?> updateAccessToken(@CookieValue String refreshToken) {
         Map<String, String> tokens = userService.updateAccessToken(refreshToken);
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, userService.createRefreshTokenCookie(tokens.get("refreshToken")))
-                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(tokens.get("accessToken"))));
+                .header(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokens.get(REFRESH_TOKEN)))
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(tokens.get(ACCESS_TOKEN))));
     }
 
     @DeleteMapping("/accounts/withdraw")
