@@ -838,7 +838,7 @@ public class UserService {
     }
 
     private boolean isPasswordUnmatched(User user, String inputPassword) {
-        return !passwordEncoder.matches(user.getPassword(), inputPassword);
+        return !passwordEncoder.matches(inputPassword, user.getPassword());
     }
 
     private void infoLoginFail(User user, Long loginFailNum) {

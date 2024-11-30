@@ -3,7 +3,14 @@ package com.hong.forapw.core.errors;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.hong.forapw.core.utils.ApiUtils;
 import com.hong.forapw.core.utils.EnumUtils;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -14,64 +21,93 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @ControllerAdvice
+@RequiredArgsConstructor
 @Slf4j
 public class GlobalExceptionHandler {
-    @ExceptionHandler(CustomException.class)
-    public ResponseEntity<?> customError(CustomException e) {
-        return new ResponseEntity<>(e.body(), e.status());
-    }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> unknownServerError(Exception e) {
-        String message = e.getMessage();
-        ApiUtils.ApiResult<?> apiResult = ApiUtils.error(message, HttpStatus.INTERNAL_SERVER_ERROR);
-        return new ResponseEntity<>(apiResult, HttpStatus.INTERNAL_SERVER_ERROR);
+    private MessageSource messageSource;
+
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<?> handleCustomException(CustomException ex) {
+        String traceId = getTraceId();
+        log.error("[Trace ID: {}] CustomException 발생: {}", traceId, ex.getMessage(), ex);
+        return ResponseEntity.status(ex.status()).body(ApiUtils.error(ex.getMessage(), ex.status()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        BindingResult result = ex.getBindingResult();
-        String errorMessage = result.getFieldError().getDefaultMessage();
+        String traceId = getTraceId();
+        List<String> errors = ex.getBindingResult().getAllErrors().stream()
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .toList();
+        String errorMessage = String.join(", ", errors);
+
+        log.warn("[Trace ID: {}] 유효성 검사 실패: {}", traceId, errorMessage);
         return ResponseEntity.badRequest().body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
     }
 
-    // 잘못된 데이터 형식에 대한 예외처리 (JSON 파싱 시 발생하는 에러 등)
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<?> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
-        String errorMessage = "요청 데이터 형식이 올바르지 않습니다.";
+    public ResponseEntity<?> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        String traceId = getTraceId();
+        String errorMessage = getLocalizedMessage("error.invalid.data.format");
 
         Throwable cause = ex.getCause();
-        if (cause instanceof InvalidFormatException ife) {
-            if (ife.getTargetType().isEnum()) {
-                String enumValues = EnumUtils.getEnumValuesAsString((Class<? extends Enum<?>>) ife.getTargetType());
-                errorMessage = "유효하지 않은 값입니다. 허용된 값은 " + enumValues + " 입니다.";
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
-            }
-        } else if (ex.getMessage().contains("Required request body is missing")) {
-            errorMessage = "요청 본문이 누락되었습니다.";
+        if (cause instanceof InvalidFormatException ife && ife.getTargetType().isEnum()) {
+            Class<? extends Enum<?>> enumType = (Class<? extends Enum<?>>) ife.getTargetType();
+            String enumValues = Arrays.stream(enumType.getEnumConstants())
+                    .map(Enum::name)
+                    .collect(Collectors.joining(", "));
+            errorMessage = String.format(getLocalizedMessage("error.invalid.enum.value"), enumValues);
+        } else if (ex.getMessage() != null && ex.getMessage().contains("Required request body is missing")) {
+            errorMessage = getLocalizedMessage("error.missing.body");
         }
 
+        log.warn("[Trace ID: {}] 읽을 수 없는 메시지: {} | 요청 정보: {}", traceId, errorMessage, getRequestDetails(request), ex);
         return ResponseEntity.badRequest().body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<?> handleMissingServletRequestParameterException(MissingServletRequestParameterException ex) {
-        String errorMessage = "요청 파라미터 " + ex.getParameterName() + "가 누락되었습니다.";
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
-    }
+    public ResponseEntity<?> handleMissingServletRequestParameterException(MissingServletRequestParameterException ex, HttpServletRequest request) {
+        String traceId = getTraceId();
+        String errorMessage = String.format(getLocalizedMessage("error.missing.parameter"), ex.getParameterName());
 
-    // IOException 처리
-    @ExceptionHandler(IOException.class)
-    public ResponseEntity<?> handleIOException(IOException ex) {
-        String errorMessage = "입출력 오류가 발생했습니다: " + ex.getMessage();
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiUtils.error(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR));
+        log.warn("[Trace ID: {}] 요청 파라미터 누락: {} | 요청 정보: {}", traceId, ex.getParameterName(), getRequestDetails(request), ex);
+        return ResponseEntity.badRequest().body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<?> handleIllegalArgumentException(IllegalArgumentException ex) {
-        String errorMessage = "잘못된 요청입니다: " + ex.getMessage();
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
+        String traceId = getTraceId();
+        String errorMessage = getLocalizedMessage("error.illegal.argument");
+
+        log.warn("[Trace ID: {}] 잘못된 인자: {}", traceId, ex.getMessage(), ex);
+        return ResponseEntity.badRequest().body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
+    }
+    
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<?> handleRuntimeException(RuntimeException ex, HttpServletRequest request) {
+        String traceId = getTraceId();
+        String errorMessage = getLocalizedMessage("error.runtime");
+
+        log.error("[Trace ID: {}] 런타임 예외 발생: {} | 요청 정보: {}", traceId, ex.getMessage(), getRequestDetails(request), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiUtils.error(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR));
+    }
+
+    private String getTraceId() {
+        return MDC.get("traceId");
+    }
+
+    private String getLocalizedMessage(String key, Object... args) {
+        return messageSource.getMessage(key, args, LocaleContextHolder.getLocale());
+    }
+
+    private String getRequestDetails(HttpServletRequest request) {
+        return String.format("URL: %s, Method: %s", request.getRequestURL(), request.getMethod());
     }
 }
