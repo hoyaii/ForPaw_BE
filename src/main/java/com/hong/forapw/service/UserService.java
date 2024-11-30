@@ -380,13 +380,12 @@ public class UserService {
 
     @Transactional
     public Map<String, String> updateAccessToken(String refreshToken){
-        // 잘못된 토큰 형식인지 체크
-        if(!JWTProvider.validateToken(refreshToken)) {
+        if(JWTProvider.isInvalidJwtFormat(refreshToken)) {
             throw new CustomException(ExceptionCode.TOKEN_WRONG);
         }
 
         // 리프레쉬 토큰에서 추출한 userId
-        Long userId = JWTProvider.getUserIdFromToken(refreshToken);
+        Long userId = JWTProvider.extractUserIdFromToken(refreshToken);
 
         // 리프레쉬 토큰 만료 여부 체크
         if(!redisService.isValueExist(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(userId)))
@@ -530,12 +529,11 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserResponse.ValidateAccessTokenDTO validateAccessToken(@CookieValue String accessToken){
-        // 잘못된 토큰 형식인지 체크
-        if(!JWTProvider.validateToken(accessToken)) {
+        if(JWTProvider.isInvalidJwtFormat(accessToken)) {
             throw new CustomException(ExceptionCode.TOKEN_WRONG);
         }
 
-        Long userIdFromToken = JWTProvider.getUserIdFromToken(accessToken);
+        Long userIdFromToken = JWTProvider.extractUserIdFromToken(accessToken);
         if(!redisService.isStoredValue(ACCESS_TOKEN_KEY_PREFIX, String.valueOf(userIdFromToken), accessToken)){
             throw new CustomException(ExceptionCode.ACCESS_TOKEN_WRONG);
         }

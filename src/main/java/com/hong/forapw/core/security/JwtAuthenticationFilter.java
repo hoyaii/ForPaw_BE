@@ -102,7 +102,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
     private User getUserFromToken(String token) {
         try {
-            DecodedJWT decodedJWT = JWTProvider.verify(token);
+            DecodedJWT decodedJWT = JWTProvider.decodeJWT(token);
             Long id = decodedJWT.getClaim("id").asLong();
             UserRole userRole = decodedJWT.getClaim("role").as(UserRole.class);
             String nickName = decodedJWT.getClaim("nickName").asString();
