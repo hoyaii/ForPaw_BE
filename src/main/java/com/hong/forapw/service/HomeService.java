@@ -70,7 +70,7 @@ public class HomeService {
 
                     return new HomeResponse.PostDTO(
                             post.getId(),
-                            post.getUser().getNickName(),
+                            post.getUser().getNickname(),
                             post.getTitle(),
                             post.getContent(),
                             post.getCreatedDate(),

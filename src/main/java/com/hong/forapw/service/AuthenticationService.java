@@ -191,7 +191,7 @@ public class AuthenticationService {
         List<AuthenticationResponse.ApplicantDTO> applicantDTOS = userPage.getContent().stream()
                 .map(user -> new AuthenticationResponse.ApplicantDTO(
                         user.getId(),
-                        user.getNickName(),
+                        user.getNickname(),
                         user.getCreatedDate(),
                         Optional.ofNullable(latestVisitMap.get(user.getId()))
                                 .map(Visit::getDate)
@@ -339,9 +339,9 @@ public class AuthenticationService {
                         report.getContentId(),
                         report.getType(),
                         report.getReason(),
-                        report.getReporter().getNickName(),
+                        report.getReporter().getNickname(),
                         report.getOffender().getId(),
-                        report.getOffender().getNickName(),
+                        report.getOffender().getNickname(),
                         report.getStatus())
                 ).toList();
 
@@ -391,7 +391,7 @@ public class AuthenticationService {
                 .map(inquiry -> new AuthenticationResponse.InquiryDTO(
                         inquiry.getId(),
                         inquiry.getCreatedDate(),
-                        inquiry.getQuestioner().getNickName(),
+                        inquiry.getQuestioner().getNickname(),
                         inquiry.getType(),
                         inquiry.getTitle(),
                         inquiry.getStatus())
@@ -411,7 +411,7 @@ public class AuthenticationService {
 
         return new AuthenticationResponse.FindSupportByIdDTO(
                 inquiry.getId(),
-                inquiry.getQuestioner().getNickName(),
+                inquiry.getQuestioner().getNickname(),
                 inquiry.getTitle(),
                 inquiry.getDescription()
         );

@@ -157,7 +157,7 @@ public class PostService {
 
                     return new PostResponse.PostDTO(
                             post.getId(),
-                            post.getUser().getNickName(),
+                            post.getUser().getNickname(),
                             post.getTitle(),
                             post.getContent(),
                             post.getCreatedDate(),
@@ -184,7 +184,7 @@ public class PostService {
 
                     return new PostResponse.PostDTO(
                             post.getId(),
-                            post.getUser().getNickName(),
+                            post.getUser().getNickname(),
                             post.getTitle(),
                             post.getContent(),
                             post.getCreatedDate(),
@@ -206,7 +206,7 @@ public class PostService {
         List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
                 .map(post -> new PostResponse.QnaDTO(
                         post.getId(),
-                        post.getUser().getNickName(),
+                        post.getUser().getNickname(),
                         post.getUser().getProfileURL(),
                         post.getTitle(),
                         post.getContent(),
@@ -231,7 +231,7 @@ public class PostService {
 
                     return new PostResponse.MyPostDTO(
                             post.getId(),
-                            post.getUser().getNickName(),
+                            post.getUser().getNickname(),
                             post.getTitle(),
                             post.getContent(),
                             post.getCreatedDate(),
@@ -255,7 +255,7 @@ public class PostService {
         List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
                 .map(post -> new PostResponse.QnaDTO(
                         post.getId(),
-                        post.getUser().getNickName(),
+                        post.getUser().getNickname(),
                         post.getUser().getProfileURL(),
                         post.getTitle(),
                         post.getContent(),
@@ -278,7 +278,7 @@ public class PostService {
         List<PostResponse.QnaDTO> qnaDTOS = uniquePosts.stream()
                 .map(post -> new PostResponse.QnaDTO(
                         post.getId(),
-                        post.getUser().getNickName(),
+                        post.getUser().getNickname(),
                         post.getUser().getProfileURL(),
                         post.getTitle(),
                         post.getContent(),
@@ -355,7 +355,7 @@ public class PostService {
             redisService.addSetElement(key, postId, POST_READ_EXP);
         }
 
-        return new PostResponse.FindPostByIdDTO(post.getUser().getNickName(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, isMine, isLike, postImageDTOS, commentDTOS);
+        return new PostResponse.FindPostByIdDTO(post.getUser().getNickname(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, isMine, isLike, postImageDTOS, commentDTOS);
     }
 
     @Transactional(readOnly = true)
@@ -392,7 +392,7 @@ public class PostService {
                     boolean isMineForAnswer = answer.getUser().getId().equals(userId);
                     return new PostResponse.AnswerDTO(
                             answer.getId(),
-                            answer.getUser().getNickName(),
+                            answer.getUser().getNickname(),
                             answer.getUser().getProfileURL(),
                             answer.getContent(),
                             answer.getCreatedDate(),
@@ -404,7 +404,7 @@ public class PostService {
         // 조회 수 증가
         redisService.incrementValue(POST_VIEW_NUM_PREFIX, postId.toString(), 1L);
 
-        return new PostResponse.FindQnaByIdDTO(post.getUser().getNickName(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), postImageDTOS, answerDTOS, isMineForQuestion);
+        return new PostResponse.FindQnaByIdDTO(post.getUser().getNickname(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), postImageDTOS, answerDTOS, isMineForQuestion);
     }
 
     @Transactional(readOnly = true)
@@ -425,7 +425,7 @@ public class PostService {
                 .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
                 .toList();
 
-        return new PostResponse.FindAnswerByIdDTO(post.getUser().getNickName(), post.getContent(), post.getCreatedDate(), postImageDTOS, isMine);
+        return new PostResponse.FindAnswerByIdDTO(post.getUser().getNickname(), post.getContent(), post.getCreatedDate(), postImageDTOS, isMine);
     }
 
     @Transactional
@@ -861,7 +861,7 @@ public class PostService {
             if (comment.getParent() == null) {
                 PostResponse.CommentDTO commentDTO = new PostResponse.CommentDTO(
                         comment.getId(),
-                        comment.getUser().getNickName(),
+                        comment.getUser().getNickname(),
                         comment.getUser().getProfileURL(),
                         comment.getContent(),
                         comment.getCreatedDate(),
@@ -882,9 +882,9 @@ public class PostService {
 
                 PostResponse.ReplyDTO replyDTO = new PostResponse.ReplyDTO(
                         comment.getId(),
-                        comment.getUser().getNickName(),
+                        comment.getUser().getNickname(),
                         comment.getUser().getProfileURL(),
-                        comment.getParent().getUser().getNickName(),
+                        comment.getParent().getUser().getNickname(),
                         comment.getContent(),
                         comment.getCreatedDate(),
                         comment.getUser().getProvince(),

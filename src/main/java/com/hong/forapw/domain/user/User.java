@@ -30,7 +30,7 @@ public class User extends TimeStamp {
     private String name;
 
     @Column
-    private String nickName;
+    private String nickname;
 
     @Column
     private String email;
@@ -71,7 +71,7 @@ public class User extends TimeStamp {
         this.id = id;
         this.status = status;
         this.name = name;
-        this.nickName = nickName;
+        this.nickname = nickName;
         this.email = email;
         this.password = password;
         this.role = role;
@@ -88,7 +88,7 @@ public class User extends TimeStamp {
     }
 
     public void updateProfile(String nickName, Province province, District district, String subDistrict, String profileURL) {
-        this.nickName = nickName;
+        this.nickname = nickName;
         this.province = province;
         this.district = district;
         this.subDistrict = subDistrict;
@@ -121,5 +121,9 @@ public class User extends TimeStamp {
 
     public boolean isShelterOwns() {
         return role.equals(UserRole.SHELTER);
+    }
+
+    public boolean isNickNameUnequal(String nickname) {
+        return !this.nickname.equals(nickname);
     }
 }

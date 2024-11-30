@@ -176,7 +176,7 @@ public class ChatService {
         List<ChatResponse.ChatUserDTO> chatUserDTOS = chatRoomRepository.findUsersByChatRoomId(chatRoomId).stream()
                 .map(user -> new ChatResponse.ChatUserDTO(
                         user.getId(),
-                        user.getNickName(),
+                        user.getNickname(),
                         user.getProfileURL()))
                 .toList();
 

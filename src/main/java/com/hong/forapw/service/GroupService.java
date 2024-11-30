@@ -323,7 +323,7 @@ public class GroupService {
         return noticePage.getContent().stream()
                 .map(notice -> new GroupResponse.NoticeDTO(
                         notice.getId(),
-                        notice.getUser().getNickName(),
+                        notice.getUser().getNickname(),
                         notice.getCreatedDate(),
                         notice.getTitle(),
                         postIds.contains(notice.getId().toString()))
@@ -371,10 +371,10 @@ public class GroupService {
         );
 
         List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository.findUserByMeetingId(meeting.getId()).stream()
-                .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL(), user.getNickName()))
+                .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL(), user.getNickname()))
                 .toList();
 
-        return new GroupResponse.FindMeetingByIdDTO(meeting.getId(), meeting.getName(), meeting.getMeetDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getCreator().getNickName(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
+        return new GroupResponse.FindMeetingByIdDTO(meeting.getId(), meeting.getName(), meeting.getMeetDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getCreator().getNickname(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
     }
 
     @Transactional
@@ -391,7 +391,7 @@ public class GroupService {
                 .filter(groupUser -> !groupUser.getGroupRole().equals(GroupRole.TEMP))
                 .map(groupUser -> new GroupResponse.MemberDetailDTO(
                         groupUser.getUser().getId(),
-                        groupUser.getUser().getNickName(),
+                        groupUser.getUser().getNickname(),
                         groupUser.getUser().getProfileURL(),
                         groupUser.getCreatedDate(),
                         groupUser.getGroupRole()
@@ -484,7 +484,7 @@ public class GroupService {
         List<GroupResponse.ApplicantDTO> applicantDTOS = applicants.stream()
                 .map(gu -> new GroupResponse.ApplicantDTO(
                         gu.getUser().getId(),
-                        gu.getUser().getNickName(),
+                        gu.getUser().getNickname(),
                         gu.getGreeting(),
                         gu.getUser().getEmail(),
                         gu.getUser().getProfileURL(),
@@ -960,7 +960,7 @@ public class GroupService {
                 .filter(groupUser -> !groupUser.getGroupRole().equals(GroupRole.TEMP)) // 가입 승인 상태가 아니면 제외
                 .map(groupUser -> new GroupResponse.MemberDTO(
                         groupUser.getUser().getId(),
-                        groupUser.getUser().getNickName(),
+                        groupUser.getUser().getNickname(),
                         groupUser.getGroupRole(),
                         groupUser.getUser().getProfileURL(),
                         groupUser.getCreatedDate()))

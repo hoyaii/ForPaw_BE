@@ -157,8 +157,8 @@ public class UserService {
 
     // 테스트 기간에만 사용하고, 운영에는 사용 X
     @Transactional
-    public void initSuperAdmin(){
-        if(!userRepository.existsByNickname(ADMIN_NAME)){
+    public void initSuperAdmin() {
+        if (!userRepository.existsByNickname(ADMIN_NAME)) {
             User admin = User.builder()
                     .email(adminEmail)
                     .name(ADMIN_NAME)
@@ -189,7 +189,7 @@ public class UserService {
         checkIsActiveMember(user);
         Long loginFailNum = checkLoginFailures(user);
 
-        if(isPasswordUnmatched(user, requestDTO.password())){
+        if (isPasswordUnmatched(user, requestDTO.password())) {
             infoLoginFail(user, loginFailNum);
         }
 
@@ -208,7 +208,7 @@ public class UserService {
     }
 
     @Transactional
-    public Map<String, String> googleLogin(String code, HttpServletRequest request){
+    public Map<String, String> googleLogin(String code, HttpServletRequest request) {
         GoogleOauthDTO.TokenDTO token = getGoogleToken(code);
         GoogleOauthDTO.UserInfoDTO userInfoDTO = getGoogleUserInfo(token.access_token());
         String email = userInfoDTO.email();
@@ -217,7 +217,7 @@ public class UserService {
     }
 
     @Transactional
-    public void join(UserRequest.JoinDTO requestDTO){
+    public void join(UserRequest.JoinDTO requestDTO) {
         checkConfirmPasswordCorrect(requestDTO.password(), requestDTO.passwordConfirm());
         checkAlreadyJoin(requestDTO.email());
         checkDuplicateNickname(requestDTO.nickName());
@@ -242,7 +242,7 @@ public class UserService {
     }
 
     @Transactional
-    public void socialJoin(UserRequest.SocialJoinDTO requestDTO){
+    public void socialJoin(UserRequest.SocialJoinDTO requestDTO) {
         checkAlreadyJoin(requestDTO.email());
         checkDuplicateNickname(requestDTO.nickName());
 
@@ -266,7 +266,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserResponse.CheckEmailExistDTO checkEmailExist(String email){
+    public UserResponse.CheckEmailExistDTO checkEmailExist(String email) {
         boolean isValid = !userRepository.existsByEmailWithRemoved(email);
         return new UserResponse.CheckEmailExistDTO(isValid);
     }
@@ -292,7 +292,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse.CheckNickNameDTO checkNickName(UserRequest.CheckNickDTO requestDTO){
+    public UserResponse.CheckNickNameDTO checkNickName(UserRequest.CheckNickDTO requestDTO) {
         boolean isDuplicate = userRepository.existsByNicknameWithRemoved(requestDTO.nickName());
         return new UserResponse.CheckNickNameDTO(isDuplicate);
     }
@@ -305,15 +305,15 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserResponse.CheckAccountExistDTO checkAccountExist(UserRequest.EmailDTO requestDTO){
+    public UserResponse.CheckAccountExistDTO checkAccountExist(UserRequest.EmailDTO requestDTO) {
         boolean isValid = userRepository.existsByEmail(requestDTO.email());
         return new UserResponse.CheckAccountExistDTO(isValid);
     }
 
     @Transactional
-    public void resetPassword(UserRequest.ResetPasswordDTO requestDTO){
+    public void resetPassword(UserRequest.ResetPasswordDTO requestDTO) {
         String email = getEmailByVerificationCode(requestDTO);
-        if(email == null){
+        if (email == null) {
             throw new CustomException(ExceptionCode.BAD_APPROACH);
         }
 
@@ -323,12 +323,12 @@ public class UserService {
 
     // 재설정 화면에서 실시간으로 일치여부를 확인하기 위해 사용
     @Transactional
-    public UserResponse.VerifyPasswordDTO verifyPassword(UserRequest.CurPasswordDTO requestDTO, Long userId){
+    public UserResponse.VerifyPasswordDTO verifyPassword(UserRequest.CurPasswordDTO requestDTO, Long userId) {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        if(isPasswordUnmatched(user, requestDTO.password())){
+        if (isPasswordUnmatched(user, requestDTO.password())) {
             return new UserResponse.VerifyPasswordDTO(false);
         }
 
@@ -336,7 +336,7 @@ public class UserService {
     }
 
     @Transactional
-    public void updatePassword(UserRequest.UpdatePasswordDTO requestDTO, Long userId){
+    public void updatePassword(UserRequest.UpdatePasswordDTO requestDTO, Long userId) {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
@@ -348,14 +348,14 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserResponse.ProfileDTO findProfile(Long userId){
+    public UserResponse.ProfileDTO findProfile(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
         return new UserResponse.ProfileDTO(user.getEmail(),
                 user.getName(),
-                user.getNickName(),
+                user.getNickname(),
                 user.getProvince(),
                 user.getDistrict(),
                 user.getSubDistrict(),
@@ -366,21 +366,24 @@ public class UserService {
     }
 
     @Transactional
-    public void updateProfile(UserRequest.UpdateProfileDTO requestDTO, Long userId){
+    public void updateProfile(UserRequest.UpdateProfileDTO requestDTO, Long userId) {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        // 닉네임 중복 체크 (현재 닉네임은 통과)
-        if(!user.getNickName().equals(requestDTO.nickName()) && userRepository.existsByNicknameWithRemoved(requestDTO.nickName()))
-            throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
-
-        user.updateProfile(requestDTO.nickName(), requestDTO.province(), requestDTO.district(), requestDTO.subDistrict(), requestDTO.profileURL());
+        validateNickname(user, requestDTO.nickName());
+        user.updateProfile(
+                requestDTO.nickName(),
+                requestDTO.province(),
+                requestDTO.district(),
+                requestDTO.subDistrict(),
+                requestDTO.profileURL()
+        );
     }
 
     @Transactional
-    public Map<String, String> updateAccessToken(String refreshToken){
-        if(JWTProvider.isInvalidJwtFormat(refreshToken)) {
+    public Map<String, String> updateAccessToken(String refreshToken) {
+        if (JWTProvider.isInvalidJwtFormat(refreshToken)) {
             throw new CustomException(ExceptionCode.TOKEN_WRONG);
         }
 
@@ -388,7 +391,7 @@ public class UserService {
         Long userId = JWTProvider.extractUserIdFromToken(refreshToken);
 
         // 리프레쉬 토큰 만료 여부 체크
-        if(!redisService.isValueExist(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(userId)))
+        if (!redisService.isValueExist(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(userId)))
             throw new CustomException(ExceptionCode.TOKEN_EXPIRED);
 
         // 유효하지 않는 유저의 토큰이면 에러 발생
@@ -401,15 +404,16 @@ public class UserService {
 
     // 게시글, 댓글, 좋아요은 남겨둔다. (정책에 따라 변경 가능)
     @Transactional
-    public void withdrawMember(Long userId){
+    public void withdrawMember(Long userId) {
         User user = userRepository.findByIdWithRemoved(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
         // 이미 탈퇴한 회원이면 예외
-        if(user.getRemovedAt() != null){
+        if (user.getRemovedAt() != null) {
             throw new CustomException(ExceptionCode.USER_ALREADY_EXIT);
-        };
+        }
+        ;
 
         // 그룹장 상태에서는 탈퇴 불가능
         groupUserRepository.findAllByUserId(userId)
@@ -435,16 +439,16 @@ public class UserService {
         chatUserRepository.deleteByUserId(userId);
         groupUserRepository.findByUserIdWithGroup(userId)
                 .forEach(groupUser -> {
-                    groupUser.getGroup().decrementParticipantNum();
-                    groupUserRepository.delete(groupUser);
-                }
-        );
+                            groupUser.getGroup().decrementParticipantNum();
+                            groupUserRepository.delete(groupUser);
+                        }
+                );
         meetingUserRepository.findByUserIdWithMeeting(userId)
                 .forEach(meetingUser -> {
-                    meetingUser.getMeeting().decrementParticipantNum();
-                    meetingUserRepository.delete(meetingUser);
-                }
-        );
+                            meetingUser.getMeeting().decrementParticipantNum();
+                            meetingUserRepository.delete(meetingUser);
+                        }
+                );
 
         // 유저 상태 변경
         user.getStatus().updateIsActive(false);
@@ -460,13 +464,13 @@ public class UserService {
     // 탈퇴한지 6개월 지난 유저 데이터 삭제 (매일 자정 30분에 실행)
     @Transactional
     @Scheduled(cron = "0 30 0 * * ?")
-    public void deleteExpiredUserData(){
+    public void deleteExpiredUserData() {
         LocalDateTime sixMonthsAgo = LocalDateTime.now().minus(6, ChronoUnit.MONTHS);
         userRepository.hardDeleteRemovedBefore(sixMonthsAgo);
     }
 
     @Transactional
-    public UserResponse.SubmitInquiryDTO submitInquiry(UserRequest.SubmitInquiry requestDTO, Long userId){
+    public UserResponse.SubmitInquiryDTO submitInquiry(UserRequest.SubmitInquiry requestDTO, Long userId) {
         User user = entityManager.getReference(User.class, userId);
 
         Inquiry inquiry = Inquiry.builder()
@@ -485,7 +489,7 @@ public class UserService {
     }
 
     @Transactional
-    public void updateInquiry(UserRequest.UpdateInquiry requestDTO, Long inquiryId, Long userId){
+    public void updateInquiry(UserRequest.UpdateInquiry requestDTO, Long inquiryId, Long userId) {
         // 존재하지 않는 문의면 에러
         Inquiry inquiry = inquiryRepository.findById(inquiryId).orElseThrow(
                 () -> new CustomException(ExceptionCode.INQUIRY_NOT_FOUND)
@@ -498,14 +502,14 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserResponse.FindInquiryListDTO findInquiryList(Long userId){
+    public UserResponse.FindInquiryListDTO findInquiryList(Long userId) {
         List<Inquiry> customerInquiries = inquiryRepository.findAllByQuestionerId(userId);
 
         List<UserResponse.InquiryDTO> inquiryDTOS = customerInquiries.stream()
                 .map(inquiry -> {
                     UserResponse.AnswerDTO answerDTO = null;
 
-                    if(inquiry.getAnswer() != null){
+                    if (inquiry.getAnswer() != null) {
                         answerDTO = new UserResponse.AnswerDTO(
                                 inquiry.getAnswer(),
                                 inquiry.getAnswerer().getName()
@@ -528,13 +532,13 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserResponse.ValidateAccessTokenDTO validateAccessToken(@CookieValue String accessToken){
-        if(JWTProvider.isInvalidJwtFormat(accessToken)) {
+    public UserResponse.ValidateAccessTokenDTO validateAccessToken(@CookieValue String accessToken) {
+        if (JWTProvider.isInvalidJwtFormat(accessToken)) {
             throw new CustomException(ExceptionCode.TOKEN_WRONG);
         }
 
         Long userIdFromToken = JWTProvider.extractUserIdFromToken(accessToken);
-        if(!redisService.isStoredValue(ACCESS_TOKEN_KEY_PREFIX, String.valueOf(userIdFromToken), accessToken)){
+        if (!redisService.isStoredValue(ACCESS_TOKEN_KEY_PREFIX, String.valueOf(userIdFromToken), accessToken)) {
             throw new CustomException(ExceptionCode.ACCESS_TOKEN_WRONG);
         }
 
@@ -544,7 +548,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserResponse.FindCommunityRecord findCommunityStats(Long userId){
+    public UserResponse.FindCommunityRecord findCommunityStats(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
@@ -562,16 +566,16 @@ public class UserService {
         Long answerNum = postCountMap.getOrDefault(PostType.ANSWER, 0L);
         Long commentNum = commentRepository.countByUserId(userId);
 
-        return new UserResponse.FindCommunityRecord(user.getNickName(), user.getEmail(), adoptionNum + fosteringNum, commentNum, questionNum, answerNum);
+        return new UserResponse.FindCommunityRecord(user.getNickname(), user.getEmail(), adoptionNum + fosteringNum, commentNum, questionNum, answerNum);
     }
 
     @Transactional
-    public void checkAlreadySend(String email, String codeType){
-        if(!userRepository.existsByEmail(email)){
+    public void checkAlreadySend(String email, String codeType) {
+        if (!userRepository.existsByEmail(email)) {
             throw new CustomException(ExceptionCode.CODE_NOT_SENDED);
         }
 
-        if(redisService.isValueExist(EMAIL_CODE_KEY_PREFIX + codeType, email)){
+        if (redisService.isValueExist(EMAIL_CODE_KEY_PREFIX + codeType, email)) {
             throw new CustomException(ExceptionCode.CODE_ALREADY_SENDED);
         }
     }
@@ -585,11 +589,11 @@ public class UserService {
 
         // 로그이 실패 횟수가 3회 이상이면, 5분 동안 로그인 불가
         Long loginFailNum = redisService.getValueInLong(LOGIN_FAIL_KEY_PREFIX, user.getId().toString());
-        if(loginFailNum >= 3L) {
+        if (loginFailNum >= 3L) {
             loginFailNumDaily++;
             redisService.storeValue(LOGIN_FAIL_DAILY_KEY_PREFIX, user.getId().toString(), loginFailNumDaily.toString(), 86400000L);  // 24시간
 
-            if(loginFailNumDaily == 3L){
+            if (loginFailNumDaily == 3L) {
                 emailService.sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), MAIL_TEMPLATE_FOR_LOCK_ACCOUNT, new HashMap<>());
             }
 
@@ -602,20 +606,20 @@ public class UserService {
 
     public void processOAuthRedirect(Map<String, String> tokenOrEmail, String authProvider, HttpServletResponse response) throws IOException {
         String redirectUri;
-        if(tokenOrEmail.get(EMAIL) != null) {
+        if (tokenOrEmail.get(EMAIL) != null) {
             redirectUri = UriComponentsBuilder.fromUriString(redirectJoinUri)
                     .queryParam("email", URLEncoder.encode(tokenOrEmail.get(EMAIL), StandardCharsets.UTF_8))
                     .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
                     .build()
                     .toUriString();
-        } else if(tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX) != null) {
+        } else if (tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX) != null) {
             response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokenOrEmail.get(REFRESH_TOKEN_KEY_PREFIX)));
             redirectUri = UriComponentsBuilder.fromUriString(redirectHomeUri)
                     .queryParam("accessToken", URLEncoder.encode(tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX), StandardCharsets.UTF_8))
                     .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
                     .build()
                     .toUriString();
-        } else{
+        } else {
             redirectUri = UriComponentsBuilder.fromUriString(redirectLoginUri)
                     .queryParam("isDuplicate", URLEncoder.encode("true", StandardCharsets.UTF_8))
                     .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
@@ -716,7 +720,7 @@ public class UserService {
         return UserService.EMAIL_CODE_KEY_PREFIX + codeType;
     }
 
-    private Map<String, String> createToken(User user){
+    private Map<String, String> createToken(User user) {
         String accessToken = JWTProvider.createAccessToken(user);
         String refreshToken = JWTProvider.createRefreshToken(user);
 
@@ -734,7 +738,7 @@ public class UserService {
         return tokens;
     }
 
-    private Map<String, String> createAccessToken(User user){
+    private Map<String, String> createAccessToken(User user) {
         String accessToken = JWTProvider.createAccessToken(user);
         String refreshToken = redisService.getValueInString(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(user.getId()));
 
@@ -767,8 +771,8 @@ public class UserService {
         return Map.of("email", email);
     }
 
-    private void checkIsLocalJoined(User user){
-        if(user.isLocalJoined()){
+    private void checkIsLocalJoined(User user) {
+        if (user.isLocalJoined()) {
             throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
         }
     }
@@ -858,18 +862,18 @@ public class UserService {
     }
 
     private void checkDuplicateNickname(String nickName) {
-        if(userRepository.existsByNicknameWithRemoved(nickName))
+        if (userRepository.existsByNicknameWithRemoved(nickName))
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
     }
 
-    private void checkWriterAuthority(Long accessorId, User writer){
-        if(!accessorId.equals(writer.getId())){
+    private void checkWriterAuthority(Long accessorId, User writer) {
+        if (!accessorId.equals(writer.getId())) {
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
     }
 
     private void checkIsExitMember(User user) {
-        if(user.isExitMember()){
+        if (user.isExitMember()) {
             throw new CustomException(ExceptionCode.USER_ALREADY_EXIT);
         }
     }
@@ -884,8 +888,8 @@ public class UserService {
         throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG, message);
     }
 
-    private void checkIsActiveMember(User user){
-        if(user.isUnActive()){
+    private void checkIsActiveMember(User user) {
+        if (user.isUnActive()) {
             throw new CustomException(ExceptionCode.USER_SUSPENDED);
         }
     }
@@ -916,7 +920,14 @@ public class UserService {
         return request.getRemoteAddr();
     }
 
-    private void setUserStatus(User user){
+    private void validateNickname(User user, String newNickname) {
+        if (user.isNickNameUnequal(newNickname) // 현재 닉네임을 유지하고 있으면 굳이 DB까지 접근해서 검증 필요 X
+                && userRepository.existsByNicknameWithRemoved(newNickname)) {
+            throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
+        }
+    }
+
+    private void setUserStatus(User user) {
         UserStatus status = UserStatus.builder()
                 .user(user)
                 .isActive(true)

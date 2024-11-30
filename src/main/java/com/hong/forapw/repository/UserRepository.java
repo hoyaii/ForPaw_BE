@@ -22,7 +22,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.removedAt IS NULL")
     List<User> findAll();
 
-    @Query("SELECT u.nickName FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
+    @Query("SELECT u.nickname FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
     String findNickname(@Param("id") Long id);
 
     @Query("SELECT u.profileURL FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
@@ -74,10 +74,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email AND u.authProvider IN :authProviders")
     boolean existsByEmailAndAuthProviders(@Param("email") String email, @Param("authProviders") List<AuthProvider> authProviders);
 
-    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.nickName = :nickName")
+    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.nickname = :nickName")
     boolean existsByNickname(@Param("nickName") String nickName);
 
-    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.nickName = :nickName")
+    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.nickname = :nickName")
     boolean existsByNicknameWithRemoved(@Param("nickName") String nickName);
 
     @Modifying
