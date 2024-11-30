@@ -58,7 +58,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -140,7 +139,7 @@ public class UserService {
     private static final String ACCESS_TOKEN_KEY_PREFIX = "accessToken";
     private static final String EMAIL = "email";
     private static final String LOGIN_FAIL_DAILY_KEY_PREFIX = "loginFailDaily";
-    private static final String LOGIN_FAIL_KEY_PREFIX = "loginFail";
+    private static final String LOGIN_FAIL_CURRENT_KEY_PREFIX = "loginFail";
     private static final String CODE_TO_EMAIL_KEY_PREFIX = "codeToEmail";
     private static final String USER_QUEUE_PREFIX = "user.";
     private static final String ALARM_EXCHANGE = "alarm.exchange";
@@ -416,14 +415,13 @@ public class UserService {
     @Transactional
     @Scheduled(cron = "0 30 0 * * ?")
     public void deleteExpiredUserData() {
-        LocalDateTime sixMonthsAgo = LocalDateTime.now().minus(6, ChronoUnit.MONTHS);
+        LocalDateTime sixMonthsAgo = LocalDateTime.now().minusMonths(6);
         userRepository.hardDeleteRemovedBefore(sixMonthsAgo);
     }
 
     @Transactional
     public UserResponse.SubmitInquiryDTO submitInquiry(UserRequest.SubmitInquiry requestDTO, Long userId) {
         User user = entityManager.getReference(User.class, userId);
-
         Inquiry inquiry = Inquiry.builder()
                 .questioner(user)
                 .title(requestDTO.title())
@@ -441,15 +439,12 @@ public class UserService {
 
     @Transactional
     public void updateInquiry(UserRequest.UpdateInquiry requestDTO, Long inquiryId, Long userId) {
-        // 존재하지 않는 문의면 에러
         Inquiry inquiry = inquiryRepository.findById(inquiryId).orElseThrow(
                 () -> new CustomException(ExceptionCode.INQUIRY_NOT_FOUND)
         );
 
-        // 권한 체크
-        checkWriterAuthority(userId, inquiry.getQuestioner());
-
-        inquiry.updateCustomerInquiry(requestDTO.title(), requestDTO.description(), requestDTO.contactMail());
+        checkAuthority(userId, inquiry.getQuestioner());
+        inquiry.updateInquiry(requestDTO.title(), requestDTO.description(), requestDTO.contactMail());
     }
 
     @Transactional(readOnly = true)
@@ -530,28 +525,36 @@ public class UserService {
     }
 
     private Long checkLoginFailures(User user) {
-        // 하루 동안 5분 잠금이 세 번을 초과하면, 24시간 동안 로그인이 불가
-        Long loginFailNumDaily = redisService.getValueInLong(LOGIN_FAIL_DAILY_KEY_PREFIX, user.getId().toString());
-        if (loginFailNumDaily >= 3L) {
+        Long dailyFailureCount = redisService.getValueInLong(LOGIN_FAIL_DAILY_KEY_PREFIX, user.getId().toString());
+        if (dailyFailureCount >= 3L) {
             throw new CustomException(ExceptionCode.ACCOUNT_LOCKED);
         }
 
-        // 로그이 실패 횟수가 3회 이상이면, 5분 동안 로그인 불가
-        Long loginFailNum = redisService.getValueInLong(LOGIN_FAIL_KEY_PREFIX, user.getId().toString());
-        if (loginFailNum >= 3L) {
-            loginFailNumDaily++;
-            redisService.storeValue(LOGIN_FAIL_DAILY_KEY_PREFIX, user.getId().toString(), loginFailNumDaily.toString(), 86400000L);  // 24시간
-
-            if (loginFailNumDaily == 3L) {
-                emailService.sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), MAIL_TEMPLATE_FOR_LOCK_ACCOUNT, new HashMap<>());
-            }
-
+        Long currentFailureCount = redisService.getValueInLong(LOGIN_FAIL_CURRENT_KEY_PREFIX, user.getId().toString());
+        if (currentFailureCount >= 3L) {
+            handleDailyFailureLimitExceeded(user, dailyFailureCount);
             throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
         }
 
-        return loginFailNum;
+        return currentFailureCount;
     }
 
+    private void handleDailyFailureLimitExceeded(User user, Long dailyFailureCount) {
+        dailyFailureCount++;
+        updateDailyFailureCount(user, dailyFailureCount);
+
+        if (dailyFailureCount == 3L) {
+            sendAccountSuspensionEmail(user);
+        }
+    }
+
+    private void updateDailyFailureCount(User user, Long dailyFailureCount) {
+        redisService.storeValue(LOGIN_FAIL_DAILY_KEY_PREFIX, user.getId().toString(), dailyFailureCount.toString(), 86400000L);  // 24시간
+    }
+
+    private void sendAccountSuspensionEmail(User user) {
+        emailService.sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), MAIL_TEMPLATE_FOR_LOCK_ACCOUNT, new HashMap<>());
+    }
 
     public void processOAuthRedirect(Map<String, String> tokenOrEmail, String authProvider, HttpServletResponse response) throws IOException {
         String redirectUri;
@@ -673,13 +676,9 @@ public class UserService {
         String accessToken = JWTProvider.createAccessToken(user);
         String refreshToken = JWTProvider.createRefreshToken(user);
 
-        // Access Token 갱신
         redisService.storeValue(ACCESS_TOKEN_KEY_PREFIX, String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP_MILLI);
-
-        // Refresh Token 갱신
         redisService.storeValue(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP_MILLI);
 
-        // Map으로 토큰들을 담아 반환
         Map<String, String> tokens = new HashMap<>();
         tokens.put(ACCESS_TOKEN_KEY_PREFIX, accessToken);
         tokens.put(REFRESH_TOKEN_KEY_PREFIX, refreshToken);
@@ -825,8 +824,8 @@ public class UserService {
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
     }
 
-    private void checkWriterAuthority(Long accessorId, User writer) {
-        if (!accessorId.equals(writer.getId())) {
+    private void checkAuthority(Long userId, User writer) {
+        if (writer.isNotSameUser(userId)) {
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
     }
@@ -847,7 +846,7 @@ public class UserService {
     }
 
     private void infoLoginFail(User user, Long loginFailNum) {
-        redisService.storeValue(LOGIN_FAIL_KEY_PREFIX, user.getId().toString(), Long.toString(++loginFailNum), 300000L); // 5분
+        redisService.storeValue(LOGIN_FAIL_CURRENT_KEY_PREFIX, user.getId().toString(), Long.toString(++loginFailNum), 300000L); // 5분
         String message = String.format("로그인에 실패했습니다. 이메일 또는 비밀번호를 확인해 주세요. (%d회 실패)", loginFailNum);
         throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG, message);
     }

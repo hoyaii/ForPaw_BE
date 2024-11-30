@@ -130,4 +130,8 @@ public class User extends TimeStamp {
     public boolean isNickNameUnequal(String nickname) {
         return !this.nickname.equals(nickname);
     }
+
+    public boolean isNotSameUser(Long userId){
+        return !this.id.equals(userId);
+    }
 }

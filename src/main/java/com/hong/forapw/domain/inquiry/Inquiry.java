@@ -67,7 +67,7 @@ public class Inquiry extends TimeStamp {
         this.answerer = answerer;
     }
 
-    public void updateCustomerInquiry(String title, String description, String contactMail) {
+    public void updateInquiry(String title, String description, String contactMail) {
         this.title = title;
         this.description = description;
         this.contactMail = contactMail;
