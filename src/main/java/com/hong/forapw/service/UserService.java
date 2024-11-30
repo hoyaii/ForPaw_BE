@@ -50,7 +50,6 @@ import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
-import org.thymeleaf.spring6.SpringTemplateEngine;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -190,7 +189,7 @@ public class UserService {
         checkIsActiveMember(user);
         Long loginFailNum = checkLoginFailures(user);
 
-        if(isPasswordUnmatched(requestDTO.password(), user)){
+        if(isPasswordUnmatched(user, requestDTO.password())){
             infoLoginFail(user, loginFailNum);
         }
 
@@ -219,7 +218,7 @@ public class UserService {
 
     @Transactional
     public void join(UserRequest.JoinDTO requestDTO){
-        checkPasswordConfirmation(requestDTO);
+        checkConfirmPasswordCorrect(requestDTO.password(), requestDTO.passwordConfirm());
         checkAlreadyJoin(requestDTO.email());
         checkDuplicateNickname(requestDTO.nickName());
 
@@ -319,7 +318,7 @@ public class UserService {
         }
 
         redisService.removeValue(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code());
-        updatePassword(email, requestDTO.newPassword());
+        updateNewPassword(email, requestDTO.newPassword());
     }
 
     // 재설정 화면에서 실시간으로 일치여부를 확인하기 위해 사용
@@ -329,7 +328,7 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        if(!passwordEncoder.matches(requestDTO.password(), user.getPassword())){
+        if(isPasswordUnmatched(user, requestDTO.password())){
             return new UserResponse.VerifyPasswordDTO(false);
         }
 
@@ -342,13 +341,8 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        // 현재 비민번호 값이 맞는지 검증
-        if(!passwordEncoder.matches(requestDTO.curPassword(), user.getPassword()))
-            throw new CustomException(ExceptionCode.USER_PASSWORD_MATCH_WRONG);
-
-        // 새 비밀번호와 새 비밀번호 확인값이 맞는지 검증
-        if (!requestDTO.newPassword().equals(requestDTO.newPasswordConfirm()))
-            throw new CustomException(ExceptionCode.USER_PASSWORD_MATCH_WRONG);
+        checkIsPasswordMatched(user, requestDTO.curPassword());
+        checkConfirmPasswordCorrect(requestDTO.curPassword(), requestDTO.newPasswordConfirm());
 
         user.updatePassword(passwordEncoder.encode(requestDTO.newPassword()));
     }
@@ -590,7 +584,7 @@ public class UserService {
         }
     }
 
-    private Long checkLoginFailures(User user) throws MessagingException {
+    private Long checkLoginFailures(User user) {
         // 하루 동안 5분 잠금이 세 번을 초과하면, 24시간 동안 로그인이 불가
         Long loginFailNumDaily = redisService.getValueInLong(LOGIN_FAIL_DAILY_KEY_PREFIX, user.getId().toString());
         if (loginFailNumDaily >= 3L) {
@@ -708,7 +702,7 @@ public class UserService {
         return redisService.getValueInString(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code());
     }
 
-    private void updatePassword(String email, String newPassword) {
+    private void updateNewPassword(String email, String newPassword) {
         User user = userRepository.findByEmail(email).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND)
         );
@@ -850,9 +844,14 @@ public class UserService {
         brokerService.registerAlarmListener(listenerId, queueName);
     }
 
-    private void checkPasswordConfirmation(UserRequest.JoinDTO requestDTO) {
-        if (!requestDTO.password().equals(requestDTO.passwordConfirm()))
-            throw new CustomException(ExceptionCode.USER_PASSWORD_WRONG);
+    private void checkConfirmPasswordCorrect(String password, String confirmPassword) {
+        if (!password.equals(confirmPassword))
+            throw new CustomException(ExceptionCode.USER_PASSWORD_MATCH_WRONG);
+    }
+
+    private void checkIsPasswordMatched(User user, String inputPassword) {
+        if (!passwordEncoder.matches(user.getPassword(), inputPassword))
+            throw new CustomException(ExceptionCode.USER_PASSWORD_MATCH_WRONG);
     }
 
     private void checkAlreadyJoin(String email) {
@@ -883,8 +882,8 @@ public class UserService {
         }
     }
 
-    private boolean isPasswordUnmatched(String password, User user) {
-        return !passwordEncoder.matches(password, user.getPassword());
+    private boolean isPasswordUnmatched(User user, String inputPassword) {
+        return !passwordEncoder.matches(user.getPassword(), inputPassword);
     }
 
     private void infoLoginFail(User user, Long loginFailNum) {
