@@ -62,6 +62,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.hong.forapw.core.security.JWTProvider.createRefreshTokenCookie;
+import static com.hong.forapw.core.utils.UriUtils.buildRedirectUri;
 import static com.hong.forapw.service.EmailService.generateVerificationCode;
 import static com.hong.forapw.core.utils.MailTemplate.ACCOUNT_SUSPENSION;
 import static com.hong.forapw.core.utils.MailTemplate.VERIFICATION_CODE;
@@ -153,6 +154,9 @@ public class UserService {
     private static final String CODE_TYPE_RECOVERY = "recovery";
     private static final long VERIFICATION_CODE_EXPIRATION_MS = 175 * 1000L;
     private static final String MODEL_KEY_CODE = "code";
+    private static final String QUERY_PARAM_EMAIL = "email";
+    private static final String QUERY_PARAM_AUTH_PROVIDER = "authProvider";
+    private static final String QUERY_PARAM_ACCESS_TOKEN = "accessToken";
 
     // 테스트 기간에만 사용하고, 운영에는 사용 X
     @Transactional
@@ -525,6 +529,16 @@ public class UserService {
         }
     }
 
+    public void processOAuthRedirect(Map<String, String> tokenOrEmail, String authProvider, HttpServletResponse response) {
+        try {
+            String redirectUri = determineRedirectUri(tokenOrEmail, authProvider, response);
+            response.sendRedirect(redirectUri);
+        } catch (IOException e) {
+            log.error("소셜 로그인 증 리다이렉트 에러 발생", e);
+            throw new CustomException(ExceptionCode.REDIRECT_FAILED);
+        }
+    }
+
     private Long checkLoginFailures(User user) {
         Long dailyFailureCount = redisService.getValueInLong(LOGIN_FAIL_DAILY_KEY_PREFIX, user.getId().toString());
         if (dailyFailureCount >= 3L) {
@@ -557,33 +571,32 @@ public class UserService {
         emailService.sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), MAIL_TEMPLATE_FOR_LOCK_ACCOUNT, new HashMap<>());
     }
 
-    public void processOAuthRedirect(Map<String, String> tokenOrEmail, String authProvider, HttpServletResponse response) throws IOException {
-        String redirectUri;
-        if (tokenOrEmail.get(EMAIL) != null) {
-            redirectUri = UriComponentsBuilder.fromUriString(redirectJoinUri)
-                    .queryParam("email", URLEncoder.encode(tokenOrEmail.get(EMAIL), StandardCharsets.UTF_8))
-                    .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
-                    .build()
-                    .toUriString();
-        } else if (tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX) != null) {
+    private String determineRedirectUri(Map<String, String> tokenOrEmail, String authProvider, HttpServletResponse response) throws IOException {
+        if (isNotJoined(tokenOrEmail)) {
+            return buildRedirectUri(redirectJoinUri, Map.of(
+                    QUERY_PARAM_EMAIL, tokenOrEmail.get(EMAIL),
+                    QUERY_PARAM_AUTH_PROVIDER, authProvider
+            ));
+        } else if (isJoined(tokenOrEmail)) {
             response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokenOrEmail.get(REFRESH_TOKEN_KEY_PREFIX)));
-            redirectUri = UriComponentsBuilder.fromUriString(redirectHomeUri)
-                    .queryParam("accessToken", URLEncoder.encode(tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX), StandardCharsets.UTF_8))
-                    .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
-                    .build()
-                    .toUriString();
+            return buildRedirectUri(redirectHomeUri, Map.of(
+                    QUERY_PARAM_ACCESS_TOKEN, tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX),
+                    QUERY_PARAM_AUTH_PROVIDER, authProvider
+            ));
         } else {
-            redirectUri = UriComponentsBuilder.fromUriString(redirectLoginUri)
-                    .queryParam("isDuplicate", URLEncoder.encode("true", StandardCharsets.UTF_8))
-                    .queryParam("authProvider", URLEncoder.encode(authProvider, StandardCharsets.UTF_8))
-                    .build()
-                    .toUriString();
+            return buildRedirectUri(redirectLoginUri, Map.of(
+                    QUERY_PARAM_AUTH_PROVIDER, authProvider
+            ));
         }
-
-        response.sendRedirect(redirectUri);
     }
 
+    private boolean isNotJoined(Map<String, String> tokenOrEmail) {
+        return tokenOrEmail.get(EMAIL) != null;
+    }
 
+    private boolean isJoined(Map<String, String> tokenOrEmail) {
+        return tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX) != null;
+    }
 
     private void cacheVerificationInfoIfRecovery(UserRequest.VerifyCodeDTO requestDTO, String codeType) {
         if (CODE_TYPE_RECOVERY.equals(codeType))

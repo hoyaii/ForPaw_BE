@@ -46,13 +46,13 @@ public class UserController {
     }
 
     @GetMapping("/auth/login/kakao")
-    public void kakaoLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void kakaoLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) {
         Map<String, String> tokenOrEmail = userService.kakaoLogin(code, request);
         userService.processOAuthRedirect(tokenOrEmail, AUTH_KAKAO, response);
     }
 
     @GetMapping("/auth/login/google")
-    public void googleLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void googleLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) {
         Map<String, String> tokenOrEmail = userService.googleLogin(code, request);
         userService.processOAuthRedirect(tokenOrEmail, AUTH_GOOGLE, response);
     }
@@ -83,7 +83,7 @@ public class UserController {
     }
 
     @PostMapping("/accounts/resend/code")
-    public ResponseEntity<?> resendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO, @RequestParam String codeType) throws MessagingException {
+    public ResponseEntity<?> resendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO, @RequestParam String codeType) {
         userService.sendCodeByEmail(requestDTO.email(), codeType);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }

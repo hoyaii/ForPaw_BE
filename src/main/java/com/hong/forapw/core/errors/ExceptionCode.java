@@ -31,6 +31,7 @@ public enum ExceptionCode {
     USER_NOT_SUSPENDED(HttpStatus.BAD_REQUEST, "정지된 유저가 아닙니다."),
     JOINED_BY_LOCAL(HttpStatus.BAD_REQUEST, "일반 회원 가입을 통해 가입된 계정입니다."),
     JOINED_BY_SOCIAL(HttpStatus.BAD_REQUEST, "소셜 회원 가입을 통해 가입된 계정입니다."),
+    REDIRECT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부의 문제로 로그인 리다이렉트에 실패하였습니다."),
 
     // 고객 문의 관련 에러
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, "문의 내역이 존재하지 않습니다"),
