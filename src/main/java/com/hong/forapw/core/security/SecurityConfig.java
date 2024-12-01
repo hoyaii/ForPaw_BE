@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
@@ -68,6 +69,7 @@ public class SecurityConfig {
                 )
                 .formLogin(AbstractHttpConfigurer::disable) // 폼 로그인 및 비활성화
                 .httpBasic(AbstractHttpConfigurer::disable) // 기본 HTTP 인증 비활성화
+
                 .exceptionHandling(exceptionHandling -> { // 인증 예외 및 권한 부여 실패 처리자
                     exceptionHandling.authenticationEntryPoint((request, response, authException) ->
                             FilterResponseUtils.unAuthorized(response, new CustomException(ExceptionCode.USER_UNAUTHORIZED))
@@ -76,24 +78,20 @@ public class SecurityConfig {
                             FilterResponseUtils.forbidden(response, new CustomException(ExceptionCode.USER_FORBIDDEN))
                     );
                 })
-                .authorizeHttpRequests(auth -> auth  // 권한 설정
-                        .requestMatchers("/api/accounts/profile", "/api/accounts/password/**", "/api/accounts/role", "/api/accounts/withdraw", "/api/shelters/import", "/api/animals/like", "/api/accounts/withdraw/code").authenticated()
-                        .requestMatchers(new AntPathRequestMatcher("/api/animals/*/like")).authenticated()
-                        .requestMatchers(new AntPathRequestMatcher("/api/animals/*/apply")).authenticated()
-                        .requestMatchers(new AntPathRequestMatcher("/api/groups/*/detail")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/api/chat/*/read")).permitAll()
-                        .requestMatchers("/ws/**", "/api/auth/**", "/api/accounts/**", "/api/animals/**", "/api/shelters/**",
-                                "/api/groups", "/api/groups/local", "/api/groups/new", "/api/home", "/api/search/**", "/api/validate/accessToken",
-                                "/api/posts/adoption", "/api/posts/fostering", "/api/posts/question", "/api/posts/popular", "/api/groups/localAndNew", "/api/faq", "/shelters/addr").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .addFilterBefore(traceIdFilter(), BasicAuthenticationFilter.class) // TraceIdFilter
-                .addFilterAfter(jwtAuthenticationFilter(), BasicAuthenticationFilter.class); // JwtAuthenticationFilter
+
+                .authorizeHttpRequests(auth -> {
+                    authenticatedRoutes(auth); // 인증이 필요한 라우트
+                    publicRoutes(auth); // 공개 라우트
+                    auth.anyRequest().authenticated(); // 그 외 요청은 인증 필요
+                })
+
+                .addFilterBefore(traceIdFilter(), BasicAuthenticationFilter.class)
+                .addFilterAfter(jwtAuthenticationFilter(), BasicAuthenticationFilter.class);
 
         return http.build();
     }
 
-    public CorsConfigurationSource corsConfigurationSource() {
+    private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.addAllowedHeader("*");
         configuration.addAllowedMethod("*");
@@ -105,5 +103,23 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private void authenticatedRoutes(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry auth) {
+        auth
+                .requestMatchers("/api/accounts/profile", "/api/accounts/password/**", "/api/accounts/role",
+                        "/api/accounts/withdraw", "/api/shelters/import", "/api/animals/like",
+                        "/api/accounts/withdraw/code").authenticated()
+                .requestMatchers("/api/animals/*/like", "/api/animals/*/apply").authenticated();
+    }
+
+    private void publicRoutes(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry auth) {
+        auth
+                .requestMatchers("/api/groups/*/detail", "/api/chat/*/read").permitAll()
+                .requestMatchers("/ws/**", "/api/auth/**", "/api/accounts/**", "/api/animals/**",
+                        "/api/shelters/**", "/api/groups", "/api/groups/local", "/api/groups/new",
+                        "/api/home", "/api/search/**", "/api/validate/accessToken",
+                        "/api/posts/adoption", "/api/posts/fostering", "/api/posts/question",
+                        "/api/posts/popular", "/api/groups/localAndNew", "/api/faq", "/shelters/addr").permitAll();
     }
 }
