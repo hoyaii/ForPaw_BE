@@ -3,6 +3,8 @@ package com.hong.forapw.core.errors;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.hong.forapw.core.utils.ApiUtils;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -26,7 +28,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    private MessageSource messageSource;
+    private final MessageSource messageSource;
 
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<?> handleCustomException(CustomException ex) {
@@ -83,6 +85,16 @@ public class GlobalExceptionHandler {
         String errorMessage = getLocalizedMessage("error.illegal.argument");
 
         log.warn("[Trace ID: {}] 잘못된 인자: {}", traceId, ex.getMessage(), ex);
+        return ResponseEntity.badRequest().body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<?> handleConstraintViolationException(ConstraintViolationException ex) {
+        String traceId = getTraceId();
+        String errorMessage = ex.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+        log.warn("[Trace ID: {}] 유효성 검사 실패: {}", traceId, errorMessage, ex);
         return ResponseEntity.badRequest().body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
     }
 
