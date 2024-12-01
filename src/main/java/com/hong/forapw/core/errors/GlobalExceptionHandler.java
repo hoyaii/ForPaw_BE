@@ -30,6 +30,10 @@ public class GlobalExceptionHandler {
 
     private final MessageSource messageSource;
 
+    private static final String LOG_LEVEL_INFO = "INFO";
+    private static final String LOG_LEVEL_WARN = "WARN";
+    private static final String LOG_LEVEL_ERROR = "ERROR";
+
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<?> handleCustomException(CustomException ex) {
         String traceId = getTraceId();
@@ -118,5 +122,17 @@ public class GlobalExceptionHandler {
 
     private String getRequestDetails(HttpServletRequest request) {
         return String.format("URL: %s, Method: %s", request.getRequestURL(), request.getMethod());
+    }
+
+    private void logWithContext(String logLevel, String traceId, String message, Throwable ex) {
+        String userId = MDC.get("userId");
+        String formattedMessage = String.format("[Trace ID: %s][User ID: %s] %s", traceId, userId, message);
+
+        switch (logLevel.toUpperCase()) {
+            case LOG_LEVEL_INFO -> log.info(formattedMessage, ex);
+            case LOG_LEVEL_WARN -> log.warn(formattedMessage, ex);
+            case LOG_LEVEL_ERROR -> log.error(formattedMessage, ex);
+            default -> log.debug(formattedMessage, ex);
+        }
     }
 }
