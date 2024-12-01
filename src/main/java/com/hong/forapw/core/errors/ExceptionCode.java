@@ -110,7 +110,10 @@ public enum ExceptionCode {
 
     // 검색
     SEARCH_NOT_FOUND(HttpStatus.NOT_FOUND, "검색 결과값이 존재하지 않습니다"),
-    SEARCH_KEYWORD_EMPTY(HttpStatus.BAD_REQUEST, "검색어는 빈 문자열일 수 없습니다.");
+    SEARCH_KEYWORD_EMPTY(HttpStatus.BAD_REQUEST, "검색어는 빈 문자열일 수 없습니다."),
+
+    // 기타
+    NO_REGION_FILE(HttpStatus.NOT_FOUND, "지역 코드 파일이 존재하지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;
