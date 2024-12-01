@@ -32,10 +32,9 @@ import java.util.Arrays;
 @Configuration
 public class SecurityConfig {
 
-    private final RedisService redisService;
-
-    public SecurityConfig(RedisService redisService) {
-        this.redisService = redisService;
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
     }
 
     @Bean
@@ -44,33 +43,18 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
-        return configuration.getAuthenticationManager();
-    }
-
-    @Bean
-    public TraceIdFilter traceIdFilter() {
-        return new TraceIdFilter();
-    }
-
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(redisService);
-    }
-
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, TraceIdFilter traceIdFilter, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable) // CSRF 해제
+                .csrf(AbstractHttpConfigurer::disable)
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)) // iframe 옵션 설정
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정
-                .sessionManagement(sessionManagement -> // 세션 정책 설정
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(sessionManagement ->
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .formLogin(AbstractHttpConfigurer::disable) // 폼 로그인 및 비활성화
+                .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable) // 기본 HTTP 인증 비활성화
 
-                .exceptionHandling(exceptionHandling -> { // 인증 예외 및 권한 부여 실패 처리자
+                .exceptionHandling(exceptionHandling -> {
                     exceptionHandling.authenticationEntryPoint((request, response, authException) ->
                             FilterResponseUtils.unAuthorized(response, new CustomException(ExceptionCode.USER_UNAUTHORIZED))
                     );
@@ -80,13 +64,13 @@ public class SecurityConfig {
                 })
 
                 .authorizeHttpRequests(auth -> {
-                    authenticatedRoutes(auth); // 인증이 필요한 라우트
-                    publicRoutes(auth); // 공개 라우트
-                    auth.anyRequest().authenticated(); // 그 외 요청은 인증 필요
+                    authenticatedRoutes(auth);
+                    publicRoutes(auth);
+                    auth.anyRequest().authenticated();
                 })
 
-                .addFilterBefore(traceIdFilter(), BasicAuthenticationFilter.class)
-                .addFilterAfter(jwtAuthenticationFilter(), BasicAuthenticationFilter.class);
+                .addFilterBefore(traceIdFilter, BasicAuthenticationFilter.class)
+                .addFilterAfter(jwtAuthenticationFilter, BasicAuthenticationFilter.class);
 
         return http.build();
     }
