@@ -14,7 +14,8 @@ public class CookieUtils {
     private CookieUtils() {
     }
 
-    public static void setCookieToResponse(String cookieKey, String cookieValue, Long maxAgeSec, boolean secureCookie, boolean isHttpOnly, HttpServletResponse response) {
+    public static void setCookieToResponse(String cookieKey, String cookieValue, Long maxAgeSec, boolean secureCookie,
+                                           boolean isHttpOnly, HttpServletResponse response) {
         ResponseCookie cookie = ResponseCookie.from(cookieKey, cookieValue)
                 .httpOnly(isHttpOnly)
                 .secure(secureCookie)

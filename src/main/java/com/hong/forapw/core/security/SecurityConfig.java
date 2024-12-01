@@ -14,6 +14,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
+import org.springframework.security.config.annotation.web.configurers.ExceptionHandlingConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
@@ -43,31 +44,20 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, TraceIdFilter traceIdFilter, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, TraceIdFilter traceIdFilter,
+                                                   JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
-                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)) // iframe 옵션 설정
+                .csrf(AbstractHttpConfigurer::disable) // REST API에서는 CSRF 보호가 필요하지 않음
+                .headers(headers ->
+                        headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)) // 동일 출처의 iframe 허용
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(sessionManagement ->
+                .sessionManagement(sessionManagement -> // STATELESS가 JWT 인증 방식에 적합
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .formLogin(AbstractHttpConfigurer::disable)
-                .httpBasic(AbstractHttpConfigurer::disable) // 기본 HTTP 인증 비활성화
-
-                .exceptionHandling(exceptionHandling -> {
-                    exceptionHandling.authenticationEntryPoint((request, response, authException) ->
-                            FilterResponseUtils.unAuthorized(response, new CustomException(ExceptionCode.USER_UNAUTHORIZED))
-                    );
-                    exceptionHandling.accessDeniedHandler((request, response, accessDeniedException) ->
-                            FilterResponseUtils.forbidden(response, new CustomException(ExceptionCode.USER_FORBIDDEN))
-                    );
-                })
-
-                .authorizeHttpRequests(auth -> {
-                    authenticatedRoutes(auth);
-                    publicRoutes(auth);
-                    auth.anyRequest().authenticated();
-                })
+                .formLogin(AbstractHttpConfigurer::disable) // 폼 로그인과 기본 HTTP 인증 비활성화 (JWT 인증만 사용)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .exceptionHandling(this::configureExceptionHandling) // 인증-인가 실패 시 처리
+                .authorizeHttpRequests(this::configureAuthorization) // 요청 경로별로 권한 제어
 
                 .addFilterBefore(traceIdFilter, BasicAuthenticationFilter.class)
                 .addFilterAfter(jwtAuthenticationFilter, BasicAuthenticationFilter.class);
@@ -87,6 +77,20 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private void configureExceptionHandling(ExceptionHandlingConfigurer<HttpSecurity> exceptionHandling) {
+        exceptionHandling
+                .authenticationEntryPoint((request, response, authException) ->
+                        FilterResponseUtils.unAuthorized(response, new CustomException(ExceptionCode.USER_UNAUTHORIZED)))
+                .accessDeniedHandler((request, response, accessDeniedException) ->
+                        FilterResponseUtils.forbidden(response, new CustomException(ExceptionCode.USER_FORBIDDEN)));
+    }
+
+    private void configureAuthorization(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry auth) {
+        authenticatedRoutes(auth);
+        publicRoutes(auth);
+        auth.anyRequest().authenticated();
     }
 
     private void authenticatedRoutes(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry auth) {
