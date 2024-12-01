@@ -1,0 +1,87 @@
+<configuration>
+    <!-- 1. 콘솔 출력 Appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 2. 파일 출력 Appender -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/application.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 파일 이름 패턴: application-yyyy-MM-dd.log 형식으로 저장 -->
+            <fileNamePattern>logs/application-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- 보관 기간: 최대 7일 -->
+            <maxHistory>7</maxHistory>
+            <!-- 전체 로그 크기 제한: 최대 1GB -->
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 3. ERROR 로그 전용 Appender -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 파일 이름 패턴: error-yyyy-MM-dd.log 형식으로 저장 -->
+            <fileNamePattern>logs/error-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- 보관 기간: 최대 30일 -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+        <!-- ERROR 레벨만 저장하도록 필터링 -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- 4. 비동기 로그 처리 Appender -->
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 이벤트 큐 크기: TPS에 따라 조정 (기본 10000으로 설정) -->
+        <queueSize>10000</queueSize>
+        <!-- 큐가 50% 이상 차면 낮은 우선순위 로그(TRACE, DEBUG) 폐기 -->
+        <discardingThreshold>50</discardingThreshold>
+        <!-- 로그에 호출자 정보(메서드, 클래스) 포함 -->
+        <includeCallerData>true</includeCallerData>
+        <!-- AsyncAppender가 참조할 실제 Appender -->
+        <appender-ref ref="FILE"/>
+    </appender>
+
+    <!-- 4. JSON 파일 Appender (나중에 ELK 쓸 떄 활용) -->
+    <appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>/var/log/myapp/application.json</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>/var/log/myapp/application-%d{yyyy-MM-dd}.json</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <timeZone>UTC</timeZone>
+                </timestamp>
+                <logLevel />
+                <loggerName />
+                <threadName />
+                <message />
+                <stackTrace />
+            </providers>
+        </encoder>
+    </appender>
+
+    <!-- 5. 루트 로거 설정 -->
+    <root level="INFO">
+        <!-- 콘솔 출력 활성화 (주로 개발 환경) -->
+        <appender-ref ref="CONSOLE"/>
+        <!-- 비동기 로그 처리 활성화 -->
+        <appender-ref ref="ASYNC"/>
+        <!-- ERROR 로그 전용 파일 활성화 -->
+        <appender-ref ref="ERROR_FILE"/>
+    </root>
+</configuration>
