@@ -1,6 +1,5 @@
 package com.hong.forapw.core.utils;
 
-import com.hong.forapw.core.security.JWTProvider;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -39,7 +38,7 @@ public class CookieUtils {
                 .forEach(responseCookie -> response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString()));
     }
 
-    public static String getCookieFromRequest(String cookieKey, HttpServletRequest request) {
+    public static String getFromRequest(String cookieKey, HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {
             return null;
