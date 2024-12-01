@@ -8,16 +8,20 @@ import com.hong.forapw.core.utils.CookieUtils;
 import com.hong.forapw.domain.user.UserRole;
 import com.hong.forapw.domain.user.User;
 import com.hong.forapw.service.RedisService;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 
 import java.io.IOException;
@@ -26,15 +30,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.Set;
 
 @Slf4j
-public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final RedisService redisService;
 
     public static final String REFRESH_TOKEN_COOKIE_KEY = "refreshToken";
     public static final String ACCESS_TOKEN_COOKIE_KEY = "accessToken";
 
-    public JwtAuthenticationFilter(AuthenticationManager authenticationManager, RedisService redisService) {
-        super(authenticationManager);
+    public JwtAuthenticationFilter(RedisService redisService) {
         this.redisService = redisService;
     }
 
@@ -62,16 +65,6 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         // 3rd 엑세스 토큰에 인증 정보가 없음 => 리프레쉬 토큰이라도 날아온다면 사용해서 검증
         if (user == null) {
             user = authenticateRefreshToken(refreshToken);
-
-            // 액세스 토큰과 리프레시 토큰 갱신 (재발급 로직)
-            /*if (user != null) {
-                accessToken = JWTProvider.createAccessToken(user);
-                refreshToken = JWTProvider.createRefreshToken(user);
-
-                updateToken(user, accessToken, refreshToken);
-                CookieUtils.setCookieToResponse(JWTProvider.ACCESS_TOKEN_COOKIE_KEY, accessToken, JWTProvider.ACCESS_EXP_SEC, true, false, response);
-                CookieUtils.setCookieToResponse(JWTProvider.REFRESH_TOKEN_COOKIE_KEY, refreshToken, JWTProvider.REFRESH_EXP_SEC, true, true, response);
-            }*/
         }
 
         // 엑세스 토큰과 리프레쉬 토큰 모두 검증 실패 (만료 됐거나 잘못된 형식)
@@ -88,9 +81,6 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         Set<String> excludedCookies = Set.of(ACCESS_TOKEN_COOKIE_KEY, REFRESH_TOKEN_COOKIE_KEY);
         CookieUtils.syncRequestCookiesToResponse(request, response, excludedCookies);
 
-        // 엑세스 토큰은 HTTP Header로 리턴
-        // response.setHeader(HttpHeaders.AUTHORIZATION, JWTProvider.TOKEN_PREFIX + accessToken);
-
         chain.doFilter(request, response);
     }
 
@@ -98,7 +88,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         CustomUserDetails myUserDetails = new CustomUserDetails(user);
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 myUserDetails,
-                myUserDetails.getPassword(),
+                null,
                 myUserDetails.getAuthorities()
         );
 

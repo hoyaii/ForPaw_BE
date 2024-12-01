@@ -88,7 +88,7 @@ public class GlobalExceptionHandler {
         log.warn("[Trace ID: {}] 잘못된 인자: {}", traceId, ex.getMessage(), ex);
         return ResponseEntity.badRequest().body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
     }
-    
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<?> handleRuntimeException(RuntimeException ex, HttpServletRequest request) {
         String traceId = getTraceId();

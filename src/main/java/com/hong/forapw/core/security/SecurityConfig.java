@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
@@ -17,6 +18,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -25,10 +29,13 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
 @Configuration
-@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final RedisService redisService;
+
+    public SecurityConfig(RedisService redisService) {
+        this.redisService = redisService;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -36,33 +43,32 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-        return http.getSharedObject(AuthenticationManagerBuilder.class).build();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
+    }
+
+    @Bean
+    public TraceIdFilter traceIdFilter() {
+        return new TraceIdFilter();
+    }
+
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(redisService);
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // CSRF 해제
-                .csrf(AbstractHttpConfigurer::disable)
-
-                // iframe 옵션 설정
-                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
-
-                // CORS 설정
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // 세션 정책 설정
-                .sessionManagement(sessionManagement ->
+                .csrf(AbstractHttpConfigurer::disable) // CSRF 해제
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)) // iframe 옵션 설정
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정
+                .sessionManagement(sessionManagement -> // 세션 정책 설정
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
-                // 폼 로그인 및 기본 HTTP 인증 비활성화
-                .formLogin(AbstractHttpConfigurer::disable)
-                .httpBasic(AbstractHttpConfigurer::disable)
-
-                // 인증 예외 및 권한 부여 실패 처리자
-                .exceptionHandling(exceptionHandling -> {
+                .formLogin(AbstractHttpConfigurer::disable) // 폼 로그인 및 비활성화
+                .httpBasic(AbstractHttpConfigurer::disable) // 기본 HTTP 인증 비활성화
+                .exceptionHandling(exceptionHandling -> { // 인증 예외 및 권한 부여 실패 처리자
                     exceptionHandling.authenticationEntryPoint((request, response, authException) ->
                             FilterResponseUtils.unAuthorized(response, new CustomException(ExceptionCode.USER_UNAUTHORIZED))
                     );
@@ -70,9 +76,7 @@ public class SecurityConfig {
                             FilterResponseUtils.forbidden(response, new CustomException(ExceptionCode.USER_FORBIDDEN))
                     );
                 })
-
-                // 인증 요구사항 및 권한 설정
-                .authorizeHttpRequests(auth -> auth
+                .authorizeHttpRequests(auth -> auth  // 권한 설정
                         .requestMatchers("/api/accounts/profile", "/api/accounts/password/**", "/api/accounts/role", "/api/accounts/withdraw", "/api/shelters/import", "/api/animals/like", "/api/accounts/withdraw/code").authenticated()
                         .requestMatchers(new AntPathRequestMatcher("/api/animals/*/like")).authenticated()
                         .requestMatchers(new AntPathRequestMatcher("/api/animals/*/apply")).authenticated()
@@ -83,9 +87,8 @@ public class SecurityConfig {
                                 "/api/posts/adoption", "/api/posts/fostering", "/api/posts/question", "/api/posts/popular", "/api/groups/localAndNew", "/api/faq", "/shelters/addr").permitAll()
                         .anyRequest().authenticated()
                 )
-
-                // 필터 추가
-                .addFilter(new JwtAuthenticationFilter(authenticationManager(http), redisService));
+                .addFilterBefore(traceIdFilter(), BasicAuthenticationFilter.class) // TraceIdFilter
+                .addFilterAfter(jwtAuthenticationFilter(), BasicAuthenticationFilter.class); // JwtAuthenticationFilter
 
         return http.build();
     }
