@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.forapw.controller.dto.*;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
+import com.hong.forapw.core.utils.JsonParser;
 import com.hong.forapw.domain.animal.AnimalType;
 import com.hong.forapw.domain.apply.Apply;
 import com.hong.forapw.domain.apply.ApplyStatus;
@@ -62,6 +63,7 @@ public class AnimalService {
     private final EntityManager entityManager;
     private final ObjectMapper mapper;
     private final WebClient webClient;
+    private final JsonParser jsonParser;
 
     @Value("${openAPI.service-key2}")
     private String serviceKey;
@@ -447,8 +449,8 @@ public class AnimalService {
 
     private Mono<Void> updateShelterByAnimalData(String response, Shelter shelter) {
         return Mono.fromCallable(() -> {
-            AnimalDTO json = mapper.readValue(response, AnimalDTO.class);
-            Optional.ofNullable(json)
+            Optional<AnimalDTO> animalDtoOP = jsonParser.parse(response, AnimalDTO.class);
+            animalDtoOP
                     .map(j -> j.response().body().items().item())
                     .filter(items -> !items.isEmpty())
                     .map(items -> items.get(0))
