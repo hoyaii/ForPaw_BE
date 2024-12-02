@@ -1,7 +1,7 @@
 package com.hong.ForPaw.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hong.forapw.controller.dto.AnimalRequest;
+import com.hong.forapw.controller.dto.ApplyRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -133,7 +133,7 @@ class AnimalControllerTest {
 
         // given
         Long id = 427342202400090L;
-        AnimalRequest.ApplyAdoptionDTO requestDTO = new AnimalRequest.ApplyAdoptionDTO("이한홍", "010-1234-5678", "부산광역시 금정구 부산대학로64번길 79 (장전동, xx아파트)");
+        ApplyRequest.ApplyAdoptionDTO requestDTO = new ApplyRequest.ApplyAdoptionDTO("이한홍", "010-1234-5678", "부산광역시 금정구 부산대학로64번길 79 (장전동, xx아파트)", "", "");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -156,7 +156,7 @@ class AnimalControllerTest {
         // given
         // 존재하지 않는 동물
         Long id = 427342202090L;
-        AnimalRequest.ApplyAdoptionDTO requestDTO = new AnimalRequest.ApplyAdoptionDTO("이한홍", "010-1234-5678", "부산광역시 금정구 부산대학로64번길 79 (장전동, xx아파트)");
+        ApplyRequest.ApplyAdoptionDTO requestDTO = new ApplyRequest.ApplyAdoptionDTO("이한홍", "010-1234-5678", "부산광역시 금정구 부산대학로64번길 79 (장전동, xx아파트)", "..", "1234");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when

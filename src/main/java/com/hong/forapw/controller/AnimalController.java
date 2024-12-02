@@ -1,7 +1,8 @@
 package com.hong.forapw.controller;
 
-import com.hong.forapw.controller.dto.AnimalRequest;
 import com.hong.forapw.controller.dto.AnimalResponse;
+import com.hong.forapw.controller.dto.ApplyRequest;
+import com.hong.forapw.controller.dto.ApplyResponse;
 import com.hong.forapw.core.security.CustomUserDetails;
 import com.hong.forapw.core.utils.ApiUtils;
 import com.hong.forapw.domain.user.User;
@@ -62,31 +63,6 @@ public class AnimalController {
     @PostMapping("/animals/{animalId}/like")
     public ResponseEntity<?> likeAnimal(@PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails) {
         animalService.likeAnimal(userDetails.getUser().getId(), animalId);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
-    }
-
-    @PostMapping("/animals/{animalId}/apply")
-    public ResponseEntity<?> applyAdoption(@RequestBody @Valid AnimalRequest.ApplyAdoptionDTO requestDTO, @PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        AnimalResponse.CreateApplyDTO responseDTO = animalService.applyAdoption(requestDTO, userDetails.getUser().getId(), animalId);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
-    }
-
-    @GetMapping("/applies")
-    public ResponseEntity<?> findApplyList(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        AnimalResponse.FindApplyListDTO responseDTO = animalService.findApplyList(userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
-    }
-
-    @PatchMapping("/applies/{applyId}")
-    public ResponseEntity<?> updateApply(@RequestBody @Valid AnimalRequest.UpdateApplyDTO requestDTO, @PathVariable Long applyId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        animalService.updateApply(requestDTO, applyId, userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
-    }
-
-    // 권한 처리가 필요함
-    @DeleteMapping("/applies/{applyId}")
-    public ResponseEntity<?> deleteApply(@PathVariable Long applyId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        animalService.deleteApply(applyId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 

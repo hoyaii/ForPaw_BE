@@ -1,20 +1,16 @@
 package com.hong.forapw.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.forapw.controller.dto.*;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.core.utils.JsonParser;
 import com.hong.forapw.domain.animal.AnimalType;
-import com.hong.forapw.domain.apply.Apply;
-import com.hong.forapw.domain.apply.ApplyStatus;
 import com.hong.forapw.domain.animal.FavoriteAnimal;
 import com.hong.forapw.domain.user.User;
 import com.hong.forapw.domain.animal.Animal;
 import com.hong.forapw.domain.Shelter;
 import com.hong.forapw.repository.animal.AnimalRepository;
 import com.hong.forapw.repository.animal.FavoriteAnimalRepository;
-import com.hong.forapw.repository.ApplyRepository;
 import com.hong.forapw.repository.ShelterRepository;
 import com.hong.forapw.repository.UserRepository;
 import jakarta.persistence.EntityManager;
@@ -61,9 +57,7 @@ public class AnimalService {
     private final UserRepository userRepository;
     private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final RedisService redisService;
-    private final ApplyRepository applyRepository;
     private final EntityManager entityManager;
-    private final ObjectMapper mapper;
     private final WebClient webClient;
     private final JsonParser jsonParser;
 
@@ -338,100 +332,6 @@ public class AnimalService {
         }
     }
 
-    @Transactional
-    public AnimalResponse.CreateApplyDTO applyAdoption(AnimalRequest.ApplyAdoptionDTO requestDTO, Long userId, Long animalId) {
-        // 동물이 존재하지 않으면 에러
-        Animal animal = animalRepository.findById(animalId).orElseThrow(
-                () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
-        );
-
-        // 이미 입양된 동물이면 에러
-        if (animal.isAdopted()) {
-            throw new CustomException(ExceptionCode.ANIMAL_NOT_FOUND);
-        }
-
-        // 이미 지원하였으면 에러
-        if (applyRepository.existsByUserIdAndAnimalId(userId, animalId)) {
-            throw new CustomException(ExceptionCode.ANIMAL_ALREADY_APPLY);
-        }
-
-        User userRef = entityManager.getReference(User.class, userId);
-        Apply apply = Apply.builder()
-                .user(userRef)
-                .animal(animal)
-                .status(ApplyStatus.PROCESSING)
-                .name(requestDTO.name())
-                .tel(requestDTO.tel())
-                .roadNameAddress(requestDTO.roadNameAddress())
-                .addressDetail(requestDTO.addressDetail())
-                .zipCode(requestDTO.zipCode())
-                .build();
-
-        applyRepository.save(apply);
-
-        // 동물의 문의 횟수 증가
-        animalRepository.incrementInquiryNumById(animalId);
-
-        return new AnimalResponse.CreateApplyDTO(apply.getId());
-    }
-
-    @Transactional(readOnly = true)
-    public AnimalResponse.FindApplyListDTO findApplyList(Long userId) {
-        List<Apply> applies = applyRepository.findAllByUserIdWithAnimal(userId);
-
-        List<AnimalResponse.ApplyDTO> applyDTOS = applies.stream()
-                .map(apply -> new AnimalResponse.ApplyDTO(
-                        apply.getId(),
-                        apply.getAnimal().getId(),
-                        apply.getAnimal().getName(),
-                        apply.getAnimal().getKind(),
-                        apply.getAnimal().getGender(),
-                        apply.getAnimal().getAge(),
-                        apply.getName(),
-                        apply.getTel(),
-                        apply.getRoadNameAddress(),
-                        apply.getAddressDetail(),
-                        apply.getZipCode(),
-                        apply.getStatus()))
-                .collect(Collectors.toList());
-
-        return new AnimalResponse.FindApplyListDTO(applyDTOS);
-    }
-
-    @Transactional
-    public void updateApply(AnimalRequest.UpdateApplyDTO requestDTO, Long applyId, Long userId) {
-        // 지원하지 않았거나, 권한이 없으면 에러
-        if (!applyRepository.existsByApplyIdAndUserId(applyId, userId)) {
-            throw new CustomException(ExceptionCode.APPLY_NOT_FOUND);
-        }
-
-        Apply apply = applyRepository.findById(applyId).orElseThrow(
-                () -> new CustomException(ExceptionCode.APPLY_NOT_FOUND)
-        );
-
-        apply.updateApply(requestDTO.name(),
-                requestDTO.tel(),
-                requestDTO.roadNameAddress(),
-                requestDTO.addressDetail(),
-                requestDTO.zipCode());
-    }
-
-    @Transactional
-    public void deleteApply(Long applyId, Long userId) {
-        // 지원하지 않았거나, 권한이 없으면 에러
-        if (!applyRepository.existsByApplyIdAndUserId(applyId, userId)) {
-            throw new CustomException(ExceptionCode.APPLY_NOT_FOUND);
-        }
-
-        // 동물의 문의 횟수 감소
-        Animal animal = applyRepository.findAnimalIdById(applyId).orElseThrow(
-                () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
-        );
-        animal.decrementInquiryNum();
-
-        applyRepository.deleteById(applyId);
-    }
-
     private Flux<Animal> convertJsonResponseToAnimals(String jsonResponse, Shelter shelter, List<Long> existingAnimalIds) {
         return Mono.fromCallable(() -> jsonParser.parse(jsonResponse, AnimalDTO.class))
                 .flatMapMany(animalData -> Flux.fromIterable(
@@ -454,11 +354,11 @@ public class AnimalService {
     }
 
     private boolean isAnimalNotInDatabase(AnimalDTO.ItemDTO item, List<Long> existingAnimalIds) {
-        return !existingAnimalIds.contains(Long.valueOf(item.desertionNo())); // 이미 저장되어 있는 동물은 업데이트 하지 않는다
+        return !existingAnimalIds.contains(Long.valueOf(item.desertionNo()));
     }
 
     private boolean isAnimalStillActive(AnimalDTO.ItemDTO item) {
-        return LocalDate.parse(item.noticeEdt(), YEAR_HOUR_DAY_FORMAT).isAfter(LocalDate.now()); // 공고 종료가 된 것은 필터링
+        return LocalDate.parse(item.noticeEdt(), YEAR_HOUR_DAY_FORMAT).isAfter(LocalDate.now());
     }
 
     private Mono<Void> updateShelterByAnimalData(String jsonResponse, Shelter shelter) {
@@ -681,7 +581,7 @@ public class AnimalService {
                 .bodyToMono(AnimalResponse.RecommendationDTO.class)
                 .map(AnimalResponse.RecommendationDTO::recommendedAnimals)
                 .onErrorResume(e -> {
-                    log.info("FastAPI 호술 시 에러 발생: " + e.getMessage());
+                    log.info("FastAPI 호술 시 에러 발생: {}", e.getMessage());
                     return Mono.just(Collections.emptyList());
                 })
                 .block();

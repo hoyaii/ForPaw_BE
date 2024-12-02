@@ -2,7 +2,7 @@ package com.hong.forapw.controller.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-public class AnimalRequest {
+public class ApplyRequest {
 
     public record ApplyAdoptionDTO(
             @NotBlank(message = "지원자 이름을 입력해주세요.")
