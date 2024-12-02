@@ -10,7 +10,8 @@ public class DateTimeUtils {
     private DateTimeUtils() {
     }
 
-    public static final DateTimeFormatter DATE_HOUR_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");
+    public static final DateTimeFormatter DATE_HOUR_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");
+    public static final DateTimeFormatter YEAR_HOUR_DAY_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     public static String formatDate(Date date, String format) {
         return new SimpleDateFormat(format).format(date);

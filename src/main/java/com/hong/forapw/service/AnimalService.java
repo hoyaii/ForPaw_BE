@@ -48,6 +48,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.hong.forapw.core.utils.DateTimeUtils.YEAR_HOUR_DAY_FORMAT;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -115,13 +117,13 @@ public class AnimalService {
                                 .retry(3)
                                 .flatMap(rawJsonResponse -> updateShelterByAnimalData(rawJsonResponse, shelter) // 동물 데이터로 보호소 업데이트
                                         .then(Mono.just(rawJsonResponse)))
-                                .flatMapMany(response -> convertResponseToAnimal(response, shelter, existAnimalIds) // 동물 엔티티 컬렉션으로 변환
+                                .flatMapMany(rawJsonResponse -> convertJsonResponseToAnimals(rawJsonResponse, shelter, existAnimalIds) // 동물 엔티티 컬렉션으로 변환
                                         .onErrorResume(e -> Flux.empty()))
                                 .collectList()
                                 .doOnNext(animalRepository::saveAll))
-                        .onErrorResume(e -> Mono.empty())) // URI 생성 실패 시 shelter 무시
+                        .onErrorResume(e -> Mono.empty()))
                 .then()
-                .doOnTerminate(this::updateShelterAddressByGoogle) // loadAnimalData가 완료되면 updateShelterAddressByGoogle 실행
+                .doOnTerminate(this::updateShelterAddressByGoogle)
                 .subscribe();
     }
 
@@ -430,26 +432,38 @@ public class AnimalService {
         applyRepository.deleteById(applyId);
     }
 
-    private Flux<Animal> convertResponseToAnimal(String response, Shelter shelter, List<Long> existAnimalIds) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-
-        return Mono.fromCallable(() -> {
-            AnimalDTO json = mapper.readValue(response, AnimalDTO.class);
-
-            return Optional.ofNullable(json.response().body().items())
-                    .map(AnimalDTO.ItemsDTO::item)
-                    .orElse(Collections.emptyList())
-                    .stream()
-                    .filter(itemDTO -> !existAnimalIds.contains(Long.valueOf(itemDTO.desertionNo()))) // 이미 저장되어 있는 동물은 업데이트 하지 않는다
-                    .filter(itemDTO -> LocalDate.parse(itemDTO.noticeEdt(), formatter).isAfter(LocalDate.now())) // 공고 종료가 된 것은 필터링
-                    .map(itemDTO -> buildAnimal(itemDTO, shelter))
-                    .collect(Collectors.toList());
-        }).flatMapMany(Flux::fromIterable);
+    private Flux<Animal> convertJsonResponseToAnimals(String jsonResponse, Shelter shelter, List<Long> existingAnimalIds) {
+        return Mono.fromCallable(() -> jsonParser.parse(jsonResponse, AnimalDTO.class))
+                .flatMapMany(animalData -> Flux.fromIterable(
+                        filterAndMapToAnimals(animalData, shelter, existingAnimalIds)
+                ));
     }
 
-    private Mono<Void> updateShelterByAnimalData(String rawJsonResponse, Shelter shelter) {
+    private List<Animal> filterAndMapToAnimals(Optional<AnimalDTO> animalData, Shelter shelter, List<Long> existingAnimalIds) {
+        return animalData
+                .map(AnimalDTO::response)
+                .map(AnimalDTO.ResponseDTO::body)
+                .map(AnimalDTO.BodyDTO::items)
+                .map(AnimalDTO.ItemsDTO::item)
+                .orElse(Collections.emptyList())
+                .stream()
+                .filter(item -> isAnimalNotInDatabase(item, existingAnimalIds))
+                .filter(this::isAnimalStillActive)
+                .map(item -> buildAnimal(item, shelter))
+                .collect(Collectors.toList());
+    }
+
+    private boolean isAnimalNotInDatabase(AnimalDTO.ItemDTO item, List<Long> existingAnimalIds) {
+        return !existingAnimalIds.contains(Long.valueOf(item.desertionNo())); // 이미 저장되어 있는 동물은 업데이트 하지 않는다
+    }
+
+    private boolean isAnimalStillActive(AnimalDTO.ItemDTO item) {
+        return LocalDate.parse(item.noticeEdt(), YEAR_HOUR_DAY_FORMAT).isAfter(LocalDate.now()); // 공고 종료가 된 것은 필터링
+    }
+
+    private Mono<Void> updateShelterByAnimalData(String jsonResponse, Shelter shelter) {
         return Mono.fromCallable(() -> {
-            jsonParser.parse(rawJsonResponse, AnimalDTO.class)
+            jsonParser.parse(jsonResponse, AnimalDTO.class)
                     .ifPresent(animalData -> updateShelterWithAnimalData(animalData, shelter));
             return Mono.empty();
         }).then();

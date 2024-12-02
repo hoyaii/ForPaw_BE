@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.hong.forapw.core.utils.DateTimeUtils.DATE_HOUR_FORMATTER;
+import static com.hong.forapw.core.utils.DateTimeUtils.DATE_HOUR_FORMAT;
 import static com.hong.forapw.core.utils.DateTimeUtils.formatLocalDateTime;
 
 @Slf4j
@@ -115,7 +115,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private void recordUserVisit(User user) {
-        String visitKey = "visit" + ":" + formatLocalDateTime(LocalDateTime.now(), DATE_HOUR_FORMATTER);
+        String visitKey = "visit" + ":" + formatLocalDateTime(LocalDateTime.now(), DATE_HOUR_FORMAT);
         redisService.addSetElement(visitKey, user.getId());
     }
 
