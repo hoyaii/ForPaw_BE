@@ -23,11 +23,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
@@ -144,42 +147,17 @@ public class AnimalService {
                 .subscribe();
     }
 
-    // 동물 업데이트 후 후처리
     @Transactional
     public void postProcessAfterAnimalUpdate() {
-        Set<Shelter> updatedShelters = new HashSet<>();
         List<Animal> expiredAnimals = animalRepository.findAllOutOfDateWithShelter(LocalDateTime.now().toLocalDate());
+        Set<Shelter> updatedShelters = findUpdatedShelters(expiredAnimals);
 
-        // 1. 캐싱한 '좋아요 수' 삭제
-        expiredAnimals.forEach(animal -> {
-            updatedShelters.add(animal.getShelter());
-            redisService.removeValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString());
-        });
+        removeAnimalLikesFromCache(expiredAnimals);
+        removeAnimalsFromUserSearchHistory(expiredAnimals);
+        deleteExpiredAnimals(expiredAnimals);
 
-        // 2. 유저가 검색한 동물 기록에서 삭제
-        List<User> users = userRepository.findAll();
-        for (User user : users) {
-            expiredAnimals.forEach(animal -> {
-                String key = ANIMAL_SEARCH_KEY_PREFIX + ":" + user.getId();
-                redisService.removeListElement(key, animal.getId().toString());
-            });
-        }
-
-        // 3. 공지가 만료된 유기 동물 삭제
-        favoriteAnimalRepository.deleteByAnimalIn(expiredAnimals);
-        animalRepository.deleteAll(expiredAnimals);
-
-        // 4. 보호소의 '보호 동물 수' 업데이트
-        updatedShelters.forEach(shelter ->
-                shelter.updateAnimalCnt(animalRepository.countByShelterId(shelter.getId()))
-        );
-
-        // 5. 소개글 업데이트
-        requestAnimalIntroduction()
-                .doOnError(error -> log.info("소개글 업데이트 요청 실패"))
-                .subscribe();
-
-        // 6. 중복 보호소 처리
+        updateShelterAnimalCounts(updatedShelters);
+        updateAnimalIntroductions();
         processDuplicateShelters();
     }
 
@@ -523,6 +501,107 @@ public class AnimalService {
         return animalNames[index];
     }
 
+    private Set<Shelter> findUpdatedShelters(List<Animal> expiredAnimals) {
+        return expiredAnimals.stream()
+                .map(Animal::getShelter)
+                .collect(Collectors.toSet());
+    }
+
+    private void removeAnimalLikesFromCache(List<Animal> expiredAnimals) {
+        expiredAnimals.forEach(animal ->
+                redisService.removeValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString()));
+    }
+
+    private void removeAnimalsFromUserSearchHistory(List<Animal> expiredAnimals) {
+        List<User> users = userRepository.findAll();
+        for (User user : users) {
+            String key = ANIMAL_SEARCH_KEY_PREFIX + ":" + user.getId();
+            expiredAnimals.forEach(animal ->
+                    redisService.removeListElement(key, animal.getId().toString())
+            );
+        }
+    }
+
+    private void deleteExpiredAnimals(List<Animal> expiredAnimals) {
+        favoriteAnimalRepository.deleteByAnimalIn(expiredAnimals);
+        animalRepository.deleteAll(expiredAnimals);
+    }
+
+    private void updateShelterAnimalCounts(Set<Shelter> updatedShelters) {
+        updatedShelters.forEach(shelter ->
+                shelter.updateAnimalCnt(animalRepository.countByShelterId(shelter.getId()))
+        );
+    }
+
+    private void updateAnimalIntroductions() {
+        webClient.post()
+                .uri(updateAnimalIntroduceURI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .onStatus(
+                        status -> status.is4xxClientError() || status.is5xxServerError(),
+                        this::mapError
+                )
+                .bodyToMono(Void.class)
+                .retryWhen(createRetrySpec())
+                .doOnError(this::handleError)
+                .subscribe();
+    }
+
+    private Mono<Throwable> mapError(ClientResponse clientResponse) {
+        return clientResponse.bodyToMono(String.class)
+                .map(errorBody -> new CustomException(ExceptionCode.INTRODUCTION_RETRY_FAIL,
+                        "소개글 요청 실패: " + clientResponse.statusCode() + " - " + errorBody
+                ));
+    }
+
+    private Retry createRetrySpec() {
+        return Retry.fixedDelay(3, Duration.ofSeconds(2))
+                .filter(CustomException.class::isInstance)
+                .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                        new CustomException(ExceptionCode.INTRODUCTION_RETRY_FAIL)
+                );
+    }
+
+    private void handleError(Throwable error) {
+        if (error instanceof CustomException) {
+            log.error("소개글 업데이트 요청 실패: {}", error.getMessage());
+        } else {
+            log.error("예상치 못한 에러 발생: {}", error.getMessage(), error);
+        }
+    }
+
+    private void processDuplicateShelters() {
+        List<Shelter> duplicateShelters = shelterRepository.findDuplicateShelters();
+
+        Map<String, List<Shelter>> dupliShelterMap = duplicateShelters.stream()
+                .collect(Collectors.groupingBy(Shelter::getCareTel));
+
+        dupliShelterMap.values().stream()
+                .filter(shelters -> shelters.size() > 1) // 중복된 보호소만 처리
+                .forEach(shelters -> {
+                    // isDuplicate가 false인 첫 번째 Shelter를 targetShelter로 지정
+                    Shelter targetShelter = shelters.stream()
+                            .filter(shelter -> !shelter.isDuplicate())
+                            .findFirst()
+                            .orElse(shelters.get(0));
+
+                    // 중복된 보호소의 모든 동물들을 targetShelter로 이동
+                    shelters.stream()
+                            .filter(duplicateShelter -> !duplicateShelter.equals(targetShelter))
+                            .forEach(duplicateShelter -> {
+                                List<Animal> animalsToMove = animalRepository.findByShelter(duplicateShelter);
+                                animalsToMove.forEach(animal -> animalRepository.updateShelter(targetShelter, animal.getId()));
+
+                                // 중복된 shelter를 중복 상태로 업데이트
+                                shelterRepository.updateIsDuplicate(duplicateShelter.getId(), true);
+                            });
+
+                    // targetShelter가 중복된 상태가 아닌 경우 이를 갱신
+                    shelterRepository.updateIsDuplicate(targetShelter.getId(), false);
+                });
+    }
+
     private Mono<URI> buildAnimalOpenApiURI(String serviceKey, Long careRegNo) {
         String url = animalURI + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
 
@@ -578,20 +657,6 @@ public class AnimalService {
         return recommendedAnimalIds;
     }
 
-    private Mono<Void> requestAnimalIntroduction() {
-        return webClient.post()
-                .uri(updateAnimalIntroduceURI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .onStatus(httpStatus -> (httpStatus.is5xxServerError() || httpStatus.is4xxClientError()),
-                        clientResponse -> Mono.error(new RuntimeException("소개글 요청 실패")))
-                .bodyToMono(Void.class)
-                .retryWhen(
-                        Retry.fixedDelay(3, Duration.ofSeconds(2))  // 2초 간격으로 3번 재시도
-                                .filter(throwable -> throwable instanceof RuntimeException)  // RuntimeException 발생 시 재시도
-                );
-    }
-
     private List<Long> findAnimalIdListByUserLocation(Long userId) {
         PageRequest pageRequest = PageRequest.of(0, 5);
 
@@ -640,37 +705,6 @@ public class AnimalService {
         }
 
         return null;
-    }
-
-    private void processDuplicateShelters() {
-        List<Shelter> duplicateShelters = shelterRepository.findDuplicateShelters();
-
-        Map<String, List<Shelter>> dupliShelterMap = duplicateShelters.stream()
-                .collect(Collectors.groupingBy(Shelter::getCareTel));
-
-        dupliShelterMap.values().stream()
-                .filter(shelters -> shelters.size() > 1) // 중복된 보호소만 처리
-                .forEach(shelters -> {
-                    // isDuplicate가 false인 첫 번째 Shelter를 targetShelter로 지정
-                    Shelter targetShelter = shelters.stream()
-                            .filter(shelter -> !shelter.isDuplicate())
-                            .findFirst()
-                            .orElse(shelters.get(0));
-
-                    // 중복된 보호소의 모든 동물들을 targetShelter로 이동
-                    shelters.stream()
-                            .filter(duplicateShelter -> !duplicateShelter.equals(targetShelter))
-                            .forEach(duplicateShelter -> {
-                                List<Animal> animalsToMove = animalRepository.findByShelter(duplicateShelter);
-                                animalsToMove.forEach(animal -> animalRepository.updateShelter(targetShelter, animal.getId()));
-
-                                // 중복된 shelter를 중복 상태로 업데이트
-                                shelterRepository.updateIsDuplicate(duplicateShelter.getId(), true);
-                            });
-
-                    // targetShelter가 중복된 상태가 아닌 경우 이를 갱신
-                    shelterRepository.updateIsDuplicate(targetShelter.getId(), false);
-                });
     }
 
     private Long getCachedLikeNum(String keyPrefix, Long key) {
