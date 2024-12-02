@@ -113,8 +113,8 @@ public class AnimalService {
                                 .retrieve()
                                 .bodyToMono(String.class)
                                 .retry(3)
-                                .flatMap(response -> updateShelterByAnimalData(response, shelter) // 동물 데이터로 보호소 업데이트
-                                        .then(Mono.just(response)))
+                                .flatMap(rawJsonResponse -> updateShelterByAnimalData(rawJsonResponse, shelter) // 동물 데이터로 보호소 업데이트
+                                        .then(Mono.just(rawJsonResponse)))
                                 .flatMapMany(response -> convertResponseToAnimal(response, shelter, existAnimalIds) // 동물 엔티티 컬렉션으로 변환
                                         .onErrorResume(e -> Flux.empty()))
                                 .collectList()
@@ -447,16 +447,38 @@ public class AnimalService {
         }).flatMapMany(Flux::fromIterable);
     }
 
-    private Mono<Void> updateShelterByAnimalData(String response, Shelter shelter) {
+    private Mono<Void> updateShelterByAnimalData(String rawJsonResponse, Shelter shelter) {
         return Mono.fromCallable(() -> {
-            Optional<AnimalDTO> animalDtoOP = jsonParser.parse(response, AnimalDTO.class);
-            animalDtoOP
-                    .map(j -> j.response().body().items().item())
-                    .filter(items -> !items.isEmpty())
-                    .map(items -> items.get(0))
-                    .ifPresent(itemDTO -> shelterRepository.updateShelterInfo(itemDTO.careTel(), itemDTO.careAddr(), countActiveAnimals(json), shelter.getId()));
+            jsonParser.parse(rawJsonResponse, AnimalDTO.class)
+                    .ifPresent(animalData -> updateShelterWithAnimalData(animalData, shelter));
             return Mono.empty();
         }).then();
+    }
+
+    private void updateShelterWithAnimalData(AnimalDTO animalData, Shelter shelter) {
+        findFirstAnimalItem(animalData)
+                .ifPresent(firstAnimalItem -> shelterRepository.updateShelterInfo(
+                        firstAnimalItem.careTel(), firstAnimalItem.careAddr(), countActiveAnimals(animalData), shelter.getId())
+                );
+    }
+
+    private Optional<AnimalDTO.ItemDTO> findFirstAnimalItem(AnimalDTO animalData) {
+        return Optional.ofNullable(animalData)
+                .map(AnimalDTO::response)
+                .map(AnimalDTO.ResponseDTO::body)
+                .map(AnimalDTO.BodyDTO::items)
+                .map(AnimalDTO.ItemsDTO::item)
+                .filter(items -> !items.isEmpty())
+                .map(items -> items.get(0));
+    }
+
+    private long countActiveAnimals(AnimalDTO animalData) {
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        LocalDate currentDate = LocalDate.now().minusDays(1);
+
+        return animalData.response().body().items().item().stream()
+                .filter(animal -> LocalDate.parse(animal.noticeEdt(), dateFormatter).isAfter(currentDate))
+                .count();
     }
 
     private Animal buildAnimal(AnimalDTO.ItemDTO itemDTO, Shelter shelter) {
@@ -685,15 +707,6 @@ public class AnimalService {
 
         return Optional.ofNullable(ANIMAL_TYPE_MAP.get(type))
                 .orElseThrow(() -> new CustomException(ExceptionCode.WRONG_ANIMAL_TYPE));
-    }
-
-    private Long countActiveAnimals(AnimalDTO json) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-
-        return json.response().body().items().item().stream()
-                .filter(itemDTO -> LocalDate.parse(itemDTO.noticeEdt(), formatter).isAfter(yesterday))
-                .count();
     }
 
     // 구체적인 종 파싱
