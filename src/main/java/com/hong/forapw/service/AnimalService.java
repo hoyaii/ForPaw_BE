@@ -23,8 +23,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -158,7 +156,7 @@ public class AnimalService {
 
         updateShelterAnimalCounts(updatedShelters);
         updateAnimalIntroductions();
-        processDuplicateShelters();
+        resolveDuplicateShelters();
     }
 
     @Transactional
@@ -571,35 +569,36 @@ public class AnimalService {
         }
     }
 
-    private void processDuplicateShelters() {
-        List<Shelter> duplicateShelters = shelterRepository.findDuplicateShelters();
+    private void resolveDuplicateShelters() {
+        List<String> duplicateCareTels = shelterRepository.findDuplicateCareTels();
+        duplicateCareTels.forEach(this::handleDuplicateSheltersForCareTel);
+    }
 
-        Map<String, List<Shelter>> dupliShelterMap = duplicateShelters.stream()
-                .collect(Collectors.groupingBy(Shelter::getCareTel));
+    private void handleDuplicateSheltersForCareTel(String careTel) {
+        List<Shelter> shelters = shelterRepository.findByCareTel(careTel);
+        Shelter targetShelter = findTargetShelter(shelters);
+        List<Long> duplicateShelterIds = findDuplicateShelterIds(shelters, targetShelter);
 
-        dupliShelterMap.values().stream()
-                .filter(shelters -> shelters.size() > 1) // 중복된 보호소만 처리
-                .forEach(shelters -> {
-                    // isDuplicate가 false인 첫 번째 Shelter를 targetShelter로 지정
-                    Shelter targetShelter = shelters.stream()
-                            .filter(shelter -> !shelter.isDuplicate())
-                            .findFirst()
-                            .orElse(shelters.get(0));
+        if (!duplicateShelterIds.isEmpty()) {
+            animalRepository.updateShelterByShelterIds(targetShelter, duplicateShelterIds);
+            shelterRepository.updateIsDuplicateByIds(duplicateShelterIds, true);
+        }
 
-                    // 중복된 보호소의 모든 동물들을 targetShelter로 이동
-                    shelters.stream()
-                            .filter(duplicateShelter -> !duplicateShelter.equals(targetShelter))
-                            .forEach(duplicateShelter -> {
-                                List<Animal> animalsToMove = animalRepository.findByShelter(duplicateShelter);
-                                animalsToMove.forEach(animal -> animalRepository.updateShelter(targetShelter, animal.getId()));
+        shelterRepository.updateIsDuplicate(targetShelter.getId(), false);
+    }
 
-                                // 중복된 shelter를 중복 상태로 업데이트
-                                shelterRepository.updateIsDuplicate(duplicateShelter.getId(), true);
-                            });
+    private Shelter findTargetShelter(List<Shelter> shelters) {
+        return shelters.stream()
+                .filter(shelter -> !shelter.isDuplicate())
+                .min(Comparator.comparingLong(Shelter::getId))
+                .orElse(shelters.get(0));
+    }
 
-                    // targetShelter가 중복된 상태가 아닌 경우 이를 갱신
-                    shelterRepository.updateIsDuplicate(targetShelter.getId(), false);
-                });
+    private List<Long> findDuplicateShelterIds(List<Shelter> shelters, Shelter targetShelter) {
+        return shelters.stream()
+                .filter(shelter -> !shelter.equals(targetShelter))
+                .map(Shelter::getId)
+                .collect(Collectors.toList());
     }
 
     private Mono<URI> buildAnimalOpenApiURI(String serviceKey, Long careRegNo) {

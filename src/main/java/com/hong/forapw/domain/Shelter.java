@@ -40,7 +40,7 @@ public class Shelter {
     private Long animalCnt = 0L;
 
     @Column
-    private boolean isDuplicate;
+    private boolean isDuplicate = false;
 
     @Builder
     public Shelter(Long id, RegionCode regionCode, String name, String careTel, String careAddr) {
@@ -54,9 +54,5 @@ public class Shelter {
 
     public void updateAnimalCnt(Long animalCnt) {
         this.animalCnt = animalCnt;
-    }
-
-    public void updateIsDuplicate(boolean isDuplicate) {
-        this.isDuplicate = isDuplicate;
     }
 }
