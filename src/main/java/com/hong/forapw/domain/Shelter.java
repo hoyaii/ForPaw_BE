@@ -52,7 +52,7 @@ public class Shelter {
         this.isDuplicate = false;
     }
 
-    public void updateAnimalCnt(Long animalCnt) {
+    public void updateAnimalCount(Long animalCnt) {
         this.animalCnt = animalCnt;
     }
 }

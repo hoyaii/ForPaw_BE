@@ -1,9 +1,12 @@
 package com.hong.forapw.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hong.forapw.controller.dto.AnimalDTO;
+import com.hong.forapw.controller.dto.GoogleMapDTO;
 import com.hong.forapw.controller.dto.ShelterResponse;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
+import com.hong.forapw.core.utils.JsonParser;
 import com.hong.forapw.domain.animal.Animal;
 import com.hong.forapw.domain.animal.AnimalType;
 import com.hong.forapw.domain.District;
@@ -23,13 +26,17 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -45,12 +52,19 @@ public class ShelterService {
     private final RedisService redisService;
     private final ObjectMapper mapper;
     private final WebClient webClient;
+    private final JsonParser jsonParser;
 
     @Value("${openAPI.service-key2}")
     private String serviceKey;
 
     @Value("${openAPI.shelter.uri}")
     private String baseUrl;
+
+    @Value("${google.map.geocoding.uri}")
+    private String googleGeoCodingURI;
+
+    @Value("${google.api.key}")
+    private String googleAPIKey;
 
     private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
     public static final Long ANIMAL_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
@@ -80,6 +94,17 @@ public class ShelterService {
                 })
                 .collectList()
                 .subscribe(shelterRepository::saveAll);
+    }
+
+    @Transactional
+    public void updateShelterData(List<Tuple2<Shelter, String>> animalJsonResponses) {
+        for (Tuple2<Shelter, String> tuple : animalJsonResponses) {
+            Shelter shelter = tuple.getT1();
+            String animalJsonData = tuple.getT2();
+
+            updateShelterByAnimalData(animalJsonData, shelter);
+        }
+        updateShelterAddressByGoogle();
     }
 
     @Transactional
@@ -182,6 +207,60 @@ public class ShelterService {
         return new ShelterResponse.FindShelterListWithAddr(responseMap);
     }
 
+    private void updateShelterByAnimalData(String animalJsonData, Shelter shelter) {
+        jsonParser.parse(animalJsonData, AnimalDTO.class).ifPresent(
+                animalDTO -> updateShelterWithAnimalData(animalDTO, shelter)
+        );
+    }
+
+    private void updateShelterWithAnimalData(AnimalDTO animalData, Shelter shelter) {
+        findFirstAnimalItem(animalData)
+                .ifPresent(firstAnimalItem -> shelterRepository.updateShelterInfo(
+                        firstAnimalItem.careTel(), firstAnimalItem.careAddr(), countActiveAnimals(animalData), shelter.getId())
+                );
+    }
+
+    private Optional<AnimalDTO.ItemDTO> findFirstAnimalItem(AnimalDTO animalDTO) {
+        return Optional.ofNullable(animalDTO)
+                .map(AnimalDTO::response)
+                .map(AnimalDTO.ResponseDTO::body)
+                .map(AnimalDTO.BodyDTO::items)
+                .map(AnimalDTO.ItemsDTO::item)
+                .filter(items -> !items.isEmpty())
+                .map(items -> items.get(0));
+    }
+
+    private long countActiveAnimals(AnimalDTO animalDTO) {
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        LocalDate currentDate = LocalDate.now().minusDays(1);
+
+        return animalDTO.response().body().items().item().stream()
+                .filter(animal -> LocalDate.parse(animal.noticeEdt(), dateFormatter).isAfter(currentDate))
+                .count();
+    }
+
+    private void updateShelterAddressByGoogle() {
+        List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
+
+        for (Shelter shelter : shelters) {
+            URI uri = buildGoogleGeocodingURI(shelter.getCareAddr());
+            GoogleMapDTO.MapDTO mapDTO = webClient.get()
+                    .uri(uri)
+                    .retrieve()
+                    .bodyToMono(GoogleMapDTO.MapDTO.class)
+                    .block();
+
+            if (mapDTO != null && !mapDTO.results().isEmpty()) {
+                GoogleMapDTO.ResultDTO resultDTO = mapDTO.results().get(0);
+                shelterRepository.updateAddressInfo(
+                        resultDTO.geometry().location().lat(),
+                        resultDTO.geometry().location().lng(),
+                        shelter.getId()
+                );
+            }
+        }
+    }
+
     private List<Shelter> convertResponseToShelter(String response, RegionCode regionCode, List<Long> existShelterIds) throws IOException {
         // JSON 파싱 에러 던질 수 있음
         ShelterDTO json = mapper.readValue(response, ShelterDTO.class);
@@ -198,6 +277,14 @@ public class ShelterService {
                         .name(itemDTO.careNm())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    private URI buildGoogleGeocodingURI(String address) {
+        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(googleGeoCodingURI);
+        uriBuilder.queryParam("address", address);
+        uriBuilder.queryParam("key", googleAPIKey);
+
+        return uriBuilder.build().encode().toUri();
     }
 
     private URI buildShelterURI(String baseUrl, String serviceKey, Integer uprCd, Integer orgCd) {

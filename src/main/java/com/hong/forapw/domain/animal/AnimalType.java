@@ -11,5 +11,16 @@ public enum AnimalType {
     CAT("고양이"),
     OTHER("기타");
 
-    private String value;
+    private final String value;
+
+    public static AnimalType from(String input) {
+        if (input.startsWith("DOG")) {
+            return DOG;
+        } else if (input.startsWith("CAT")) {
+            return CAT;
+        } else {
+            return OTHER;
+        }
+    }
 }
+

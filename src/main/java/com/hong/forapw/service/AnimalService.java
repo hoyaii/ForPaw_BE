@@ -30,6 +30,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 import reactor.util.retry.Retry;
 
 import java.net.URI;
@@ -57,6 +59,7 @@ public class AnimalService {
     private final UserRepository userRepository;
     private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final RedisService redisService;
+    private final ShelterService shelterService;
     private final EntityManager entityManager;
     private final WebClient webClient;
     private final JsonParser jsonParser;
@@ -76,12 +79,6 @@ public class AnimalService {
     @Value("${kakao.map.geocoding.uri}")
     private String kakaoGeoCodingURI;
 
-    @Value("${google.map.geocoding.uri}")
-    private String googleGeoCodingURI;
-
-    @Value("${google.api.key}")
-    private String googleAPIKey;
-
     @Value("${recommend.uri}")
     private String animalRecommendURI;
 
@@ -90,71 +87,22 @@ public class AnimalService {
 
     private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
     private static final String ANIMAL_SEARCH_KEY_PREFIX = "animalSearch";
-    private static final String ANIMAL_TYPE_DOG = "[개]";
-    private static final String ANIMAL_TYPE_CAT = "[고양이]";
     public static final Long ANIMAL_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
     private static final Map<String, AnimalType> ANIMAL_TYPE_MAP = Map.of("dog", AnimalType.DOG, "cat", AnimalType.CAT, "other", AnimalType.OTHER);
 
     @Transactional
-    @Scheduled(cron = "0 0 0 * * *") // 매일 자정에 실행
+    @Scheduled(cron = "0 0 0 * * *")
     public void updateAnimalData() {
-        List<Long> existAnimalIds = animalRepository.findAllIds();
+        List<Long> existingAnimalIds = animalRepository.findAllIds();
         List<Shelter> shelters = shelterRepository.findAllWithRegionCode();
 
-        Flux.fromIterable(shelters)
-                .delayElements(Duration.ofMillis(75)) // 각 요청 사이에 0.075초 지연
-                .flatMap(shelter -> buildAnimalOpenApiURI(serviceKey, shelter.getId())
-                        .flatMap(uri -> webClient.get()
-                                .uri(uri)
-                                .retrieve()
-                                .bodyToMono(String.class)
-                                .retry(3)
-                                .flatMap(rawJsonResponse -> updateShelterByAnimalData(rawJsonResponse, shelter) // 동물 데이터로 보호소 업데이트
-                                        .then(Mono.just(rawJsonResponse)))
-                                .flatMapMany(rawJsonResponse -> convertJsonResponseToAnimals(rawJsonResponse, shelter, existAnimalIds) // 동물 엔티티 컬렉션으로 변환
-                                        .onErrorResume(e -> Flux.empty()))
-                                .collectList()
-                                .doOnNext(animalRepository::saveAll))
-                        .onErrorResume(e -> Mono.empty()))
-                .then()
-                .doOnTerminate(this::updateShelterAddressByGoogle)
-                .subscribe();
-    }
+        List<Tuple2<Shelter, String>> animalJsonResponses = Optional.ofNullable(fetchShelterJsonResponses(shelters).collectList().block())
+                .orElse(Collections.emptyList());
 
-    @Transactional
-    public void updateShelterAddressByGoogle() {
-        List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
+        saveNewAnimalData(animalJsonResponses, existingAnimalIds);
 
-        Flux.fromIterable(shelters)
-                .delayElements(Duration.ofMillis(50))
-                .flatMap(shelter -> {
-                    URI uri = buildGoogleGeocodingURI(shelter.getCareAddr());
-                    return webClient.get()
-                            .uri(uri)
-                            .retrieve()
-                            .bodyToMono(GoogleMapDTO.MapDTO.class)
-                            .flatMap(mapDTO -> Mono.justOrEmpty(mapDTO.results().stream().findFirst()))
-                            .doOnNext(resultDTO -> {
-                                shelterRepository.updateAddressInfo(resultDTO.geometry().location().lat(), resultDTO.geometry().location().lng(), shelter.getId());
-                            });
-                })
-                .then()
-                .doOnTerminate(this::postProcessAfterAnimalUpdate)
-                .subscribe();
-    }
-
-    @Transactional
-    public void postProcessAfterAnimalUpdate() {
-        List<Animal> expiredAnimals = animalRepository.findAllOutOfDateWithShelter(LocalDateTime.now().toLocalDate());
-        Set<Shelter> updatedShelters = findUpdatedShelters(expiredAnimals);
-
-        removeAnimalLikesFromCache(expiredAnimals);
-        removeAnimalsFromUserSearchHistory(expiredAnimals);
-        deleteExpiredAnimals(expiredAnimals);
-
-        updateShelterAnimalCounts(updatedShelters);
-        updateAnimalIntroductions();
-        resolveDuplicateShelters();
+        shelterService.updateShelterData(animalJsonResponses);
+        postProcessAfterAnimalUpdate();
     }
 
     @Transactional
@@ -332,72 +280,83 @@ public class AnimalService {
         }
     }
 
-    private Flux<Animal> convertJsonResponseToAnimals(String jsonResponse, Shelter shelter, List<Long> existingAnimalIds) {
-        return Mono.fromCallable(() -> jsonParser.parse(jsonResponse, AnimalDTO.class))
-                .flatMapMany(animalData -> Flux.fromIterable(
-                        filterAndMapToAnimals(animalData, shelter, existingAnimalIds)
-                ));
+    public List<Long> getRecommendedAnimalIdList(Long userId) {
+        Pageable pageable = PageRequest.of(0, 5);
+
+        // 로그인 되지 않았으면, 추천을 할 수 없으니 그냥 최신순 반환
+        if (userId == null) {
+            return animalRepository.findAllIds(pageable).getContent();
+        }
+
+        Map<String, Long> requestBody = Map.of("user_id", userId);
+        List<Long> recommendedAnimalIds = webClient.post()
+                .uri(animalRecommendURI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(requestBody))
+                .retrieve()
+                .bodyToMono(AnimalResponse.RecommendationDTO.class)
+                .map(AnimalResponse.RecommendationDTO::recommendedAnimals)
+                .onErrorResume(e -> {
+                    log.info("FastAPI 호술 시 에러 발생: {}", e.getMessage());
+                    return Mono.just(Collections.emptyList());
+                })
+                .block();
+
+        // 조회 기록이 없어서, 추천하는 ID 목록이 없으면 사용자 위치 기반으로 가져온다
+        if (recommendedAnimalIds.isEmpty()) {
+            recommendedAnimalIds = findAnimalIdListByUserLocation(userId);
+        }
+
+        return recommendedAnimalIds;
     }
 
-    private List<Animal> filterAndMapToAnimals(Optional<AnimalDTO> animalData, Shelter shelter, List<Long> existingAnimalIds) {
-        return animalData
+    private Flux<Tuple2<Shelter, String>> fetchShelterJsonResponses(List<Shelter> shelters) {
+        return Flux.fromIterable(shelters)
+                .delayElements(Duration.ofMillis(75))
+                .flatMap(shelter -> buildAnimalOpenApiURI(serviceKey, shelter.getId())
+                        .flatMap(uri -> webClient.get()
+                                .uri(uri)
+                                .retrieve()
+                                .bodyToMono(String.class)
+                                .retry(3)
+                                .map(rawJsonResponse -> Tuples.of(shelter, rawJsonResponse)))
+                        .onErrorResume(e -> Mono.empty()));
+    }
+
+    public void saveNewAnimalData(List<Tuple2<Shelter, String>> animalJsonResponses, List<Long> existingAnimalIds) {
+        for (Tuple2<Shelter, String> tuple : animalJsonResponses) {
+            Shelter shelter = tuple.getT1();
+            String animalJsonData = tuple.getT2();
+
+            List<Animal> animals = convertJsonResponseToAnimals(animalJsonData, shelter, existingAnimalIds);
+            animalRepository.saveAll(animals);
+        }
+    }
+
+    public List<Animal> convertJsonResponseToAnimals(String animalJsonData, Shelter shelter, List<Long> existingAnimalIds) {
+        return jsonParser.parse(animalJsonData, AnimalDTO.class)
                 .map(AnimalDTO::response)
                 .map(AnimalDTO.ResponseDTO::body)
                 .map(AnimalDTO.BodyDTO::items)
                 .map(AnimalDTO.ItemsDTO::item)
                 .orElse(Collections.emptyList())
                 .stream()
-                .filter(item -> isAnimalNotInDatabase(item, existingAnimalIds))
-                .filter(this::isAnimalStillActive)
-                .map(item -> buildAnimal(item, shelter))
+                .filter(item -> isNewAnimal(item, existingAnimalIds))
+                .filter(this::isActiveAnimal)
+                .map(item -> createAnimalFromDTO(item, shelter))
                 .collect(Collectors.toList());
     }
 
-    private boolean isAnimalNotInDatabase(AnimalDTO.ItemDTO item, List<Long> existingAnimalIds) {
+    private boolean isNewAnimal(AnimalDTO.ItemDTO item, List<Long> existingAnimalIds) {
         return !existingAnimalIds.contains(Long.valueOf(item.desertionNo()));
     }
 
-    private boolean isAnimalStillActive(AnimalDTO.ItemDTO item) {
+    private boolean isActiveAnimal(AnimalDTO.ItemDTO item) {
         return LocalDate.parse(item.noticeEdt(), YEAR_HOUR_DAY_FORMAT).isAfter(LocalDate.now());
     }
 
-    private Mono<Void> updateShelterByAnimalData(String jsonResponse, Shelter shelter) {
-        return Mono.fromCallable(() -> {
-            jsonParser.parse(jsonResponse, AnimalDTO.class)
-                    .ifPresent(animalData -> updateShelterWithAnimalData(animalData, shelter));
-            return Mono.empty();
-        }).then();
-    }
-
-    private void updateShelterWithAnimalData(AnimalDTO animalData, Shelter shelter) {
-        findFirstAnimalItem(animalData)
-                .ifPresent(firstAnimalItem -> shelterRepository.updateShelterInfo(
-                        firstAnimalItem.careTel(), firstAnimalItem.careAddr(), countActiveAnimals(animalData), shelter.getId())
-                );
-    }
-
-    private Optional<AnimalDTO.ItemDTO> findFirstAnimalItem(AnimalDTO animalData) {
-        return Optional.ofNullable(animalData)
-                .map(AnimalDTO::response)
-                .map(AnimalDTO.ResponseDTO::body)
-                .map(AnimalDTO.BodyDTO::items)
-                .map(AnimalDTO.ItemsDTO::item)
-                .filter(items -> !items.isEmpty())
-                .map(items -> items.get(0));
-    }
-
-    private long countActiveAnimals(AnimalDTO animalData) {
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-        LocalDate currentDate = LocalDate.now().minusDays(1);
-
-        return animalData.response().body().items().item().stream()
-                .filter(animal -> LocalDate.parse(animal.noticeEdt(), dateFormatter).isAfter(currentDate))
-                .count();
-    }
-
-    private Animal buildAnimal(AnimalDTO.ItemDTO itemDTO, Shelter shelter) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-
+    private Animal createAnimalFromDTO(AnimalDTO.ItemDTO itemDTO, Shelter shelter) {
+        DateTimeFormatter formatter = YEAR_HOUR_DAY_FORMAT;
         return Animal.builder()
                 .id(Long.valueOf(itemDTO.desertionNo()))
                 .name(createAnimalName())
@@ -405,7 +364,7 @@ public class AnimalService {
                 .happenDt(LocalDate.parse(itemDTO.happenDt(), formatter))
                 .happenPlace(itemDTO.happenPlace())
                 .kind(parseSpecies(itemDTO.kindCd()))
-                .category(parseAnimalType(itemDTO.kindCd()))
+                .category(AnimalType.from(itemDTO.kindCd()))
                 .color(itemDTO.colorCd())
                 .age(itemDTO.age())
                 .weight(itemDTO.weight())
@@ -421,31 +380,42 @@ public class AnimalService {
                 .build();
     }
 
-    public AnimalType parseAnimalType(String input) {
-        if (input.startsWith(ANIMAL_TYPE_DOG)) {
-            return AnimalType.DOG;
-        } else if (input.startsWith(ANIMAL_TYPE_CAT)) {
-            return AnimalType.CAT;
-        } else {
-            return AnimalType.OTHER;
+    private static String parseSpecies(String input) {
+        Pattern pattern = Pattern.compile("\\[.*?\\] (.+)");
+        Matcher matcher = pattern.matcher(input);
+
+        if (matcher.find()) {
+            return matcher.group(1);
         }
+
+        return null;
     }
 
     // 동물 이름 지어주는 메서드
-    public String createAnimalName() {
+    private String createAnimalName() {
         int index = ThreadLocalRandom.current().nextInt(animalNames.length);
         return animalNames[index];
     }
 
-    private Set<Shelter> findUpdatedShelters(List<Animal> expiredAnimals) {
-        return expiredAnimals.stream()
-                .map(Animal::getShelter)
-                .collect(Collectors.toSet());
+    private void postProcessAfterAnimalUpdate() {
+        List<Animal> expiredAnimals = animalRepository.findAllOutOfDateWithShelter(LocalDateTime.now().toLocalDate());
+        Set<Shelter> updatedShelters = findUpdatedShelters(expiredAnimals);
+
+        removeAnimalLikesFromCache(expiredAnimals);
+        removeAnimalsFromUserSearchHistory(expiredAnimals);
+
+        favoriteAnimalRepository.deleteByAnimalIn(expiredAnimals);
+        animalRepository.deleteAll(expiredAnimals);
+
+        updateShelterAnimalCounts(updatedShelters);
+        updateAnimalIntroductions();
+        resolveDuplicateShelters();
     }
 
     private void removeAnimalLikesFromCache(List<Animal> expiredAnimals) {
         expiredAnimals.forEach(animal ->
-                redisService.removeValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString()));
+                redisService.removeValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString())
+        );
     }
 
     private void removeAnimalsFromUserSearchHistory(List<Animal> expiredAnimals) {
@@ -458,15 +428,25 @@ public class AnimalService {
         }
     }
 
-    private void deleteExpiredAnimals(List<Animal> expiredAnimals) {
-        favoriteAnimalRepository.deleteByAnimalIn(expiredAnimals);
-        animalRepository.deleteAll(expiredAnimals);
-    }
-
     private void updateShelterAnimalCounts(Set<Shelter> updatedShelters) {
         updatedShelters.forEach(shelter ->
-                shelter.updateAnimalCnt(animalRepository.countByShelterId(shelter.getId()))
+                shelter.updateAnimalCount(animalRepository.countByShelterId(shelter.getId()))
         );
+    }
+
+    private Set<Shelter> findUpdatedShelters(List<Animal> expiredAnimals) {
+        return expiredAnimals.stream()
+                .map(Animal::getShelter)
+                .collect(Collectors.toSet());
+    }
+
+    private Mono<URI> buildAnimalOpenApiURI(String serviceKey, Long careRegNo) {
+        String url = animalURI + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
+        try {
+            return Mono.just(new URI(url));
+        } catch (URISyntaxException e) {
+            return Mono.empty();
+        }
     }
 
     private void updateAnimalIntroductions() {
@@ -512,7 +492,8 @@ public class AnimalService {
         duplicateCareTels.forEach(this::handleDuplicateSheltersForCareTel);
     }
 
-    private void handleDuplicateSheltersForCareTel(String careTel) {
+    @Transactional
+    public void handleDuplicateSheltersForCareTel(String careTel) {
         List<Shelter> shelters = shelterRepository.findByCareTel(careTel);
         Shelter targetShelter = findTargetShelter(shelters);
         List<Long> duplicateShelterIds = findDuplicateShelterIds(shelters, targetShelter);
@@ -539,59 +520,12 @@ public class AnimalService {
                 .collect(Collectors.toList());
     }
 
-    private Mono<URI> buildAnimalOpenApiURI(String serviceKey, Long careRegNo) {
-        String url = animalURI + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
-
-        try {
-            return Mono.just(new URI(url));
-        } catch (URISyntaxException e) {
-            return Mono.empty();
-        }
-    }
 
     private URI buildKakaoGeocodingURI(String address) {
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(kakaoGeoCodingURI);
         uriBuilder.queryParam("query", address);
 
         return uriBuilder.build().encode().toUri();
-    }
-
-    private URI buildGoogleGeocodingURI(String address) {
-        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(googleGeoCodingURI);
-        uriBuilder.queryParam("address", address);
-        uriBuilder.queryParam("key", googleAPIKey);
-
-        return uriBuilder.build().encode().toUri();
-    }
-
-    public List<Long> getRecommendedAnimalIdList(Long userId) {
-        Pageable pageable = PageRequest.of(0, 5);
-
-        // 로그인 되지 않았으면, 추천을 할 수 없으니 그냥 최신순 반환
-        if (userId == null) {
-            return animalRepository.findAllIds(pageable).getContent();
-        }
-
-        Map<String, Long> requestBody = Map.of("user_id", userId);
-        List<Long> recommendedAnimalIds = webClient.post()
-                .uri(animalRecommendURI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(requestBody))
-                .retrieve()
-                .bodyToMono(AnimalResponse.RecommendationDTO.class)
-                .map(AnimalResponse.RecommendationDTO::recommendedAnimals)
-                .onErrorResume(e -> {
-                    log.info("FastAPI 호술 시 에러 발생: {}", e.getMessage());
-                    return Mono.just(Collections.emptyList());
-                })
-                .block();
-
-        // 조회 기록이 없어서, 추천하는 ID 목록이 없으면 사용자 위치 기반으로 가져온다
-        if (recommendedAnimalIds.isEmpty()) {
-            recommendedAnimalIds = findAnimalIdListByUserLocation(userId);
-        }
-
-        return recommendedAnimalIds;
     }
 
     private List<Long> findAnimalIdListByUserLocation(Long userId) {
@@ -621,18 +555,6 @@ public class AnimalService {
 
         return Optional.ofNullable(ANIMAL_TYPE_MAP.get(type))
                 .orElseThrow(() -> new CustomException(ExceptionCode.WRONG_ANIMAL_TYPE));
-    }
-
-    // 구체적인 종 파싱
-    private static String parseSpecies(String input) {
-        Pattern pattern = Pattern.compile("\\[.*?\\] (.+)");
-        Matcher matcher = pattern.matcher(input);
-
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-
-        return null;
     }
 
     private Long getCachedLikeNum(String keyPrefix, Long key) {
