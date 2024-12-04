@@ -194,29 +194,13 @@ public class AnimalService {
 
     @Transactional
     public void likeAnimal(Long userId, Long animalId) {
-        // 존재하지 않는 동물이면 에러
-        if (!animalRepository.existsById(animalId)) {
-            throw new CustomException(ExceptionCode.ANIMAL_NOT_FOUND);
-        }
+        validateAnimalExistence(animalId);
 
-        Optional<FavoriteAnimal> favoriteAnimalOP = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animalId);
-
-        // 좋아요가 이미 있다면 삭제, 없다면 추가
-        if (favoriteAnimalOP.isPresent()) {
-            favoriteAnimalRepository.delete(favoriteAnimalOP.get());
-            redisService.decrementValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString(), 1L);
-        } else {
-            Animal animalRef = entityManager.getReference(Animal.class, animalId);
-            User userRef = entityManager.getReference(User.class, userId);
-
-            FavoriteAnimal favoriteAnimal = FavoriteAnimal.builder()
-                    .user(userRef)
-                    .animal(animalRef)
-                    .build();
-
-            favoriteAnimalRepository.save(favoriteAnimal);
-            redisService.incrementValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString(), 1L);
-        }
+        favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animalId)
+                .ifPresentOrElse(
+                        this::removeAnimalLike,
+                        () -> addAnimalLike(userId, animalId)
+                );
     }
 
     public List<Long> findRecommendedAnimalIds(Long userId) {
@@ -429,6 +413,29 @@ public class AnimalService {
     private void resolveDuplicateShelters() {
         List<String> duplicateCareTels = shelterRepository.findDuplicateCareTels();
         duplicateCareTels.forEach(this::handleDuplicateSheltersForCareTel);
+    }
+
+    private void validateAnimalExistence(Long animalId) {
+        if (!animalRepository.existsById(animalId)) {
+            throw new CustomException(ExceptionCode.ANIMAL_NOT_FOUND);
+        }
+    }
+
+    private void removeAnimalLike(FavoriteAnimal favoriteAnimal) {
+        favoriteAnimalRepository.delete(favoriteAnimal);
+        redisService.decrementValue(ANIMAL_LIKE_NUM_KEY_PREFIX, favoriteAnimal.getAnimal().getId().toString(), 1L);
+    }
+
+    private void addAnimalLike(Long userId, Long animalId) {
+        Animal animalRef = entityManager.getReference(Animal.class, animalId);
+        User userRef = entityManager.getReference(User.class, userId);
+        FavoriteAnimal favoriteAnimal = FavoriteAnimal.builder()
+                .user(userRef)
+                .animal(animalRef)
+                .build();
+
+        favoriteAnimalRepository.save(favoriteAnimal);
+        redisService.incrementValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString(), 1L);
     }
 
     @Transactional
