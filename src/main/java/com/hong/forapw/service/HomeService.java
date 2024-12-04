@@ -41,7 +41,7 @@ public class HomeService {
     @Transactional(readOnly = true)
     public HomeResponse.FindHomeDTO findHome(Long userId) {
         // 1. 추천 동물
-        List<Long> recommendedAnimalIds = animalService.getRecommendedAnimalIdList(userId);
+        List<Long> recommendedAnimalIds = animalService.findRecommendedAnimalIds(userId);
 
         List<HomeResponse.AnimalDTO> animalDTOS = animalRepository.findByIds(recommendedAnimalIds).stream()
                 .map(animal -> {

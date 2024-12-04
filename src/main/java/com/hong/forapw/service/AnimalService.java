@@ -47,6 +47,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.hong.forapw.core.utils.DateTimeUtils.YEAR_HOUR_DAY_FORMAT;
+import static com.hong.forapw.core.utils.PaginationUtils.isLastPage;
 
 @Service
 @RequiredArgsConstructor
@@ -128,63 +129,24 @@ public class AnimalService {
 
     @Transactional(readOnly = true)
     public AnimalResponse.FindAnimalListDTO findAnimalList(String type, Long userId, Pageable pageable) {
-        // sort 파라미터를 AnimalType으로 변환
         AnimalType animalType = converStringToAnimalType(type);
         Page<Animal> animalPage = animalRepository.findByAnimalType(animalType, pageable);
-        boolean isLastPage = !animalPage.hasNext();
-
-        // 사용자가 '좋아요' 표시한 Animal의 ID 목록 => 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findAnimalIdsByUserId(userId) : new ArrayList<>();
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> {
-                    Long likeNum = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
-                    return new AnimalResponse.AnimalDTO(
-                            animal.getId(),
-                            animal.getName(),
-                            animal.getAge(),
-                            animal.getGender(),
-                            animal.getSpecialMark(),
-                            animal.getKind(),
-                            animal.getWeight(),
-                            animal.getNeuter(),
-                            animal.getProcessState(),
-                            animal.getRegion(),
-                            animal.getInquiryNum(),
-                            likeNum,
-                            likedAnimalIds.contains(animal.getId()),
-                            animal.getProfileURL());
-                })
+                .map(animal -> createAnimalDTO(animal, likedAnimalIds))
                 .collect(Collectors.toList());
 
-        return new AnimalResponse.FindAnimalListDTO(animalDTOS, isLastPage);
+        return new AnimalResponse.FindAnimalListDTO(animalDTOS, isLastPage(animalPage));
     }
 
     @Transactional(readOnly = true)
     public AnimalResponse.FindRecommendedAnimalList findRecommendedAnimalList(Long userId) {
-        // 추천 동물 ID 목록
-        List<Long> recommendedAnimalIds = getRecommendedAnimalIdList(userId);
+        List<Long> recommendedAnimalIds = findRecommendedAnimalIds(userId);
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findAnimalIdsByUserId(userId) : new ArrayList<>();
 
         List<AnimalResponse.AnimalDTO> animalDTOS = animalRepository.findByIds(recommendedAnimalIds).stream()
-                .map(animal -> {
-                    Long likeNum = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
-                    return new AnimalResponse.AnimalDTO(
-                            animal.getId(),
-                            animal.getName(),
-                            animal.getAge(),
-                            animal.getGender(),
-                            animal.getSpecialMark(),
-                            animal.getKind(),
-                            animal.getWeight(),
-                            animal.getNeuter(),
-                            animal.getProcessState(),
-                            animal.getRegion(),
-                            animal.getInquiryNum(),
-                            likeNum,
-                            likedAnimalIds.contains(animal.getId()),
-                            animal.getProfileURL());
-                })
+                .map(animal -> createAnimalDTO(animal, likedAnimalIds))
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindRecommendedAnimalList(animalDTOS);
@@ -280,7 +242,7 @@ public class AnimalService {
         }
     }
 
-    public List<Long> getRecommendedAnimalIdList(Long userId) {
+    public List<Long> findRecommendedAnimalIds(Long userId) {
         Pageable pageable = PageRequest.of(0, 5);
 
         // 로그인 되지 않았으면, 추천을 할 수 없으니 그냥 최신순 반환
@@ -574,5 +536,24 @@ public class AnimalService {
         }
 
         return url;
+    }
+
+    private AnimalResponse.AnimalDTO createAnimalDTO(Animal animal, List<Long> likedAnimalIds) {
+        Long likeNum = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
+        return new AnimalResponse.AnimalDTO(
+                animal.getId(),
+                animal.getName(),
+                animal.getAge(),
+                animal.getGender(),
+                animal.getSpecialMark(),
+                animal.getKind(),
+                animal.getWeight(),
+                animal.getNeuter(),
+                animal.getProcessState(),
+                animal.getRegion(),
+                animal.getInquiryNum(),
+                likeNum,
+                likedAnimalIds.contains(animal.getId()),
+                animal.getProfileURL());
     }
 }
