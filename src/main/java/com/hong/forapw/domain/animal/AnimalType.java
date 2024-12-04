@@ -13,13 +13,25 @@ public enum AnimalType {
 
     private final String value;
 
-    public static AnimalType from(String input) {
-        if (input.startsWith("DOG")) {
+    public static AnimalType fromPrefix(String prefix) {
+        if (prefix.startsWith("DOG")) {
             return DOG;
-        } else if (input.startsWith("CAT")) {
+        } else if (prefix.startsWith("CAT")) {
             return CAT;
         } else {
             return OTHER;
+        }
+    }
+
+    public static AnimalType fromString(String string) {
+        if ("DOG".equalsIgnoreCase(string)) {
+            return DOG;
+        } else if ("CAT".equalsIgnoreCase(string)) {
+            return CAT;
+        } else if ("OTHER".equalsIgnoreCase(string)) {
+            return OTHER;
+        } else {
+            return null;
         }
     }
 }

@@ -89,7 +89,7 @@ public class AnimalService {
     private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
     private static final String ANIMAL_SEARCH_KEY_PREFIX = "animalSearch";
     public static final Long ANIMAL_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
-    private static final Map<String, AnimalType> ANIMAL_TYPE_MAP = Map.of("dog", AnimalType.DOG, "cat", AnimalType.CAT, "other", AnimalType.OTHER);
+
 
     @Transactional
     @Scheduled(cron = "0 0 0 * * *")
@@ -129,10 +129,9 @@ public class AnimalService {
 
     @Transactional(readOnly = true)
     public AnimalResponse.FindAnimalListDTO findAnimalList(String type, Long userId, Pageable pageable) {
-        AnimalType animalType = converStringToAnimalType(type);
-        Page<Animal> animalPage = animalRepository.findByAnimalType(animalType, pageable);
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findAnimalIdsByUserId(userId) : new ArrayList<>();
 
+        Page<Animal> animalPage = animalRepository.findByAnimalType(AnimalType.fromString(type), pageable);
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> createAnimalDTO(animal, likedAnimalIds))
                 .collect(Collectors.toList());
@@ -145,7 +144,8 @@ public class AnimalService {
         List<Long> recommendedAnimalIds = findRecommendedAnimalIds(userId);
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findAnimalIdsByUserId(userId) : new ArrayList<>();
 
-        List<AnimalResponse.AnimalDTO> animalDTOS = animalRepository.findByIds(recommendedAnimalIds).stream()
+        List<Animal> animals = animalRepository.findByIds(recommendedAnimalIds);
+        List<AnimalResponse.AnimalDTO> animalDTOS = animals.stream()
                 .map(animal -> createAnimalDTO(animal, likedAnimalIds))
                 .collect(Collectors.toList());
 
@@ -155,26 +155,8 @@ public class AnimalService {
     @Transactional(readOnly = true)
     public AnimalResponse.FindLikeAnimalListDTO findLikeAnimalList(Long userId) {
         List<Animal> animalPage = favoriteAnimalRepository.findAnimalsByUserId(userId);
-
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.stream()
-                .map(animal -> {
-                    Long likeNum = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
-                    return new AnimalResponse.AnimalDTO(
-                            animal.getId(),
-                            animal.getName(),
-                            animal.getAge(),
-                            animal.getGender(),
-                            animal.getSpecialMark(),
-                            animal.getKind(),
-                            animal.getWeight(),
-                            animal.getNeuter(),
-                            animal.getProcessState(),
-                            animal.getRegion(),
-                            animal.getInquiryNum(),
-                            likeNum,
-                            true,
-                            animal.getProfileURL());
-                })
+                .map(animal -> createAnimalDTO(animal, Collections.emptyList()))
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindLikeAnimalListDTO(animalDTOS);
@@ -182,17 +164,12 @@ public class AnimalService {
 
     @Transactional(readOnly = true)
     public AnimalResponse.FindAnimalByIdDTO findAnimalById(Long animalId, Long userId) {
-        // 로그인을 한 경우, 추천을 위해 검색한 동물의 id 저장 (5개까지만 저장된다)
-        if (userId != null) {
-            String key = ANIMAL_SEARCH_KEY_PREFIX + ":" + userId;
-            redisService.addListElement(key, animalId.toString(), 5L);
-        }
-
         Animal animal = animalRepository.findById(animalId).orElseThrow(
                 () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
         );
 
         boolean isLike = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent();
+        saveSearchRecord(animalId, userId);
 
         return new AnimalResponse.FindAnimalByIdDTO(animalId,
                 animal.getName(),
@@ -285,7 +262,7 @@ public class AnimalService {
                         .onErrorResume(e -> Mono.empty()));
     }
 
-    public void saveNewAnimalData(List<Tuple2<Shelter, String>> animalJsonResponses, List<Long> existingAnimalIds) {
+    private void saveNewAnimalData(List<Tuple2<Shelter, String>> animalJsonResponses, List<Long> existingAnimalIds) {
         for (Tuple2<Shelter, String> tuple : animalJsonResponses) {
             Shelter shelter = tuple.getT1();
             String animalJsonData = tuple.getT2();
@@ -295,7 +272,7 @@ public class AnimalService {
         }
     }
 
-    public List<Animal> convertJsonResponseToAnimals(String animalJsonData, Shelter shelter, List<Long> existingAnimalIds) {
+    private List<Animal> convertJsonResponseToAnimals(String animalJsonData, Shelter shelter, List<Long> existingAnimalIds) {
         return jsonParser.parse(animalJsonData, AnimalDTO.class)
                 .map(AnimalDTO::response)
                 .map(AnimalDTO.ResponseDTO::body)
@@ -326,7 +303,7 @@ public class AnimalService {
                 .happenDt(LocalDate.parse(itemDTO.happenDt(), formatter))
                 .happenPlace(itemDTO.happenPlace())
                 .kind(parseSpecies(itemDTO.kindCd()))
-                .category(AnimalType.from(itemDTO.kindCd()))
+                .category(AnimalType.fromPrefix(itemDTO.kindCd()))
                 .color(itemDTO.colorCd())
                 .age(itemDTO.age())
                 .weight(itemDTO.weight())
@@ -510,15 +487,6 @@ public class AnimalService {
         return animalIds;
     }
 
-    private AnimalType converStringToAnimalType(String type) {
-        if (type.equals("date")) {
-            return null;
-        }
-
-        return Optional.ofNullable(ANIMAL_TYPE_MAP.get(type))
-                .orElseThrow(() -> new CustomException(ExceptionCode.WRONG_ANIMAL_TYPE));
-    }
-
     private Long getCachedLikeNum(String keyPrefix, Long key) {
         Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
 
@@ -528,6 +496,13 @@ public class AnimalService {
         }
 
         return likeNum;
+    }
+
+    private void saveSearchRecord(Long animalId, Long userId) {
+        if (userId != null) {
+            String key = ANIMAL_SEARCH_KEY_PREFIX + ":" + userId;
+            redisService.addListElement(key, animalId.toString(), 5L);
+        }
     }
 
     public String convertHttpToHttps(String url) {
