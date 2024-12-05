@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 
 import static com.hong.forapw.core.utils.DateTimeUtils.YEAR_HOUR_DAY_FORMAT;
 import static com.hong.forapw.core.utils.PaginationUtils.isLastPage;
+import static com.hong.forapw.core.utils.UriUtils.convertHttpUrlToHttps;
 
 @Service
 @RequiredArgsConstructor
@@ -277,7 +278,7 @@ public class AnimalService {
                 .weight(itemDTO.weight())
                 .noticeSdt(LocalDate.parse(itemDTO.noticeSdt(), formatter))
                 .noticeEdt(LocalDate.parse(itemDTO.noticeEdt(), formatter))
-                .profileURL(convertHttpToHttps(itemDTO.popfile()))
+                .profileURL(convertHttpUrlToHttps(itemDTO.popfile()))
                 .processState(itemDTO.processState())
                 .gender(itemDTO.sexCd())
                 .neuter(itemDTO.neuterYn())
@@ -474,14 +475,6 @@ public class AnimalService {
             String key = ANIMAL_SEARCH_KEY_PREFIX + ":" + userId;
             redisService.addListElement(key, animalId.toString(), 5L);
         }
-    }
-
-    private String convertHttpToHttps(String url) {
-        if (Objects.requireNonNull(url).startsWith("http://")) {
-            return url.replaceFirst("http://", "https://");
-        }
-
-        return url;
     }
 
     private List<Long> findLatestAnimalIds() {

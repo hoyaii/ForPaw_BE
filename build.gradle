@@ -76,6 +76,9 @@ dependencies {
 
 	// Jsoup
 	implementation 'org.jsoup:jsoup:1.15.3'
+
+	// Apache Commons Lang
+	implementation 'org.apache.commons:commons-lang3:3.12.0'
 }
 
 sonarqube {

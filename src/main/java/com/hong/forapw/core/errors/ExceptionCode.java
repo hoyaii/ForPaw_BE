@@ -114,6 +114,7 @@ public enum ExceptionCode {
 
     // 기타
     NO_REGION_FILE(HttpStatus.NOT_FOUND, "지역 코드 파일이 존재하지 않습니다."),
+    INVALID_URI_FORMAT(HttpStatus.NOT_FOUND, "잘못된 URI 형식입니다."),
     INTRODUCTION_RETRY_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "소개글 업데이트 요청 재시도 초과");
 
     private final HttpStatus httpStatus;
