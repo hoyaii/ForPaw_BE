@@ -1,9 +1,7 @@
 package com.hong.forapw.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hong.forapw.controller.dto.AnimalDTO;
-import com.hong.forapw.controller.dto.GoogleMapDTO;
-import com.hong.forapw.controller.dto.ShelterResponse;
+import com.hong.forapw.controller.dto.*;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.core.utils.JsonParser;
@@ -12,7 +10,6 @@ import com.hong.forapw.domain.animal.AnimalType;
 import com.hong.forapw.domain.District;
 import com.hong.forapw.domain.Province;
 import com.hong.forapw.domain.RegionCode;
-import com.hong.forapw.controller.dto.ShelterDTO;
 import com.hong.forapw.domain.Shelter;
 import com.hong.forapw.repository.animal.AnimalRepository;
 import com.hong.forapw.repository.animal.FavoriteAnimalRepository;
@@ -26,19 +23,19 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.hong.forapw.core.utils.UriUtils.*;
 
 @Service
 @RequiredArgsConstructor
@@ -60,15 +57,11 @@ public class ShelterService {
     @Value("${openAPI.shelter.uri}")
     private String baseUrl;
 
-    @Value("${google.map.geocoding.uri}")
-    private String googleGeoCodingURI;
-
-    @Value("${google.api.key}")
-    private String googleAPIKey;
+    @Value("${kakao.key}")
+    private String kakaoAPIKey;
 
     private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
-    public static final Long ANIMAL_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
-    private static final Map<String, AnimalType> ANIMAL_TYPE_MAP = Map.of("dog", AnimalType.DOG, "cat", AnimalType.CAT, "other", AnimalType.OTHER);
+    private static final Long ANIMAL_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
 
     @Transactional
     @Scheduled(cron = "0 0 6 * * MON") // 매주 월요일 새벽 6시에 실행
@@ -81,7 +74,7 @@ public class ShelterService {
                 .flatMap(regionCode -> {
                     Integer uprCd = regionCode.getUprCd();
                     Integer orgCd = regionCode.getOrgCd();
-                    URI uri = buildShelterURI(baseUrl, serviceKey, uprCd, orgCd);
+                    URI uri = createShelterOpenApiURI(baseUrl, serviceKey, uprCd, orgCd);
 
                     return webClient.get()
                             .uri(uri)
@@ -144,8 +137,7 @@ public class ShelterService {
 
     @Transactional(readOnly = true)
     public ShelterResponse.FindShelterAnimalsByIdDTO findShelterAnimalListById(Long shelterId, Long userId, String type, Pageable pageable) {
-        AnimalType animalType = converStringToAnimalType(type);
-        Page<Animal> animalPage = animalRepository.findByShelterIdAndType(animalType, shelterId, pageable);
+        Page<Animal> animalPage = animalRepository.findByShelterIdAndType(AnimalType.fromString(type), shelterId, pageable);
 
         // 사용자가 '좋아요' 표시한 Animal의 ID 목록, 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
         List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findAnimalIdsByUserId(userId) : new ArrayList<>();
@@ -243,7 +235,7 @@ public class ShelterService {
         List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
 
         for (Shelter shelter : shelters) {
-            URI uri = buildGoogleGeocodingURI(shelter.getCareAddr());
+            URI uri = createGoogleGeocodingURI(shelter.getCareAddr());
             GoogleMapDTO.MapDTO mapDTO = webClient.get()
                     .uri(uri)
                     .retrieve()
@@ -259,6 +251,27 @@ public class ShelterService {
                 );
             }
         }
+    }
+
+    @Transactional
+    public void updateShelterAddressByKakao() {
+        List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
+
+        Flux.fromIterable(shelters)
+                .delayElements(Duration.ofMillis(50))
+                .flatMap(shelter -> {
+                    URI uri = createKakaoGeocodingURI(shelter.getCareAddr());
+                    return webClient.get()
+                            .uri(uri)
+                            .header("Authorization", "KakaoAK " + kakaoAPIKey)
+                            .retrieve()
+                            .bodyToMono(KakaoMapDTO.MapDTO.class)
+                            .flatMap(mapDTO -> Mono.justOrEmpty(mapDTO.documents().stream().findFirst()))
+                            .doOnNext(document -> {
+                                shelterRepository.updateAddressInfo(Double.valueOf(document.y()), Double.valueOf(document.x()), shelter.getId());
+                            });
+                })
+                .subscribe();
     }
 
     private List<Shelter> convertResponseToShelter(String response, RegionCode regionCode, List<Long> existShelterIds) throws IOException {
@@ -277,29 +290,6 @@ public class ShelterService {
                         .name(itemDTO.careNm())
                         .build())
                 .collect(Collectors.toList());
-    }
-
-    private URI buildGoogleGeocodingURI(String address) {
-        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(googleGeoCodingURI);
-        uriBuilder.queryParam("address", address);
-        uriBuilder.queryParam("key", googleAPIKey);
-
-        return uriBuilder.build().encode().toUri();
-    }
-
-    private URI buildShelterURI(String baseUrl, String serviceKey, Integer uprCd, Integer orgCd) {
-        String url = baseUrl + "?serviceKey=" + serviceKey + "&upr_cd=" + uprCd + "&org_cd=" + orgCd + "&_type=json";
-        try {
-            return new URI(url);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private AnimalType converStringToAnimalType(String sort) {
-        return sort.equals("date") ? null :
-                Optional.ofNullable(ANIMAL_TYPE_MAP.get(sort))
-                        .orElseThrow(() -> new CustomException(ExceptionCode.BAD_APPROACH));
     }
 
     private Long getCachedLikeNum(String keyPrefix, Long key) {

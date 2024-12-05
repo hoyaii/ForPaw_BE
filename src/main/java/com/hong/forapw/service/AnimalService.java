@@ -27,15 +27,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 import reactor.util.retry.Retry;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -48,6 +45,7 @@ import java.util.stream.Collectors;
 
 import static com.hong.forapw.core.utils.DateTimeUtils.YEAR_HOUR_DAY_FORMAT;
 import static com.hong.forapw.core.utils.PaginationUtils.isLastPage;
+import static com.hong.forapw.core.utils.UriUtils.createAnimalOpenApiURI;
 import static com.hong.forapw.core.utils.UriUtils.convertHttpUrlToHttps;
 
 @Service
@@ -69,17 +67,8 @@ public class AnimalService {
     @Value("${openAPI.service-key2}")
     private String serviceKey;
 
-    @Value("${openAPI.animal.uri}")
-    private String animalURI;
-
     @Value("${animal.names}")
     private String[] animalNames;
-
-    @Value("${kakao.key}")
-    private String kakaoAPIKey;
-
-    @Value("${kakao.map.geocoding.uri}")
-    private String kakaoGeoCodingURI;
 
     @Value("${recommend.uri}")
     private String animalRecommendURI;
@@ -105,27 +94,6 @@ public class AnimalService {
 
         shelterService.updateShelterData(animalJsonResponses);
         postProcessAfterAnimalUpdate();
-    }
-
-    @Transactional
-    public void updateShelterAddressByKakao() {
-        List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
-
-        Flux.fromIterable(shelters)
-                .delayElements(Duration.ofMillis(50))
-                .flatMap(shelter -> {
-                    URI uri = buildKakaoGeocodingURI(shelter.getCareAddr());
-                    return webClient.get()
-                            .uri(uri)
-                            .header("Authorization", "KakaoAK " + kakaoAPIKey)
-                            .retrieve()
-                            .bodyToMono(KakaoMapDTO.MapDTO.class)
-                            .flatMap(mapDTO -> Mono.justOrEmpty(mapDTO.documents().stream().findFirst()))
-                            .doOnNext(document -> {
-                                shelterRepository.updateAddressInfo(Double.valueOf(document.y()), Double.valueOf(document.x()), shelter.getId());
-                            });
-                })
-                .subscribe();
     }
 
     @Transactional(readOnly = true)
@@ -221,7 +189,7 @@ public class AnimalService {
     private Flux<Tuple2<Shelter, String>> fetchShelterJsonResponses(List<Shelter> shelters) {
         return Flux.fromIterable(shelters)
                 .delayElements(Duration.ofMillis(75))
-                .flatMap(shelter -> buildAnimalOpenApiURI(serviceKey, shelter.getId())
+                .flatMap(shelter -> createAnimalOpenApiURI(serviceKey, shelter.getId())
                         .flatMap(uri -> webClient.get()
                                 .uri(uri)
                                 .retrieve()
@@ -348,15 +316,6 @@ public class AnimalService {
                 .collect(Collectors.toSet());
     }
 
-    private Mono<URI> buildAnimalOpenApiURI(String serviceKey, Long careRegNo) {
-        String url = animalURI + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
-        try {
-            return Mono.just(new URI(url));
-        } catch (URISyntaxException e) {
-            return Mono.empty();
-        }
-    }
-
     private void updateAnimalIntroductions() {
         webClient.post()
                 .uri(updateAnimalIntroduceURI)
@@ -449,14 +408,6 @@ public class AnimalService {
                 .filter(shelter -> !shelter.equals(targetShelter))
                 .map(Shelter::getId)
                 .collect(Collectors.toList());
-    }
-
-
-    private URI buildKakaoGeocodingURI(String address) {
-        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(kakaoGeoCodingURI);
-        uriBuilder.queryParam("query", address);
-
-        return uriBuilder.build().encode().toUri();
     }
 
     private Long getCachedLikeNum(String keyPrefix, Long key) {
