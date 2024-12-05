@@ -55,13 +55,9 @@ public class UriUtils {
         }
     }
 
-    public static URI createShelterOpenApiURI(String baseUrl, String serviceKey, Integer uprCd, Integer orgCd) {
+    public static URI createShelterOpenApiURI(String baseUrl, String serviceKey, Integer uprCd, Integer orgCd) throws URISyntaxException {
         String uri = baseUrl + "?serviceKey=" + serviceKey + "&upr_cd=" + uprCd + "&org_cd=" + orgCd + "&_type=json";
-        try {
-            return new URI(uri);
-        } catch (URISyntaxException e) {
-            throw new CustomException(ExceptionCode.INVALID_URI_FORMAT);
-        }
+        return new URI(uri);
     }
 
     public static URI createKakaoGeocodingURI(String address) {

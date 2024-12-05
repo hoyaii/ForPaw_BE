@@ -16,6 +16,7 @@ import com.hong.forapw.repository.animal.FavoriteAnimalRepository;
 import com.hong.forapw.repository.RegionCodeRepository;
 import com.hong.forapw.repository.ShelterRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,19 +28,19 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.hong.forapw.core.utils.DateTimeUtils.YEAR_HOUR_DAY_FORMAT;
 import static com.hong.forapw.core.utils.UriUtils.*;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class ShelterService {
 
     private final ShelterRepository shelterRepository;
@@ -64,29 +65,18 @@ public class ShelterService {
     private static final Long ANIMAL_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
 
     @Transactional
-    @Scheduled(cron = "0 0 6 * * MON") // 매주 월요일 새벽 6시에 실행
+    @Scheduled(cron = "0 0 6 * * MON")
     public void updateShelterData() {
         List<Long> existShelterIds = shelterRepository.findAllIds();
         List<RegionCode> regionCodes = regionCodeRepository.findAll();
 
         Flux.fromIterable(regionCodes)
                 .delayElements(Duration.ofMillis(50))
-                .flatMap(regionCode -> {
-                    Integer uprCd = regionCode.getUprCd();
-                    Integer orgCd = regionCode.getOrgCd();
-                    URI uri = createShelterOpenApiURI(baseUrl, serviceKey, uprCd, orgCd);
-
-                    return webClient.get()
-                            .uri(uri)
-                            .retrieve()
-                            .bodyToMono(String.class)
-                            .retry(3)
-                            .flatMapMany(response -> Mono.fromCallable(() -> convertResponseToShelter(response, regionCode, existShelterIds))
-                                    .flatMapMany(Flux::fromIterable)
-                                    .onErrorResume(e -> Flux.empty())); // 에러 발생 시, 빈 Flux 반환 (JSON 파싱 에러)
-                })
+                .flatMap(regionCode -> fetchShelterDataFromApi(regionCode, existShelterIds))
                 .collectList()
-                .subscribe(shelterRepository::saveAll);
+                .doOnNext(shelterRepository::saveAll)
+                .doOnError(error -> log.error("보호소 데이터 패치 실패: {}", error.getMessage()))
+                .subscribe();
     }
 
     @Transactional
@@ -119,7 +109,6 @@ public class ShelterService {
 
     @Transactional(readOnly = true)
     public ShelterResponse.FindShelterInfoByIdDTO findShelterInfoById(Long shelterId) {
-        // 보호소가 존재하지 않으면 에러
         Shelter shelter = shelterRepository.findById(shelterId).orElseThrow(
                 () -> new CustomException(ExceptionCode.SHELTER_NOT_FOUND)
         );
@@ -223,12 +212,14 @@ public class ShelterService {
     }
 
     private long countActiveAnimals(AnimalDTO animalDTO) {
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         LocalDate currentDate = LocalDate.now().minusDays(1);
-
         return animalDTO.response().body().items().item().stream()
-                .filter(animal -> LocalDate.parse(animal.noticeEdt(), dateFormatter).isAfter(currentDate))
+                .filter(animal -> isAnimalNoticeNotExpired(animal, currentDate))
                 .count();
+    }
+
+    private boolean isAnimalNoticeNotExpired(AnimalDTO.ItemDTO animal, LocalDate currentDate) {
+        return LocalDate.parse(animal.noticeEdt(), YEAR_HOUR_DAY_FORMAT).isAfter(currentDate);
     }
 
     private void updateShelterAddressByGoogle() {
@@ -274,22 +265,57 @@ public class ShelterService {
                 .subscribe();
     }
 
-    private List<Shelter> convertResponseToShelter(String response, RegionCode regionCode, List<Long> existShelterIds) throws IOException {
-        // JSON 파싱 에러 던질 수 있음
-        ShelterDTO json = mapper.readValue(response, ShelterDTO.class);
+    private Flux<Shelter> fetchShelterDataFromApi(RegionCode regionCode, List<Long> existShelterIds) {
+        try {
+            URI uri = createShelterOpenApiURI(baseUrl, serviceKey, regionCode.getUprCd(), regionCode.getOrgCd());
+            return webClient.get()
+                    .uri(uri)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .retry(3)
+                    .flatMapMany(response -> convertResponseToNewShelter(response, regionCode, existShelterIds))
+                    .onErrorResume(e -> Flux.empty());
+        } catch (Exception e) {
+            log.warn("보소 데이터 패치를 위한 URI가 유효하지 않음, regionCode{}: {}", regionCode, e.getMessage());
+            return Flux.empty();
+        }
+    }
 
-        List<ShelterDTO.itemDTO> itemDTOS = Optional.ofNullable(json.response().body().items())
+    private Flux<Shelter> convertResponseToNewShelter(String response, RegionCode regionCode, List<Long> existShelterIds) {
+        return Mono.fromCallable(() -> parseJsonToItemDTO(response))
+                .flatMapMany(Flux::fromIterable)
+                .filter(itemDTO -> isNewShelter(itemDTO, existShelterIds))
+                .map(itemDTO -> createShelter(itemDTO, regionCode))
+                .onErrorResume(e -> {
+                    log.warn("보호소 데이터를 패치해오는 과정 중 파싱에서 에러 발생, regionCode {}: {}", regionCode, e.getMessage());
+                    return Flux.empty();
+                });
+    }
+
+    private List<ShelterDTO.itemDTO> parseJsonToItemDTO(String response) {
+        return jsonParser.parse(response, ShelterDTO.class)
+                .map(this::extractShelterItemDTOS)
+                .orElse(Collections.emptyList());
+    }
+
+    private List<ShelterDTO.itemDTO> extractShelterItemDTOS(ShelterDTO shelterDTO) {
+        return Optional.ofNullable(shelterDTO.response())
+                .map(ShelterDTO.ResponseDTO::body)
+                .map(ShelterDTO.BodyDTO::items)
                 .map(ShelterDTO.ItemsDTO::item)
                 .orElse(Collections.emptyList());
+    }
 
-        return itemDTOS.stream()
-                .filter(itemDTO -> !existShelterIds.contains(itemDTO.careRegNo())) // 이미 저장되어 있는 보호소는 업데이트 하지 않는다
-                .map(itemDTO -> Shelter.builder()
-                        .regionCode(regionCode)
-                        .id(itemDTO.careRegNo())
-                        .name(itemDTO.careNm())
-                        .build())
-                .collect(Collectors.toList());
+    private boolean isNewShelter(ShelterDTO.itemDTO itemDTO, List<Long> existShelterIds) {
+        return !existShelterIds.contains(itemDTO.careRegNo());
+    }
+
+    private Shelter createShelter(ShelterDTO.itemDTO itemDTO, RegionCode regionCode) {
+        return Shelter.builder()
+                .regionCode(regionCode)
+                .id(itemDTO.careRegNo())
+                .name(itemDTO.careNm())
+                .build();
     }
 
     private Long getCachedLikeNum(String keyPrefix, Long key) {
