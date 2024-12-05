@@ -89,7 +89,7 @@ public class AnimalService {
     private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
     private static final String ANIMAL_SEARCH_KEY_PREFIX = "animalSearch";
     public static final Long ANIMAL_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
-
+    private static final Pageable DEFAULT_PAGE_REQUEST = PageRequest.of(0, 5);
 
     @Transactional
     @Scheduled(cron = "0 0 0 * * *")
@@ -203,31 +203,15 @@ public class AnimalService {
                 );
     }
 
+    // 로그인 X => 그냥 최신순, 로그인 O => 검색 기록을 바탕으로 추천 => 검색 기록이 없다면 위치를 기준으로 주변 보호소의 동물 추천
     public List<Long> findRecommendedAnimalIds(Long userId) {
-        Pageable pageable = PageRequest.of(0, 5);
-
-        // 로그인 되지 않았으면, 추천을 할 수 없으니 그냥 최신순 반환
         if (userId == null) {
-            return animalRepository.findAllIds(pageable).getContent();
+            return findLatestAnimalIds();
         }
 
-        Map<String, Long> requestBody = Map.of("user_id", userId);
-        List<Long> recommendedAnimalIds = webClient.post()
-                .uri(animalRecommendURI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(requestBody))
-                .retrieve()
-                .bodyToMono(AnimalResponse.RecommendationDTO.class)
-                .map(AnimalResponse.RecommendationDTO::recommendedAnimals)
-                .onErrorResume(e -> {
-                    log.info("FastAPI 호술 시 에러 발생: {}", e.getMessage());
-                    return Mono.just(Collections.emptyList());
-                })
-                .block();
-
-        // 조회 기록이 없어서, 추천하는 ID 목록이 없으면 사용자 위치 기반으로 가져온다
+        List<Long> recommendedAnimalIds = fetchRecommendedAnimalIds(userId);
         if (recommendedAnimalIds.isEmpty()) {
-            recommendedAnimalIds = findAnimalIdListByUserLocation(userId);
+            recommendedAnimalIds = findAnimalIdsByUserLocation(userId);
         }
 
         return recommendedAnimalIds;
@@ -474,26 +458,6 @@ public class AnimalService {
         return uriBuilder.build().encode().toUri();
     }
 
-    private List<Long> findAnimalIdListByUserLocation(Long userId) {
-        PageRequest pageRequest = PageRequest.of(0, 5);
-
-        // 우선 사용자 district를 바탕으로 조회
-        List<Long> animalIds = userRepository.findDistrictById(userId)
-                .map(district -> animalRepository.findIdsByDistrict(district, pageRequest))
-                .orElseGet(ArrayList::new);
-
-        // 조회된 동물 ID의 수가 5개 미만인 경우, province 범위까지 확대해서 추가 조회
-        if (animalIds.size() < 5) {
-            animalIds.addAll(userRepository.findProvinceById(userId)
-                    .map(province -> animalRepository.findIdsByProvince(province, pageRequest))
-                    .orElseGet(ArrayList::new));
-
-            return animalIds.subList(0, Math.min(5, animalIds.size()));
-        }
-
-        return animalIds;
-    }
-
     private Long getCachedLikeNum(String keyPrefix, Long key) {
         Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
 
@@ -512,12 +476,58 @@ public class AnimalService {
         }
     }
 
-    public String convertHttpToHttps(String url) {
+    private String convertHttpToHttps(String url) {
         if (Objects.requireNonNull(url).startsWith("http://")) {
             return url.replaceFirst("http://", "https://");
         }
 
         return url;
+    }
+
+    private List<Long> findLatestAnimalIds() {
+        return animalRepository.findAllIds(DEFAULT_PAGE_REQUEST).getContent();
+    }
+
+    private List<Long> fetchRecommendedAnimalIds(Long userId) {
+        Map<String, Long> requestBody = Map.of("user_id", userId);
+        return webClient.post()
+                .uri(animalRecommendURI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(requestBody))
+                .retrieve()
+                .bodyToMono(AnimalResponse.RecommendationDTO.class)
+                .map(AnimalResponse.RecommendationDTO::recommendedAnimals)
+                .onErrorResume(e -> {
+                    log.warn("FastAPI 호출 시 에러 발생: {}", e.getMessage());
+                    return Mono.just(Collections.emptyList());
+                })
+                .block();
+    }
+
+    private List<Long> findAnimalIdsByUserLocation(Long userId) {
+        List<Long> animalIds = findAnimalIdsByDistrict(userId);
+        if (animalIds.size() < 5) {
+            addAnimalIdsFromProvince(userId, animalIds);
+        }
+
+        return limitToMaxSize(animalIds, 5);
+    }
+
+    private List<Long> findAnimalIdsByDistrict(Long userId) {
+        return userRepository.findDistrictById(userId)
+                .map(district -> animalRepository.findIdsByDistrict(district, AnimalService.DEFAULT_PAGE_REQUEST))
+                .orElseGet(ArrayList::new);
+    }
+
+    private void addAnimalIdsFromProvince(Long userId, List<Long> animalIds) {
+        userRepository.findProvinceById(userId).ifPresent(province -> {
+            List<Long> provinceAnimalIds = animalRepository.findIdsByProvince(province, AnimalService.DEFAULT_PAGE_REQUEST);
+            animalIds.addAll(provinceAnimalIds);
+        });
+    }
+
+    private List<Long> limitToMaxSize(List<Long> animalIds, int maxSize) {
+        return animalIds.size() > maxSize ? animalIds.subList(0, maxSize) : animalIds;
     }
 
     private AnimalResponse.AnimalDTO createAnimalDTO(Animal animal, List<Long> likedAnimalIds) {
