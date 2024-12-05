@@ -32,8 +32,6 @@ public class AnimalResponse {
                             String profileURL) {
     }
 
-    ;
-
     public record FindAnimalByIdDTO(Long id,
                                     String name,
                                     String age,
@@ -53,26 +51,6 @@ public class AnimalResponse {
                                     String introductionTitle,
                                     String introductionContent,
                                     boolean isAdopted) {
-    }
-
-    public record FindApplyListDTO(List<ApplyDTO> applies) {
-    }
-
-    public record CreateApplyDTO(Long id) {
-    }
-
-    public record ApplyDTO(Long applyId,
-                           Long animalId,
-                           String animalName,
-                           String kind,
-                           String gender,
-                           String age,
-                           String userName,
-                           String tel,
-                           String roadNameAddress,
-                           String addressDetail,
-                           String zipCode,
-                           ApplyStatus status) {
     }
 
     public record RecommendationDTO(List<Long> recommendedAnimals) {

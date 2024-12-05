@@ -8,6 +8,9 @@ import java.util.Enumeration;
 @Slf4j
 public class LogUtils {
 
+    private LogUtils() {
+    }
+
     public static void logAllHeaders(HttpServletRequest request) {
         Enumeration<String> headerNames = request.getHeaderNames();
         log.info("========================================");
@@ -16,7 +19,7 @@ public class LogUtils {
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
             String headerValue = request.getHeader(headerName);
-            log.info(headerName + ": " + headerValue);
+            log.info("{}: {}", headerName, headerValue);
         }
         log.info("========================================");
     }

@@ -48,13 +48,11 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -62,7 +60,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.hong.forapw.core.security.JWTProvider.createRefreshTokenCookie;
-import static com.hong.forapw.core.utils.UriUtils.buildRedirectUri;
+import static com.hong.forapw.core.utils.UriUtils.createRedirectUri;
 import static com.hong.forapw.service.EmailService.generateVerificationCode;
 import static com.hong.forapw.core.utils.MailTemplate.ACCOUNT_SUSPENSION;
 import static com.hong.forapw.core.utils.MailTemplate.VERIFICATION_CODE;
@@ -573,18 +571,18 @@ public class UserService {
 
     private String determineRedirectUri(Map<String, String> tokenOrEmail, String authProvider, HttpServletResponse response) throws IOException {
         if (isNotJoined(tokenOrEmail)) {
-            return buildRedirectUri(redirectJoinUri, Map.of(
+            return createRedirectUri(redirectJoinUri, Map.of(
                     QUERY_PARAM_EMAIL, tokenOrEmail.get(EMAIL),
                     QUERY_PARAM_AUTH_PROVIDER, authProvider
             ));
         } else if (isJoined(tokenOrEmail)) {
             response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokenOrEmail.get(REFRESH_TOKEN_KEY_PREFIX)));
-            return buildRedirectUri(redirectHomeUri, Map.of(
+            return createRedirectUri(redirectHomeUri, Map.of(
                     QUERY_PARAM_ACCESS_TOKEN, tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX),
                     QUERY_PARAM_AUTH_PROVIDER, authProvider
             ));
         } else {
-            return buildRedirectUri(redirectLoginUri, Map.of(
+            return createRedirectUri(redirectLoginUri, Map.of(
                     QUERY_PARAM_AUTH_PROVIDER, authProvider
             ));
         }

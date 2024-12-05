@@ -72,6 +72,18 @@ services:
     networks:
       - network
 
+  fastapi:
+    build:
+      context: ./FastAPI
+      dockerfile: Dockerfile
+    container_name: fast
+    ports:
+      - "8000:8000"
+    networks:
+      - network
+    depends_on:
+      - spring
+
 #  nginx:
 #    image: nginx:1.21.5-alpine
 #    container_name: nginx

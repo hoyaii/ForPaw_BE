@@ -2,25 +2,23 @@ package com.hong.forapw.core.errors;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.hong.forapw.core.utils.ApiUtils;
-import com.hong.forapw.core.utils.EnumUtils;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,7 +28,11 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    private MessageSource messageSource;
+    private final MessageSource messageSource;
+
+    private static final String LOG_LEVEL_INFO = "INFO";
+    private static final String LOG_LEVEL_WARN = "WARN";
+    private static final String LOG_LEVEL_ERROR = "ERROR";
 
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<?> handleCustomException(CustomException ex) {
@@ -52,6 +54,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
+    @SuppressWarnings("unchecked")
     public ResponseEntity<?> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex, HttpServletRequest request) {
         String traceId = getTraceId();
         String errorMessage = getLocalizedMessage("error.invalid.data.format");
@@ -88,7 +91,17 @@ public class GlobalExceptionHandler {
         log.warn("[Trace ID: {}] 잘못된 인자: {}", traceId, ex.getMessage(), ex);
         return ResponseEntity.badRequest().body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
     }
-    
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<?> handleConstraintViolationException(ConstraintViolationException ex) {
+        String traceId = getTraceId();
+        String errorMessage = ex.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+        log.warn("[Trace ID: {}] 유효성 검사 실패: {}", traceId, errorMessage, ex);
+        return ResponseEntity.badRequest().body(ApiUtils.error(errorMessage, HttpStatus.BAD_REQUEST));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<?> handleRuntimeException(RuntimeException ex, HttpServletRequest request) {
         String traceId = getTraceId();
@@ -109,5 +122,17 @@ public class GlobalExceptionHandler {
 
     private String getRequestDetails(HttpServletRequest request) {
         return String.format("URL: %s, Method: %s", request.getRequestURL(), request.getMethod());
+    }
+
+    private void logWithContext(String logLevel, String traceId, String message, Throwable ex) {
+        String userId = MDC.get("userId");
+        String formattedMessage = String.format("[Trace ID: %s][User ID: %s] %s", traceId, userId, message);
+
+        switch (logLevel.toUpperCase()) {
+            case LOG_LEVEL_INFO -> log.info(formattedMessage, ex);
+            case LOG_LEVEL_WARN -> log.warn(formattedMessage, ex);
+            case LOG_LEVEL_ERROR -> log.error(formattedMessage, ex);
+            default -> log.debug(formattedMessage, ex);
+        }
     }
 }

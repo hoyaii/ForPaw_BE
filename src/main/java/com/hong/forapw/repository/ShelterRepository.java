@@ -47,6 +47,11 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
             "(SELECT s2.careTel FROM Shelter s2 GROUP BY s2.careTel, s2.latitude, s2.longitude HAVING COUNT(s2.id) > 1)")
     List<Shelter> findDuplicateShelters();
 
+    @Query("SELECT s.careTel FROM Shelter s GROUP BY s.careTel HAVING COUNT(s) > 1")
+    List<String> findDuplicateCareTels();
+
+    List<Shelter> findByCareTel(String careTel);
+
     @Modifying
     @Transactional
     @Query("UPDATE Shelter s SET s.careTel = :careTel, s.careAddr = :careAddr, s.animalCnt = :animalCnt WHERE s.id = :shelterId")
@@ -61,4 +66,8 @@ public interface ShelterRepository extends JpaRepository<Shelter, Long> {
     @Transactional
     @Query("UPDATE Shelter s SET s.isDuplicate = :isDuplicate WHERE s.id = :shelterId")
     void updateIsDuplicate(@Param("shelterId") Long shelterId, @Param("isDuplicate") boolean isDuplicate);
+
+    @Modifying
+    @Query("UPDATE Shelter s SET s.isDuplicate = :isDuplicate WHERE s.id IN :shelterIds")
+    void updateIsDuplicateByIds(@Param("shelterIds") List<Long> shelterIds, @Param("isDuplicate") boolean isDuplicate);
 }

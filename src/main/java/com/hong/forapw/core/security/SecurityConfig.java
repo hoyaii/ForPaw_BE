@@ -10,13 +10,19 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
+import org.springframework.security.config.annotation.web.configurers.ExceptionHandlingConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -25,10 +31,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
 @Configuration
-@RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final RedisService redisService;
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -36,61 +44,28 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-        return http.getSharedObject(AuthenticationManagerBuilder.class).build();
-    }
-
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, TraceIdFilter traceIdFilter,
+                                                   JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
-                // CSRF 해제
-                .csrf(AbstractHttpConfigurer::disable)
-
-                // iframe 옵션 설정
-                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
-
-                // CORS 설정
+                .csrf(AbstractHttpConfigurer::disable) // REST API에서는 CSRF 보호가 필요하지 않음
+                .headers(headers ->
+                        headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)) // 동일 출처의 iframe 허용
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // 세션 정책 설정
-                .sessionManagement(sessionManagement ->
+                .sessionManagement(sessionManagement -> // STATELESS가 JWT 인증 방식에 적합
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
-                // 폼 로그인 및 기본 HTTP 인증 비활성화
-                .formLogin(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable) // 폼 로그인과 기본 HTTP 인증 비활성화 (JWT 인증만 사용)
                 .httpBasic(AbstractHttpConfigurer::disable)
+                .exceptionHandling(this::configureExceptionHandling) // 인증-인가 실패 시 처리
+                .authorizeHttpRequests(this::configureAuthorization) // 요청 경로별로 권한 제어
 
-                // 인증 예외 및 권한 부여 실패 처리자
-                .exceptionHandling(exceptionHandling -> {
-                    exceptionHandling.authenticationEntryPoint((request, response, authException) ->
-                            FilterResponseUtils.unAuthorized(response, new CustomException(ExceptionCode.USER_UNAUTHORIZED))
-                    );
-                    exceptionHandling.accessDeniedHandler((request, response, accessDeniedException) ->
-                            FilterResponseUtils.forbidden(response, new CustomException(ExceptionCode.USER_FORBIDDEN))
-                    );
-                })
-
-                // 인증 요구사항 및 권한 설정
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/accounts/profile", "/api/accounts/password/**", "/api/accounts/role", "/api/accounts/withdraw", "/api/shelters/import", "/api/animals/like", "/api/accounts/withdraw/code").authenticated()
-                        .requestMatchers(new AntPathRequestMatcher("/api/animals/*/like")).authenticated()
-                        .requestMatchers(new AntPathRequestMatcher("/api/animals/*/apply")).authenticated()
-                        .requestMatchers(new AntPathRequestMatcher("/api/groups/*/detail")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/api/chat/*/read")).permitAll()
-                        .requestMatchers("/ws/**", "/api/auth/**", "/api/accounts/**", "/api/animals/**", "/api/shelters/**",
-                                "/api/groups", "/api/groups/local", "/api/groups/new", "/api/home", "/api/search/**", "/api/validate/accessToken",
-                                "/api/posts/adoption", "/api/posts/fostering", "/api/posts/question", "/api/posts/popular", "/api/groups/localAndNew", "/api/faq", "/shelters/addr").permitAll()
-                        .anyRequest().authenticated()
-                )
-
-                // 필터 추가
-                .addFilter(new JwtAuthenticationFilter(authenticationManager(http), redisService));
+                .addFilterBefore(traceIdFilter, BasicAuthenticationFilter.class)
+                .addFilterAfter(jwtAuthenticationFilter, BasicAuthenticationFilter.class);
 
         return http.build();
     }
 
-    public CorsConfigurationSource corsConfigurationSource() {
+    private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.addAllowedHeader("*");
         configuration.addAllowedMethod("*");
@@ -102,5 +77,37 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private void configureExceptionHandling(ExceptionHandlingConfigurer<HttpSecurity> exceptionHandling) {
+        exceptionHandling
+                .authenticationEntryPoint((request, response, authException) ->
+                        FilterResponseUtils.unAuthorized(response, new CustomException(ExceptionCode.USER_UNAUTHORIZED)))
+                .accessDeniedHandler((request, response, accessDeniedException) ->
+                        FilterResponseUtils.forbidden(response, new CustomException(ExceptionCode.USER_FORBIDDEN)));
+    }
+
+    private void configureAuthorization(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry auth) {
+        authenticatedRoutes(auth);
+        publicRoutes(auth);
+        auth.anyRequest().authenticated();
+    }
+
+    private void authenticatedRoutes(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry auth) {
+        auth
+                .requestMatchers("/api/accounts/profile", "/api/accounts/password/**", "/api/accounts/role",
+                        "/api/accounts/withdraw", "/api/shelters/import", "/api/animals/like",
+                        "/api/accounts/withdraw/code").authenticated()
+                .requestMatchers("/api/animals/*/like", "/api/animals/*/apply").authenticated();
+    }
+
+    private void publicRoutes(AuthorizeHttpRequestsConfigurer<?>.AuthorizationManagerRequestMatcherRegistry auth) {
+        auth
+                .requestMatchers("/api/groups/*/detail", "/api/chat/*/read").permitAll()
+                .requestMatchers("/ws/**", "/api/auth/**", "/api/accounts/**", "/api/animals/**",
+                        "/api/shelters/**", "/api/groups", "/api/groups/local", "/api/groups/new",
+                        "/api/home", "/api/search/**", "/api/validate/accessToken",
+                        "/api/posts/adoption", "/api/posts/fostering", "/api/posts/question",
+                        "/api/posts/popular", "/api/groups/localAndNew", "/api/faq", "/shelters/addr").permitAll();
     }
 }

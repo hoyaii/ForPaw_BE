@@ -93,4 +93,8 @@ public interface AnimalRepository extends JpaRepository<Animal, Long> {
     @Transactional
     @Query("UPDATE Animal a SET a.shelter = :shelter WHERE a.id = :animalId")
     void updateShelter(@Param("shelter") Shelter shelter, @Param("animalId") Long animalId);
+
+    @Modifying
+    @Query("UPDATE Animal a SET a.shelter = :targetShelter WHERE a.shelter.id IN :shelterIds")
+    void updateShelterByShelterIds(@Param("targetShelter") Shelter targetShelter, @Param("shelterIds") List<Long> shelterIds);
 }

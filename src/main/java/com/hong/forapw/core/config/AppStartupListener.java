@@ -2,6 +2,7 @@ package com.hong.forapw.core.config;
 
 import com.hong.forapw.service.BrokerService;
 import com.hong.forapw.service.UserService;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
@@ -15,7 +16,7 @@ public class AppStartupListener implements ApplicationListener<ApplicationReadyE
     private final UserService userService;
 
     @Override
-    public void onApplicationEvent(ApplicationReadyEvent event) {
+    public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
         brokerService.initChatListener();
         brokerService.initAlarmListener();
         userService.initSuperAdmin();
