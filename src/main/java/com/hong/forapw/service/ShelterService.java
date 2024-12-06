@@ -1,6 +1,5 @@
 package com.hong.forapw.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.forapw.controller.dto.*;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
@@ -48,7 +47,6 @@ public class ShelterService {
     private final AnimalRepository animalRepository;
     private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final RedisService redisService;
-    private final ObjectMapper mapper;
     private final WebClient webClient;
     private final JsonParser jsonParser;
 
@@ -156,34 +154,11 @@ public class ShelterService {
     }
 
     @Transactional(readOnly = true)
-    public ShelterResponse.FindShelterListWithAddr findShelterListWithAddr() {
+    public ShelterResponse.FindShelterListWithAddr findShelterListWithAddress() {
         List<Shelter> shelters = shelterRepository.findAll();
 
-        // Province와 District로 보호소를 그룹화
-        Map<Province, Map<District, List<Shelter>>> groupedShelters = shelters.stream()
-                .collect(Collectors.groupingBy(
-                        shelter -> shelter.getRegionCode().getUprName(), // Province로 그룹화
-                        Collectors.groupingBy(
-                                shelter -> shelter.getRegionCode().getOrgName() // District로 그룹화
-                        )
-                ));
-
-        // 그룹화된 데이터를 응답 형식으로 변환
-        Map<String, List<ShelterResponse.DistrictDTO>> responseMap = groupedShelters.entrySet().stream()
-                .collect(Collectors.toMap(
-                        provinceEntry -> provinceEntry.getKey().name(), // Province 이름을 키로
-                        provinceEntry -> provinceEntry.getValue().entrySet().stream()
-                                .map(districtEntry -> {
-                                    Map<String, List<String>> subDistrict = Map.of(
-                                            districtEntry.getKey().name(),
-                                            districtEntry.getValue().stream()
-                                                    .map(Shelter::getName) // 해당 District 내의 보호소 이름 목록을 값으로
-                                                    .collect(Collectors.toList())
-                                    );
-                                    return new ShelterResponse.DistrictDTO(subDistrict);
-                                })
-                                .collect(Collectors.toList())
-                ));
+        Map<Province, Map<District, List<Shelter>>> groupedShelters = groupSheltersByProvinceAndDistrict(shelters);
+        Map<String, List<ShelterResponse.DistrictDTO>> responseMap = createShlelterResponseMap(groupedShelters);
 
         return new ShelterResponse.FindShelterListWithAddr(responseMap);
     }
@@ -327,5 +302,44 @@ public class ShelterService {
         }
 
         return likeNum;
+    }
+
+    /**
+     * Shelter 리스트를 Province와 District 기준으로 그룹화
+     */
+    private Map<Province, Map<District, List<Shelter>>> groupSheltersByProvinceAndDistrict(List<Shelter> shelters) {
+        return shelters.stream()
+                .collect(Collectors.groupingBy(
+                        shelter -> shelter.getRegionCode().getUprName(),
+                        Collectors.groupingBy(
+                                shelter -> shelter.getRegionCode().getOrgName()
+                        )
+                ));
+    }
+
+    /**
+     * Province-District-Shelter 구조의 맵을 응답 데이터 구조(Map<String, List<DistrictDTO>>)로 변환
+     */
+    private Map<String, List<ShelterResponse.DistrictDTO>> createShlelterResponseMap(
+            Map<Province, Map<District, List<Shelter>>> groupedShelters) {
+        return groupedShelters.entrySet().stream()
+                .collect(Collectors.toMap(
+                        provinceEntry -> provinceEntry.getKey().name(),
+                        provinceEntry -> convertToDistrictDTOList(provinceEntry.getValue())
+                ));
+    }
+
+    private List<ShelterResponse.DistrictDTO> convertToDistrictDTOList(Map<District, List<Shelter>> districtShelterMap) {
+        return districtShelterMap.entrySet().stream()
+                .map(districtEntry -> {
+                    Map<String, List<String>> districtMap = Map.of(
+                            districtEntry.getKey().name(),
+                            districtEntry.getValue().stream()
+                                    .map(Shelter::getName)
+                                    .toList()
+                    );
+                    return new ShelterResponse.DistrictDTO(districtMap);
+                })
+                .collect(Collectors.toList());
     }
 }

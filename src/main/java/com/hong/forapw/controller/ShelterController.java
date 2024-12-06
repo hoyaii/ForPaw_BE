@@ -52,7 +52,7 @@ public class ShelterController {
 
     @GetMapping("/shelters/addr")
     public ResponseEntity<?> findShelterListWithAddr() {
-        ShelterResponse.FindShelterListWithAddr responseDTO = shelterService.findShelterListWithAddr();
+        ShelterResponse.FindShelterListWithAddr responseDTO = shelterService.findShelterListWithAddress();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
