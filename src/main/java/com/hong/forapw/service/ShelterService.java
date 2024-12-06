@@ -17,7 +17,6 @@ import com.hong.forapw.repository.ShelterRepository;
 import com.hong.forapw.service.geocoding.Coordinates;
 import com.hong.forapw.service.geocoding.GeocodingService;
 import com.hong.forapw.service.geocoding.GoogleGeocodingService;
-import com.hong.forapw.service.geocoding.KakaoGeocodingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
 
 import java.net.URI;
 import java.time.Duration;
@@ -81,10 +79,10 @@ public class ShelterService {
     }
 
     @Transactional
-    public void updateShelterData(List<Tuple2<Shelter, String>> animalJsonResponses) {
-        for (Tuple2<Shelter, String> tuple : animalJsonResponses) {
-            Shelter shelter = tuple.getT1();
-            String animalJsonData = tuple.getT2();
+    public void updateShelterData(List<AnimalJsonResponse> animalJsonResponses) {
+        for (AnimalJsonResponse response : animalJsonResponses) {
+            Shelter shelter = response.shelter();
+            String animalJsonData = response.animalJson();
             updateShelterByAnimalData(animalJsonData, shelter);
         }
 

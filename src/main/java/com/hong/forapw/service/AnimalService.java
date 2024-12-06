@@ -29,8 +29,6 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 import reactor.util.retry.Retry;
 
 import java.time.Duration;
@@ -90,7 +88,7 @@ public class AnimalService {
         List<Long> existingAnimalIds = animalRepository.findAllIds();
         List<Shelter> shelters = shelterRepository.findAllWithRegionCode();
 
-        List<Tuple2<Shelter, String>> animalJsonResponses = fetchAnimalDataFromApi(shelters);
+        List<AnimalJsonResponse> animalJsonResponses = fetchAnimalDataFromApi(shelters);
         saveNewAnimalData(animalJsonResponses, existingAnimalIds);
 
         shelterService.updateShelterData(animalJsonResponses);
@@ -187,7 +185,7 @@ public class AnimalService {
         return recommendedAnimalIds;
     }
 
-    private List<Tuple2<Shelter, String>> fetchAnimalDataFromApi(List<Shelter> shelters) {
+    private List<AnimalJsonResponse> fetchAnimalDataFromApi(List<Shelter> shelters) {
         return Flux.fromIterable(shelters)
                 .delayElements(Duration.ofMillis(75))
                 .flatMap(shelter -> buildAnimalOpenApiURI(animalURI, serviceKey, shelter.getId())
@@ -196,7 +194,7 @@ public class AnimalService {
                                 .retrieve()
                                 .bodyToMono(String.class)
                                 .retry(3)
-                                .map(rawJsonResponse -> Tuples.of(shelter, rawJsonResponse)))
+                                .map(rawJsonResponse -> new AnimalJsonResponse(shelter, rawJsonResponse)))
                         .onErrorResume(e -> {
                             log.error("Shelter {} 데이터 가져오기 실패: {}", shelter.getId(), e.getMessage());
                             return Mono.empty();
@@ -205,20 +203,20 @@ public class AnimalService {
                 .block();
     }
 
-    public void saveNewAnimalData(List<Tuple2<Shelter, String>> animalJsonResponses, List<Long> existingAnimalIds) {
-        for (Tuple2<Shelter, String> tuple : animalJsonResponses) {
-            Shelter shelter = tuple.getT1();
-            String animalJsonData = tuple.getT2();
+    public void saveNewAnimalData(List<AnimalJsonResponse> animalJsonResponses, List<Long> existingAnimalIds) {
+        for (AnimalJsonResponse response : animalJsonResponses) {
+            Shelter shelter = response.shelter();
+            String animalJson = response.animalJson();
 
-            List<Animal> animals = convertJsonResponseToAnimals(animalJsonData, shelter, existingAnimalIds);
+            List<Animal> animals = convertAnimalJsonToAnimals(animalJson, shelter, existingAnimalIds);
             animalRepository.saveAll(animals);
         }
 
         entityManager.flush();
     }
 
-    private List<Animal> convertJsonResponseToAnimals(String animalJsonData, Shelter shelter, List<Long> existingAnimalIds) {
-        return jsonParser.parse(animalJsonData, AnimalDTO.class)
+    private List<Animal> convertAnimalJsonToAnimals(String animalJson, Shelter shelter, List<Long> existingAnimalIds) {
+        return jsonParser.parse(animalJson, AnimalDTO.class)
                 .map(AnimalDTO::response)
                 .map(AnimalDTO.ResponseDTO::body)
                 .map(AnimalDTO.BodyDTO::items)
@@ -227,7 +225,7 @@ public class AnimalService {
                 .stream()
                 .filter(item -> isNewAnimal(item, existingAnimalIds))
                 .filter(this::isActiveAnimal)
-                .map(item -> createAnimalFromDTO(item, shelter))
+                .map(item -> buildAnimalFromItemDTO(item, shelter))
                 .collect(Collectors.toList());
     }
 
@@ -239,7 +237,7 @@ public class AnimalService {
         return LocalDate.parse(item.noticeEdt(), YEAR_HOUR_DAY_FORMAT).isAfter(LocalDate.now());
     }
 
-    private Animal createAnimalFromDTO(AnimalDTO.ItemDTO itemDTO, Shelter shelter) {
+    private Animal buildAnimalFromItemDTO(AnimalDTO.ItemDTO itemDTO, Shelter shelter) {
         DateTimeFormatter formatter = YEAR_HOUR_DAY_FORMAT;
         return Animal.builder()
                 .id(Long.valueOf(itemDTO.desertionNo()))

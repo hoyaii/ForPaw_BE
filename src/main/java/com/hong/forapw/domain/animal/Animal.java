@@ -119,10 +119,10 @@ public class Animal extends TimeStamp {
     }
 
     public void decrementInquiryNum() {
-        this.inquiryNum -= 1;
+        inquiryNum -= 1;
     }
 
     public void finishAdoption() {
-        this.isAdopted = true;
+        isAdopted = true;
     }
 }
