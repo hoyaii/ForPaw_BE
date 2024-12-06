@@ -207,25 +207,32 @@ public class ShelterService {
                 .orElseThrow(() -> new RuntimeException("구글맵 API가 null을 반환하거나 잘못된 형식을 반환함."));
     }
 
-    @Transactional
-    public void updateShelterAddressByKakao() {
+    private void updateShelterAddressByKakao() {
         List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
+        shelters.forEach(shelter -> {
+            try {
+                URI geocodingUri = buildKakaoGeocodingURI(shelter.getCareAddr());
+                KakaoMapDTO.MapDTO kakaoMapDTO = fetchKakaoGeocodingData(geocodingUri);
 
-        Flux.fromIterable(shelters)
-                .delayElements(Duration.ofMillis(50))
-                .flatMap(shelter -> {
-                    URI uri = buildKakaoGeocodingURI(shelter.getCareAddr());
-                    return webClient.get()
-                            .uri(uri)
-                            .header("Authorization", "KakaoAK " + kakaoAPIKey)
-                            .retrieve()
-                            .bodyToMono(KakaoMapDTO.MapDTO.class)
-                            .flatMap(mapDTO -> Mono.justOrEmpty(mapDTO.documents().stream().findFirst()))
-                            .doOnNext(document -> {
-                                shelterRepository.updateAddressInfo(Double.valueOf(document.y()), Double.valueOf(document.x()), shelter.getId());
-                            });
-                })
-                .subscribe();
+                kakaoMapDTO.documents().stream()
+                        .findFirst()
+                        .ifPresent(document ->
+                                shelterRepository.updateAddressInfo(Double.valueOf(document.y()), Double.valueOf(document.x()), shelter.getId())
+                        );
+            } catch (Exception e) {
+                log.warn("보호소의 위/경도 업데이트 실패 ,shelter {}: {}", shelter.getId(), e.getMessage());
+            }
+        });
+    }
+
+    private KakaoMapDTO.MapDTO fetchKakaoGeocodingData(URI uri) {
+        return webClient.get()
+                .uri(uri)
+                .header("Authorization", "KakaoAK " + kakaoAPIKey)
+                .retrieve()
+                .bodyToMono(KakaoMapDTO.MapDTO.class)
+                .blockOptional()
+                .orElseThrow(() -> new RuntimeException("카카오맵 API가 null을 반환하거나 잘못된 형식을 반환함."));
     }
 
     private Flux<Shelter> fetchShelterDataFromApi(RegionCode regionCode, List<Long> existShelterIds) {
