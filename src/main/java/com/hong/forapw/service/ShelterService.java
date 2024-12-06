@@ -34,6 +34,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.hong.forapw.core.utils.DateTimeUtils.YEAR_HOUR_DAY_FORMAT;
+import static com.hong.forapw.core.utils.PaginationUtils.isLastPage;
 import static com.hong.forapw.core.utils.UriUtils.*;
 
 @Service
@@ -123,34 +124,15 @@ public class ShelterService {
     }
 
     @Transactional(readOnly = true)
-    public ShelterResponse.FindShelterAnimalsByIdDTO findShelterAnimalListById(Long shelterId, Long userId, String type, Pageable pageable) {
+    public ShelterResponse.FindShelterAnimalsByIdDTO findAnimalsByShelter(Long shelterId, Long userId, String type, Pageable pageable) {
+        List<Long> userLikedAnimalIds = findUserLikedAnimalIds(userId);
+
         Page<Animal> animalPage = animalRepository.findByShelterIdAndType(AnimalType.fromString(type), shelterId, pageable);
-
-        // 사용자가 '좋아요' 표시한 Animal의 ID 목록, 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
-        List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findAnimalIdsByUserId(userId) : new ArrayList<>();
-
         List<ShelterResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> {
-                    Long likeNum = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
-                    return new ShelterResponse.AnimalDTO(
-                            animal.getId(),
-                            animal.getName(),
-                            animal.getAge(),
-                            animal.getGender(),
-                            animal.getSpecialMark(),
-                            animal.getKind(),
-                            animal.getWeight(),
-                            animal.getNeuter(),
-                            animal.getProcessState(),
-                            animal.getRegion(),
-                            animal.getInquiryNum(),
-                            likeNum,
-                            likedAnimalIds.contains(animal.getId()),
-                            animal.getProfileURL());
-                })
+                .map(animal -> convertToAnimalDTO(animal, userLikedAnimalIds))
                 .collect(Collectors.toList());
 
-        return new ShelterResponse.FindShelterAnimalsByIdDTO(animalDTOS, !animalPage.hasNext());
+        return new ShelterResponse.FindShelterAnimalsByIdDTO(animalDTOS, isLastPage(animalPage));
     }
 
     @Transactional(readOnly = true)
@@ -293,12 +275,12 @@ public class ShelterService {
                 .build();
     }
 
-    private Long getCachedLikeNum(String keyPrefix, Long key) {
-        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
+    private Long getCachedLikeNum(Long key) {
+        Long likeNum = redisService.getValueInLongWithNull(ShelterService.ANIMAL_LIKE_NUM_KEY_PREFIX, key.toString());
 
         if (likeNum == null) {
             likeNum = animalRepository.countLikesByAnimalId(key);
-            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), ANIMAL_EXP);
+            redisService.storeValue(ShelterService.ANIMAL_LIKE_NUM_KEY_PREFIX, key.toString(), likeNum.toString(), ANIMAL_EXP);
         }
 
         return likeNum;
@@ -341,5 +323,30 @@ public class ShelterService {
                     return new ShelterResponse.DistrictDTO(districtMap);
                 })
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 로그인하지 않은 경우 빈 리스트 반환
+     */
+    private List<Long> findUserLikedAnimalIds(Long userId) {
+        return (userId != null) ? favoriteAnimalRepository.findAnimalIdsByUserId(userId) : Collections.emptyList();
+    }
+
+    private ShelterResponse.AnimalDTO convertToAnimalDTO(Animal animal, List<Long> userLikedAnimalIds) {
+        return new ShelterResponse.AnimalDTO(
+                animal.getId(),
+                animal.getName(),
+                animal.getAge(),
+                animal.getGender(),
+                animal.getSpecialMark(),
+                animal.getKind(),
+                animal.getWeight(),
+                animal.getNeuter(),
+                animal.getProcessState(),
+                animal.getRegion(),
+                animal.getInquiryNum(),
+                getCachedLikeNum(animal.getId()),
+                userLikedAnimalIds.contains(animal.getId()),
+                animal.getProfileURL());
     }
 }

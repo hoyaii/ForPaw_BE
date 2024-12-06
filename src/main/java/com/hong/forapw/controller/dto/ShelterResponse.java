@@ -38,11 +38,9 @@ public class ShelterResponse {
                             String region,
                             Long inquiryNum,
                             Long likeNum,
-                            Boolean isLike,
+                            boolean isLike,
                             String profileURL) {
     }
-
-    ;
 
     public record ShelterDTO(Long id,
                              String name,
