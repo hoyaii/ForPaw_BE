@@ -2,22 +2,30 @@ package com.hong.forapw.service.geocoding;
 
 import com.hong.forapw.controller.dto.GoogleMapDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.net.URI;
 
 import static com.hong.forapw.core.utils.UriUtils.buildGoogleGeocodingURI;
 
-@Component
+@Service
 @RequiredArgsConstructor
 public class GoogleGeocodingService implements GeocodingService {
+
+    @Value("${google.map.geocoding.uri}")
+    private String googleGeoCodingURI;
+
+    @Value("${google.api.key}")
+    private String googleAPIKey;
 
     private final WebClient webClient;
 
     @Override
     public Coordinates getCoordinates(String address) {
-        URI geocodingUri = buildGoogleGeocodingURI(address);
+        URI geocodingUri = buildGoogleGeocodingURI(address, googleGeoCodingURI, googleAPIKey);
         GoogleMapDTO.MapDTO geocodingResponse = fetchGeocodingData(geocodingUri);
 
         return extractCoordinates(geocodingResponse);

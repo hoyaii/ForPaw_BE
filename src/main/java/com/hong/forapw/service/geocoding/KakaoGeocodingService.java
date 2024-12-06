@@ -4,24 +4,28 @@ import com.hong.forapw.controller.dto.KakaoMapDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.net.URI;
 
 import static com.hong.forapw.core.utils.UriUtils.buildKakaoGeocodingURI;
 
-@Component
+@Service
 @RequiredArgsConstructor
 public class KakaoGeocodingService implements GeocodingService {
 
     @Value("${kakao.key}")
     private String kakaoAPIKey;
 
+    @Value("${kakao.map.geocoding.uri}")
+    private String kakaoGeoCodingURI;
+
     private final WebClient webClient;
 
     @Override
     public Coordinates getCoordinates(String address) {
-        URI geocodingUri = buildKakaoGeocodingURI(address);
+        URI geocodingUri = buildKakaoGeocodingURI(address, kakaoGeoCodingURI);
         KakaoMapDTO.MapDTO geocodingResponse = fetchGeocodingData(geocodingUri);
 
         return extractCoordinates(geocodingResponse);

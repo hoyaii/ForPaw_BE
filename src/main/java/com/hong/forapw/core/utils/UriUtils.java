@@ -2,6 +2,7 @@ package com.hong.forapw.core.utils;
 
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -13,22 +14,11 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+@Slf4j
 public class UriUtils {
 
     private UriUtils() {
     }
-
-    @Value("${kakao.map.geocoding.uri}")
-    private static String kakaoGeoCodingURI;
-
-    @Value("${google.map.geocoding.uri}")
-    private static String googleGeoCodingURI;
-
-    @Value("${google.api.key}")
-    private static String googleAPIKey;
-
-    @Value("${openAPI.animal.uri}")
-    private static String animalURI;
 
     public static String createRedirectUri(String baseUri, Map<String, String> queryParams) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUri);
@@ -46,21 +36,27 @@ public class UriUtils {
         return StringUtils.replaceOnce(url, "http://", "https://");
     }
 
-    public static Mono<URI> buildAnimalOpenApiURI(String serviceKey, Long careRegNo) {
-        String url = animalURI + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
+    public static Mono<URI> buildAnimalOpenApiURI(String baseUri, String serviceKey, Long careRegNo) {
+        String uri = baseUri + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
         try {
-            return Mono.just(new URI(url));
+            return Mono.just(new URI(uri));
         } catch (URISyntaxException e) {
+            log.error(e.getMessage(), e);
             return Mono.empty();
         }
     }
 
-    public static URI buildShelterOpenApiURI(String baseUrl, String serviceKey, Integer uprCd, Integer orgCd) throws URISyntaxException {
-        String uri = baseUrl + "?serviceKey=" + serviceKey + "&upr_cd=" + uprCd + "&org_cd=" + orgCd + "&_type=json";
-        return new URI(uri);
+    public static URI buildShelterOpenApiURI(String baseUri, String serviceKey, Integer uprCd, Integer orgCd) {
+        String uri = baseUri + "?serviceKey=" + serviceKey + "&upr_cd=" + uprCd + "&org_cd=" + orgCd + "&_type=json";
+        try {
+            return new URI(uri);
+        } catch (URISyntaxException e) {
+            log.error(e.getMessage(), e);
+            return null;
+        }
     }
 
-    public static URI buildKakaoGeocodingURI(String address) {
+    public static URI buildKakaoGeocodingURI(String address, String kakaoGeoCodingURI) {
         if (address == null || address.isBlank()) {
             throw new CustomException(ExceptionCode.INVALID_URI_FORMAT);
         }
@@ -72,7 +68,7 @@ public class UriUtils {
                 .toUri();
     }
 
-    public static URI buildGoogleGeocodingURI(String address) {
+    public static URI buildGoogleGeocodingURI(String address, String googleGeoCodingURI, String googleAPIKey) {
         if (address == null || address.isBlank()) {
             throw new CustomException(ExceptionCode.INVALID_URI_FORMAT);
         }

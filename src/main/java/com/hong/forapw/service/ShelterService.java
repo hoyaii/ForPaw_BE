@@ -85,9 +85,9 @@ public class ShelterService {
         for (Tuple2<Shelter, String> tuple : animalJsonResponses) {
             Shelter shelter = tuple.getT1();
             String animalJsonData = tuple.getT2();
-
             updateShelterByAnimalData(animalJsonData, shelter);
         }
+
         updateShelterAddressByGoogle();
     }
 
@@ -197,7 +197,7 @@ public class ShelterService {
         }
     }
 
-    private Flux<Shelter> fetchShelterDataFromApi(RegionCode regionCode, List<Long> existShelterIds) {
+    private Flux<Shelter> fetchShelterDataFromApi(RegionCode regionCode, List<Long> savedShelterIds) {
         try {
             URI uri = buildShelterOpenApiURI(baseUrl, serviceKey, regionCode.getUprCd(), regionCode.getOrgCd());
             return webClient.get()
@@ -205,7 +205,7 @@ public class ShelterService {
                     .retrieve()
                     .bodyToMono(String.class)
                     .retry(3)
-                    .flatMapMany(response -> convertResponseToNewShelter(response, regionCode, existShelterIds))
+                    .flatMapMany(response -> convertResponseToNewShelter(response, regionCode, savedShelterIds))
                     .onErrorResume(e -> Flux.empty());
         } catch (Exception e) {
             log.warn("보소 데이터 패치를 위한 URI가 유효하지 않음, regionCode{}: {}", regionCode, e.getMessage());
@@ -213,10 +213,10 @@ public class ShelterService {
         }
     }
 
-    private Flux<Shelter> convertResponseToNewShelter(String response, RegionCode regionCode, List<Long> existShelterIds) {
+    private Flux<Shelter> convertResponseToNewShelter(String response, RegionCode regionCode, List<Long> savedShelterIds) {
         return Mono.fromCallable(() -> parseJsonToItemDTO(response))
                 .flatMapMany(Flux::fromIterable)
-                .filter(itemDTO -> isNewShelter(itemDTO, existShelterIds))
+                .filter(itemDTO -> isNewShelter(itemDTO, savedShelterIds))
                 .map(itemDTO -> createShelter(itemDTO, regionCode))
                 .onErrorResume(e -> {
                     log.warn("보호소 데이터를 패치해오는 과정 중 파싱에서 에러 발생, regionCode {}: {}", regionCode, e.getMessage());

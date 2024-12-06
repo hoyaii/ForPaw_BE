@@ -1,13 +1,10 @@
 package com.hong.forapw.controller;
 
 import com.hong.forapw.controller.dto.AnimalResponse;
-import com.hong.forapw.controller.dto.ApplyRequest;
-import com.hong.forapw.controller.dto.ApplyResponse;
 import com.hong.forapw.core.security.CustomUserDetails;
 import com.hong.forapw.core.utils.ApiUtils;
 import com.hong.forapw.domain.user.User;
 import com.hong.forapw.service.AnimalService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -31,7 +28,7 @@ public class AnimalController {
     // 테스트시에만 열어둠
     @GetMapping("/animals/import")
     public ResponseEntity<?> loadAnimals() {
-        animalService.updateAnimalData();
+        animalService.updateNewAnimals();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
