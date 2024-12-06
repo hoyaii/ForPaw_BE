@@ -14,6 +14,10 @@ import com.hong.forapw.repository.animal.AnimalRepository;
 import com.hong.forapw.repository.animal.FavoriteAnimalRepository;
 import com.hong.forapw.repository.RegionCodeRepository;
 import com.hong.forapw.repository.ShelterRepository;
+import com.hong.forapw.service.geocoding.Coordinates;
+import com.hong.forapw.service.geocoding.GeocodingService;
+import com.hong.forapw.service.geocoding.GoogleGeocodingService;
+import com.hong.forapw.service.geocoding.KakaoGeocodingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,15 +54,13 @@ public class ShelterService {
     private final RedisService redisService;
     private final WebClient webClient;
     private final JsonParser jsonParser;
+    private final GoogleGeocodingService googleService;
 
     @Value("${openAPI.service-key2}")
     private String serviceKey;
 
     @Value("${openAPI.shelter.uri}")
     private String baseUrl;
-
-    @Value("${kakao.key}")
-    private String kakaoAPIKey;
 
     private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
     private static final Long ANIMAL_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
@@ -180,59 +182,19 @@ public class ShelterService {
     }
 
     private void updateShelterAddressByGoogle() {
-        List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
-        shelters.forEach(shelter -> {
-            try {
-                URI geocodingUri = buildGoogleGeocodingURI(shelter.getCareAddr());
-                GoogleMapDTO.MapDTO googleMapDTO = fetchGeocodingData(geocodingUri);
+        updateShelterAddress(googleService);
+    }
 
-                googleMapDTO.results().stream()
-                        .findFirst()
-                        .ifPresent(mapDTO -> shelterRepository.updateAddressInfo(
-                                mapDTO.geometry().location().lat(), mapDTO.geometry().location().lng(),
-                                shelter.getId())
-                        );
+    private void updateShelterAddress(GeocodingService geocodingService) {
+        List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
+        for (Shelter shelter : shelters) {
+            try {
+                Coordinates coordinates = geocodingService.getCoordinates(shelter.getCareAddr());
+                shelterRepository.updateAddressInfo(coordinates.lat(), coordinates.lng(), shelter.getId());
             } catch (Exception e) {
                 log.warn("보호소의 위/경도 업데이트 실패 ,shelter {}: {}", shelter.getId(), e.getMessage());
             }
-        });
-    }
-
-    private GoogleMapDTO.MapDTO fetchGeocodingData(URI uri) {
-        return webClient.get()
-                .uri(uri)
-                .retrieve()
-                .bodyToMono(GoogleMapDTO.MapDTO.class)
-                .blockOptional()
-                .orElseThrow(() -> new RuntimeException("구글맵 API가 null을 반환하거나 잘못된 형식을 반환함."));
-    }
-
-    private void updateShelterAddressByKakao() {
-        List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
-        shelters.forEach(shelter -> {
-            try {
-                URI geocodingUri = buildKakaoGeocodingURI(shelter.getCareAddr());
-                KakaoMapDTO.MapDTO kakaoMapDTO = fetchKakaoGeocodingData(geocodingUri);
-
-                kakaoMapDTO.documents().stream()
-                        .findFirst()
-                        .ifPresent(document ->
-                                shelterRepository.updateAddressInfo(Double.valueOf(document.y()), Double.valueOf(document.x()), shelter.getId())
-                        );
-            } catch (Exception e) {
-                log.warn("보호소의 위/경도 업데이트 실패 ,shelter {}: {}", shelter.getId(), e.getMessage());
-            }
-        });
-    }
-
-    private KakaoMapDTO.MapDTO fetchKakaoGeocodingData(URI uri) {
-        return webClient.get()
-                .uri(uri)
-                .header("Authorization", "KakaoAK " + kakaoAPIKey)
-                .retrieve()
-                .bodyToMono(KakaoMapDTO.MapDTO.class)
-                .blockOptional()
-                .orElseThrow(() -> new RuntimeException("카카오맵 API가 null을 반환하거나 잘못된 형식을 반환함."));
+        }
     }
 
     private Flux<Shelter> fetchShelterDataFromApi(RegionCode regionCode, List<Long> existShelterIds) {
@@ -338,10 +300,8 @@ public class ShelterService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 로그인하지 않은 경우 빈 리스트 반환
-     */
     private List<Long> findUserLikedAnimalIds(Long userId) {
+        // 로그인하지 않은 경우 빈 리스트 반환
         return (userId != null) ? favoriteAnimalRepository.findAnimalIdsByUserId(userId) : Collections.emptyList();
     }
 
