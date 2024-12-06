@@ -64,13 +64,13 @@ public class ShelterService {
 
     @Transactional
     @Scheduled(cron = "0 0 6 * * MON")
-    public void updateShelterData() {
-        List<Long> existShelterIds = shelterRepository.findAllIds();
+    public void updateNewShelters() {
+        List<Long> savedShelterIds = shelterRepository.findAllIds(); // 이미 저장되어 있는 보호소는 배제
         List<RegionCode> regionCodes = regionCodeRepository.findAll();
 
         Flux.fromIterable(regionCodes)
                 .delayElements(Duration.ofMillis(50))
-                .flatMap(regionCode -> fetchShelterDataFromApi(regionCode, existShelterIds))
+                .flatMap(regionCode -> fetchShelterDataFromApi(regionCode, savedShelterIds))
                 .collectList()
                 .doOnNext(shelterRepository::saveAll)
                 .doOnError(error -> log.error("보호소 데이터 패치 실패: {}", error.getMessage()))

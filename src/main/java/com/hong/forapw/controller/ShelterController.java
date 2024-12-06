@@ -27,7 +27,7 @@ public class ShelterController {
     // 테스트 시에만 API를 열어둠
     @GetMapping("/shelters/import")
     public ResponseEntity<?> loadShelter(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        shelterService.updateShelterData();
+        shelterService.updateNewShelters();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
