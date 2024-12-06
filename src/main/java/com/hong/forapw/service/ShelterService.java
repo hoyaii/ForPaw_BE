@@ -129,7 +129,7 @@ public class ShelterService {
 
         Page<Animal> animalPage = animalRepository.findByShelterIdAndType(AnimalType.fromString(type), shelterId, pageable);
         List<ShelterResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> convertToAnimalDTO(animal, userLikedAnimalIds))
+                .map(animal -> createAnimalDTO(animal, userLikedAnimalIds))
                 .collect(Collectors.toList());
 
         return new ShelterResponse.FindShelterAnimalsByIdDTO(animalDTOS, isLastPage(animalPage));
@@ -181,24 +181,30 @@ public class ShelterService {
 
     private void updateShelterAddressByGoogle() {
         List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
+        shelters.forEach(shelter -> {
+            try {
+                URI geocodingUri = buildGoogleGeocodingURI(shelter.getCareAddr());
+                GoogleMapDTO.MapDTO googleMapDTO = fetchGeocodingData(geocodingUri);
 
-        for (Shelter shelter : shelters) {
-            URI uri = createGoogleGeocodingURI(shelter.getCareAddr());
-            GoogleMapDTO.MapDTO mapDTO = webClient.get()
-                    .uri(uri)
-                    .retrieve()
-                    .bodyToMono(GoogleMapDTO.MapDTO.class)
-                    .block();
-
-            if (mapDTO != null && !mapDTO.results().isEmpty()) {
-                GoogleMapDTO.ResultDTO resultDTO = mapDTO.results().get(0);
-                shelterRepository.updateAddressInfo(
-                        resultDTO.geometry().location().lat(),
-                        resultDTO.geometry().location().lng(),
-                        shelter.getId()
-                );
+                googleMapDTO.results().stream()
+                        .findFirst()
+                        .ifPresent(mapDTO -> shelterRepository.updateAddressInfo(
+                                mapDTO.geometry().location().lat(), mapDTO.geometry().location().lng(),
+                                shelter.getId())
+                        );
+            } catch (Exception e) {
+                log.warn("보호소의 위/경도 업데이트 실패 ,shelter {}: {}", shelter.getId(), e.getMessage());
             }
-        }
+        });
+    }
+
+    private GoogleMapDTO.MapDTO fetchGeocodingData(URI uri) {
+        return webClient.get()
+                .uri(uri)
+                .retrieve()
+                .bodyToMono(GoogleMapDTO.MapDTO.class)
+                .blockOptional()
+                .orElseThrow(() -> new RuntimeException("구글맵 API가 null을 반환하거나 잘못된 형식을 반환함."));
     }
 
     @Transactional
@@ -208,7 +214,7 @@ public class ShelterService {
         Flux.fromIterable(shelters)
                 .delayElements(Duration.ofMillis(50))
                 .flatMap(shelter -> {
-                    URI uri = createKakaoGeocodingURI(shelter.getCareAddr());
+                    URI uri = buildKakaoGeocodingURI(shelter.getCareAddr());
                     return webClient.get()
                             .uri(uri)
                             .header("Authorization", "KakaoAK " + kakaoAPIKey)
@@ -224,7 +230,7 @@ public class ShelterService {
 
     private Flux<Shelter> fetchShelterDataFromApi(RegionCode regionCode, List<Long> existShelterIds) {
         try {
-            URI uri = createShelterOpenApiURI(baseUrl, serviceKey, regionCode.getUprCd(), regionCode.getOrgCd());
+            URI uri = buildShelterOpenApiURI(baseUrl, serviceKey, regionCode.getUprCd(), regionCode.getOrgCd());
             return webClient.get()
                     .uri(uri)
                     .retrieve()
@@ -332,7 +338,7 @@ public class ShelterService {
         return (userId != null) ? favoriteAnimalRepository.findAnimalIdsByUserId(userId) : Collections.emptyList();
     }
 
-    private ShelterResponse.AnimalDTO convertToAnimalDTO(Animal animal, List<Long> userLikedAnimalIds) {
+    private ShelterResponse.AnimalDTO createAnimalDTO(Animal animal, List<Long> userLikedAnimalIds) {
         return new ShelterResponse.AnimalDTO(
                 animal.getId(),
                 animal.getName(),

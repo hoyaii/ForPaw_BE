@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 
 import static com.hong.forapw.core.utils.DateTimeUtils.YEAR_HOUR_DAY_FORMAT;
 import static com.hong.forapw.core.utils.PaginationUtils.isLastPage;
-import static com.hong.forapw.core.utils.UriUtils.createAnimalOpenApiURI;
+import static com.hong.forapw.core.utils.UriUtils.buildAnimalOpenApiURI;
 import static com.hong.forapw.core.utils.UriUtils.convertHttpUrlToHttps;
 
 @Service
@@ -189,7 +189,7 @@ public class AnimalService {
     private Flux<Tuple2<Shelter, String>> fetchShelterJsonResponses(List<Shelter> shelters) {
         return Flux.fromIterable(shelters)
                 .delayElements(Duration.ofMillis(75))
-                .flatMap(shelter -> createAnimalOpenApiURI(serviceKey, shelter.getId())
+                .flatMap(shelter -> buildAnimalOpenApiURI(serviceKey, shelter.getId())
                         .flatMap(uri -> webClient.get()
                                 .uri(uri)
                                 .retrieve()

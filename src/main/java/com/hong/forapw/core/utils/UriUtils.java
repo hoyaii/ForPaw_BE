@@ -46,7 +46,7 @@ public class UriUtils {
         return StringUtils.replaceOnce(url, "http://", "https://");
     }
 
-    public static Mono<URI> createAnimalOpenApiURI(String serviceKey, Long careRegNo) {
+    public static Mono<URI> buildAnimalOpenApiURI(String serviceKey, Long careRegNo) {
         String url = animalURI + "?serviceKey=" + serviceKey + "&care_reg_no=" + careRegNo + "&_type=json" + "&numOfRows=1000";
         try {
             return Mono.just(new URI(url));
@@ -55,12 +55,12 @@ public class UriUtils {
         }
     }
 
-    public static URI createShelterOpenApiURI(String baseUrl, String serviceKey, Integer uprCd, Integer orgCd) throws URISyntaxException {
+    public static URI buildShelterOpenApiURI(String baseUrl, String serviceKey, Integer uprCd, Integer orgCd) throws URISyntaxException {
         String uri = baseUrl + "?serviceKey=" + serviceKey + "&upr_cd=" + uprCd + "&org_cd=" + orgCd + "&_type=json";
         return new URI(uri);
     }
 
-    public static URI createKakaoGeocodingURI(String address) {
+    public static URI buildKakaoGeocodingURI(String address) {
         if (address == null || address.isBlank()) {
             throw new CustomException(ExceptionCode.INVALID_URI_FORMAT);
         }
@@ -72,7 +72,7 @@ public class UriUtils {
                 .toUri();
     }
 
-    public static URI createGoogleGeocodingURI(String address) {
+    public static URI buildGoogleGeocodingURI(String address) {
         if (address == null || address.isBlank()) {
             throw new CustomException(ExceptionCode.INVALID_URI_FORMAT);
         }
