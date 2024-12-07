@@ -119,4 +119,8 @@ public class Post extends TimeStamp {
     public void processBlock() {
         this.isBlocked = true;
     }
+
+    public void incrementAnswerNum() {
+        this.answerNum++;
+    }
 }

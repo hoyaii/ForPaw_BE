@@ -64,58 +64,30 @@ public class PostService {
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId) {
         validatePostRequest(requestDTO);
 
-        Post post = buildPostEntity(userId, requestDTO);
         List<PostImage> postImages = convertToPostImages(requestDTO.images());
-        postImages.forEach(post::addImage); // 연관관계 설정
-
+        Post post = buildPostEntity(userId, postImages, requestDTO);
         postRepository.save(post);
+
         initializeRedisValues(post.getId());
 
         return new PostResponse.CreatePostDTO(post.getId());
     }
 
     @Transactional
-    public PostResponse.CreateAnswerDTO createAnswer(PostRequest.CreateAnswerDTO requestDTO, Long parentPostId, Long userId) {
-        // 존재하지 않는 질문글에 답변을 달려고 하면 에러
-        Post parentPost = postRepository.findByIdWithUser(parentPostId).orElseThrow(
+    public PostResponse.CreateAnswerDTO createAnswer(PostRequest.CreateAnswerDTO requestDTO, Long questionPostId, Long userId) {
+        Post questionPost = postRepository.findByIdWithUser(questionPostId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
+        validateQuestionPostType(questionPost);
 
-        // 질문글에만 답변을 달 수 있다
-        if (!parentPost.getPostType().equals(PostType.QUESTION)) {
-            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
-        }
+        List<PostImage> answerImages = buildPostImages(requestDTO);
+        Post answerPost = buildAnswerPost(questionPost, userId, answerImages, requestDTO);
+        postRepository.save(answerPost);
 
-        User userRef = entityManager.getReference(User.class, userId);
+        questionPost.incrementAnswerNum();
+        sendNewAnswerAlarm(questionPost, requestDTO.content(), questionPostId);
 
-        List<PostImage> postImages = requestDTO.images().stream()
-                .map(postImageDTO -> PostImage.builder()
-                        .imageURL(postImageDTO.imageURL())
-                        .build())
-                .toList();
-
-        // Post 객체 저장
-        Post post = Post.builder()
-                .user(userRef)
-                .postType(PostType.ANSWER)
-                .title(parentPost.getTitle() + "(답변)")
-                .content(requestDTO.content())
-                .build();
-
-        postImages.forEach(post::addImage); // 연관관계 설정
-        parentPost.addChildPost(post);
-
-        postRepository.save(post);
-
-        // 답변수 증가
-        postRepository.incrementAnswerNum(parentPostId);
-
-        // 알림 생성
-        String content = "새로운 답변: " + requestDTO.content();
-        String redirectURL = "/community/question/" + parentPostId;
-        createAlarm(parentPost.getUser().getId(), content, redirectURL, AlarmType.ANSWER);
-
-        return new PostResponse.CreateAnswerDTO(post.getId());
+        return new PostResponse.CreateAnswerDTO(answerPost.getId());
     }
 
     @Transactional(readOnly = true)
@@ -757,14 +729,17 @@ public class PostService {
         }
     }
 
-    private Post buildPostEntity(Long userId, PostRequest.CreatePostDTO requestDTO) {
+    private Post buildPostEntity(Long userId, List<PostImage> postImages, PostRequest.CreatePostDTO requestDTO) {
         User userRef = entityManager.getReference(User.class, userId);
-        return Post.builder()
+        Post post = Post.builder()
                 .user(userRef)
                 .postType(requestDTO.type())
                 .title(requestDTO.title())
                 .content(requestDTO.content())
                 .build();
+
+        postImages.forEach(post::addImage); // 연관관계 설정
+        return post;
     }
 
     private List<PostImage> convertToPostImages(List<PostRequest.PostImageDTO> imageDTOs) {
@@ -779,6 +754,42 @@ public class PostService {
         // 좋아요의 경우, 3개월 동안만 좋아요를 할 수 있다
         redisService.storeValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), "0", POST_EXP);
         redisService.storeValue(POST_VIEW_NUM_PREFIX, postId.toString(), "0", POST_EXP);
+    }
+
+    private void validateQuestionPostType(Post questionPost) {
+        if (!questionPost.getPostType().equals(PostType.QUESTION)) {
+            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
+        }
+    }
+
+    private List<PostImage> buildPostImages(PostRequest.CreateAnswerDTO requestDTO) {
+        return requestDTO.images().stream()
+                .map(postImageDTO -> PostImage.builder()
+                        .imageURL(postImageDTO.imageURL())
+                        .build())
+                .toList();
+    }
+
+    private Post buildAnswerPost(Post questionPost, Long userId, List<PostImage> answerImages, PostRequest.CreateAnswerDTO requestDTO) {
+        User userRef = entityManager.getReference(User.class, userId);
+        Post answerPost = Post.builder()
+                .user(userRef)
+                .postType(PostType.ANSWER)
+                .title(questionPost.getTitle() + "(답변)")
+                .content(requestDTO.content())
+                .build();
+
+        answerImages.forEach(answerPost::addImage); // 연관관계 설정
+        questionPost.addChildPost(answerPost); // 부모-자식 관계 설정
+
+        return answerPost;
+    }
+
+    private void sendNewAnswerAlarm(Post questionPost, String answerContent, Long questionPostId) {
+        String content = "새로운 답변: " + answerContent;
+        String redirectURL = "/community/question/" + questionPostId;
+
+        createAlarm(questionPost.getUser().getId(), content, redirectURL, AlarmType.ANSWER);
     }
 
     private void processPopularPosts(List<Post> posts, PostType postType) {
