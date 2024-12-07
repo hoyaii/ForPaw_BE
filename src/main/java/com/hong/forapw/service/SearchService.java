@@ -1,6 +1,7 @@
 package com.hong.forapw.service;
 
 import com.hong.forapw.controller.dto.SearchResponse;
+import com.hong.forapw.controller.dto.query.GroupMeetingCountDTO;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.domain.group.Group;
@@ -23,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.hong.forapw.core.utils.PaginationUtils.createPageable;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -34,29 +37,20 @@ public class SearchService {
     private final MeetingRepository meetingRepository;
     private final RedisService redisService;
     private static final String POST_LIKE_NUM_KEY_PREFIX = "postLikeNum";
-    public static final Long POST_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
+    private static final Long POST_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
     private static final String SORT_BY_ID = "id";
 
-    @Transactional(readOnly = true)
     public SearchResponse.SearchAllDTO searchAll(String keyword) {
         checkKeywordEmpty(keyword);
 
-        // 전체 결과에서는 3개씩 보내줌
-        Pageable pageable = PageRequest.of(0, 3, Sort.by(Sort.Direction.ASC, SORT_BY_ID));
-
-        // 보호소 검색
+        Pageable pageable = createPageable(0, 3, SORT_BY_ID, Sort.Direction.ASC);
         List<SearchResponse.ShelterDTO> shelterDTOS = searchShelterList(keyword, pageable);
-
-        // 게시글 검색
         List<SearchResponse.PostDTO> postDTOS = searchPostList(keyword, pageable);
-
-        // 그룹 검색
         List<SearchResponse.GroupDTO> groupDTOS = searchGroupList(keyword, pageable);
 
         return new SearchResponse.SearchAllDTO(shelterDTOS, postDTOS, groupDTOS);
     }
 
-    @Transactional(readOnly = true)
     public List<SearchResponse.ShelterDTO> searchShelterList(String keyword, Pageable pageable) {
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
         Page<Shelter> shelters = shelterRepository.findByNameContaining(formattedKeyword, pageable);
@@ -66,7 +60,6 @@ public class SearchService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
     public List<SearchResponse.PostDTO> searchPostList(String keyword, Pageable pageable) {
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
         Page<Object[]> posts = postRepository.findByTitleContaining(formattedKeyword, pageable);
@@ -89,36 +82,45 @@ public class SearchService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
     public List<SearchResponse.GroupDTO> searchGroupList(String keyword, Pageable pageable) {
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
-        Page<Group> groups = groupRepository.findByNameContaining(formattedKeyword, pageable);
+        List<Group> groups = groupRepository.findByNameContaining(formattedKeyword, pageable).getContent();
 
-        List<Long> groupIds = groups.getContent().stream()
+        List<Long> groupIds = extractGroupIds(groups);
+        Map<Long, Long> meetingCountByGroupId = getMeetingCountsByGroupIds(groupIds); // <groupId, meetingCount>
+
+        return groups.stream()
+                .map(group -> convertToGroupDTO(group, meetingCountByGroupId))
+                .toList();
+    }
+
+    private List<Long> extractGroupIds(List<Group> groups) {
+        return groups.stream()
                 .map(Group::getId)
                 .toList();
+    }
 
-        // <groupId, meetingCount> 형태의 맵
-        Map<Long, Long> meetingCountsMap = meetingRepository.countMeetingsByGroupIds(groupIds)
+    private Map<Long, Long> getMeetingCountsByGroupIds(List<Long> groupIds) {
+        return meetingRepository.countMeetingsByGroupIds(groupIds)
                 .stream()
                 .collect(Collectors.toMap(
-                        result -> (Long) result[0],
-                        result -> (Long) result[1]
+                        GroupMeetingCountDTO::groupId,
+                        GroupMeetingCountDTO::meetingCount
                 ));
+    }
 
-        return groups.getContent().stream()
-                .map(group -> new SearchResponse.GroupDTO(
-                        group.getId(),
-                        group.getName(),
-                        group.getDescription(),
-                        group.getCategory(),
-                        group.getProvince(),
-                        group.getDistrict(),
-                        group.getProfileURL(),
-                        group.getParticipantNum(),
-                        meetingCountsMap.getOrDefault(group.getId(), 0L))
-                )
-                .collect(Collectors.toList());
+    private SearchResponse.GroupDTO convertToGroupDTO(Group group, Map<Long, Long> meetingCountsMap) {
+        return new SearchResponse.GroupDTO(
+                group.getId(),
+                group.getName(),
+                group.getDescription(),
+                group.getCategory(),
+                group.getProvince(),
+                group.getDistrict(),
+                group.getProfileURL(),
+                group.getParticipantNum(),
+                meetingCountsMap.getOrDefault(group.getId(), 0L)
+        );
     }
 
     public void checkKeywordEmpty(String keyword) {

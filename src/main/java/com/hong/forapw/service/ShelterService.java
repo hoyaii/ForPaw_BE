@@ -82,8 +82,8 @@ public class ShelterService {
     public void updateShelterData(List<AnimalJsonResponse> animalJsonResponses) {
         for (AnimalJsonResponse response : animalJsonResponses) {
             Shelter shelter = response.shelter();
-            String animalJsonData = response.animalJson();
-            updateShelterByAnimalData(animalJsonData, shelter);
+            String animalJson = response.animalJson();
+            updateShelterByAnimalData(animalJson, shelter);
         }
 
         updateShelterAddressByGoogle();
@@ -145,8 +145,8 @@ public class ShelterService {
         return new ShelterResponse.FindShelterListWithAddr(responseMap);
     }
 
-    private void updateShelterByAnimalData(String animalJsonData, Shelter shelter) {
-        jsonParser.parse(animalJsonData, AnimalDTO.class).ifPresent(
+    private void updateShelterByAnimalData(String animalJson, Shelter shelter) {
+        jsonParser.parse(animalJson, AnimalDTO.class).ifPresent(
                 animalDTO -> updateShelterWithAnimalData(animalDTO, shelter)
         );
     }

@@ -339,7 +339,7 @@ public class GroupService {
         Map<Long, List<String>> meetingUserMap = new HashMap<>();
         List<MeetingUserProfileDTO> queryDTOS = meetingUserRepository.findMeetingUsersByGroupId(groupId);
         for (MeetingUserProfileDTO queryDTO : queryDTOS) {
-            meetingUserMap.computeIfAbsent(queryDTO.getMeetingId(), k -> new ArrayList<>()).add(queryDTO.getProfileURL());
+            meetingUserMap.computeIfAbsent(queryDTO.meetingId(), k -> new ArrayList<>()).add(queryDTO.profileURL());
         }
 
         return meetingPage.getContent().stream()
