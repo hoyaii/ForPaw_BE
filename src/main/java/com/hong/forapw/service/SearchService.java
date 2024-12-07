@@ -2,8 +2,6 @@ package com.hong.forapw.service;
 
 import com.hong.forapw.controller.dto.SearchResponse;
 import com.hong.forapw.controller.dto.query.GroupMeetingCountDTO;
-import com.hong.forapw.core.errors.CustomException;
-import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.domain.group.Group;
 import com.hong.forapw.domain.post.PostType;
 import com.hong.forapw.domain.Shelter;
@@ -13,9 +11,7 @@ import com.hong.forapw.repository.post.PostRepository;
 import com.hong.forapw.repository.ShelterRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,8 +19,6 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static com.hong.forapw.core.utils.PaginationUtils.createPageable;
 
 @Service
 @RequiredArgsConstructor
@@ -36,14 +30,11 @@ public class SearchService {
     private final GroupRepository groupRepository;
     private final MeetingRepository meetingRepository;
     private final RedisService redisService;
+
     private static final String POST_LIKE_NUM_KEY_PREFIX = "postLikeNum";
     private static final Long POST_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
-    private static final String SORT_BY_ID = "id";
 
-    public SearchResponse.SearchAllDTO searchAll(String keyword) {
-        checkKeywordEmpty(keyword);
-
-        Pageable pageable = createPageable(0, 3, SORT_BY_ID, Sort.Direction.ASC);
+    public SearchResponse.SearchAllDTO searchAll(String keyword, Pageable pageable) {
         List<SearchResponse.ShelterDTO> shelterDTOS = searchShelterList(keyword, pageable);
         List<SearchResponse.PostDTO> postDTOS = searchPostList(keyword, pageable);
         List<SearchResponse.GroupDTO> groupDTOS = searchGroupList(keyword, pageable);
@@ -53,21 +44,20 @@ public class SearchService {
 
     public List<SearchResponse.ShelterDTO> searchShelterList(String keyword, Pageable pageable) {
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
-        Page<Shelter> shelters = shelterRepository.findByNameContaining(formattedKeyword, pageable);
+        List<Shelter> shelters = shelterRepository.findByNameContaining(formattedKeyword, pageable).getContent();
 
-        return shelters.getContent().stream()
+        return shelters.stream()
                 .map(shelter -> new SearchResponse.ShelterDTO(shelter.getId(), shelter.getName()))
                 .collect(Collectors.toList());
     }
 
     public List<SearchResponse.PostDTO> searchPostList(String keyword, Pageable pageable) {
         String formattedKeyword = formatKeywordForFullTextSearch(keyword);
-        Page<Object[]> posts = postRepository.findByTitleContaining(formattedKeyword, pageable);
+        List<Object[]> posts = postRepository.findByTitleContaining(formattedKeyword, pageable).getContent();
 
-        return posts.getContent().stream()
+        return posts.stream()
                 .map(row -> {
-                    Long likeNum = getCachedLikeNum(POST_LIKE_NUM_KEY_PREFIX, ((Long) row[0]));
-
+                    Long likeNum = getCachedLikeNum(((Long) row[0]));
                     return new SearchResponse.PostDTO(
                             (Long) row[0],  // postId
                             PostType.valueOf((String) row[4]),  // postType (String을 PostType으로 변환)
@@ -123,14 +113,10 @@ public class SearchService {
         );
     }
 
-    public void checkKeywordEmpty(String keyword) {
-        if (keyword == null || keyword.trim().isEmpty()) {
-            throw new CustomException(ExceptionCode.SEARCH_KEYWORD_EMPTY);
-        }
-    }
-
+    /**
+     * 키워드를 스페이스로 분리하고 각 단어에 +와 *를 추가
+     */
     private String formatKeywordForFullTextSearch(String keyword) {
-        // 키워드를 스페이스로 분리하고 각 단어에 +와 *를 추가
         String[] words = keyword.split("\\s+");
         StringBuilder modifiedKeyword = new StringBuilder();
 
@@ -141,12 +127,12 @@ public class SearchService {
         return modifiedKeyword.toString().trim();
     }
 
-    private Long getCachedLikeNum(String keyPrefix, Long key) {
-        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
+    private Long getCachedLikeNum(Long key) {
+        Long likeNum = redisService.getValueInLongWithNull(SearchService.POST_LIKE_NUM_KEY_PREFIX, key.toString());
 
         if (likeNum == null) {
             likeNum = postRepository.countLikesByPostId(key);
-            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), POST_EXP);
+            redisService.storeValue(SearchService.POST_LIKE_NUM_KEY_PREFIX, key.toString(), likeNum.toString(), POST_EXP);
         }
 
         return likeNum;
