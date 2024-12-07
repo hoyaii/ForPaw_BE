@@ -62,41 +62,14 @@ public class PostService {
 
     @Transactional
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId) {
-        User userRef = entityManager.getReference(User.class, userId);
+        validatePostRequest(requestDTO);
 
-        // 질문글이면 에러
-        if (requestDTO.type() == PostType.ANSWER) {
-            throw new CustomException(ExceptionCode.IS_QUESTION_TYPE);
-        }
-
-        // 입양 스토리와 임시보호 스토리는 image가 반드시 하나 이상 들어와야 함
-        if (requestDTO.images().isEmpty() && requestDTO.type() != PostType.QUESTION) {
-            throw new CustomException(ExceptionCode.POST_MUST_CONTAIN_IMAGE);
-        }
-
-        List<PostImage> postImages = requestDTO.images().stream()
-                .map(postImageDTO -> PostImage.builder()
-                        .imageURL(postImageDTO.imageURL())
-                        .build())
-                .toList();
-
-        // Post 객체 저장
-        Post post = Post.builder()
-                .user(userRef)
-                .postType(requestDTO.type())
-                .title(requestDTO.title())
-                .content(requestDTO.content())
-                .build();
-
+        Post post = buildPostEntity(userId, requestDTO);
+        List<PostImage> postImages = convertToPostImages(requestDTO.images());
         postImages.forEach(post::addImage); // 연관관계 설정
 
         postRepository.save(post);
-
-        // 3개월 동안만 좋아요를 할 수 있다
-        redisService.storeValue(POST_LIKE_NUM_KEY_PREFIX, post.getId().toString(), "0", POST_EXP);
-
-        // 조회 수
-        redisService.storeValue(POST_VIEW_NUM_PREFIX, post.getId().toString(), "0", POST_EXP);
+        initializeRedisValues(post.getId());
 
         return new PostResponse.CreatePostDTO(post.getId());
     }
@@ -322,7 +295,7 @@ public class PostService {
 
         // 질문글을 조회하기 위한 API 아님 => 질문글이면 에러 리턴
         if (post.getPostType().equals(PostType.QUESTION)) {
-            throw new CustomException(ExceptionCode.IS_QUESTION_TYPE);
+            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
         }
 
         // 가림 처리된 게시글이면 에러 리턴
@@ -772,6 +745,40 @@ public class PostService {
                 post.updateReadCnt(readCnt);
             }
         }
+    }
+
+    private void validatePostRequest(PostRequest.CreatePostDTO requestDTO) {
+        if (requestDTO.type() == PostType.ANSWER) {
+            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
+        }
+
+        if (requestDTO.type().isImageRequired() && requestDTO.images().isEmpty()) {
+            throw new CustomException(ExceptionCode.POST_MUST_CONTAIN_IMAGE);
+        }
+    }
+
+    private Post buildPostEntity(Long userId, PostRequest.CreatePostDTO requestDTO) {
+        User userRef = entityManager.getReference(User.class, userId);
+        return Post.builder()
+                .user(userRef)
+                .postType(requestDTO.type())
+                .title(requestDTO.title())
+                .content(requestDTO.content())
+                .build();
+    }
+
+    private List<PostImage> convertToPostImages(List<PostRequest.PostImageDTO> imageDTOs) {
+        return imageDTOs.stream()
+                .map(postImageDTO -> PostImage.builder()
+                        .imageURL(postImageDTO.imageURL())
+                        .build())
+                .toList();
+    }
+
+    private void initializeRedisValues(Long postId) {
+        // 좋아요의 경우, 3개월 동안만 좋아요를 할 수 있다
+        redisService.storeValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), "0", POST_EXP);
+        redisService.storeValue(POST_VIEW_NUM_PREFIX, postId.toString(), "0", POST_EXP);
     }
 
     private void processPopularPosts(List<Post> posts, PostType postType) {
