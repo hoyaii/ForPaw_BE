@@ -239,25 +239,13 @@ public class PostService {
 
     @Transactional
     public void deleteAnswer(Long answerId, User user) {
-        // 존재하지 않은 포스트면 에러
-        Post post = postRepository.findByIdWithUserAndParent(answerId).orElseThrow(
+        Post answer = postRepository.findByIdWithUserAndParent(answerId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
+        validateAnswer(answer);
+        checkAccessorAuthority(answer.getUser().getId(), user);
 
-        // 답변 타입이 아니면 에러
-        if (!post.getPostType().equals(PostType.ANSWER)) {
-            throw new CustomException(ExceptionCode.NOT_ANSWER_TYPE);
-        }
-
-        // 수정 권한 체크
-        checkAccessorAuthority(post.getUser().getId(), user);
-
-        // 답변글이라서 부모(질문글)이 존재한다면, 답변 수 감소
-        Post parent = post.getParent();
-        if (parent != null) {
-            postRepository.decrementAnswerNum(parent.getId());
-        }
-
+        decrementAnswerCount(answer);
         postImageRepository.deleteByPostId(answerId);
         postRepository.deleteById(answerId);
     }
@@ -711,8 +699,8 @@ public class PostService {
                 .collect(Collectors.toList());
     }
 
-    private void validateAnswer(Post post) {
-        if (post.isNotAnswerType()) {
+    private void validateAnswer(Post answer) {
+        if (answer.isNotAnswerType()) {
             throw new CustomException(ExceptionCode.NOT_ANSWER_TYPE);
         }
     }
@@ -736,11 +724,18 @@ public class PostService {
         postImageRepository.saveAll(newPostImages);
     }
 
+    private void decrementAnswerCount(Post answer) {
+        Post question = answer.getParent();
+        if (question != null) {
+            postRepository.decrementAnswerNum(question.getId());
+        }
+    }
+
     private void processPopularPosts(List<Post> posts, PostType postType) {
         // 포인트가 10이 넘으면 popularPosts 리스트에 추가
         List<Post> popularPosts = posts.stream()
                 .peek(post -> {
-                    double hotPoint = getCachedPostViewNum(POST_VIEW_NUM_PREFIX, post.getId(), post::getReadCnt) * 0.001 + post.getCommentNum() + getCachedPostLikeNum(post.getId()) * 5;
+                    double hotPoint = getCachedPostViewNum(post.getId(), post::getReadCnt) * 0.001 + post.getCommentNum() + getCachedPostLikeNum(post.getId()) * 5;
                     post.updateHotPoint(hotPoint);
                 })
                 .filter(post -> post.getHotPoint() > 10.0)
@@ -802,7 +797,7 @@ public class PostService {
         Map<Long, PostResponse.CommentDTO> parentCommentMap = new HashMap<>(); // ParentComment Id로 빠르게 ParentComment를 찾을 용도
 
         comments.forEach(comment -> {
-            Long likeCount = getCachedCommentLikeNum(COMMENT_LIKE_NUM_KEY_PREFIX, comment.getId());
+            Long likeCount = getCachedCommentLikeNum(comment.getId());
 
             if (comment.isParent()) {
                 PostResponse.CommentDTO parentCommentDTO = convertToParentCommentDTO(comment, likeCount, likedCommentIds.contains(comment.getId()));
@@ -868,19 +863,19 @@ public class PostService {
         return likeNum;
     }
 
-    private Long getCachedCommentLikeNum(String keyPrefix, Long key) {
-        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
+    private Long getCachedCommentLikeNum(Long key) {
+        Long likeNum = redisService.getValueInLongWithNull(PostService.COMMENT_LIKE_NUM_KEY_PREFIX, key.toString());
 
         if (likeNum == null) {
             likeNum = commentRepository.countLikesByCommentId(key);
-            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), POST_EXP);
+            redisService.storeValue(PostService.COMMENT_LIKE_NUM_KEY_PREFIX, key.toString(), likeNum.toString(), POST_EXP);
         }
 
         return likeNum;
     }
 
-    private Long getCachedPostViewNum(String keyPrefix, Long key, Supplier<Long> dbFallback) {
-        Long viewNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
+    private Long getCachedPostViewNum(Long key, Supplier<Long> dbFallback) {
+        Long viewNum = redisService.getValueInLongWithNull(PostService.POST_VIEW_NUM_PREFIX, key.toString());
 
         if (viewNum == null) {
             viewNum = dbFallback.get();

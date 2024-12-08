@@ -140,6 +140,10 @@ public class Post extends TimeStamp {
         return postType.toString().toLowerCase();
     }
 
+    public Long getParentId() {
+        return parent.getId();
+    }
+
     public boolean isOwner(Long userId) {
         return user.getId().equals(userId);
     }
