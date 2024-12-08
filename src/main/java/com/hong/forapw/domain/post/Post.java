@@ -95,7 +95,7 @@ public class Post extends TimeStamp {
         child.updateParent(this);
     }
 
-    public void updateTitleAndContent(String title, String content) {
+    public void updateContent(String title, String content) {
         this.title = title;
         this.content = content;
     }

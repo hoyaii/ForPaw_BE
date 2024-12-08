@@ -88,4 +88,12 @@ public class Comment extends TimeStamp {
     public Long getParentId(){
         return parent.getId();
     }
+
+    public boolean isParent(){
+        return parent == null;
+    }
+
+    public boolean isDeleted() {
+        return removedAt != null;
+    }
 }

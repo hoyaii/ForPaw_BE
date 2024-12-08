@@ -10,7 +10,6 @@ import com.hong.forapw.domain.post.*;
 import com.hong.forapw.domain.report.ContentType;
 import com.hong.forapw.domain.report.Report;
 import com.hong.forapw.domain.report.ReportStatus;
-import com.hong.forapw.domain.user.UserRole;
 import com.hong.forapw.domain.user.User;
 import com.hong.forapw.repository.post.*;
 import com.hong.forapw.repository.ReportRepository;
@@ -216,42 +215,20 @@ public class PostService {
         validateAnswer(answer);
 
         List<PostResponse.PostImageDTO> postImageDTOS = convertToPostImageDTOs(answer);
-
         return new PostResponse.FindAnswerByIdDTO(answer.getWriterNickName(), answer.getContent(), answer.getCreatedDate(), postImageDTOS, answer.isOwner(userId));
     }
 
     @Transactional
     public void updatePost(PostRequest.UpdatePostDTO requestDTO, User user, Long postId) {
-        // 존재하지 않는 글이면 에러
         Post post = postRepository.findByIdWithUser(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
+        checkAccessorAuthority(post.getUser().getId(), user);
 
-        // 수정 권한 체크
-        checkPostAuthority(post.getUser().getId(), user);
+        post.updateContent(requestDTO.title(), requestDTO.content());
 
-        // 제목, 본문 업데이트
-        post.updateTitleAndContent(requestDTO.title(), requestDTO.content());
-
-        // 유지할 이미지를 제외한 모든 이미지 DB와 S3에서 삭제
-        if (requestDTO.retainedImageIds() != null && !requestDTO.retainedImageIds().isEmpty()) {
-            postImageRepository.deleteByPostIdAndIdNotIn(postId, requestDTO.retainedImageIds());
-        } else {
-            postImageRepository.deleteByPostId(postId);
-        }
-
-        //List<PostImage> postImages = post.getPostImages();
-        //deleteImagesInS3(requestDTO.retainedImageIds(), postImages);
-
-        // 새 이미지 추가
-        List<PostImage> newImages = requestDTO.newImages().stream()
-                .map(postImageDTO -> PostImage.builder()
-                        .post(post)
-                        .imageURL(postImageDTO.imageURL())
-                        .build())
-                .collect(Collectors.toList());
-
-        postImageRepository.saveAll(newImages);
+        removeUnretainedImages(requestDTO.retainedImageIds(), postId);
+        saveNewPostImages(requestDTO.newImages(), post);
     }
 
     @Transactional
@@ -262,7 +239,7 @@ public class PostService {
         );
 
         // 수정 권한 체크
-        checkPostAuthority(post.getUser().getId(), user);
+        checkAccessorAuthority(post.getUser().getId(), user);
 
         // S3에 저장된 이미지 삭제
         /*post.getPostImages().forEach(
@@ -293,7 +270,7 @@ public class PostService {
         }
 
         // 수정 권한 체크
-        checkPostAuthority(post.getUser().getId(), user);
+        checkAccessorAuthority(post.getUser().getId(), user);
 
         // 답변글이라서 부모(질문글)이 존재한다면, 답변 수 감소
         Post parent = post.getParent();
@@ -433,7 +410,7 @@ public class PostService {
         checkPostOwnComment(comment, postId);
 
         // 수정 권한 체크
-        checkCommentAuthority(comment.getUser().getId(), user);
+        checkAccessorAuthority(comment.getUser().getId(), user);
 
         comment.updateContent(requestDTO.content());
     }
@@ -450,7 +427,7 @@ public class PostService {
         checkPostOwnComment(comment, postId);
 
         // 수정 권한 체크
-        checkCommentAuthority(comment.getUser().getId(), user);
+        checkAccessorAuthority(comment.getUser().getId(), user);
 
         // 댓글은 soft-delete 처리
         comment.updateContent(COMMENT_DELETED);
@@ -748,6 +725,25 @@ public class PostService {
         }
     }
 
+    private void removeUnretainedImages(List<Long> retainedImageIds, Long postId) {
+        if (retainedImageIds != null && !retainedImageIds.isEmpty()) {
+            postImageRepository.deleteByPostIdAndIdNotIn(postId, retainedImageIds);
+        } else {
+            postImageRepository.deleteByPostId(postId);
+        }
+    }
+
+    private void saveNewPostImages(List<PostRequest.PostImageDTO> newImageDTOs, Post post) {
+        List<PostImage> newPostImages = newImageDTOs.stream()
+                .map(request -> PostImage.builder()
+                        .post(post)
+                        .imageURL(request.imageURL())
+                        .build())
+                .collect(Collectors.toList());
+
+        postImageRepository.saveAll(newPostImages);
+    }
+
     private void processPopularPosts(List<Post> posts, PostType postType) {
         // 포인트가 10이 넘으면 popularPosts 리스트에 추가
         List<Post> popularPosts = posts.stream()
@@ -780,24 +776,12 @@ public class PostService {
         });
     }
 
-    private void checkPostAuthority(Long writerId, User accessor) {
-        // 관리자면 수정 가능
-        if (accessor.getRole().equals(UserRole.ADMIN) || accessor.getRole().equals(UserRole.SUPER)) {
+    private void checkAccessorAuthority(Long writerId, User accessor) {
+        if (accessor.isAdmin()) {
             return;
         }
 
-        if (!writerId.equals(accessor.getId())) {
-            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        }
-    }
-
-    private void checkCommentAuthority(Long writerId, User accessor) {
-        // 관리자면 수정 가능
-        if (accessor.getRole().equals(UserRole.ADMIN) || accessor.getRole().equals(UserRole.SUPER)) {
-            return;
-        }
-
-        if (!writerId.equals(accessor.getId())) {
+        if (accessor.isNotSameUser(writerId)) {
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
     }
@@ -828,7 +812,7 @@ public class PostService {
         comments.forEach(comment -> {
             Long likeCount = getCachedCommentLikeNum(COMMENT_LIKE_NUM_KEY_PREFIX, comment.getId());
 
-            if (isParentComment(comment)) {
+            if (comment.isParent()) {
                 PostResponse.CommentDTO parentCommentDTO = convertToParentCommentDTO(comment, likeCount, likedCommentIds.contains(comment.getId()));
                 parentComments.add(parentCommentDTO);
                 parentCommentMap.put(comment.getId(), parentCommentDTO);
@@ -838,10 +822,6 @@ public class PostService {
         });
 
         return parentComments;
-    }
-
-    private boolean isParentComment(Comment comment) {
-        return comment.getParent() == null;
     }
 
     private PostResponse.CommentDTO convertToParentCommentDTO(Comment comment, Long likeCount, boolean isLikedByUser) {
@@ -859,17 +839,13 @@ public class PostService {
     }
 
     private void handleChildComment(Comment childComment, Map<Long, PostResponse.CommentDTO> parentCommentMap, List<Long> likedCommentIds, Long likeCount) {
-        if (isDeletedChildComment(childComment) && isLastChildComment(childComment)) {
+        if (childComment.isDeleted() && isLastChildComment(childComment)) {
             return; // 삭제된 댓글이 마지막 대댓글이면, 보이지 않고. 반면, 마지막 대댓글이 아니면, '삭제된 댓글입니다' 처리
         }
 
         PostResponse.CommentDTO parentCommentDTO = parentCommentMap.get(childComment.getParentId());
         PostResponse.ReplyDTO childCommentDTO = convertToReplyDTO(childComment, likedCommentIds.contains(childComment.getId()), likeCount);
         parentCommentDTO.replies().add(childCommentDTO);
-    }
-
-    private boolean isDeletedChildComment(Comment comment) {
-        return comment.getRemovedAt() != null;
     }
 
     private boolean isLastChildComment(Comment comment) {
