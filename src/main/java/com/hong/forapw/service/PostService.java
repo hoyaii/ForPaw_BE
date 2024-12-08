@@ -189,56 +189,23 @@ public class PostService {
         incrementPostViewCount(postId);
         markNoticeAsReadIfApplicable(post, userId, postId);
 
-        return new PostResponse.FindPostByIdDTO(post.getUser().getNickname(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), getCachedPostLikeNum(postId), post.isMyPost(userId), isPostLiked(postId, userId), postImageDTOS, commentDTOS);
+        return new PostResponse.FindPostByIdDTO(post.getUser().getNickname(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), getCachedPostLikeNum(postId), post.isOwner(userId), isPostLiked(postId, userId), postImageDTOS, commentDTOS);
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindQnaByIdDTO findQnaById(Long postId, Long userId) {
-        // user, postImages를 패치조인 해서 조회
-        Post post = postRepository.findById(postId).orElseThrow(
+    public PostResponse.FindQnaByIdDTO findQnaById(Long qnaId, Long userId) {
+        Post qna = postRepository.findById(qnaId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
+        validateQna(qna);
 
-        boolean isMineForQuestion = post.getUser().getId().equals(userId);
+        List<Post> answers = postRepository.findByParentIdWithUser(qnaId);
+        List<PostResponse.AnswerDTO> answerDTOS = convertToAnswerDTOs(answers, userId);
+        List<PostResponse.PostImageDTO> qnaImageDTOS = convertToPostImageDTOs(qna);
 
-        // 질문 게시글에 대해서만 조회 가능
-        if (!post.getPostType().equals(PostType.QUESTION)) {
-            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
-        }
+        incrementPostViewCount(qnaId);
 
-        // 가림 처리된 게시글이면 에러 리턴
-        if (post.getTitle().equals(POST_SCREENED)) {
-            throw new CustomException(ExceptionCode.SCREENED_POST);
-        }
-
-        // 게시글 이미지 DTO
-        List<PostResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
-                .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
-                .collect(Collectors.toList());
-
-        // 답변 게시글 DTO
-        List<PostResponse.AnswerDTO> answerDTOS = postRepository.findByParentIdWithUser(postId).stream()
-                .map(answer -> {
-                    List<PostResponse.PostImageDTO> answerImageDTOS = answer.getPostImages().stream()
-                            .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
-                            .collect(Collectors.toList());
-
-                    boolean isMineForAnswer = answer.getUser().getId().equals(userId);
-                    return new PostResponse.AnswerDTO(
-                            answer.getId(),
-                            answer.getUser().getNickname(),
-                            answer.getUser().getProfileURL(),
-                            answer.getContent(),
-                            answer.getCreatedDate(),
-                            answerImageDTOS,
-                            isMineForAnswer);
-                })
-                .collect(Collectors.toList());
-
-        // 조회 수 증가
-        redisService.incrementValue(POST_VIEW_NUM_PREFIX, postId.toString(), 1L);
-
-        return new PostResponse.FindQnaByIdDTO(post.getUser().getNickname(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), postImageDTOS, answerDTOS, isMineForQuestion);
+        return new PostResponse.FindQnaByIdDTO(qna.getUser().getNickname(), qna.getUser().getProfileURL(), qna.getTitle(), qna.getContent(), qna.getCreatedDate(), qnaImageDTOS, answerDTOS, qna.isOwner(userId));
     }
 
     @Transactional(readOnly = true)
@@ -753,6 +720,35 @@ public class PostService {
 
     private void incrementPostViewCount(Long postId) {
         redisService.incrementValue(POST_VIEW_NUM_PREFIX, postId.toString(), 1L);
+    }
+
+    private void validateQna(Post qna) {
+        if (qna.isNotQuestionType()) {
+            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
+        }
+
+        if (qna.isScreened()) {
+            throw new CustomException(ExceptionCode.SCREENED_POST);
+        }
+    }
+
+    private List<PostResponse.AnswerDTO> convertToAnswerDTOs(List<Post> answers, Long userId) {
+        return answers.stream()
+                .map(answer -> new PostResponse.AnswerDTO(
+                        answer.getId(),
+                        answer.getWriterNickName(),
+                        answer.getWriterProfileURL(),
+                        answer.getContent(),
+                        answer.getCreatedDate(),
+                        convertPostImagesToDTOs(answer.getPostImages()),
+                        answer.isOwner(userId)))
+                .toList();
+    }
+
+    private List<PostResponse.PostImageDTO> convertPostImagesToDTOs(List<PostImage> postImages) {
+        return postImages.stream()
+                .map(image -> new PostResponse.PostImageDTO(image.getId(), image.getImageURL()))
+                .collect(Collectors.toList());
     }
 
     private void processPopularPosts(List<Post> posts, PostType postType) {

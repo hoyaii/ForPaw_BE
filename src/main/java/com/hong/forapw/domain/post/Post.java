@@ -144,7 +144,7 @@ public class Post extends TimeStamp {
         return postType.toString().toLowerCase();
     }
 
-    public boolean isMyPost(Long userId) {
+    public boolean isOwner(Long userId) {
         return user.getId().equals(userId);
     }
 
