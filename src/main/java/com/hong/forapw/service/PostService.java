@@ -156,21 +156,12 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public PostResponse.FindMyCommentListDTO findMyComments(Long userId, Pageable pageable) {
-        Page<Comment> commentPage = commentRepository.findByUserIdWithPost(userId, pageable);
-        List<PostResponse.MyCommentDTO> myCommentDTOS = commentPage.getContent().stream()
-                .map(comment -> new PostResponse.MyCommentDTO(
-                        comment.getId(),
-                        comment.getPost().getId(),
-                        comment.getPost().getPostType().getValue(),
-                        comment.getContent(),
-                        comment.getCreatedDate(),
-                        comment.getPost().getTitle(),
-                        comment.getPost().getCommentNum(),
-                        comment.getPost().isBlocked()
-                ))
+        Page<Comment> myCommentPage = commentRepository.findByUserIdWithPost(userId, pageable);
+        List<PostResponse.MyCommentDTO> myCommentDTOS = myCommentPage.getContent().stream()
+                .map(this::convertToMyCommentDTO)
                 .toList();
 
-        return new PostResponse.FindMyCommentListDTO(myCommentDTOS, commentPage.isLast());
+        return new PostResponse.FindMyCommentListDTO(myCommentDTOS, myCommentPage.isLast());
     }
 
     @Transactional(readOnly = true)
@@ -233,21 +224,10 @@ public class PostService {
 
     @Transactional
     public void deletePost(Long postId, User user) {
-        // 존재하지 않은 포스트면 에러
         Post post = postRepository.findByIdWithUserAndParent(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
-
-        // 수정 권한 체크
         checkAccessorAuthority(post.getUser().getId(), user);
-
-        // S3에 저장된 이미지 삭제
-        /*post.getPostImages().forEach(
-                postImage -> {
-                    String objectKey = s3Service.extractObjectKeyFromUri(postImage.getImageURL());
-                    s3Service.deleteImage(objectKey);
-                }
-        );*/
 
         postLikeRepository.deleteAllByPostId(postId);
         commentLikeRepository.deleteByPostId(postId);
@@ -656,6 +636,18 @@ public class PostService {
                 post.isBlocked(),
                 post.getPostTypeString()
         );
+    }
+
+    private PostResponse.MyCommentDTO convertToMyCommentDTO(Comment comment) {
+        return new PostResponse.MyCommentDTO(
+                comment.getId(),
+                comment.getPostId(),
+                comment.getPostType(),
+                comment.getContent(),
+                comment.getCreatedDate(),
+                comment.getPostTitle(),
+                comment.getPostCommentNumber(),
+                comment.isPostBlocked());
     }
 
     private void validatePost(Post post) {

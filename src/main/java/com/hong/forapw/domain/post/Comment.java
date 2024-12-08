@@ -48,6 +48,13 @@ public class Comment extends TimeStamp {
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
 
+    @Builder
+    public Comment(User user, Post post, String content) {
+        this.user = user;
+        this.post = post;
+        this.content = content;
+    }
+
     // 연관 관계 메서드
     public void addChildComment(Comment child) {
         this.children.add(child);
@@ -62,22 +69,15 @@ public class Comment extends TimeStamp {
         this.content = content;
     }
 
-    @Builder
-    public Comment(User user, Post post, String content) {
-        this.user = user;
-        this.post = post;
-        this.content = content;
-    }
-
     public String getWriterNickname() {
         return user.getNickname();
     }
 
-    public String getWriterProfileURL(){
+    public String getWriterProfileURL() {
         return user.getProfileURL();
     }
 
-    public Province getWriterProvince(){
+    public Province getWriterProvince() {
         return user.getProvince();
     }
 
@@ -85,11 +85,31 @@ public class Comment extends TimeStamp {
         return parent.getUser().getNickname();
     }
 
-    public Long getParentId(){
+    public Long getParentId() {
         return parent.getId();
     }
 
-    public boolean isParent(){
+    public Long getPostId() {
+        return post.getId();
+    }
+
+    public String getPostTitle() {
+        return post.getTitle();
+    }
+
+    public Long getPostCommentNumber() {
+        return post.getCommentNum();
+    }
+
+    public String getPostType(){
+        return post.getPostType().getValue();
+    }
+
+    public boolean isPostBlocked(){
+        return post.isBlocked();
+    }
+
+    public boolean isParent() {
         return parent == null;
     }
 
