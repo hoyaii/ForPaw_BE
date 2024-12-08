@@ -92,25 +92,9 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public PostResponse.FindPostListDTO findPostListByType(Pageable pageable, PostType postType) {
-        // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findByPostTypeWithUser(postType, pageable);
-
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
-                .map(post -> {
-                    String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId());
-
-                    return new PostResponse.PostDTO(
-                            post.getId(),
-                            post.getUser().getNickname(),
-                            post.getTitle(),
-                            post.getContent(),
-                            post.getCreatedDate(),
-                            post.getCommentNum(),
-                            likeNum,
-                            imageURL,
-                            post.isBlocked());
-                })
+                .map(this::convertToPostDTO)
                 .toList();
 
         return new PostResponse.FindPostListDTO(postDTOS, postPage.isLast());
@@ -118,26 +102,10 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public PostResponse.FindPostListDTO findPopularPostListByType(Pageable pageable, PostType postType) {
-        // Post를 패치조인하여 조회
         Page<PopularPost> popularPostPage = popularPostRepository.findByPostTypeWithPost(postType, pageable);
-
         List<PostResponse.PostDTO> postDTOS = popularPostPage.getContent().stream()
                 .map(PopularPost::getPost)
-                .map(post -> {
-                    String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId());
-
-                    return new PostResponse.PostDTO(
-                            post.getId(),
-                            post.getUser().getNickname(),
-                            post.getTitle(),
-                            post.getContent(),
-                            post.getCreatedDate(),
-                            post.getCommentNum(),
-                            likeNum,
-                            imageURL,
-                            post.isBlocked());
-                })
+                .map(this::convertToPostDTO)
                 .toList();
 
         return new PostResponse.FindPostListDTO(postDTOS, popularPostPage.isLast());
@@ -757,7 +725,7 @@ public class PostService {
     }
 
     private void validateQuestionPostType(Post questionPost) {
-        if (!questionPost.getPostType().equals(PostType.QUESTION)) {
+        if (questionPost.isNotQuestionType()) {
             throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
         }
     }
@@ -790,6 +758,20 @@ public class PostService {
         String redirectURL = "/community/question/" + questionPostId;
 
         createAlarm(questionPost.getUser().getId(), content, redirectURL, AlarmType.ANSWER);
+    }
+
+    private PostResponse.PostDTO convertToPostDTO(Post post) {
+        return new PostResponse.PostDTO(
+                post.getId(),
+                post.getWriterNickName(),
+                post.getTitle(),
+                post.getContent(),
+                post.getCreatedDate(),
+                post.getCommentNum(),
+                getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId()),
+                post.getFirstImageURL(),
+                post.isBlocked()
+        );
     }
 
     private void processPopularPosts(List<Post> posts, PostType postType) {

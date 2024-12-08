@@ -123,4 +123,16 @@ public class Post extends TimeStamp {
     public void incrementAnswerNum() {
         this.answerNum++;
     }
+
+    public boolean isNotQuestionType() {
+        return postType != PostType.QUESTION;
+    }
+
+    public String getFirstImageURL() {
+        return postImages.isEmpty() ? null : postImages.get(0).getImageURL();
+    }
+
+    public String getWriterNickName(){
+        return user.getNickname();
+    }
 }
