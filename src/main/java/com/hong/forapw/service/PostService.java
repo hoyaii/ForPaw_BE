@@ -113,20 +113,10 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public PostResponse.FindQnaListDTO findQuestionList(Pageable pageable) {
-        // 유저를 패치조인하여 조회
         Page<Post> postPage = postRepository.findByPostTypeWithUser(PostType.QUESTION, pageable);
-
         List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
-                .map(post -> new PostResponse.QnaDTO(
-                        post.getId(),
-                        post.getUser().getNickname(),
-                        post.getUser().getProfileURL(),
-                        post.getTitle(),
-                        post.getContent(),
-                        post.getCreatedDate(),
-                        post.getAnswerNum(),
-                        post.isBlocked()))
-                .collect(Collectors.toList());
+                .map(this::convertToQnaDTO)
+                .toList();
 
         return new PostResponse.FindQnaListDTO(qnaDTOS, postPage.isLast());
     }
@@ -161,20 +151,10 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public PostResponse.FindQnaListDTO findMyQuestionList(Long userId, Pageable pageable) {
-        // 유저를 패치조인하여 조회
         List<PostType> postTypes = List.of(PostType.QUESTION);
         Page<Post> postPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
-
         List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
-                .map(post -> new PostResponse.QnaDTO(
-                        post.getId(),
-                        post.getUser().getNickname(),
-                        post.getUser().getProfileURL(),
-                        post.getTitle(),
-                        post.getContent(),
-                        post.getCreatedDate(),
-                        post.getAnswerNum(),
-                        post.isBlocked()))
+                .map(this::convertToQnaDTO)
                 .toList();
 
         return new PostResponse.FindQnaListDTO(qnaDTOS, postPage.isLast());
@@ -770,6 +750,19 @@ public class PostService {
                 post.getCommentNum(),
                 getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId()),
                 post.getFirstImageURL(),
+                post.isBlocked()
+        );
+    }
+
+    private PostResponse.QnaDTO convertToQnaDTO(Post post) {
+        return new PostResponse.QnaDTO(
+                post.getId(),
+                post.getWriterNickName(),
+                post.getWriterProfileURL(),
+                post.getTitle(),
+                post.getContent(),
+                post.getCreatedDate(),
+                post.getAnswerNum(),
                 post.isBlocked()
         );
     }

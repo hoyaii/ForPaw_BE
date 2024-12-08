@@ -135,4 +135,8 @@ public class Post extends TimeStamp {
     public String getWriterNickName(){
         return user.getNickname();
     }
+
+    public String getWriterProfileURL(){
+        return user.getProfileURL();
+    }
 }
