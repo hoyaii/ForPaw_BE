@@ -51,6 +51,7 @@ public class PostService {
     private final S3Service s3Service;
     private final BrokerService brokerService;
     private final EntityManager entityManager;
+
     public static final Long POST_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
     public static final Long POST_READ_EXP = 60L * 60 * 24 * 360; // 1년
     private static final String POST_SCREENED = "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.";
@@ -156,9 +157,7 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public PostResponse.FindMyCommentListDTO findMyComments(Long userId, Pageable pageable) {
-        // Post를 패치조인하여 조회
         Page<Comment> commentPage = commentRepository.findByUserIdWithPost(userId, pageable);
-
         List<PostResponse.MyCommentDTO> myCommentDTOS = commentPage.getContent().stream()
                 .map(comment -> new PostResponse.MyCommentDTO(
                         comment.getId(),
@@ -177,49 +176,20 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public PostResponse.FindPostByIdDTO findPostById(Long postId, Long userId) {
-        // user를 패치조인 해서 조회
         Post post = postRepository.findByIdWithUser(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
+        validatePost(post);
 
-        boolean isMine = post.getUser().getId().equals(userId);
-
-        // 질문글을 조회하기 위한 API 아님 => 질문글이면 에러 리턴
-        if (post.getPostType().equals(PostType.QUESTION)) {
-            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
-        }
-
-        // 가림 처리된 게시글이면 에러 리턴
-        if (post.getTitle().equals(POST_SCREENED)) {
-            throw new CustomException(ExceptionCode.SCREENED_POST);
-        }
-
-        // 게시글 이미지 DTO
-        List<PostResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
-                .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
-                .collect(Collectors.toList());
-
-        // 댓글과 대댓글을 모두 담고 있는 Comment 리스트를 CommentDTO로 가공하면서, 대댓글이 댓글 밑으로 들어가게 처리
         List<Comment> comments = commentRepository.findByPostIdWithUserAndParentAndRemoved(postId);
         List<Long> likedCommentIds = commentLikeRepository.findCommentIdsByUserId(userId);
-        List<PostResponse.CommentDTO> commentDTOS = converCommentToCommentDTO(comments, likedCommentIds);
+        List<PostResponse.CommentDTO> commentDTOS = convertToCommentDTO(comments, likedCommentIds);
+        List<PostResponse.PostImageDTO> postImageDTOS = convertToPostImageDTOs(post);
 
-        // 좋아요 수
-        Long likeNum = getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, postId);
+        incrementPostViewCount(postId);
+        markNoticeAsReadIfApplicable(post, userId, postId);
 
-        // 좋아요 여부
-        boolean isLike = postLikeRepository.existsByPostIdAndUserId(postId, userId);
-
-        // 조회 수 증가
-        redisService.incrementValue(POST_VIEW_NUM_PREFIX, postId.toString(), 1L);
-
-        // 공지 사항의 경우, 게시글 읽음 여부를 저장 (1년동안)
-        if (post.getPostType().equals(PostType.NOTICE)) {
-            String key = POST_READ_KEY_PREFIX + userId;
-            redisService.addSetElement(key, postId, POST_READ_EXP);
-        }
-
-        return new PostResponse.FindPostByIdDTO(post.getUser().getNickname(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, isMine, isLike, postImageDTOS, commentDTOS);
+        return new PostResponse.FindPostByIdDTO(post.getUser().getNickname(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), getCachedPostLikeNum(postId), post.isMyPost(userId), isPostLiked(postId, userId), postImageDTOS, commentDTOS);
     }
 
     @Transactional(readOnly = true)
@@ -719,7 +689,7 @@ public class PostService {
                 post.getContent(),
                 post.getCreatedDate(),
                 post.getCommentNum(),
-                getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId()),
+                getCachedPostLikeNum(post.getId()),
                 post.getFirstImageURL(),
                 post.isBlocked()
         );
@@ -746,18 +716,50 @@ public class PostService {
                 post.getContent(),
                 post.getCreatedDate(),
                 post.getCommentNum(),
-                getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId()),
+                getCachedPostLikeNum(post.getId()),
                 post.getFirstImageURL(),
                 post.isBlocked(),
                 post.getPostTypeString()
         );
     }
 
+    private void validatePost(Post post) {
+        if (post.isQuestionType()) {
+            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
+        }
+
+        if (post.isScreened()) {
+            throw new CustomException(ExceptionCode.SCREENED_POST);
+        }
+    }
+
+    private List<PostResponse.PostImageDTO> convertToPostImageDTOs(Post post) {
+        return post.getPostImages().stream()
+                .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
+                .collect(Collectors.toList());
+    }
+
+    private boolean isPostLiked(Long postId, Long userId) {
+        return postLikeRepository.existsByPostIdAndUserId(postId, userId);
+    }
+
+    // 공지 사항의 경우, 게시글 읽음 여부를 저장 (1년동안)
+    private void markNoticeAsReadIfApplicable(Post post, Long userId, Long postId) {
+        if (post.isNoticeType()) {
+            String key = POST_READ_KEY_PREFIX + userId;
+            redisService.addSetElement(key, postId, POST_READ_EXP);
+        }
+    }
+
+    private void incrementPostViewCount(Long postId) {
+        redisService.incrementValue(POST_VIEW_NUM_PREFIX, postId.toString(), 1L);
+    }
+
     private void processPopularPosts(List<Post> posts, PostType postType) {
         // 포인트가 10이 넘으면 popularPosts 리스트에 추가
         List<Post> popularPosts = posts.stream()
                 .peek(post -> {
-                    double hotPoint = getCachedPostViewNum(POST_VIEW_NUM_PREFIX, post.getId(), post::getReadCnt) * 0.001 + post.getCommentNum() + getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId()) * 5;
+                    double hotPoint = getCachedPostViewNum(POST_VIEW_NUM_PREFIX, post.getId(), post::getReadCnt) * 0.001 + post.getCommentNum() + getCachedPostLikeNum(post.getId()) * 5;
                     post.updateHotPoint(hotPoint);
                 })
                 .filter(post -> post.getHotPoint() > 10.0)
@@ -826,7 +828,8 @@ public class PostService {
         }
     }
 
-    private List<PostResponse.CommentDTO> converCommentToCommentDTO(List<Comment> comments, List<Long> likedComments) {
+    // 댓글과 대댓글을 모두 담고 있는 Comment 리스트를 CommentDTO로 가공하면서, 대댓글이 댓글 밑으로 들어가게 처리
+    private List<PostResponse.CommentDTO> convertToCommentDTO(List<Comment> comments, List<Long> likedComments) {
         // CommentDTO는 특정 게시글에 대한 모든 댓글 및 대댓글을 들고 있음
         List<PostResponse.CommentDTO> commentDTOS = new ArrayList<>();
 
@@ -878,12 +881,12 @@ public class PostService {
         return commentDTOS;
     }
 
-    private Long getCachedPostLikeNum(String keyPrefix, Long key) {
-        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
+    private Long getCachedPostLikeNum(Long key) {
+        Long likeNum = redisService.getValueInLongWithNull(PostService.POST_LIKE_NUM_KEY_PREFIX, key.toString());
 
         if (likeNum == null) {
             likeNum = postRepository.countLikesByPostId(key);
-            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), POST_EXP);
+            redisService.storeValue(PostService.POST_LIKE_NUM_KEY_PREFIX, key.toString(), likeNum.toString(), POST_EXP);
         }
 
         return likeNum;

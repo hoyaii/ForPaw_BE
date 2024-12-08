@@ -132,15 +132,31 @@ public class Post extends TimeStamp {
         return postImages.isEmpty() ? null : postImages.get(0).getImageURL();
     }
 
-    public String getWriterNickName(){
+    public String getWriterNickName() {
         return user.getNickname();
     }
 
-    public String getWriterProfileURL(){
+    public String getWriterProfileURL() {
         return user.getProfileURL();
     }
 
-    public String getPostTypeString(){
+    public String getPostTypeString() {
         return postType.toString().toLowerCase();
+    }
+
+    public boolean isMyPost(Long userId) {
+        return user.getId().equals(userId);
+    }
+
+    public boolean isQuestionType(){
+        return postType == PostType.QUESTION;
+    }
+
+    public boolean isNoticeType(){
+        return postType == PostType.NOTICE;
+    }
+
+    public boolean isScreened(){
+        return title.equals("이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.");
     }
 }
