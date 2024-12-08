@@ -139,4 +139,8 @@ public class Post extends TimeStamp {
     public String getWriterProfileURL(){
         return user.getProfileURL();
     }
+
+    public String getPostTypeString(){
+        return postType.toString().toLowerCase();
+    }
 }

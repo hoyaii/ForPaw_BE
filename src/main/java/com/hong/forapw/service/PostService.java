@@ -113,37 +113,20 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public PostResponse.FindQnaListDTO findQuestionList(Pageable pageable) {
-        Page<Post> postPage = postRepository.findByPostTypeWithUser(PostType.QUESTION, pageable);
-        List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
+        Page<Post> questionPage = postRepository.findByPostTypeWithUser(PostType.QUESTION, pageable);
+        List<PostResponse.QnaDTO> qnaDTOS = questionPage.getContent().stream()
                 .map(this::convertToQnaDTO)
                 .toList();
 
-        return new PostResponse.FindQnaListDTO(qnaDTOS, postPage.isLast());
+        return new PostResponse.FindQnaListDTO(qnaDTOS, questionPage.isLast());
     }
 
     @Transactional(readOnly = true)
     public PostResponse.FindMyPostListDTO findMyPostList(Long userId, Pageable pageable) {
-        // 유저를 패치조인하여 조회
         List<PostType> postTypes = List.of(PostType.ADOPTION, PostType.FOSTERING);
         Page<Post> postPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
-
         List<PostResponse.MyPostDTO> postDTOS = postPage.getContent().stream()
-                .map(post -> {
-                    String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId());
-
-                    return new PostResponse.MyPostDTO(
-                            post.getId(),
-                            post.getUser().getNickname(),
-                            post.getTitle(),
-                            post.getContent(),
-                            post.getCreatedDate(),
-                            post.getCommentNum(),
-                            likeNum,
-                            imageURL,
-                            post.isBlocked(),
-                            post.getPostType().toString().toLowerCase());
-                })
+                .map(this::convertToMyPostDTO)
                 .toList();
 
         return new PostResponse.FindMyPostListDTO(postDTOS, postPage.isLast());
@@ -152,35 +135,23 @@ public class PostService {
     @Transactional(readOnly = true)
     public PostResponse.FindQnaListDTO findMyQuestionList(Long userId, Pageable pageable) {
         List<PostType> postTypes = List.of(PostType.QUESTION);
-        Page<Post> postPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
-        List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
+        Page<Post> questionPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
+        List<PostResponse.QnaDTO> qnaDTOS = questionPage.getContent().stream()
                 .map(this::convertToQnaDTO)
                 .toList();
 
-        return new PostResponse.FindQnaListDTO(qnaDTOS, postPage.isLast());
+        return new PostResponse.FindQnaListDTO(qnaDTOS, questionPage.isLast());
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindQnaListDTO findMyAnswerList(Long userId, Pageable pageable) {
-        // 유저를 패치조인하여 조회
-        Page<Post> postPage = postRepository.findQnaOfAnswerByUserIdWithUser(userId, pageable);
-
-        // 중복 제거를 위해 Set을 사용하여 중복된 Post 객체를 필터링
-        Set<Post> uniquePosts = new HashSet<>(postPage.getContent());
-
-        List<PostResponse.QnaDTO> qnaDTOS = uniquePosts.stream()
-                .map(post -> new PostResponse.QnaDTO(
-                        post.getId(),
-                        post.getUser().getNickname(),
-                        post.getUser().getProfileURL(),
-                        post.getTitle(),
-                        post.getContent(),
-                        post.getCreatedDate(),
-                        post.getAnswerNum(),
-                        post.isBlocked()))
+    public PostResponse.FindQnaListDTO findQuestionsAnsweredByMe(Long userId, Pageable pageable) {
+        Page<Post> questionPage = postRepository.findQnaOfAnswerByUserIdWithUser(userId, pageable);
+        Set<Post> question = new HashSet<>(questionPage.getContent()); // 중복 제거
+        List<PostResponse.QnaDTO> qnaDTOS = question.stream()
+                .map(this::convertToQnaDTO)
                 .toList();
 
-        return new PostResponse.FindQnaListDTO(qnaDTOS, postPage.isLast());
+        return new PostResponse.FindQnaListDTO(qnaDTOS, questionPage.isLast());
     }
 
     @Transactional(readOnly = true)
@@ -764,6 +735,21 @@ public class PostService {
                 post.getCreatedDate(),
                 post.getAnswerNum(),
                 post.isBlocked()
+        );
+    }
+
+    private PostResponse.MyPostDTO convertToMyPostDTO(Post post) {
+        return new PostResponse.MyPostDTO(
+                post.getId(),
+                post.getWriterNickName(),
+                post.getTitle(),
+                post.getContent(),
+                post.getCreatedDate(),
+                post.getCommentNum(),
+                getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId()),
+                post.getFirstImageURL(),
+                post.isBlocked(),
+                post.getPostTypeString()
         );
     }
 

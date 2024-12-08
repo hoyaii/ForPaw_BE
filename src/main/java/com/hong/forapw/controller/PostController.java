@@ -75,8 +75,8 @@ public class PostController {
     }
 
     @GetMapping("/posts/myAnswer")
-    public ResponseEntity<?> findMyAnswerList(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        PostResponse.FindQnaListDTO responseDTO = postService.findMyAnswerList(userDetails.getUser().getId(), pageable);
+    public ResponseEntity<?> findQuestionsAnsweredByMe(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        PostResponse.FindQnaListDTO responseDTO = postService.findQuestionsAnsweredByMe(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
