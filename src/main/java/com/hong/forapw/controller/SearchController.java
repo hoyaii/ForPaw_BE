@@ -3,6 +3,7 @@ package com.hong.forapw.controller;
 import com.hong.forapw.controller.dto.SearchResponse;
 import com.hong.forapw.core.utils.ApiUtils;
 import com.hong.forapw.service.SearchService;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -24,33 +25,31 @@ public class SearchController {
     private static final String SORT_BY_ID = "id";
 
     @GetMapping("/search/all")
-    public ResponseEntity<?> searchAll(@RequestParam String keyword) {
-        SearchResponse.SearchAllDTO responseDTO = searchService.searchAll(keyword);
+    public ResponseEntity<?> searchAll(@RequestParam @NotEmpty String keyword,
+                                       @PageableDefault(size = 3, sort = SORT_BY_ID) Pageable pageable) {
+        SearchResponse.SearchAllDTO responseDTO = searchService.searchAll(keyword, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/search/shelters")
-    public ResponseEntity<?> searchShelterList(@RequestParam String keyword,
+    public ResponseEntity<?> searchShelterList(@RequestParam @NotEmpty String keyword,
                                                @PageableDefault(size = 3, sort = SORT_BY_ID) Pageable pageable) {
-        searchService.checkKeywordEmpty(keyword);
         List<SearchResponse.ShelterDTO> shelterDTOS = searchService.searchShelterList(keyword, pageable);
         SearchResponse.SearchShelterListDTO responseDTO = new SearchResponse.SearchShelterListDTO(shelterDTOS);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/search/posts")
-    public ResponseEntity<?> searchPostList(@RequestParam String keyword,
+    public ResponseEntity<?> searchPostList(@RequestParam @NotEmpty String keyword,
                                             @PageableDefault(size = 3, sort = SORT_BY_ID) Pageable pageable) {
-        searchService.checkKeywordEmpty(keyword);
         List<SearchResponse.PostDTO> postDTOS = searchService.searchPostList(keyword, pageable);
         SearchResponse.SearchPostListDTO responseDTO = new SearchResponse.SearchPostListDTO(postDTOS);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/search/groups")
-    public ResponseEntity<?> searchGroupList(@RequestParam String keyword,
+    public ResponseEntity<?> searchGroupList(@RequestParam @NotEmpty String keyword,
                                              @PageableDefault(size = 3, sort = SORT_BY_ID) Pageable pageable) {
-        searchService.checkKeywordEmpty(keyword);
         List<SearchResponse.GroupDTO> groupDTOS = searchService.searchGroupList(keyword, pageable);
         SearchResponse.SearchGroupListDTO responseDTO = new SearchResponse.SearchGroupListDTO(groupDTOS);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));

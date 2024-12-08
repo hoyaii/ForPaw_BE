@@ -1,6 +1,5 @@
 package com.hong.forapw.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hong.forapw.controller.dto.*;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
@@ -15,6 +14,9 @@ import com.hong.forapw.repository.animal.AnimalRepository;
 import com.hong.forapw.repository.animal.FavoriteAnimalRepository;
 import com.hong.forapw.repository.RegionCodeRepository;
 import com.hong.forapw.repository.ShelterRepository;
+import com.hong.forapw.service.geocoding.Coordinates;
+import com.hong.forapw.service.geocoding.GeocodingService;
+import com.hong.forapw.service.geocoding.GoogleGeocodingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
 
 import java.net.URI;
 import java.time.Duration;
@@ -35,6 +36,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.hong.forapw.core.utils.DateTimeUtils.YEAR_HOUR_DAY_FORMAT;
+import static com.hong.forapw.core.utils.PaginationUtils.isLastPage;
 import static com.hong.forapw.core.utils.UriUtils.*;
 
 @Service
@@ -48,9 +50,9 @@ public class ShelterService {
     private final AnimalRepository animalRepository;
     private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final RedisService redisService;
-    private final ObjectMapper mapper;
     private final WebClient webClient;
     private final JsonParser jsonParser;
+    private final GoogleGeocodingService googleService;
 
     @Value("${openAPI.service-key2}")
     private String serviceKey;
@@ -58,21 +60,18 @@ public class ShelterService {
     @Value("${openAPI.shelter.uri}")
     private String baseUrl;
 
-    @Value("${kakao.key}")
-    private String kakaoAPIKey;
-
     private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
     private static final Long ANIMAL_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
 
     @Transactional
     @Scheduled(cron = "0 0 6 * * MON")
-    public void updateShelterData() {
-        List<Long> existShelterIds = shelterRepository.findAllIds();
+    public void updateNewShelters() {
+        List<Long> savedShelterIds = shelterRepository.findAllIds(); // 이미 저장되어 있는 보호소는 배제
         List<RegionCode> regionCodes = regionCodeRepository.findAll();
 
         Flux.fromIterable(regionCodes)
                 .delayElements(Duration.ofMillis(50))
-                .flatMap(regionCode -> fetchShelterDataFromApi(regionCode, existShelterIds))
+                .flatMap(regionCode -> fetchShelterDataFromApi(regionCode, savedShelterIds))
                 .collectList()
                 .doOnNext(shelterRepository::saveAll)
                 .doOnError(error -> log.error("보호소 데이터 패치 실패: {}", error.getMessage()))
@@ -80,13 +79,13 @@ public class ShelterService {
     }
 
     @Transactional
-    public void updateShelterData(List<Tuple2<Shelter, String>> animalJsonResponses) {
-        for (Tuple2<Shelter, String> tuple : animalJsonResponses) {
-            Shelter shelter = tuple.getT1();
-            String animalJsonData = tuple.getT2();
-
-            updateShelterByAnimalData(animalJsonData, shelter);
+    public void updateShelterData(List<AnimalJsonResponse> animalJsonResponses) {
+        for (AnimalJsonResponse response : animalJsonResponses) {
+            Shelter shelter = response.shelter();
+            String animalJson = response.animalJson();
+            updateShelterByAnimalData(animalJson, shelter);
         }
+
         updateShelterAddressByGoogle();
     }
 
@@ -125,71 +124,29 @@ public class ShelterService {
     }
 
     @Transactional(readOnly = true)
-    public ShelterResponse.FindShelterAnimalsByIdDTO findShelterAnimalListById(Long shelterId, Long userId, String type, Pageable pageable) {
+    public ShelterResponse.FindShelterAnimalsByIdDTO findAnimalsByShelter(Long shelterId, Long userId, String type, Pageable pageable) {
+        List<Long> userLikedAnimalIds = findUserLikedAnimalIds(userId);
+
         Page<Animal> animalPage = animalRepository.findByShelterIdAndType(AnimalType.fromString(type), shelterId, pageable);
-
-        // 사용자가 '좋아요' 표시한 Animal의 ID 목록, 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
-        List<Long> likedAnimalIds = userId != null ? favoriteAnimalRepository.findAnimalIdsByUserId(userId) : new ArrayList<>();
-
         List<ShelterResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> {
-                    Long likeNum = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
-                    return new ShelterResponse.AnimalDTO(
-                            animal.getId(),
-                            animal.getName(),
-                            animal.getAge(),
-                            animal.getGender(),
-                            animal.getSpecialMark(),
-                            animal.getKind(),
-                            animal.getWeight(),
-                            animal.getNeuter(),
-                            animal.getProcessState(),
-                            animal.getRegion(),
-                            animal.getInquiryNum(),
-                            likeNum,
-                            likedAnimalIds.contains(animal.getId()),
-                            animal.getProfileURL());
-                })
+                .map(animal -> createAnimalDTO(animal, userLikedAnimalIds))
                 .collect(Collectors.toList());
 
-        return new ShelterResponse.FindShelterAnimalsByIdDTO(animalDTOS, !animalPage.hasNext());
+        return new ShelterResponse.FindShelterAnimalsByIdDTO(animalDTOS, isLastPage(animalPage));
     }
 
     @Transactional(readOnly = true)
-    public ShelterResponse.FindShelterListWithAddr findShelterListWithAddr() {
+    public ShelterResponse.FindShelterListWithAddr findShelterListWithAddress() {
         List<Shelter> shelters = shelterRepository.findAll();
 
-        // Province와 District로 보호소를 그룹화
-        Map<Province, Map<District, List<Shelter>>> groupedShelters = shelters.stream()
-                .collect(Collectors.groupingBy(
-                        shelter -> shelter.getRegionCode().getUprName(), // Province로 그룹화
-                        Collectors.groupingBy(
-                                shelter -> shelter.getRegionCode().getOrgName() // District로 그룹화
-                        )
-                ));
-
-        // 그룹화된 데이터를 응답 형식으로 변환
-        Map<String, List<ShelterResponse.DistrictDTO>> responseMap = groupedShelters.entrySet().stream()
-                .collect(Collectors.toMap(
-                        provinceEntry -> provinceEntry.getKey().name(), // Province 이름을 키로
-                        provinceEntry -> provinceEntry.getValue().entrySet().stream()
-                                .map(districtEntry -> {
-                                    Map<String, List<String>> subDistrict = Map.of(
-                                            districtEntry.getKey().name(),
-                                            districtEntry.getValue().stream()
-                                                    .map(Shelter::getName) // 해당 District 내의 보호소 이름 목록을 값으로
-                                                    .collect(Collectors.toList())
-                                    );
-                                    return new ShelterResponse.DistrictDTO(subDistrict);
-                                })
-                                .collect(Collectors.toList())
-                ));
+        Map<Province, Map<District, List<Shelter>>> groupedShelters = groupSheltersByProvinceAndDistrict(shelters);
+        Map<String, List<ShelterResponse.DistrictDTO>> responseMap = createShlelterResponseMap(groupedShelters);
 
         return new ShelterResponse.FindShelterListWithAddr(responseMap);
     }
 
-    private void updateShelterByAnimalData(String animalJsonData, Shelter shelter) {
-        jsonParser.parse(animalJsonData, AnimalDTO.class).ifPresent(
+    private void updateShelterByAnimalData(String animalJson, Shelter shelter) {
+        jsonParser.parse(animalJson, AnimalDTO.class).ifPresent(
                 animalDTO -> updateShelterWithAnimalData(animalDTO, shelter)
         );
     }
@@ -223,57 +180,30 @@ public class ShelterService {
     }
 
     private void updateShelterAddressByGoogle() {
+        updateShelterAddress(googleService);
+    }
+
+    private void updateShelterAddress(GeocodingService geocodingService) {
         List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
-
         for (Shelter shelter : shelters) {
-            URI uri = createGoogleGeocodingURI(shelter.getCareAddr());
-            GoogleMapDTO.MapDTO mapDTO = webClient.get()
-                    .uri(uri)
-                    .retrieve()
-                    .bodyToMono(GoogleMapDTO.MapDTO.class)
-                    .block();
-
-            if (mapDTO != null && !mapDTO.results().isEmpty()) {
-                GoogleMapDTO.ResultDTO resultDTO = mapDTO.results().get(0);
-                shelterRepository.updateAddressInfo(
-                        resultDTO.geometry().location().lat(),
-                        resultDTO.geometry().location().lng(),
-                        shelter.getId()
-                );
+            try {
+                Coordinates coordinates = geocodingService.getCoordinates(shelter.getCareAddr());
+                shelterRepository.updateAddressInfo(coordinates.lat(), coordinates.lng(), shelter.getId());
+            } catch (Exception e) {
+                log.warn("보호소의 위/경도 업데이트 실패 ,shelter {}: {}", shelter.getId(), e.getMessage());
             }
         }
     }
 
-    @Transactional
-    public void updateShelterAddressByKakao() {
-        List<Shelter> shelters = shelterRepository.findByAnimalCntGreaterThan(0L);
-
-        Flux.fromIterable(shelters)
-                .delayElements(Duration.ofMillis(50))
-                .flatMap(shelter -> {
-                    URI uri = createKakaoGeocodingURI(shelter.getCareAddr());
-                    return webClient.get()
-                            .uri(uri)
-                            .header("Authorization", "KakaoAK " + kakaoAPIKey)
-                            .retrieve()
-                            .bodyToMono(KakaoMapDTO.MapDTO.class)
-                            .flatMap(mapDTO -> Mono.justOrEmpty(mapDTO.documents().stream().findFirst()))
-                            .doOnNext(document -> {
-                                shelterRepository.updateAddressInfo(Double.valueOf(document.y()), Double.valueOf(document.x()), shelter.getId());
-                            });
-                })
-                .subscribe();
-    }
-
-    private Flux<Shelter> fetchShelterDataFromApi(RegionCode regionCode, List<Long> existShelterIds) {
+    private Flux<Shelter> fetchShelterDataFromApi(RegionCode regionCode, List<Long> savedShelterIds) {
         try {
-            URI uri = createShelterOpenApiURI(baseUrl, serviceKey, regionCode.getUprCd(), regionCode.getOrgCd());
+            URI uri = buildShelterOpenApiURI(baseUrl, serviceKey, regionCode.getUprCd(), regionCode.getOrgCd());
             return webClient.get()
                     .uri(uri)
                     .retrieve()
                     .bodyToMono(String.class)
                     .retry(3)
-                    .flatMapMany(response -> convertResponseToNewShelter(response, regionCode, existShelterIds))
+                    .flatMapMany(response -> convertResponseToNewShelter(response, regionCode, savedShelterIds))
                     .onErrorResume(e -> Flux.empty());
         } catch (Exception e) {
             log.warn("보소 데이터 패치를 위한 URI가 유효하지 않음, regionCode{}: {}", regionCode, e.getMessage());
@@ -281,10 +211,10 @@ public class ShelterService {
         }
     }
 
-    private Flux<Shelter> convertResponseToNewShelter(String response, RegionCode regionCode, List<Long> existShelterIds) {
+    private Flux<Shelter> convertResponseToNewShelter(String response, RegionCode regionCode, List<Long> savedShelterIds) {
         return Mono.fromCallable(() -> parseJsonToItemDTO(response))
                 .flatMapMany(Flux::fromIterable)
-                .filter(itemDTO -> isNewShelter(itemDTO, existShelterIds))
+                .filter(itemDTO -> isNewShelter(itemDTO, savedShelterIds))
                 .map(itemDTO -> createShelter(itemDTO, regionCode))
                 .onErrorResume(e -> {
                     log.warn("보호소 데이터를 패치해오는 과정 중 파싱에서 에러 발생, regionCode {}: {}", regionCode, e.getMessage());
@@ -318,14 +248,76 @@ public class ShelterService {
                 .build();
     }
 
-    private Long getCachedLikeNum(String keyPrefix, Long key) {
-        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
+    private Long getCachedLikeNum(Long key) {
+        Long likeNum = redisService.getValueInLongWithNull(ShelterService.ANIMAL_LIKE_NUM_KEY_PREFIX, key.toString());
 
         if (likeNum == null) {
             likeNum = animalRepository.countLikesByAnimalId(key);
-            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), ANIMAL_EXP);
+            redisService.storeValue(ShelterService.ANIMAL_LIKE_NUM_KEY_PREFIX, key.toString(), likeNum.toString(), ANIMAL_EXP);
         }
 
         return likeNum;
+    }
+
+    /**
+     * Shelter 리스트를 Province와 District 기준으로 그룹화
+     */
+    private Map<Province, Map<District, List<Shelter>>> groupSheltersByProvinceAndDistrict(List<Shelter> shelters) {
+        return shelters.stream()
+                .collect(Collectors.groupingBy(
+                        shelter -> shelter.getRegionCode().getUprName(),
+                        Collectors.groupingBy(
+                                shelter -> shelter.getRegionCode().getOrgName()
+                        )
+                ));
+    }
+
+    /**
+     * Province-District-Shelter 구조의 맵을 응답 데이터 구조(Map<String, List<DistrictDTO>>)로 변환
+     */
+    private Map<String, List<ShelterResponse.DistrictDTO>> createShlelterResponseMap(
+            Map<Province, Map<District, List<Shelter>>> groupedShelters) {
+        return groupedShelters.entrySet().stream()
+                .collect(Collectors.toMap(
+                        provinceEntry -> provinceEntry.getKey().name(),
+                        provinceEntry -> convertToDistrictDTOList(provinceEntry.getValue())
+                ));
+    }
+
+    private List<ShelterResponse.DistrictDTO> convertToDistrictDTOList(Map<District, List<Shelter>> districtShelterMap) {
+        return districtShelterMap.entrySet().stream()
+                .map(districtEntry -> {
+                    Map<String, List<String>> districtMap = Map.of(
+                            districtEntry.getKey().name(),
+                            districtEntry.getValue().stream()
+                                    .map(Shelter::getName)
+                                    .toList()
+                    );
+                    return new ShelterResponse.DistrictDTO(districtMap);
+                })
+                .collect(Collectors.toList());
+    }
+
+    private List<Long> findUserLikedAnimalIds(Long userId) {
+        // 로그인하지 않은 경우 빈 리스트 반환
+        return (userId != null) ? favoriteAnimalRepository.findAnimalIdsByUserId(userId) : Collections.emptyList();
+    }
+
+    private ShelterResponse.AnimalDTO createAnimalDTO(Animal animal, List<Long> userLikedAnimalIds) {
+        return new ShelterResponse.AnimalDTO(
+                animal.getId(),
+                animal.getName(),
+                animal.getAge(),
+                animal.getGender(),
+                animal.getSpecialMark(),
+                animal.getKind(),
+                animal.getWeight(),
+                animal.getNeuter(),
+                animal.getProcessState(),
+                animal.getRegion(),
+                animal.getInquiryNum(),
+                getCachedLikeNum(animal.getId()),
+                userLikedAnimalIds.contains(animal.getId()),
+                animal.getProfileURL());
     }
 }

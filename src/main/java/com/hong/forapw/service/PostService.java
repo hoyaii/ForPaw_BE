@@ -51,6 +51,7 @@ public class PostService {
     private final S3Service s3Service;
     private final BrokerService brokerService;
     private final EntityManager entityManager;
+
     public static final Long POST_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
     public static final Long POST_READ_EXP = 60L * 60 * 24 * 360; // 1년
     private static final String POST_SCREENED = "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.";
@@ -62,239 +63,101 @@ public class PostService {
 
     @Transactional
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId) {
-        User userRef = entityManager.getReference(User.class, userId);
+        validatePostRequest(requestDTO);
 
-        // 질문글이면 에러
-        if (requestDTO.type() == PostType.ANSWER) {
-            throw new CustomException(ExceptionCode.IS_QUESTION_TYPE);
-        }
-
-        // 입양 스토리와 임시보호 스토리는 image가 반드시 하나 이상 들어와야 함
-        if (requestDTO.images().isEmpty() && requestDTO.type() != PostType.QUESTION) {
-            throw new CustomException(ExceptionCode.POST_MUST_CONTAIN_IMAGE);
-        }
-
-        List<PostImage> postImages = requestDTO.images().stream()
-                .map(postImageDTO -> PostImage.builder()
-                        .imageURL(postImageDTO.imageURL())
-                        .build())
-                .toList();
-
-        // Post 객체 저장
-        Post post = Post.builder()
-                .user(userRef)
-                .postType(requestDTO.type())
-                .title(requestDTO.title())
-                .content(requestDTO.content())
-                .build();
-
-        postImages.forEach(post::addImage); // 연관관계 설정
-
+        List<PostImage> postImages = convertToPostImages(requestDTO.images());
+        Post post = buildPostEntity(userId, postImages, requestDTO);
         postRepository.save(post);
 
-        // 3개월 동안만 좋아요를 할 수 있다
-        redisService.storeValue(POST_LIKE_NUM_KEY_PREFIX, post.getId().toString(), "0", POST_EXP);
-
-        // 조회 수
-        redisService.storeValue(POST_VIEW_NUM_PREFIX, post.getId().toString(), "0", POST_EXP);
+        initializeRedisValues(post.getId());
 
         return new PostResponse.CreatePostDTO(post.getId());
     }
 
     @Transactional
-    public PostResponse.CreateAnswerDTO createAnswer(PostRequest.CreateAnswerDTO requestDTO, Long parentPostId, Long userId) {
-        // 존재하지 않는 질문글에 답변을 달려고 하면 에러
-        Post parentPost = postRepository.findByIdWithUser(parentPostId).orElseThrow(
+    public PostResponse.CreateAnswerDTO createAnswer(PostRequest.CreateAnswerDTO requestDTO, Long questionPostId, Long userId) {
+        Post questionPost = postRepository.findByIdWithUser(questionPostId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
+        validateQuestionPostType(questionPost);
 
-        // 질문글에만 답변을 달 수 있다
-        if (!parentPost.getPostType().equals(PostType.QUESTION)) {
-            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
-        }
+        List<PostImage> answerImages = buildPostImages(requestDTO);
+        Post answerPost = buildAnswerPost(questionPost, userId, answerImages, requestDTO);
+        postRepository.save(answerPost);
 
-        User userRef = entityManager.getReference(User.class, userId);
+        questionPost.incrementAnswerNum();
+        sendNewAnswerAlarm(questionPost, requestDTO.content(), questionPostId);
 
-        List<PostImage> postImages = requestDTO.images().stream()
-                .map(postImageDTO -> PostImage.builder()
-                        .imageURL(postImageDTO.imageURL())
-                        .build())
-                .toList();
-
-        // Post 객체 저장
-        Post post = Post.builder()
-                .user(userRef)
-                .postType(PostType.ANSWER)
-                .title(parentPost.getTitle() + "(답변)")
-                .content(requestDTO.content())
-                .build();
-
-        postImages.forEach(post::addImage); // 연관관계 설정
-        parentPost.addChildPost(post);
-
-        postRepository.save(post);
-
-        // 답변수 증가
-        postRepository.incrementAnswerNum(parentPostId);
-
-        // 알림 생성
-        String content = "새로운 답변: " + requestDTO.content();
-        String redirectURL = "/community/question/" + parentPostId;
-        createAlarm(parentPost.getUser().getId(), content, redirectURL, AlarmType.ANSWER);
-
-        return new PostResponse.CreateAnswerDTO(post.getId());
+        return new PostResponse.CreateAnswerDTO(answerPost.getId());
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindPostListDTO findPostListByType(Pageable pageable, PostType postType) {
-        // 유저를 패치조인하여 조회
+    public PostResponse.FindPostListDTO findPostsByType(Pageable pageable, PostType postType) {
         Page<Post> postPage = postRepository.findByPostTypeWithUser(postType, pageable);
-
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
-                .map(post -> {
-                    String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId());
-
-                    return new PostResponse.PostDTO(
-                            post.getId(),
-                            post.getUser().getNickname(),
-                            post.getTitle(),
-                            post.getContent(),
-                            post.getCreatedDate(),
-                            post.getCommentNum(),
-                            likeNum,
-                            imageURL,
-                            post.isBlocked());
-                })
+                .map(this::convertToPostDTO)
                 .toList();
 
         return new PostResponse.FindPostListDTO(postDTOS, postPage.isLast());
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindPostListDTO findPopularPostListByType(Pageable pageable, PostType postType) {
-        // Post를 패치조인하여 조회
+    public PostResponse.FindPostListDTO findPopularPostsByType(Pageable pageable, PostType postType) {
         Page<PopularPost> popularPostPage = popularPostRepository.findByPostTypeWithPost(postType, pageable);
-
         List<PostResponse.PostDTO> postDTOS = popularPostPage.getContent().stream()
                 .map(PopularPost::getPost)
-                .map(post -> {
-                    String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId());
-
-                    return new PostResponse.PostDTO(
-                            post.getId(),
-                            post.getUser().getNickname(),
-                            post.getTitle(),
-                            post.getContent(),
-                            post.getCreatedDate(),
-                            post.getCommentNum(),
-                            likeNum,
-                            imageURL,
-                            post.isBlocked());
-                })
+                .map(this::convertToPostDTO)
                 .toList();
 
         return new PostResponse.FindPostListDTO(postDTOS, popularPostPage.isLast());
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindQnaListDTO findQuestionList(Pageable pageable) {
-        // 유저를 패치조인하여 조회
-        Page<Post> postPage = postRepository.findByPostTypeWithUser(PostType.QUESTION, pageable);
+    public PostResponse.FindQnaListDTO findQuestions(Pageable pageable) {
+        Page<Post> questionPage = postRepository.findByPostTypeWithUser(PostType.QUESTION, pageable);
+        List<PostResponse.QnaDTO> qnaDTOS = questionPage.getContent().stream()
+                .map(this::convertToQnaDTO)
+                .toList();
 
-        List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
-                .map(post -> new PostResponse.QnaDTO(
-                        post.getId(),
-                        post.getUser().getNickname(),
-                        post.getUser().getProfileURL(),
-                        post.getTitle(),
-                        post.getContent(),
-                        post.getCreatedDate(),
-                        post.getAnswerNum(),
-                        post.isBlocked()))
-                .collect(Collectors.toList());
-
-        return new PostResponse.FindQnaListDTO(qnaDTOS, postPage.isLast());
+        return new PostResponse.FindQnaListDTO(qnaDTOS, questionPage.isLast());
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindMyPostListDTO findMyPostList(Long userId, Pageable pageable) {
-        // 유저를 패치조인하여 조회
+    public PostResponse.FindMyPostListDTO findMyPosts(Long userId, Pageable pageable) {
         List<PostType> postTypes = List.of(PostType.ADOPTION, PostType.FOSTERING);
         Page<Post> postPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
-
         List<PostResponse.MyPostDTO> postDTOS = postPage.getContent().stream()
-                .map(post -> {
-                    String imageURL = post.getPostImages().isEmpty() ? null : post.getPostImages().get(0).getImageURL();
-                    Long likeNum = getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId());
-
-                    return new PostResponse.MyPostDTO(
-                            post.getId(),
-                            post.getUser().getNickname(),
-                            post.getTitle(),
-                            post.getContent(),
-                            post.getCreatedDate(),
-                            post.getCommentNum(),
-                            likeNum,
-                            imageURL,
-                            post.isBlocked(),
-                            post.getPostType().toString().toLowerCase());
-                })
+                .map(this::convertToMyPostDTO)
                 .toList();
 
         return new PostResponse.FindMyPostListDTO(postDTOS, postPage.isLast());
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindQnaListDTO findMyQuestionList(Long userId, Pageable pageable) {
-        // 유저를 패치조인하여 조회
+    public PostResponse.FindQnaListDTO findMyQuestions(Long userId, Pageable pageable) {
         List<PostType> postTypes = List.of(PostType.QUESTION);
-        Page<Post> postPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
-
-        List<PostResponse.QnaDTO> qnaDTOS = postPage.getContent().stream()
-                .map(post -> new PostResponse.QnaDTO(
-                        post.getId(),
-                        post.getUser().getNickname(),
-                        post.getUser().getProfileURL(),
-                        post.getTitle(),
-                        post.getContent(),
-                        post.getCreatedDate(),
-                        post.getAnswerNum(),
-                        post.isBlocked()))
+        Page<Post> questionPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
+        List<PostResponse.QnaDTO> qnaDTOS = questionPage.getContent().stream()
+                .map(this::convertToQnaDTO)
                 .toList();
 
-        return new PostResponse.FindQnaListDTO(qnaDTOS, postPage.isLast());
+        return new PostResponse.FindQnaListDTO(qnaDTOS, questionPage.isLast());
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindQnaListDTO findMyAnswerList(Long userId, Pageable pageable) {
-        // 유저를 패치조인하여 조회
-        Page<Post> postPage = postRepository.findQnaOfAnswerByUserIdWithUser(userId, pageable);
-
-        // 중복 제거를 위해 Set을 사용하여 중복된 Post 객체를 필터링
-        Set<Post> uniquePosts = new HashSet<>(postPage.getContent());
-
-        List<PostResponse.QnaDTO> qnaDTOS = uniquePosts.stream()
-                .map(post -> new PostResponse.QnaDTO(
-                        post.getId(),
-                        post.getUser().getNickname(),
-                        post.getUser().getProfileURL(),
-                        post.getTitle(),
-                        post.getContent(),
-                        post.getCreatedDate(),
-                        post.getAnswerNum(),
-                        post.isBlocked()))
+    public PostResponse.FindQnaListDTO findQuestionsAnsweredByMe(Long userId, Pageable pageable) {
+        Page<Post> questionPage = postRepository.findQnaOfAnswerByUserIdWithUser(userId, pageable);
+        Set<Post> question = new HashSet<>(questionPage.getContent()); // 중복 제거
+        List<PostResponse.QnaDTO> qnaDTOS = question.stream()
+                .map(this::convertToQnaDTO)
                 .toList();
 
-        return new PostResponse.FindQnaListDTO(qnaDTOS, postPage.isLast());
+        return new PostResponse.FindQnaListDTO(qnaDTOS, questionPage.isLast());
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindMyCommentListDTO findMyCommentList(Long userId, Pageable pageable) {
-        // Post를 패치조인하여 조회
+    public PostResponse.FindMyCommentListDTO findMyComments(Long userId, Pageable pageable) {
         Page<Comment> commentPage = commentRepository.findByUserIdWithPost(userId, pageable);
-
         List<PostResponse.MyCommentDTO> myCommentDTOS = commentPage.getContent().stream()
                 .map(comment -> new PostResponse.MyCommentDTO(
                         comment.getId(),
@@ -313,49 +176,20 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public PostResponse.FindPostByIdDTO findPostById(Long postId, Long userId) {
-        // user를 패치조인 해서 조회
         Post post = postRepository.findByIdWithUser(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
+        validatePost(post);
 
-        boolean isMine = post.getUser().getId().equals(userId);
-
-        // 질문글을 조회하기 위한 API 아님 => 질문글이면 에러 리턴
-        if (post.getPostType().equals(PostType.QUESTION)) {
-            throw new CustomException(ExceptionCode.IS_QUESTION_TYPE);
-        }
-
-        // 가림 처리된 게시글이면 에러 리턴
-        if (post.getTitle().equals(POST_SCREENED)) {
-            throw new CustomException(ExceptionCode.SCREENED_POST);
-        }
-
-        // 게시글 이미지 DTO
-        List<PostResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
-                .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
-                .collect(Collectors.toList());
-
-        // 댓글과 대댓글을 모두 담고 있는 Comment 리스트를 CommentDTO로 가공하면서, 대댓글이 댓글 밑으로 들어가게 처리
         List<Comment> comments = commentRepository.findByPostIdWithUserAndParentAndRemoved(postId);
         List<Long> likedCommentIds = commentLikeRepository.findCommentIdsByUserId(userId);
-        List<PostResponse.CommentDTO> commentDTOS = converCommentToCommentDTO(comments, likedCommentIds);
+        List<PostResponse.CommentDTO> commentDTOS = convertToCommentDTO(comments, likedCommentIds);
+        List<PostResponse.PostImageDTO> postImageDTOS = convertToPostImageDTOs(post);
 
-        // 좋아요 수
-        Long likeNum = getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, postId);
+        incrementPostViewCount(postId);
+        markNoticeAsReadIfApplicable(post, userId, postId);
 
-        // 좋아요 여부
-        boolean isLike = postLikeRepository.existsByPostIdAndUserId(postId, userId);
-
-        // 조회 수 증가
-        redisService.incrementValue(POST_VIEW_NUM_PREFIX, postId.toString(), 1L);
-
-        // 공지 사항의 경우, 게시글 읽음 여부를 저장 (1년동안)
-        if (post.getPostType().equals(PostType.NOTICE)) {
-            String key = POST_READ_KEY_PREFIX + userId;
-            redisService.addSetElement(key, postId, POST_READ_EXP);
-        }
-
-        return new PostResponse.FindPostByIdDTO(post.getUser().getNickname(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeNum, isMine, isLike, postImageDTOS, commentDTOS);
+        return new PostResponse.FindPostByIdDTO(post.getUser().getNickname(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), getCachedPostLikeNum(postId), post.isMyPost(userId), isPostLiked(postId, userId), postImageDTOS, commentDTOS);
     }
 
     @Transactional(readOnly = true)
@@ -774,11 +608,158 @@ public class PostService {
         }
     }
 
+    private void validatePostRequest(PostRequest.CreatePostDTO requestDTO) {
+        if (requestDTO.type() == PostType.ANSWER) {
+            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
+        }
+
+        if (requestDTO.type().isImageRequired() && requestDTO.images().isEmpty()) {
+            throw new CustomException(ExceptionCode.POST_MUST_CONTAIN_IMAGE);
+        }
+    }
+
+    private Post buildPostEntity(Long userId, List<PostImage> postImages, PostRequest.CreatePostDTO requestDTO) {
+        User userRef = entityManager.getReference(User.class, userId);
+        Post post = Post.builder()
+                .user(userRef)
+                .postType(requestDTO.type())
+                .title(requestDTO.title())
+                .content(requestDTO.content())
+                .build();
+
+        postImages.forEach(post::addImage); // 연관관계 설정
+        return post;
+    }
+
+    private List<PostImage> convertToPostImages(List<PostRequest.PostImageDTO> imageDTOs) {
+        return imageDTOs.stream()
+                .map(postImageDTO -> PostImage.builder()
+                        .imageURL(postImageDTO.imageURL())
+                        .build())
+                .toList();
+    }
+
+    private void initializeRedisValues(Long postId) {
+        // 좋아요의 경우, 3개월 동안만 좋아요를 할 수 있다
+        redisService.storeValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), "0", POST_EXP);
+        redisService.storeValue(POST_VIEW_NUM_PREFIX, postId.toString(), "0", POST_EXP);
+    }
+
+    private void validateQuestionPostType(Post questionPost) {
+        if (questionPost.isNotQuestionType()) {
+            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
+        }
+    }
+
+    private List<PostImage> buildPostImages(PostRequest.CreateAnswerDTO requestDTO) {
+        return requestDTO.images().stream()
+                .map(postImageDTO -> PostImage.builder()
+                        .imageURL(postImageDTO.imageURL())
+                        .build())
+                .toList();
+    }
+
+    private Post buildAnswerPost(Post questionPost, Long userId, List<PostImage> answerImages, PostRequest.CreateAnswerDTO requestDTO) {
+        User userRef = entityManager.getReference(User.class, userId);
+        Post answerPost = Post.builder()
+                .user(userRef)
+                .postType(PostType.ANSWER)
+                .title(questionPost.getTitle() + "(답변)")
+                .content(requestDTO.content())
+                .build();
+
+        answerImages.forEach(answerPost::addImage); // 연관관계 설정
+        questionPost.addChildPost(answerPost); // 부모-자식 관계 설정
+
+        return answerPost;
+    }
+
+    private void sendNewAnswerAlarm(Post questionPost, String answerContent, Long questionPostId) {
+        String content = "새로운 답변: " + answerContent;
+        String redirectURL = "/community/question/" + questionPostId;
+
+        createAlarm(questionPost.getUser().getId(), content, redirectURL, AlarmType.ANSWER);
+    }
+
+    private PostResponse.PostDTO convertToPostDTO(Post post) {
+        return new PostResponse.PostDTO(
+                post.getId(),
+                post.getWriterNickName(),
+                post.getTitle(),
+                post.getContent(),
+                post.getCreatedDate(),
+                post.getCommentNum(),
+                getCachedPostLikeNum(post.getId()),
+                post.getFirstImageURL(),
+                post.isBlocked()
+        );
+    }
+
+    private PostResponse.QnaDTO convertToQnaDTO(Post post) {
+        return new PostResponse.QnaDTO(
+                post.getId(),
+                post.getWriterNickName(),
+                post.getWriterProfileURL(),
+                post.getTitle(),
+                post.getContent(),
+                post.getCreatedDate(),
+                post.getAnswerNum(),
+                post.isBlocked()
+        );
+    }
+
+    private PostResponse.MyPostDTO convertToMyPostDTO(Post post) {
+        return new PostResponse.MyPostDTO(
+                post.getId(),
+                post.getWriterNickName(),
+                post.getTitle(),
+                post.getContent(),
+                post.getCreatedDate(),
+                post.getCommentNum(),
+                getCachedPostLikeNum(post.getId()),
+                post.getFirstImageURL(),
+                post.isBlocked(),
+                post.getPostTypeString()
+        );
+    }
+
+    private void validatePost(Post post) {
+        if (post.isQuestionType()) {
+            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
+        }
+
+        if (post.isScreened()) {
+            throw new CustomException(ExceptionCode.SCREENED_POST);
+        }
+    }
+
+    private List<PostResponse.PostImageDTO> convertToPostImageDTOs(Post post) {
+        return post.getPostImages().stream()
+                .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
+                .collect(Collectors.toList());
+    }
+
+    private boolean isPostLiked(Long postId, Long userId) {
+        return postLikeRepository.existsByPostIdAndUserId(postId, userId);
+    }
+
+    // 공지 사항의 경우, 게시글 읽음 여부를 저장 (1년동안)
+    private void markNoticeAsReadIfApplicable(Post post, Long userId, Long postId) {
+        if (post.isNoticeType()) {
+            String key = POST_READ_KEY_PREFIX + userId;
+            redisService.addSetElement(key, postId, POST_READ_EXP);
+        }
+    }
+
+    private void incrementPostViewCount(Long postId) {
+        redisService.incrementValue(POST_VIEW_NUM_PREFIX, postId.toString(), 1L);
+    }
+
     private void processPopularPosts(List<Post> posts, PostType postType) {
         // 포인트가 10이 넘으면 popularPosts 리스트에 추가
         List<Post> popularPosts = posts.stream()
                 .peek(post -> {
-                    double hotPoint = getCachedPostViewNum(POST_VIEW_NUM_PREFIX, post.getId(), post::getReadCnt) * 0.001 + post.getCommentNum() + getCachedPostLikeNum(POST_LIKE_NUM_KEY_PREFIX, post.getId()) * 5;
+                    double hotPoint = getCachedPostViewNum(POST_VIEW_NUM_PREFIX, post.getId(), post::getReadCnt) * 0.001 + post.getCommentNum() + getCachedPostLikeNum(post.getId()) * 5;
                     post.updateHotPoint(hotPoint);
                 })
                 .filter(post -> post.getHotPoint() > 10.0)
@@ -847,7 +828,8 @@ public class PostService {
         }
     }
 
-    private List<PostResponse.CommentDTO> converCommentToCommentDTO(List<Comment> comments, List<Long> likedComments) {
+    // 댓글과 대댓글을 모두 담고 있는 Comment 리스트를 CommentDTO로 가공하면서, 대댓글이 댓글 밑으로 들어가게 처리
+    private List<PostResponse.CommentDTO> convertToCommentDTO(List<Comment> comments, List<Long> likedComments) {
         // CommentDTO는 특정 게시글에 대한 모든 댓글 및 대댓글을 들고 있음
         List<PostResponse.CommentDTO> commentDTOS = new ArrayList<>();
 
@@ -899,12 +881,12 @@ public class PostService {
         return commentDTOS;
     }
 
-    private Long getCachedPostLikeNum(String keyPrefix, Long key) {
-        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
+    private Long getCachedPostLikeNum(Long key) {
+        Long likeNum = redisService.getValueInLongWithNull(PostService.POST_LIKE_NUM_KEY_PREFIX, key.toString());
 
         if (likeNum == null) {
             likeNum = postRepository.countLikesByPostId(key);
-            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), POST_EXP);
+            redisService.storeValue(PostService.POST_LIKE_NUM_KEY_PREFIX, key.toString(), likeNum.toString(), POST_EXP);
         }
 
         return likeNum;

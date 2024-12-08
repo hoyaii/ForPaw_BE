@@ -27,7 +27,7 @@ public class ShelterController {
     // 테스트 시에만 API를 열어둠
     @GetMapping("/shelters/import")
     public ResponseEntity<?> loadShelter(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        shelterService.updateShelterData();
+        shelterService.updateNewShelters();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
@@ -46,13 +46,13 @@ public class ShelterController {
     @GetMapping("/shelters/{shelterId}/animals")
     public ResponseEntity<?> findShelterAnimalsById(@PathVariable Long shelterId, @RequestParam String type,
                                                     @PageableDefault(size = 5, sort = SORT_BY_DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        ShelterResponse.FindShelterAnimalsByIdDTO responseDTO = shelterService.findShelterAnimalListById(shelterId, getUserIdSafely(userDetails), type, pageable);
+        ShelterResponse.FindShelterAnimalsByIdDTO responseDTO = shelterService.findAnimalsByShelter(shelterId, getUserIdSafely(userDetails), type, pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/shelters/addr")
     public ResponseEntity<?> findShelterListWithAddr() {
-        ShelterResponse.FindShelterListWithAddr responseDTO = shelterService.findShelterListWithAddr();
+        ShelterResponse.FindShelterListWithAddr responseDTO = shelterService.findShelterListWithAddress();
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

@@ -13,5 +13,9 @@ public enum PostType {
     QUESTION("궁금해요"),
     ANSWER("답변");
 
-    private String value;
+    private final String value;
+
+    public boolean isImageRequired() {
+        return this != QUESTION;
+    }
 }
