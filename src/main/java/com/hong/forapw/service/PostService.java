@@ -205,28 +205,19 @@ public class PostService {
 
         incrementPostViewCount(qnaId);
 
-        return new PostResponse.FindQnaByIdDTO(qna.getUser().getNickname(), qna.getUser().getProfileURL(), qna.getTitle(), qna.getContent(), qna.getCreatedDate(), qnaImageDTOS, answerDTOS, qna.isOwner(userId));
+        return new PostResponse.FindQnaByIdDTO(qna.getWriterNickName(), qna.getWriterProfileURL(), qna.getTitle(), qna.getContent(), qna.getCreatedDate(), qnaImageDTOS, answerDTOS, qna.isOwner(userId));
     }
 
     @Transactional(readOnly = true)
     public PostResponse.FindAnswerByIdDTO findAnswerById(Long postId, Long userId) {
-        // user, postImages를 패치조인 해서 조회
-        Post post = postRepository.findById(postId).orElseThrow(
+        Post answer = postRepository.findById(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
+        validateAnswer(answer);
 
-        boolean isMine = post.getUser().getId().equals(userId);
+        List<PostResponse.PostImageDTO> postImageDTOS = convertToPostImageDTOs(answer);
 
-        if (!post.getPostType().equals(PostType.ANSWER)) {
-            throw new CustomException(ExceptionCode.NOT_ANSWER_TYPE);
-        }
-
-        // 게시글 이미지 DTO
-        List<PostResponse.PostImageDTO> postImageDTOS = post.getPostImages().stream()
-                .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
-                .toList();
-
-        return new PostResponse.FindAnswerByIdDTO(post.getUser().getNickname(), post.getContent(), post.getCreatedDate(), postImageDTOS, isMine);
+        return new PostResponse.FindAnswerByIdDTO(answer.getWriterNickName(), answer.getContent(), answer.getCreatedDate(), postImageDTOS, answer.isOwner(userId));
     }
 
     @Transactional
@@ -703,7 +694,7 @@ public class PostService {
     private List<PostResponse.PostImageDTO> convertToPostImageDTOs(Post post) {
         return post.getPostImages().stream()
                 .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private boolean isPostLiked(Long postId, Long userId) {
@@ -749,6 +740,12 @@ public class PostService {
         return postImages.stream()
                 .map(image -> new PostResponse.PostImageDTO(image.getId(), image.getImageURL()))
                 .collect(Collectors.toList());
+    }
+
+    private void validateAnswer(Post post) {
+        if (post.isNotAnswerType()) {
+            throw new CustomException(ExceptionCode.NOT_ANSWER_TYPE);
+        }
     }
 
     private void processPopularPosts(List<Post> posts, PostType postType) {

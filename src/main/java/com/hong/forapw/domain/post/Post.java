@@ -124,10 +124,6 @@ public class Post extends TimeStamp {
         this.answerNum++;
     }
 
-    public boolean isNotQuestionType() {
-        return postType != PostType.QUESTION;
-    }
-
     public String getFirstImageURL() {
         return postImages.isEmpty() ? null : postImages.get(0).getImageURL();
     }
@@ -152,8 +148,16 @@ public class Post extends TimeStamp {
         return postType == PostType.QUESTION;
     }
 
+    public boolean isNotQuestionType() {
+        return postType != PostType.QUESTION;
+    }
+
     public boolean isNoticeType(){
         return postType == PostType.NOTICE;
+    }
+
+    public boolean isNotAnswerType(){
+        return postType != PostType.ANSWER;
     }
 
     public boolean isScreened(){
