@@ -39,38 +39,38 @@ public class PostController {
 
     @GetMapping("/posts/adoption")
     public ResponseEntity<?> findAdoptionPostList(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable) {
-        PostResponse.FindPostListDTO responseDTO = postService.findPostListByType(pageable, PostType.ADOPTION);
+        PostResponse.FindPostListDTO responseDTO = postService.findPostsByType(pageable, PostType.ADOPTION);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/fostering")
     public ResponseEntity<?> findFosteringPostList(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable) {
-        PostResponse.FindPostListDTO responseDTO = postService.findPostListByType(pageable, PostType.FOSTERING);
+        PostResponse.FindPostListDTO responseDTO = postService.findPostsByType(pageable, PostType.FOSTERING);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/question")
     public ResponseEntity<?> findQuestionList(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable) {
-        PostResponse.FindQnaListDTO responseDTO = postService.findQuestionList(pageable);
+        PostResponse.FindQnaListDTO responseDTO = postService.findQuestions(pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/popular")
     public ResponseEntity<?> findPopularPostList(@RequestParam PostType type,
                                                  @PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable) {
-        PostResponse.FindPostListDTO responseDTO = postService.findPopularPostListByType(pageable, type);
+        PostResponse.FindPostListDTO responseDTO = postService.findPopularPostsByType(pageable, type);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/myPost")
-    public ResponseEntity<?> findMyPostList(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        PostResponse.FindMyPostListDTO responseDTO = postService.findMyPostList(userDetails.getUser().getId(), pageable);
+    public ResponseEntity<?> findMyPosts(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        PostResponse.FindMyPostListDTO responseDTO = postService.findMyPosts(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/posts/myQuestion")
-    public ResponseEntity<?> findMyQuestionList(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        PostResponse.FindQnaListDTO responseDTO = postService.findMyQuestionList(userDetails.getUser().getId(), pageable);
+    public ResponseEntity<?> findMyQuestions(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        PostResponse.FindQnaListDTO responseDTO = postService.findMyQuestions(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -82,7 +82,7 @@ public class PostController {
 
     @GetMapping("/posts/myComment")
     public ResponseEntity<?> findMyCommentList(@PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        PostResponse.FindMyCommentListDTO responseDTO = postService.findMyCommentList(userDetails.getUser().getId(), pageable);
+        PostResponse.FindMyCommentListDTO responseDTO = postService.findMyComments(userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

@@ -91,7 +91,7 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindPostListDTO findPostListByType(Pageable pageable, PostType postType) {
+    public PostResponse.FindPostListDTO findPostsByType(Pageable pageable, PostType postType) {
         Page<Post> postPage = postRepository.findByPostTypeWithUser(postType, pageable);
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
                 .map(this::convertToPostDTO)
@@ -101,7 +101,7 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindPostListDTO findPopularPostListByType(Pageable pageable, PostType postType) {
+    public PostResponse.FindPostListDTO findPopularPostsByType(Pageable pageable, PostType postType) {
         Page<PopularPost> popularPostPage = popularPostRepository.findByPostTypeWithPost(postType, pageable);
         List<PostResponse.PostDTO> postDTOS = popularPostPage.getContent().stream()
                 .map(PopularPost::getPost)
@@ -112,7 +112,7 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindQnaListDTO findQuestionList(Pageable pageable) {
+    public PostResponse.FindQnaListDTO findQuestions(Pageable pageable) {
         Page<Post> questionPage = postRepository.findByPostTypeWithUser(PostType.QUESTION, pageable);
         List<PostResponse.QnaDTO> qnaDTOS = questionPage.getContent().stream()
                 .map(this::convertToQnaDTO)
@@ -122,7 +122,7 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindMyPostListDTO findMyPostList(Long userId, Pageable pageable) {
+    public PostResponse.FindMyPostListDTO findMyPosts(Long userId, Pageable pageable) {
         List<PostType> postTypes = List.of(PostType.ADOPTION, PostType.FOSTERING);
         Page<Post> postPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
         List<PostResponse.MyPostDTO> postDTOS = postPage.getContent().stream()
@@ -133,7 +133,7 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindQnaListDTO findMyQuestionList(Long userId, Pageable pageable) {
+    public PostResponse.FindQnaListDTO findMyQuestions(Long userId, Pageable pageable) {
         List<PostType> postTypes = List.of(PostType.QUESTION);
         Page<Post> questionPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
         List<PostResponse.QnaDTO> qnaDTOS = questionPage.getContent().stream()
@@ -155,7 +155,7 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostResponse.FindMyCommentListDTO findMyCommentList(Long userId, Pageable pageable) {
+    public PostResponse.FindMyCommentListDTO findMyComments(Long userId, Pageable pageable) {
         // Post를 패치조인하여 조회
         Page<Comment> commentPage = commentRepository.findByUserIdWithPost(userId, pageable);
 
