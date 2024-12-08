@@ -1,5 +1,6 @@
 package com.hong.forapw.domain.post;
 
+import com.hong.forapw.domain.Province;
 import com.hong.forapw.domain.TimeStamp;
 import com.hong.forapw.domain.user.User;
 import jakarta.persistence.*;
@@ -66,5 +67,25 @@ public class Comment extends TimeStamp {
         this.user = user;
         this.post = post;
         this.content = content;
+    }
+
+    public String getWriterNickname() {
+        return user.getNickname();
+    }
+
+    public String getWriterProfileURL(){
+        return user.getProfileURL();
+    }
+
+    public Province getWriterProvince(){
+        return user.getProvince();
+    }
+
+    public String getParentWriterNickname() {
+        return parent.getUser().getNickname();
+    }
+
+    public Long getParentId(){
+        return parent.getId();
     }
 }

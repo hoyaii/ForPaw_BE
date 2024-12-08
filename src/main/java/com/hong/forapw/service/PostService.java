@@ -828,62 +828,77 @@ public class PostService {
         }
     }
 
-    // 댓글과 대댓글을 모두 담고 있는 Comment 리스트를 CommentDTO로 가공하면서, 대댓글이 댓글 밑으로 들어가게 처리
-    private List<PostResponse.CommentDTO> convertToCommentDTO(List<Comment> comments, List<Long> likedComments) {
-        // CommentDTO는 특정 게시글에 대한 모든 댓글 및 대댓글을 들고 있음
-        List<PostResponse.CommentDTO> commentDTOS = new ArrayList<>();
-
-        // map을 사용해서 대댓글을 해당 부모 댓글에 추가
-        Map<Long, PostResponse.CommentDTO> commentMap = new HashMap<>();
+    private List<PostResponse.CommentDTO> convertToCommentDTO(List<Comment> comments, List<Long> likedCommentIds) {
+        List<PostResponse.CommentDTO> parentComments = new ArrayList<>();
+        Map<Long, PostResponse.CommentDTO> parentCommentMap = new HashMap<>(); // ParentComment Id로 빠르게 ParentComment를 찾을 용도
 
         comments.forEach(comment -> {
-            Long likeNum = getCachedCommentLikeNum(COMMENT_LIKE_NUM_KEY_PREFIX, comment.getId());
+            Long likeCount = getCachedCommentLikeNum(COMMENT_LIKE_NUM_KEY_PREFIX, comment.getId());
 
-            // 부모 댓글이면, CommentDTO로 변환해서 commentDTOS 리스트에 추가
-            if (comment.getParent() == null) {
-                PostResponse.CommentDTO commentDTO = new PostResponse.CommentDTO(
-                        comment.getId(),
-                        comment.getUser().getNickname(),
-                        comment.getUser().getProfileURL(),
-                        comment.getContent(),
-                        comment.getCreatedDate(),
-                        comment.getUser().getProvince(),
-                        likeNum,
-                        likedComments.contains(comment.getId()),
-                        new ArrayList<>());
-
-                commentDTOS.add(commentDTO);
-                commentMap.put(comment.getId(), commentDTO);
-            } else { // 자식 댓글이면, ReplyDTO로 변환해서 부모 댓글의 replies 리스트에 추가
-                if (comment.getRemovedAt() != null) { // 삭제된 대댓글
-                    // 마지막 대댓글이 아니면, '삭제된 댓글입니다' 처리. 마지막 대댓글이면, 보이지 않음
-                    if (!commentRepository.existsByParentIdAndDateAfter(comment.getParent().getId(), comment.getCreatedDate())) {
-                        return;
-                    }
-                }
-
-                PostResponse.ReplyDTO replyDTO = new PostResponse.ReplyDTO(
-                        comment.getId(),
-                        comment.getUser().getNickname(),
-                        comment.getUser().getProfileURL(),
-                        comment.getParent().getUser().getNickname(),
-                        comment.getContent(),
-                        comment.getCreatedDate(),
-                        comment.getUser().getProvince(),
-                        likeNum,
-                        likedComments.contains(comment.getId()));
-
-                Long parentId = comment.getParent().getId();
-                commentMap.get(parentId).replies().add(replyDTO);
+            if (isParentComment(comment)) {
+                PostResponse.CommentDTO parentCommentDTO = convertToParentCommentDTO(comment, likeCount, likedCommentIds.contains(comment.getId()));
+                parentComments.add(parentCommentDTO);
+                parentCommentMap.put(comment.getId(), parentCommentDTO);
+            } else {
+                handleChildComment(comment, parentCommentMap, likedCommentIds, likeCount);
             }
         });
 
-        return commentDTOS;
+        return parentComments;
+    }
+
+    private boolean isParentComment(Comment comment) {
+        return comment.getParent() == null;
+    }
+
+    private PostResponse.CommentDTO convertToParentCommentDTO(Comment comment, Long likeCount, boolean isLikedByUser) {
+        return new PostResponse.CommentDTO(
+                comment.getId(),
+                comment.getWriterNickname(),
+                comment.getWriterProfileURL(),
+                comment.getContent(),
+                comment.getCreatedDate(),
+                comment.getWriterProvince(),
+                likeCount,
+                isLikedByUser,
+                new ArrayList<>() // 답변을 담을 리스트
+        );
+    }
+
+    private void handleChildComment(Comment childComment, Map<Long, PostResponse.CommentDTO> parentCommentMap, List<Long> likedCommentIds, Long likeCount) {
+        if (isDeletedChildComment(childComment) && isLastChildComment(childComment)) {
+            return; // 삭제된 댓글이 마지막 대댓글이면, 보이지 않고. 반면, 마지막 대댓글이 아니면, '삭제된 댓글입니다' 처리
+        }
+
+        PostResponse.CommentDTO parentCommentDTO = parentCommentMap.get(childComment.getParentId());
+        PostResponse.ReplyDTO childCommentDTO = convertToReplyDTO(childComment, likedCommentIds.contains(childComment.getId()), likeCount);
+        parentCommentDTO.replies().add(childCommentDTO);
+    }
+
+    private boolean isDeletedChildComment(Comment comment) {
+        return comment.getRemovedAt() != null;
+    }
+
+    private boolean isLastChildComment(Comment comment) {
+        return !commentRepository.existsByParentIdAndDateAfter(comment.getParent().getId(), comment.getCreatedDate());
+    }
+
+    private PostResponse.ReplyDTO convertToReplyDTO(Comment childComment, boolean isLikedByUser, Long likeCount) {
+        return new PostResponse.ReplyDTO(
+                childComment.getId(),
+                childComment.getWriterNickname(),
+                childComment.getWriterProfileURL(),
+                childComment.getParentWriterNickname(),
+                childComment.getContent(),
+                childComment.getCreatedDate(),
+                childComment.getWriterProvince(),
+                likeCount,
+                isLikedByUser
+        );
     }
 
     private Long getCachedPostLikeNum(Long key) {
         Long likeNum = redisService.getValueInLongWithNull(PostService.POST_LIKE_NUM_KEY_PREFIX, key.toString());
-
         if (likeNum == null) {
             likeNum = postRepository.countLikesByPostId(key);
             redisService.storeValue(PostService.POST_LIKE_NUM_KEY_PREFIX, key.toString(), likeNum.toString(), POST_EXP);
