@@ -22,7 +22,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.RequestBody;
 
 
 import java.time.LocalDate;
@@ -277,7 +276,7 @@ public class PostService {
         );
         validatePostType(post);
 
-        Comment comment = buildComment(requestDTO.content(), userId, postId);
+        Comment comment = buildComment(requestDTO.content(), postId, userId);
         commentRepository.save(comment);
 
         incrementCommentCount(postId);
@@ -289,46 +288,20 @@ public class PostService {
 
     @Transactional
     public PostResponse.CreateCommentDTO createReply(PostRequest.CreateCommentDTO requestDTO, Long postId, Long userId, Long parentCommentId) {
-        // 존재하지 않는 댓글이면 에러
-        Comment parentComment = commentRepository.findByIdWithUser(parentCommentId).orElseThrow(
+        Comment parentComment = commentRepository.findByIdWithUserAndPost(parentCommentId).orElseThrow(
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
+        validateParentComment(parentComment, userId);
 
-        // 대댓글에 댓글을 달 수 없다
-        if (parentComment.getParent() != null) {
-            throw new CustomException(ExceptionCode.CANT_REPLY_TO_REPLY);
-        }
+        Comment reply = buildComment(requestDTO.content(), postId, userId);
+        parentComment.addChildComment(reply);
+        commentRepository.save(reply);
 
-        // 해당 글의 댓글이 아니면 에러
-        checkPostOwnComment(parentComment, postId);
+        incrementCommentCount(postId);
+        initializeCommentInRedis(reply.getId());
+        sendNewReplyAlarm(requestDTO.content(), postId, parentComment);
 
-        // 작성자
-        User userRef = entityManager.getReference(User.class, userId);
-        Post postRef = entityManager.getReference(Post.class, postId);
-
-        Comment comment = Comment.builder()
-                .user(userRef)
-                .post(postRef)
-                .content(requestDTO.content())
-                .build();
-
-        parentComment.addChildComment(comment);
-        commentRepository.save(comment);
-
-        // 게시글의 댓글 수 증가
-        postRepository.incrementCommentNum(postId);
-
-        // 3개월 동안만 좋아요를 할 수 있다
-        redisService.storeValue(COMMENT_LIKE_NUM_KEY_PREFIX, comment.getId().toString(), "0", POST_EXP);
-
-        // 알람 생성
-        String content = "새로운 대댓글: " + requestDTO.content();
-        PostType postType = postRepository.findPostTypeById(postId).get();
-        String queryParam = postType.name().toLowerCase();
-        String redirectURL = "/community/" + postId + "?type=" + queryParam;
-        createAlarm(parentComment.getUser().getId(), content, redirectURL, AlarmType.COMMENT);
-
-        return new PostResponse.CreateCommentDTO(comment.getId());
+        return new PostResponse.CreateCommentDTO(reply.getId());
     }
 
     @Transactional
@@ -339,7 +312,7 @@ public class PostService {
         );
 
         // 해당 글의 댓글이 아니면 에러
-        checkPostOwnComment(comment, postId);
+        validateCommentBelongsToPost(comment, postId);
 
         // 수정 권한 체크
         checkAccessorAuthority(comment.getUser().getId(), user);
@@ -356,7 +329,7 @@ public class PostService {
         );
 
         // 해당 글의 댓글이 아니면 에러
-        checkPostOwnComment(comment, postId);
+        validateCommentBelongsToPost(comment, postId);
 
         // 수정 권한 체크
         checkAccessorAuthority(comment.getUser().getId(), user);
@@ -403,7 +376,7 @@ public class PostService {
     }
 
     @Transactional
-    public void submitReport(@RequestBody PostRequest.SubmitReport requestDTO, Long userId) {
+    public void submitReport(PostRequest.SubmitReport requestDTO, Long userId) {
         User reporter = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
@@ -594,7 +567,7 @@ public class PostService {
         return new PostResponse.MyCommentDTO(
                 comment.getId(),
                 comment.getPostId(),
-                comment.getPostType(),
+                comment.getPostTypeValue(),
                 comment.getContent(),
                 comment.getCreatedDate(),
                 comment.getPostTitle(),
@@ -762,9 +735,9 @@ public class PostService {
         }
     }
 
-    private Comment buildComment(String content, Long userId, Long postId) {
-        User userReference = entityManager.getReference(User.class, userId);
+    private Comment buildComment(String content, Long postId, Long userId) {
         Post postReference = entityManager.getReference(Post.class, postId);
+        User userReference = entityManager.getReference(User.class, userId);
         return Comment.builder()
                 .user(userReference)
                 .post(postReference)
@@ -785,6 +758,23 @@ public class PostService {
         String queryParam = postType.name().toLowerCase();
         String redirectURL = "/community/" + postId + "?type=" + queryParam;
         createAlarm(writerId, content, redirectURL, AlarmType.COMMENT);
+    }
+
+    private void validateParentComment(Comment parentComment, Long postId) {
+        if (parentComment.isReply()) {
+            throw new CustomException(ExceptionCode.CANT_REPLY_TO_REPLY);
+        }
+
+        if (parentComment.isNotBelongToPost(postId)) {
+            throw new CustomException(ExceptionCode.NOT_POSTS_COMMENT);
+        }
+    }
+
+    private void sendNewReplyAlarm(String replyContent, Long postId, Comment parentComment) {
+        String content = "새로운 대댓글: " + replyContent;
+        String queryParam = parentComment.getPostTypeName().toLowerCase();
+        String redirectURL = "/community/" + postId + "?type=" + queryParam;
+        createAlarm(parentComment.getWriterId(), content, redirectURL, AlarmType.COMMENT);
     }
 
     private void processPopularPosts(List<Post> posts, PostType postType) {
@@ -840,10 +830,8 @@ public class PostService {
         }
     }
 
-    private void checkPostOwnComment(Comment comment, Long postId) {
-        Long commentPostId = comment.getPost().getId();
-
-        if (!commentPostId.equals(postId)) {
+    private void validateCommentBelongsToPost(Comment comment, Long postId) {
+        if (!comment.getPostId().equals(postId)) {
             throw new CustomException(ExceptionCode.NOT_POSTS_COMMENT);
         }
     }
@@ -855,7 +843,7 @@ public class PostService {
         comments.forEach(comment -> {
             Long likeCount = getCachedCommentLikeNum(comment.getId());
 
-            if (comment.isParent()) {
+            if (comment.isNotReply()) {
                 PostResponse.CommentDTO parentCommentDTO = convertToParentCommentDTO(comment, likeCount, likedCommentIds.contains(comment.getId()));
                 parentComments.add(parentCommentDTO);
                 parentCommentMap.put(comment.getId(), parentCommentDTO);

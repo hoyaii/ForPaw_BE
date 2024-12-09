@@ -101,16 +101,32 @@ public class Comment extends TimeStamp {
         return post.getCommentNum();
     }
 
-    public String getPostType(){
+    public String getPostTypeValue(){
         return post.getPostType().getValue();
+    }
+
+    public String getPostTypeName(){
+        return post.getPostType().name();
+    }
+
+    public Long getWriterId() {
+        return user.getId();
     }
 
     public boolean isPostBlocked(){
         return post.isBlocked();
     }
 
-    public boolean isParent() {
+    public boolean isNotReply() {
         return parent == null;
+    }
+
+    public boolean isReply() {
+        return parent != null;
+    }
+
+    public boolean isNotBelongToPost(Long postId) {
+        return !this.post.getId().equals(postId);
     }
 
     public boolean isDeleted() {

@@ -25,6 +25,10 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     @Query("SELECT c FROM Comment c WHERE c.id = :commentId AND c.removedAt IS NULL")
     Optional<Comment> findByIdWithUser(@Param("commentId") Long commentId);
 
+    @EntityGraph(attributePaths = {"user", "post"})
+    @Query("SELECT c FROM Comment c WHERE c.id = :commentId AND c.removedAt IS NULL")
+    Optional<Comment> findByIdWithUserAndPost(@Param("commentId") Long commentId);
+
     @Query("SELECT u FROM Comment c " +
             "JOIN c.user u " +
             "WHERE c.id = :commentId AND c.removedAt IS NULL")
