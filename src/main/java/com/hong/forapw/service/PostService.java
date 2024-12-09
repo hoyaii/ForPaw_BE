@@ -16,6 +16,7 @@ import com.hong.forapw.repository.ReportRepository;
 import com.hong.forapw.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RLock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -30,6 +31,7 @@ import java.time.LocalTime;
 import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -55,10 +57,11 @@ public class PostService {
     public static final Long POST_READ_EXP = 60L * 60 * 24 * 360; // 1년
     private static final String POST_SCREENED = "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.";
     private static final String POST_READ_KEY_PREFIX = "user:readPosts:";
-    private static final String POST_LIKE_NUM_KEY_PREFIX = "postLikeNum";
     private static final String POST_VIEW_NUM_PREFIX = "postViewNum";
     private static final String COMMENT_LIKE_NUM_KEY_PREFIX = "commentLikeNum";
     private static final String COMMENT_DELETED = "삭제된 댓글 입니다.";
+    private static final String POST_LIKE_NUM_KEY_PREFIX = "post:like:count:";
+    private static final String USER_LIKED_SET_KEY_PREFIX = "user:%s:liked_posts";
 
     @Transactional
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId) {
@@ -252,32 +255,18 @@ public class PostService {
 
     @Transactional
     public void likePost(Long postId, Long userId) {
-        // 존재하지 않는 글이면 에러
-        Long postWriterId = postRepository.findUserIdById(postId).orElseThrow(
+        Long postOwnerId = postRepository.findUserIdById(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
+        validateNotSelfLike(postOwnerId, userId);
 
-        // 자기 자신의 글에는 좋아요를 할 수 없다.
-        if (postWriterId.equals(userId)) {
-            throw new CustomException(ExceptionCode.CANT_LIKE_MY_POST);
-        }
-
-        Optional<PostLike> postLikeOP = postLikeRepository.findByUserIdAndPostId(userId, postId);
-
-        // 이미 좋아요를 눌렀다면, 취소하는 액션이니 게시글의 좋아요 수를 감소시키고 하고, postLike 엔티티 삭제
-        if (postLikeOP.isPresent()) {
-            checkExpiration(postLikeOP.get().getCreatedDate());
-
-            postLikeRepository.delete(postLikeOP.get());
-            redisService.decrementValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), 1L);
-        } else { // 좋아요를 누르지 않았다면, 좋아요 수를 증가키고, 엔티티 저장
-            User userRef = entityManager.getReference(User.class, userId);
-            Post postRef = entityManager.getReference(Post.class, postId);
-
-            PostLike postLike = PostLike.builder().user(userRef).post(postRef).build();
-
-            postLikeRepository.save(postLike);
-            redisService.incrementValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), 1L);
+        String lockKey = buildLockKey(postId);
+        RLock lock = redisService.getLock(lockKey);
+        try {
+            acquireLock(lock);
+            processPostLike(postId, userId);
+        } finally {
+            unlockSafely(lock);
         }
     }
 
@@ -728,6 +717,67 @@ public class PostService {
         Post question = answer.getParent();
         if (question != null) {
             postRepository.decrementAnswerNum(question.getId());
+        }
+    }
+
+    private void validateNotSelfLike(Long postOwnerId, Long userId) {
+        if (postOwnerId.equals(userId)) {
+            throw new CustomException(ExceptionCode.CANT_LIKE_MY_POST);
+        }
+    }
+
+    private String buildLockKey(Long postId) {
+        return "post:" + postId + ":like:lock";
+    }
+
+    private void acquireLock(RLock lock) {
+        try {
+            if (!lock.tryLock(2, 5, TimeUnit.SECONDS)) { // 대기시간 2초, 락 자동해제 5초
+                throw new CustomException(ExceptionCode.LOCK_ACQUIRE_FAIL);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new CustomException(ExceptionCode.LOCK_ACQUIRE_INTERRUPT);
+        }
+    }
+
+    private void processPostLike(Long postId, Long userId) {
+        String userLikedSetKey = getUserLikedSetKey(userId);
+        boolean isAlreadyLiked = redisService.isMemberOfSet(userLikedSetKey, postId.toString());
+
+        if (isAlreadyLiked) {
+            cancelPostLike(postId, userId, userLikedSetKey);
+        } else {
+            addPostLike(postId, userId, userLikedSetKey);
+        }
+    }
+
+    private String getUserLikedSetKey(Long userId) {
+        return String.format(USER_LIKED_SET_KEY_PREFIX, userId);
+    }
+
+    private void addPostLike(Long postId, Long userId, String userLikedSetKey) {
+        User userRef = entityManager.getReference(User.class, userId);
+        Post postRef = entityManager.getReference(Post.class, postId);
+
+        PostLike postLike = PostLike.builder().user(userRef).post(postRef).build();
+        postLikeRepository.save(postLike);
+
+        redisService.addSetElement(userLikedSetKey, postId);
+        redisService.incrementValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), 1L);
+    }
+
+    private void cancelPostLike(Long postId, Long userId, String userLikedSetKey) {
+        Optional<PostLike> postLikeOP = postLikeRepository.findByUserIdAndPostId(userId, postId);
+        postLikeOP.ifPresent(postLikeRepository::delete);
+
+        redisService.removeSetElement(userLikedSetKey, postId.toString());
+        redisService.decrementValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), 1L);
+    }
+
+    private void unlockSafely(RLock lock) {
+        if (lock.isHeldByCurrentThread()) {
+            lock.unlock();
         }
     }
 
