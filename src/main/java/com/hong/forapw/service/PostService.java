@@ -71,7 +71,7 @@ public class PostService {
         Post post = buildPostEntity(userId, postImages, requestDTO);
         postRepository.save(post);
 
-        initializeRedisValues(post.getId());
+        initializePostInRedis(post.getId());
 
         return new PostResponse.CreatePostDTO(post.getId());
     }
@@ -272,42 +272,17 @@ public class PostService {
 
     @Transactional
     public PostResponse.CreateCommentDTO createComment(PostRequest.CreateCommentDTO requestDTO, Long userId, Long postId) {
-        // 존재하지 않는 글이면 에러
-        Long writerId = postRepository.findUserIdById(postId).orElseThrow(
+        Post post = postRepository.findByIdWithUser(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
+        validatePostType(post);
 
-        // 질문글에는 댓글을 달 수 없다 (댓글 대신 답변이 달리니)
-        PostType postType = postRepository.findPostTypeById(postId).orElseThrow(
-                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
-        );
-
-        if (postType.equals(PostType.QUESTION)) {
-            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
-        }
-
-        User userRef = entityManager.getReference(User.class, userId);
-        Post postRef = entityManager.getReference(Post.class, postId);
-
-        Comment comment = Comment.builder()
-                .user(userRef)
-                .post(postRef)
-                .content(requestDTO.content())
-                .build();
-
+        Comment comment = buildComment(requestDTO.content(), userId, postId);
         commentRepository.save(comment);
 
-        // 게시글의 댓글 수 증가
-        postRepository.incrementCommentNum(postId);
-
-        // 3개월 동안만 좋아요를 할 수 있다
-        redisService.storeValue(COMMENT_LIKE_NUM_KEY_PREFIX, comment.getId().toString(), "0", POST_EXP);
-
-        // 알람 생성
-        String content = "새로운 댓글: " + requestDTO.content();
-        String queryParam = postType.name().toLowerCase();
-        String redirectURL = "/community/" + postId + "?type=" + queryParam;
-        createAlarm(writerId, content, redirectURL, AlarmType.COMMENT);
+        incrementCommentCount(postId);
+        initializeCommentInRedis(comment.getId());
+        sendNewCommentAlarm(requestDTO.content(), postId, post.getPostType(), post.getWriterId());
 
         return new PostResponse.CreateCommentDTO(comment.getId());
     }
@@ -531,7 +506,7 @@ public class PostService {
                 .toList();
     }
 
-    private void initializeRedisValues(Long postId) {
+    private void initializePostInRedis(Long postId) {
         // 좋아요의 경우, 3개월 동안만 좋아요를 할 수 있다
         redisService.storeValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), "0", POST_EXP);
         redisService.storeValue(POST_VIEW_NUM_PREFIX, postId.toString(), "0", POST_EXP);
@@ -779,6 +754,37 @@ public class PostService {
         if (lock.isHeldByCurrentThread()) {
             lock.unlock();
         }
+    }
+
+    private void validatePostType(Post post) {
+        if (post.isQuestionType()) {
+            throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
+        }
+    }
+
+    private Comment buildComment(String content, Long userId, Long postId) {
+        User userReference = entityManager.getReference(User.class, userId);
+        Post postReference = entityManager.getReference(Post.class, postId);
+        return Comment.builder()
+                .user(userReference)
+                .post(postReference)
+                .content(content)
+                .build();
+    }
+
+    private void incrementCommentCount(Long postId) {
+        postRepository.incrementCommentNum(postId);
+    }
+
+    private void initializeCommentInRedis(Long commentId) {
+        redisService.storeValue(COMMENT_LIKE_NUM_KEY_PREFIX, commentId.toString(), "0", POST_EXP);
+    }
+
+    private void sendNewCommentAlarm(String commentContent, Long postId, PostType postType, Long writerId) {
+        String content = "새로운 댓글: " + commentContent;
+        String queryParam = postType.name().toLowerCase();
+        String redirectURL = "/community/" + postId + "?type=" + queryParam;
+        createAlarm(writerId, content, redirectURL, AlarmType.COMMENT);
     }
 
     private void processPopularPosts(List<Post> posts, PostType postType) {

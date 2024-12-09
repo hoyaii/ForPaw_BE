@@ -128,6 +128,10 @@ public class Post extends TimeStamp {
         return postImages.isEmpty() ? null : postImages.get(0).getImageURL();
     }
 
+    public Long getWriterId() {
+        return user.getId();
+    }
+
     public String getWriterNickName() {
         return user.getNickname();
     }
@@ -148,7 +152,7 @@ public class Post extends TimeStamp {
         return user.getId().equals(userId);
     }
 
-    public boolean isQuestionType(){
+    public boolean isQuestionType() {
         return postType == PostType.QUESTION;
     }
 
@@ -156,15 +160,15 @@ public class Post extends TimeStamp {
         return postType != PostType.QUESTION;
     }
 
-    public boolean isNoticeType(){
+    public boolean isNoticeType() {
         return postType == PostType.NOTICE;
     }
 
-    public boolean isNotAnswerType(){
+    public boolean isNotAnswerType() {
         return postType != PostType.ANSWER;
     }
 
-    public boolean isScreened(){
+    public boolean isScreened() {
         return title.equals("이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.");
     }
 }
