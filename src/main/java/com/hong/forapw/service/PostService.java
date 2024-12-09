@@ -332,11 +332,9 @@ public class PostService {
         LocalDateTime startOfToday = now.atStartOfDay();
         LocalDateTime endOfToday = now.atTime(LocalTime.MAX);
 
-        // 인기 입양 글 업데이트
         List<Post> adoptionPosts = postRepository.findByDateAndType(startOfToday, endOfToday, PostType.ADOPTION);
         processPopularPosts(adoptionPosts, PostType.ADOPTION);
 
-        // 인기 임시보호 글 업데이트
         List<Post> fosteringPosts = postRepository.findByDateAndType(startOfToday, endOfToday, PostType.FOSTERING);
         processPopularPosts(fosteringPosts, PostType.FOSTERING);
     }
@@ -387,8 +385,8 @@ public class PostService {
                 .toList();
     }
 
+    /** 좋아요의 경우, 3개월 동안만 좋아요를 할 수 있다.*/
     private void initializePostInRedis(Long postId) {
-        // 좋아요의 경우, 3개월 동안만 좋아요를 할 수 있다
         redisService.storeValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), "0", POST_EXP);
         redisService.storeValue(POST_VIEW_NUM_PREFIX, postId.toString(), "0", POST_EXP);
     }
@@ -503,7 +501,7 @@ public class PostService {
         return postLikeRepository.existsByPostIdAndUserId(postId, userId);
     }
 
-    // 공지 사항의 경우, 게시글 읽음 여부를 저장 (1년동안)
+    /** 공지 사항의 경우, 게시글 읽음 여부를 저장 (1년동안) */
     private void markNoticeAsReadIfApplicable(Post post, Long userId, Long postId) {
         if (post.isNoticeType()) {
             String key = POST_READ_KEY_PREFIX + userId;
@@ -669,28 +667,44 @@ public class PostService {
     }
 
     private void processPopularPosts(List<Post> posts, PostType postType) {
-        // 포인트가 10이 넘으면 popularPosts 리스트에 추가
-        List<Post> popularPosts = posts.stream()
-                .peek(post -> {
-                    double hotPoint = getCachedPostViewNum(post.getId(), post::getReadCnt) * 0.001 + post.getCommentNum() + getCachedPostLikeNum(post.getId()) * 5;
-                    post.updateHotPoint(hotPoint);
-                })
+        posts.forEach(this::updatePostHotPoint);
+
+        List<Post> popularPosts = selectPopularPosts(posts);
+        fillPopularPostsIfNecessary(posts, popularPosts);
+        savePopularPosts(popularPosts, postType);
+    }
+
+    private void updatePostHotPoint(Post post) {
+        double hotPoint = calculateHotPoint(post);
+        post.updateHotPoint(hotPoint);
+    }
+
+    private double calculateHotPoint(Post post) {
+        double viewPoints = getCachedPostViewNum(post.getId(), post::getReadCnt) * 0.001;
+        double commentPoints = post.getCommentNum();
+        double likePoints = getCachedPostLikeNum(post.getId()) * 5;
+        return viewPoints + commentPoints + likePoints;
+    }
+
+    private List<Post> selectPopularPosts(List<Post> posts) {
+        return posts.stream()
                 .filter(post -> post.getHotPoint() > 10.0)
                 .collect(Collectors.toList());
+    }
 
-        // popularPosts 리스트의 개수가 5개 미만이라면, 5개가 되도록 채우기
-        if (popularPosts.size() < 5) {
-            List<Post> remainingPosts = posts.stream()
-                    .filter(post -> !popularPosts.contains(post))
-                    .sorted(Comparator.comparingDouble(Post::getHotPoint).reversed())
-                    .toList();
+    private void fillPopularPostsIfNecessary(List<Post> allPosts, List<Post> popularPosts) {
+        if (popularPosts.size() >= 5) return;
+        List<Post> remainingPosts = allPosts.stream()
+                .filter(post -> !popularPosts.contains(post))
+                .sorted(Comparator.comparingDouble(Post::getHotPoint).reversed())
+                .toList();
 
-            popularPosts.addAll(remainingPosts.stream()
-                    .limit(5 - popularPosts.size())
-                    .toList());
-        }
+        popularPosts.addAll(remainingPosts.stream()
+                .limit(5 - popularPosts.size())
+                .toList());
+    }
 
-        // popularPosts 리스트의 post는 popularPost 엔티티로 저장됨
+    private void savePopularPosts(List<Post> popularPosts, PostType postType) {
         popularPosts.forEach(post -> {
             PopularPost popularPost = PopularPost.builder()
                     .post(post)
@@ -704,7 +718,6 @@ public class PostService {
         if (accessor.isAdmin()) {
             return;
         }
-
         if (accessor.isNotSameUser(writerId)) {
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
@@ -733,7 +746,6 @@ public class PostService {
 
         comments.forEach(comment -> {
             Long likeCount = getCachedCommentLikeNum(comment.getId());
-
             if (comment.isNotReply()) {
                 PostResponse.CommentDTO parentCommentDTO = convertToParentCommentDTO(comment, likeCount, likedCommentIds.contains(comment.getId()));
                 parentComments.add(parentCommentDTO);
