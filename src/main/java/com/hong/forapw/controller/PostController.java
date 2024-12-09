@@ -6,6 +6,7 @@ import com.hong.forapw.core.security.CustomUserDetails;
 import com.hong.forapw.core.utils.ApiUtils;
 import com.hong.forapw.domain.post.PostType;
 import com.hong.forapw.service.PostService;
+import com.hong.forapw.service.like.LikeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 public class PostController {
 
     private final PostService postService;
+    private final LikeService likeService;
     private static final String SORT_BY_ID = "id";
 
     @PostMapping("/posts")
@@ -124,7 +126,7 @@ public class PostController {
 
     @PostMapping("/posts/{postId}/like")
     public ResponseEntity<?> likePost(@PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        postService.likePost(postId, userDetails.getUser().getId());
+        likeService.likePost(postId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
@@ -154,7 +156,7 @@ public class PostController {
 
     @PostMapping("/posts/{postId}/comments/{commentId}/like")
     public ResponseEntity<?> likeComment(@PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        postService.likeComment(commentId, userDetails.getUser().getId());
+        likeService.likeComment(commentId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 

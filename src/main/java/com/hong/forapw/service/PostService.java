@@ -28,7 +28,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -57,10 +56,9 @@ public class PostService {
     private static final String POST_SCREENED = "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.";
     private static final String POST_READ_KEY_PREFIX = "user:readPosts:";
     private static final String POST_VIEW_NUM_PREFIX = "postViewNum";
-    private static final String COMMENT_LIKE_NUM_KEY_PREFIX = "commentLikeNum";
     private static final String COMMENT_DELETED = "삭제된 댓글 입니다.";
     private static final String POST_LIKE_NUM_KEY_PREFIX = "post:like:count:";
-    private static final String USER_LIKED_SET_KEY_PREFIX = "user:%s:liked_posts";
+    private static final String COMMENT_LIKE_NUM_KEY_PREFIX = "comment:like:count:";
 
     @Transactional
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId) {
@@ -253,23 +251,6 @@ public class PostService {
     }
 
     @Transactional
-    public void likePost(Long postId, Long userId) {
-        Long postOwnerId = postRepository.findUserIdById(postId).orElseThrow(
-                () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
-        );
-        validateNotSelfLike(postOwnerId, userId);
-
-        String lockKey = buildLockKey(postId);
-        RLock lock = redisService.getLock(lockKey);
-        try {
-            acquireLock(lock);
-            processPostLike(postId, userId);
-        } finally {
-            unlockSafely(lock);
-        }
-    }
-
-    @Transactional
     public PostResponse.CreateCommentDTO createComment(PostRequest.CreateCommentDTO requestDTO, Long userId, Long postId) {
         Post post = postRepository.findByIdWithUser(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
@@ -331,37 +312,6 @@ public class PostService {
     }
 
     @Transactional
-    public void likeComment(Long commentId, Long userId) {
-        // 존재하지 않는 댓글인지 체크
-        Long commentWriterId = commentRepository.findUserIdById(commentId).orElseThrow(
-                () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
-        );
-
-        // 자기 자신의 댓글에는 좋아요를 할 수 없다.
-        if (commentWriterId.equals(userId)) {
-            throw new CustomException(ExceptionCode.CANT_LIKE_MY_COMMENT);
-        }
-
-        Optional<CommentLike> commentLikeOP = commentLikeRepository.findByUserIdAndCommentId(userId, commentId);
-
-        // 이미 좋아요를 눌렀다면, 취소하는 액션이니 게시글의 좋아요 수를 감소시키고 하고, postLike 엔티티 삭제
-        if (commentLikeOP.isPresent()) {
-            checkExpiration(commentLikeOP.get().getCreatedDate());
-
-            commentLikeRepository.delete(commentLikeOP.get());
-            redisService.decrementValue(COMMENT_LIKE_NUM_KEY_PREFIX, commentId.toString(), 1L);
-        } else { // 좋아요를 누르지 않았다면, 좋아요 수를 증가키고, 엔티티 저장
-            User userRef = entityManager.getReference(User.class, userId);
-            Comment commentRef = entityManager.getReference(Comment.class, commentId);
-
-            CommentLike commentLike = CommentLike.builder().user(userRef).comment(commentRef).build();
-
-            commentLikeRepository.save(commentLike);
-            redisService.incrementValue(COMMENT_LIKE_NUM_KEY_PREFIX, commentId.toString(), 1L);
-        }
-    }
-
-    @Transactional
     public void submitReport(PostRequest.SubmitReport requestDTO, Long userId) {
         User reporter = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
@@ -394,7 +344,7 @@ public class PostService {
     @Scheduled(cron = "0 25 0 * * *")
     @Transactional
     public void syncViewNum() {
-        LocalDateTime oneWeeksAgo = LocalDateTime.now().minus(1, ChronoUnit.WEEKS);
+        LocalDateTime oneWeeksAgo = LocalDateTime.now().minusWeeks(1);
         List<Post> posts = postRepository.findPostIdsWithinDate(oneWeeksAgo);
 
         for (Post post : posts) {
@@ -623,67 +573,6 @@ public class PostService {
         Post question = answer.getParent();
         if (question != null) {
             postRepository.decrementAnswerNum(question.getId());
-        }
-    }
-
-    private void validateNotSelfLike(Long postOwnerId, Long userId) {
-        if (postOwnerId.equals(userId)) {
-            throw new CustomException(ExceptionCode.CANT_LIKE_MY_POST);
-        }
-    }
-
-    private String buildLockKey(Long postId) {
-        return "post:" + postId + ":like:lock";
-    }
-
-    private void acquireLock(RLock lock) {
-        try {
-            if (!lock.tryLock(2, 5, TimeUnit.SECONDS)) { // 대기시간 2초, 락 자동해제 5초
-                throw new CustomException(ExceptionCode.LOCK_ACQUIRE_FAIL);
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new CustomException(ExceptionCode.LOCK_ACQUIRE_INTERRUPT);
-        }
-    }
-
-    private void processPostLike(Long postId, Long userId) {
-        String userLikedSetKey = getUserLikedSetKey(userId);
-        boolean isAlreadyLiked = redisService.isMemberOfSet(userLikedSetKey, postId.toString());
-
-        if (isAlreadyLiked) {
-            cancelPostLike(postId, userId, userLikedSetKey);
-        } else {
-            addPostLike(postId, userId, userLikedSetKey);
-        }
-    }
-
-    private String getUserLikedSetKey(Long userId) {
-        return String.format(USER_LIKED_SET_KEY_PREFIX, userId);
-    }
-
-    private void addPostLike(Long postId, Long userId, String userLikedSetKey) {
-        User userRef = entityManager.getReference(User.class, userId);
-        Post postRef = entityManager.getReference(Post.class, postId);
-
-        PostLike postLike = PostLike.builder().user(userRef).post(postRef).build();
-        postLikeRepository.save(postLike);
-
-        redisService.addSetElement(userLikedSetKey, postId);
-        redisService.incrementValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), 1L);
-    }
-
-    private void cancelPostLike(Long postId, Long userId, String userLikedSetKey) {
-        Optional<PostLike> postLikeOP = postLikeRepository.findByUserIdAndPostId(userId, postId);
-        postLikeOP.ifPresent(postLikeRepository::delete);
-
-        redisService.removeSetElement(userLikedSetKey, postId.toString());
-        redisService.decrementValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), 1L);
-    }
-
-    private void unlockSafely(RLock lock) {
-        if (lock.isHeldByCurrentThread()) {
-            lock.unlock();
         }
     }
 
