@@ -366,40 +366,12 @@ public class PostService {
         User reporter = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
+        validateReportRequest(requestDTO.contentId(), requestDTO.contentType(), userId);
 
-        // 이미 신고함
-        if (reportRepository.existsByReporterIdAndContentId(userId, requestDTO.contentId(), requestDTO.contentType())) {
-            throw new CustomException(ExceptionCode.ALREADY_REPORTED);
-        }
+        User reportedUser = findOffender(requestDTO);
+        validateNotSelfReport(userId, reportedUser);
 
-        User offender;
-        if (requestDTO.contentType() == ContentType.POST) {
-            offender = postRepository.findUserById(requestDTO.contentId()).orElseThrow(
-                    () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
-            );
-        } else if (requestDTO.contentType() == ContentType.COMMENT) {
-            offender = commentRepository.findUserById(requestDTO.contentId()).orElseThrow(
-                    () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
-            );
-        } else { // 잘못된 컨텐츠 타입
-            throw new CustomException(ExceptionCode.WRONG_REPORT_TARGET);
-        }
-
-        // 자신의 컨텐츠에는 신고할 수 없음
-        if (offender.getId().equals(userId)) {
-            throw new CustomException(ExceptionCode.CANNOT_REPORT_OWN_CONTENT);
-        }
-
-        Report report = Report.builder()
-                .reporter(reporter)
-                .offender(offender)
-                .contentType(requestDTO.contentType())
-                .contentId(requestDTO.contentId())
-                .type(requestDTO.reportType())
-                .status(ReportStatus.PROCESSING)
-                .reason(requestDTO.reason())
-                .build();
-
+        Report report = buildReport(requestDTO, reporter, reportedUser);
         reportRepository.save(report);
     }
 
@@ -766,6 +738,45 @@ public class PostService {
     private void decrementCommentCount(Comment comment, Long postId) {
         long replyCount = comment.getReplyCount();
         postRepository.decrementCommentNum(postId, 1L + replyCount);
+    }
+
+    private void validateReportRequest(Long contentId, ContentType contentType, Long userId) {
+        if (reportRepository.existsByReporterIdAndContentId(userId, contentId, contentType)) {
+            throw new CustomException(ExceptionCode.ALREADY_REPORTED);
+        }
+
+        if (contentType.isNotValidTypeForReport()) {
+            throw new CustomException(ExceptionCode.WRONG_REPORT_TARGET);
+        }
+    }
+
+    private Report buildReport(PostRequest.SubmitReport requestDTO, User reporter, User reportedUser) {
+        return Report.builder()
+                .reporter(reporter)
+                .offender(reportedUser)
+                .contentType(requestDTO.contentType())
+                .contentId(requestDTO.contentId())
+                .type(requestDTO.reportType())
+                .status(ReportStatus.PROCESSING)
+                .reason(requestDTO.reason())
+                .build();
+    }
+
+    private User findOffender(PostRequest.SubmitReport requestDTO) {
+        if (requestDTO.contentType() == ContentType.POST) {
+            return postRepository.findUserById(requestDTO.contentId())
+                    .orElseThrow(() -> new CustomException(ExceptionCode.POST_NOT_FOUND));
+        } else if (requestDTO.contentType() == ContentType.COMMENT) {
+            return commentRepository.findUserById(requestDTO.contentId())
+                    .orElseThrow(() -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND));
+        }
+        throw new CustomException(ExceptionCode.WRONG_REPORT_TARGET);
+    }
+
+    private void validateNotSelfReport(Long userId, User reportedUser) {
+        if (reportedUser.isSameUser(userId)) {
+            throw new CustomException(ExceptionCode.CANNOT_REPORT_OWN_CONTENT);
+        }
     }
 
     private void processPopularPosts(List<Post> posts, PostType postType) {
