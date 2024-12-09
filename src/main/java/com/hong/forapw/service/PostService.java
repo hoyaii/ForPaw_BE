@@ -216,7 +216,7 @@ public class PostService {
         Post post = postRepository.findByIdWithUser(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
-        checkAccessorAuthority(post.getUser().getId(), user);
+        checkAccessorAuthority(user, post.getWriterId());
 
         post.updateContent(requestDTO.title(), requestDTO.content());
 
@@ -229,7 +229,7 @@ public class PostService {
         Post post = postRepository.findByIdWithUserAndParent(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
-        checkAccessorAuthority(post.getUser().getId(), user);
+        checkAccessorAuthority(user, post.getWriterId());
 
         postLikeRepository.deleteAllByPostId(postId);
         commentLikeRepository.deleteByPostId(postId);
@@ -245,7 +245,7 @@ public class PostService {
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
         validateAnswer(answer);
-        checkAccessorAuthority(answer.getUser().getId(), user);
+        checkAccessorAuthority(user, answer.getWriterId());
 
         decrementAnswerCount(answer);
         postImageRepository.deleteByPostId(answerId);
@@ -288,7 +288,7 @@ public class PostService {
 
     @Transactional
     public PostResponse.CreateCommentDTO createReply(PostRequest.CreateCommentDTO requestDTO, Long postId, Long userId, Long parentCommentId) {
-        Comment parentComment = commentRepository.findByIdWithUserAndPost(parentCommentId).orElseThrow(
+        Comment parentComment = commentRepository.findByIdWithPost(parentCommentId).orElseThrow(
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
         validateParentComment(parentComment, userId);
@@ -306,42 +306,28 @@ public class PostService {
 
     @Transactional
     public void updateComment(PostRequest.UpdateCommentDTO requestDTO, Long postId, Long commentId, User user) {
-        // 존재하지 않는 댓글이면 에러
-        Comment comment = commentRepository.findByIdWithUser(commentId).orElseThrow(
+        Comment comment = commentRepository.findById(commentId).orElseThrow(
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
-
-        // 해당 글의 댓글이 아니면 에러
         validateCommentBelongsToPost(comment, postId);
-
-        // 수정 권한 체크
-        checkAccessorAuthority(comment.getUser().getId(), user);
+        checkAccessorAuthority(user, comment.getWriterId());
 
         comment.updateContent(requestDTO.content());
     }
 
-    // soft delete를 구현하기 전에는 부모 댓글 삭제시, 대댓글까지 모두 삭제 되도록 구현
     @Transactional
     public void deleteComment(Long postId, Long commentId, User user) {
-        // 존재하지 않는 댓글이면 에러
-        Comment comment = commentRepository.findByIdWithUser(commentId).orElseThrow(
+        Comment comment = commentRepository.findById(commentId).orElseThrow(
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
-
-        // 해당 글의 댓글이 아니면 에러
         validateCommentBelongsToPost(comment, postId);
+        checkAccessorAuthority(user, comment.getWriterId());
 
-        // 수정 권한 체크
-        checkAccessorAuthority(comment.getUser().getId(), user);
-
-        // 댓글은 soft-delete 처리
         comment.updateContent(COMMENT_DELETED);
         commentRepository.deleteById(commentId);
         commentLikeRepository.deleteAllByCommentId(commentId);
 
-        // 게시글의 댓글 수 감소
-        long childNum = comment.getChildren().size();
-        postRepository.decrementCommentNum(postId, 1L + childNum);
+        decrementCommentCount(comment, postId);
     }
 
     @Transactional
@@ -777,6 +763,11 @@ public class PostService {
         createAlarm(parentComment.getWriterId(), content, redirectURL, AlarmType.COMMENT);
     }
 
+    private void decrementCommentCount(Comment comment, Long postId) {
+        long replyCount = comment.getReplyCount();
+        postRepository.decrementCommentNum(postId, 1L + replyCount);
+    }
+
     private void processPopularPosts(List<Post> posts, PostType postType) {
         // 포인트가 10이 넘으면 popularPosts 리스트에 추가
         List<Post> popularPosts = posts.stream()
@@ -809,7 +800,7 @@ public class PostService {
         });
     }
 
-    private void checkAccessorAuthority(Long writerId, User accessor) {
+    private void checkAccessorAuthority(User accessor, Long writerId) {
         if (accessor.isAdmin()) {
             return;
         }
@@ -831,7 +822,7 @@ public class PostService {
     }
 
     private void validateCommentBelongsToPost(Comment comment, Long postId) {
-        if (!comment.getPostId().equals(postId)) {
+        if (comment.isNotBelongToPost(postId)) {
             throw new CustomException(ExceptionCode.NOT_POSTS_COMMENT);
         }
     }

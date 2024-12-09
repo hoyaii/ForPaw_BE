@@ -113,6 +113,10 @@ public class Comment extends TimeStamp {
         return user.getId();
     }
 
+    public long getReplyCount(){
+        return children.size();
+    }
+
     public boolean isPostBlocked(){
         return post.isBlocked();
     }
