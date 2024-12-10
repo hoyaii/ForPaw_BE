@@ -66,7 +66,8 @@ public class PostService {
         validatePostRequest(requestDTO);
 
         List<PostImage> postImages = buildPostImages(requestDTO.images());
-        Post post = buildPost(userId, postImages, requestDTO);
+        Post post = buildPost(userId, requestDTO);
+        setPostRelationships(post, postImages);
         postRepository.save(post);
 
         initializePostInRedis(post.getId());
@@ -82,7 +83,8 @@ public class PostService {
         validateQuestionPostType(questionPost);
 
         List<PostImage> answerImages = buildPostImages(requestDTO.images());
-        Post answerPost = buildAnswerPost(questionPost, userId, answerImages, requestDTO);
+        Post answerPost = buildAnswerPost(questionPost, userId, requestDTO);
+        setAnswerPostRelationships(answerPost, answerImages, questionPost);
         postRepository.save(answerPost);
 
         questionPost.incrementAnswerNum();
@@ -365,17 +367,18 @@ public class PostService {
         }
     }
 
-    private Post buildPost(Long userId, List<PostImage> postImages, PostRequest.CreatePostDTO requestDTO) {
+    private Post buildPost(Long userId, PostRequest.CreatePostDTO requestDTO) {
         User userRef = entityManager.getReference(User.class, userId);
-        Post post = Post.builder()
+        return Post.builder()
                 .user(userRef)
                 .postType(requestDTO.type())
                 .title(requestDTO.title())
                 .content(requestDTO.content())
                 .build();
+    }
 
-        postImages.forEach(post::addImage); // 연관관계 설정
-        return post;
+    private void setPostRelationships(Post post, List<PostImage> postImages) {
+        postImages.forEach(post::addImage);
     }
 
     private List<PostImage> buildPostImages(List<PostRequest.PostImageDTO> imageDTOs) {
@@ -398,19 +401,19 @@ public class PostService {
         }
     }
 
-    private Post buildAnswerPost(Post questionPost, Long userId, List<PostImage> answerImages, PostRequest.CreateAnswerDTO requestDTO) {
+    private Post buildAnswerPost(Post questionPost, Long userId, PostRequest.CreateAnswerDTO requestDTO) {
         User userRef = entityManager.getReference(User.class, userId);
-        Post answerPost = Post.builder()
+        return Post.builder()
                 .user(userRef)
                 .postType(PostType.ANSWER)
                 .title(questionPost.getTitle() + "(답변)")
                 .content(requestDTO.content())
                 .build();
+    }
 
-        answerImages.forEach(answerPost::addImage); // 연관관계 설정
-        questionPost.addChildPost(answerPost); // 부모-자식 관계 설정
-
-        return answerPost;
+    private void setAnswerPostRelationships(Post answerPost, List<PostImage> answerImages, Post questionPost) {
+        answerImages.forEach(answerPost::addImage); // 이미지와 답변 게시물의 연관 설정
+        questionPost.addChildPost(answerPost); // 질문 게시물과 답변 게시물의 부모-자식 관계 설정
     }
 
     private void sendNewAnswerAlarm(Post questionPost, String answerContent, Long questionPostId) {
