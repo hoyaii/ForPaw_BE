@@ -317,8 +317,7 @@ public class AnimalService {
         duplicateCareTels.forEach(this::handleDuplicateSheltersForCareTel);
     }
 
-    @Transactional
-    public void handleDuplicateSheltersForCareTel(String careTel) {
+    private void handleDuplicateSheltersForCareTel(String careTel) {
         List<Shelter> shelters = shelterRepository.findByCareTel(careTel);
         Shelter targetShelter = findTargetShelter(shelters);
         List<Long> duplicateShelterIds = findDuplicateShelterIds(shelters, targetShelter);

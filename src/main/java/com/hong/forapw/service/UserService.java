@@ -61,6 +61,7 @@ import java.util.stream.Collectors;
 
 import static com.hong.forapw.core.security.JWTProvider.createRefreshTokenCookie;
 import static com.hong.forapw.core.utils.UriUtils.createRedirectUri;
+import static com.hong.forapw.core.utils.mapper.UserMapper.*;
 import static com.hong.forapw.service.EmailService.generateVerificationCode;
 import static com.hong.forapw.core.utils.MailTemplate.ACCOUNT_SUSPENSION;
 import static com.hong.forapw.core.utils.MailTemplate.VERIFICATION_CODE;
@@ -195,7 +196,6 @@ public class UserService {
         }
 
         recordLoginAttempt(user, request);
-
         return createToken(user);
     }
 
@@ -223,19 +223,7 @@ public class UserService {
         checkAlreadyJoin(requestDTO.email());
         checkDuplicateNickname(requestDTO.nickName());
 
-        User user = User.builder()
-                .name(requestDTO.name())
-                .nickName(requestDTO.nickName())
-                .email(requestDTO.email())
-                .password(passwordEncoder.encode(requestDTO.password()))
-                .role(requestDTO.isShelterOwns() ? UserRole.SHELTER : UserRole.USER) // 보호소가 관리하는 계정이면 Role은 SHELTER
-                .profileURL(requestDTO.profileURL())
-                .province(requestDTO.province())
-                .district(requestDTO.district())
-                .subDistrict(requestDTO.subDistrict())
-                .authProvider(AuthProvider.LOCAL)
-                .isMarketingAgreed(requestDTO.isMarketingAgreed())
-                .build();
+        User user = buildUser(requestDTO, passwordEncoder.encode(requestDTO.password()));
         userRepository.save(user);
 
         setUserStatus(user);
@@ -247,19 +235,7 @@ public class UserService {
         checkAlreadyJoin(requestDTO.email());
         checkDuplicateNickname(requestDTO.nickName());
 
-        User user = User.builder()
-                .name(requestDTO.name())
-                .nickName(requestDTO.nickName())
-                .email(requestDTO.email())
-                .password(passwordEncoder.encode(generatePassword())) // 임의의 비밀번호로 생성
-                .role(requestDTO.isShelterOwns() ? UserRole.SHELTER : UserRole.USER)
-                .profileURL(requestDTO.profileURL())
-                .province(requestDTO.province())
-                .district(requestDTO.district())
-                .subDistrict(requestDTO.subDistrict())
-                .authProvider(requestDTO.authProvider())
-                .isMarketingAgreed(requestDTO.isMarketingAgreed())
-                .build();
+        User user = buildUser(requestDTO, passwordEncoder.encode(generatePassword()));
         userRepository.save(user);
 
         setUserStatus(user);
@@ -354,16 +330,7 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        return new UserResponse.ProfileDTO(user.getEmail(),
-                user.getName(),
-                user.getNickname(),
-                user.getProvince(),
-                user.getDistrict(),
-                user.getSubDistrict(),
-                user.getProfileURL(),
-                user.isSocialJoined(),
-                user.isShelterOwns(),
-                user.isMarketingAgreed());
+        return toProfileDTO(user);
     }
 
     @Transactional
@@ -373,13 +340,7 @@ public class UserService {
         );
 
         validateNickname(user, requestDTO.nickName());
-        user.updateProfile(
-                requestDTO.nickName(),
-                requestDTO.province(),
-                requestDTO.district(),
-                requestDTO.subDistrict(),
-                requestDTO.profileURL()
-        );
+        user.updateProfile(requestDTO.nickName(), requestDTO.province(), requestDTO.district(), requestDTO.subDistrict(), requestDTO.profileURL());
     }
 
     @Transactional(readOnly = true)
@@ -425,15 +386,7 @@ public class UserService {
     @Transactional
     public UserResponse.SubmitInquiryDTO submitInquiry(UserRequest.SubmitInquiry requestDTO, Long userId) {
         User user = entityManager.getReference(User.class, userId);
-        Inquiry inquiry = Inquiry.builder()
-                .questioner(user)
-                .title(requestDTO.title())
-                .description(requestDTO.description())
-                .contactMail(requestDTO.contactMail())
-                .status(InquiryStatus.PROCESSING)
-                .type(requestDTO.inquiryType())
-                .imageURL(requestDTO.imageURL())
-                .build();
+        Inquiry inquiry = buildInquiry(requestDTO, InquiryStatus.PROCESSING, user);
 
         inquiryRepository.save(inquiry);
 
@@ -457,23 +410,13 @@ public class UserService {
         List<UserResponse.InquiryDTO> inquiryDTOS = customerInquiries.stream()
                 .map(inquiry -> {
                     UserResponse.AnswerDTO answerDTO = null;
-
                     if (inquiry.getAnswer() != null) {
                         answerDTO = new UserResponse.AnswerDTO(
                                 inquiry.getAnswer(),
                                 inquiry.getAnswerer().getName()
                         );
                     }
-
-                    return new UserResponse.InquiryDTO(
-                            inquiry.getId(),
-                            inquiry.getTitle(),
-                            inquiry.getDescription(),
-                            inquiry.getStatus(),
-                            inquiry.getImageURL(),
-                            inquiry.getType(),
-                            inquiry.getCreatedDate(),
-                            answerDTO);
+                    return toInquiryDTO(inquiry, answerDTO);
                 })
                 .toList();
 
