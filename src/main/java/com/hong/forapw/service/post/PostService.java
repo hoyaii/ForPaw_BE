@@ -20,14 +20,12 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.Period;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -188,7 +186,7 @@ public class PostService {
 
         List<Post> answers = postRepository.findByParentIdWithUser(qnaId);
         List<PostResponse.AnswerDTO> answerDTOS = toAnswerDTOs(answers, userId);
-        List<PostResponse.PostImageDTO> qnaImageDTOS =toPostImageDTOs(qna);
+        List<PostResponse.PostImageDTO> qnaImageDTOS = toPostImageDTOs(qna);
 
         postCacheService.incrementPostViewCount(qnaId);
 
@@ -202,7 +200,7 @@ public class PostService {
         );
         validateAnswer(answer);
 
-        List<PostResponse.PostImageDTO> postImageDTOS =toPostImageDTOs(answer);
+        List<PostResponse.PostImageDTO> postImageDTOS = toPostImageDTOs(answer);
         return new PostResponse.FindAnswerByIdDTO(answer.getWriterNickName(), answer.getContent(), answer.getCreatedDate(), postImageDTOS, answer.isOwner(userId));
     }
 
@@ -259,7 +257,7 @@ public class PostService {
 
         incrementCommentCount(postId);
         postCacheService.initializeCommentCache(comment.getId());
-        sendNewCommentAlarm(requestDTO.content(), postId, post.getPostType(), post.getWriterId());
+        notifyNewComment(requestDTO.content(), postId, post.getPostType(), post.getWriterId());
 
         return new PostResponse.CreateCommentDTO(comment.getId());
     }
@@ -277,7 +275,7 @@ public class PostService {
 
         incrementCommentCount(postId);
         postCacheService.initializeCommentCache(reply.getId());
-        sendNewReplyAlarm(requestDTO.content(), postId, parentComment);
+        notifyNewReply(requestDTO.content(), postId, parentComment);
 
         return new PostResponse.CreateCommentDTO(reply.getId());
     }
@@ -305,7 +303,7 @@ public class PostService {
         commentRepository.deleteById(commentId);
         commentLikeRepository.deleteAllByCommentId(commentId);
 
-        decrementCommentCount(comment, postId);
+        adjustCommentCountOnDeletion(comment, postId);
     }
 
     @Transactional
@@ -315,40 +313,17 @@ public class PostService {
         );
         validateReportRequest(requestDTO.contentId(), requestDTO.contentType(), userId);
 
-        User reportedUser = findOffender(requestDTO);
+        User reportedUser = findOffendingUser(requestDTO);
         validateNotSelfReport(userId, reportedUser);
 
         Report report = buildReport(requestDTO, reporter, reportedUser);
         reportRepository.save(report);
     }
 
-    @Scheduled(cron = "0 0 6,18 * * *")
     @Transactional
-    public void updateTodayPopularPosts() {
-        LocalDate now = LocalDate.now();
-        LocalDateTime startOfToday = now.atStartOfDay();
-        LocalDateTime endOfToday = now.atTime(LocalTime.MAX);
-
-        List<Post> adoptionPosts = postRepository.findByDateAndType(startOfToday, endOfToday, PostType.ADOPTION);
-        processPopularPosts(adoptionPosts, PostType.ADOPTION);
-
-        List<Post> fosteringPosts = postRepository.findByDateAndType(startOfToday, endOfToday, PostType.FOSTERING);
-        processPopularPosts(fosteringPosts, PostType.FOSTERING);
-    }
-
-    @Scheduled(cron = "0 25 0 * * *")
-    @Transactional
-    public void syncViewNum() {
-        LocalDateTime oneWeeksAgo = LocalDateTime.now().minusWeeks(1);
-        List<Post> posts = postRepository.findPostIdsWithinDate(oneWeeksAgo);
-
-        for (Post post : posts) {
-            Long readCnt = postCacheService.getPostViewCount(post);
-
-            if (readCnt != null) {
-                post.updateReadCnt(readCnt);
-            }
-        }
+    public void refreshPopularPostsWithinRange(LocalDateTime start, LocalDateTime end, PostType postType) {
+        List<Post> posts = postRepository.findByDateAndType(start, end, postType);
+        processPopularPosts(posts, postType);
     }
 
     private void validatePostRequest(PostRequest.CreatePostDTO requestDTO) {
@@ -487,7 +462,7 @@ public class PostService {
         postRepository.incrementCommentNum(postId);
     }
 
-    private void sendNewCommentAlarm(String commentContent, Long postId, PostType postType, Long writerId) {
+    private void notifyNewComment(String commentContent, Long postId, PostType postType, Long writerId) {
         String content = "새로운 댓글: " + commentContent;
         String queryParam = postType.name().toLowerCase();
         String redirectURL = "/community/" + postId + "?type=" + queryParam;
@@ -504,14 +479,14 @@ public class PostService {
         }
     }
 
-    private void sendNewReplyAlarm(String replyContent, Long postId, Comment parentComment) {
+    private void notifyNewReply(String replyContent, Long postId, Comment parentComment) {
         String content = "새로운 대댓글: " + replyContent;
         String queryParam = parentComment.getPostTypeName().toLowerCase();
         String redirectURL = "/community/" + postId + "?type=" + queryParam;
         alarmService.sendAlarm(parentComment.getWriterId(), content, redirectURL, AlarmType.COMMENT);
     }
 
-    private void decrementCommentCount(Comment comment, Long postId) {
+    private void adjustCommentCountOnDeletion(Comment comment, Long postId) {
         long replyCount = comment.getReplyCount();
         postRepository.decrementCommentNum(postId, 1L + replyCount);
     }
@@ -538,7 +513,7 @@ public class PostService {
                 .build();
     }
 
-    private User findOffender(PostRequest.SubmitReport requestDTO) {
+    private User findOffendingUser(PostRequest.SubmitReport requestDTO) {
         if (requestDTO.contentType() == ContentType.POST) {
             return postRepository.findUserById(requestDTO.contentId())
                     .orElseThrow(() -> new CustomException(ExceptionCode.POST_NOT_FOUND));
@@ -612,7 +587,7 @@ public class PostService {
         }
     }
 
-    private void checkExpiration(LocalDateTime date) {
+    private void ensureNotExpiredForLikes(LocalDateTime date) {
         LocalDate likeDate = date.toLocalDate();
         LocalDate now = LocalDate.now();
         Period period = Period.between(likeDate, now);
@@ -635,20 +610,20 @@ public class PostService {
 
         comments.forEach(comment -> {
             Long likeCount = postCacheService.getCommentLikeCount(comment.getId());
-            if (comment.isNotReply()) {
+            if (comment.isNotReply()) { // 부모 댓글
                 PostResponse.CommentDTO parentCommentDTO = toParentCommentDTO(comment, likeCount, likedCommentIds.contains(comment.getId()));
                 parentComments.add(parentCommentDTO);
                 parentCommentMap.put(comment.getId(), parentCommentDTO);
-            } else {
-                handleChildComment(comment, parentCommentMap, likedCommentIds, likeCount);
+            } else { // 답변 댓글
+                addReplyToParentComment(comment, parentCommentMap, likedCommentIds, likeCount);
             }
         });
 
         return parentComments;
     }
 
-    private void handleChildComment(Comment childComment, Map<Long, PostResponse.CommentDTO> parentCommentMap, List<Long> likedCommentIds, Long likeCount) {
-        if (childComment.isDeleted() && isLastChildComment(childComment)) {
+    private void addReplyToParentComment(Comment childComment, Map<Long, PostResponse.CommentDTO> parentCommentMap, List<Long> likedCommentIds, Long likeCount) {
+        if (childComment.isDeleted() && isFinalReply(childComment)) {
             return; // 삭제된 댓글이 마지막 대댓글이면, 보이지 않고. 반면, 마지막 대댓글이 아니면, '삭제된 댓글입니다' 처리
         }
 
@@ -657,11 +632,11 @@ public class PostService {
         parentCommentDTO.replies().add(childCommentDTO);
     }
 
-    private boolean isLastChildComment(Comment comment) {
+    private boolean isFinalReply(Comment comment) {
         return !commentRepository.existsByParentIdAndDateAfter(comment.getParent().getId(), comment.getCreatedDate());
     }
 
-    private void deleteImagesInS3(List<Long> retainedImageIds, List<PostImage> postImages) {
+    private void deleteImagesFromS3(List<Long> retainedImageIds, List<PostImage> postImages) {
         postImages.stream()
                 .filter(postImage -> !retainedImageIds.contains(postImage.getId()))
                 .forEach(postImage -> {
