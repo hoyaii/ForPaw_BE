@@ -1,5 +1,7 @@
 package com.hong.forapw.service;
 
+import com.hong.forapw.core.errors.CustomException;
+import com.hong.forapw.core.errors.ExceptionCode;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -127,22 +129,21 @@ public class RedisService {
         return redisTemplate.keys(pattern);
     }
 
-    /** ------------------ Redisson Lock ------------------ */
     public RLock getLock(String lockKey) {
         return redissonClient.getLock(lockKey);
     }
 
-    public boolean tryLock(RLock lock, long waitTime, long leaseTime, TimeUnit timeUnit) {
+    public void tryToAcquireLock(RLock lock, long waitTime, long leaseTime, TimeUnit timeUnit) {
         try {
-            return lock.tryLock(waitTime, leaseTime, timeUnit);
+            lock.tryLock(waitTime, leaseTime, timeUnit);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return false;
+            throw new CustomException(ExceptionCode.LOCK_ACQUIRE_INTERRUPT);
         }
     }
 
-    public void unlock(RLock lock) {
-        if (lock.isLocked() && lock.isHeldByCurrentThread()) {
+    public void safelyReleaseLock(RLock lock) {
+        if (lock.isHeldByCurrentThread()) {
             lock.unlock();
         }
     }

@@ -46,27 +46,10 @@ public class LikeService {
     private void executeWithLock(String lockKey, Runnable action) {
         RLock lock = redisService.getLock(lockKey);
         try {
-            if (!tryToAcquireLock(lock)) {
-                throw new CustomException(ExceptionCode.LOCK_ACQUIRE_FAIL);
-            }
+            redisService.tryToAcquireLock(lock, 2, 5, TimeUnit.SECONDS);
             action.run();
         } finally {
-            safelyReleaseLock(lock);
-        }
-    }
-
-    private boolean tryToAcquireLock(RLock lock) {
-        try {
-            return lock.tryLock(2, 5, TimeUnit.SECONDS); // 대기시간 2초, 락 유지시간 5초
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new CustomException(ExceptionCode.LOCK_ACQUIRE_INTERRUPT);
-        }
-    }
-
-    private void safelyReleaseLock(RLock lock) {
-        if (lock.isHeldByCurrentThread()) {
-            lock.unlock();
+            redisService.safelyReleaseLock(lock);
         }
     }
 
