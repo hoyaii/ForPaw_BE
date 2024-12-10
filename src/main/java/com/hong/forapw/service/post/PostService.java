@@ -1,6 +1,5 @@
-package com.hong.forapw.service;
+package com.hong.forapw.service.post;
 
-import com.hong.forapw.controller.dto.AlarmRequest;
 import com.hong.forapw.controller.dto.PostRequest;
 import com.hong.forapw.controller.dto.PostResponse;
 import com.hong.forapw.core.errors.CustomException;
@@ -15,6 +14,8 @@ import com.hong.forapw.domain.user.User;
 import com.hong.forapw.repository.post.*;
 import com.hong.forapw.repository.ReportRepository;
 import com.hong.forapw.repository.UserRepository;
+import com.hong.forapw.service.AlarmService;
+import com.hong.forapw.service.S3Service;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -48,7 +49,7 @@ public class PostService {
     private final UserRepository userRepository;
     private final PostCacheService postCacheService;
     private final S3Service s3Service;
-    private final BrokerService brokerService;
+    private final AlarmService alarmService;
     private final EntityManager entityManager;
 
     private static final String POST_SCREENED = "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.";
@@ -407,7 +408,7 @@ public class PostService {
         String content = "새로운 답변: " + answerContent;
         String redirectURL = "/community/question/" + questionPostId;
 
-        createAlarm(questionPost.getUser().getId(), content, redirectURL, AlarmType.ANSWER);
+        alarmService.sendAlarm(questionPost.getUser().getId(), content, redirectURL, AlarmType.ANSWER);
     }
 
     private void validatePost(Post post) {
@@ -490,7 +491,7 @@ public class PostService {
         String content = "새로운 댓글: " + commentContent;
         String queryParam = postType.name().toLowerCase();
         String redirectURL = "/community/" + postId + "?type=" + queryParam;
-        createAlarm(writerId, content, redirectURL, AlarmType.COMMENT);
+        alarmService.sendAlarm(writerId, content, redirectURL, AlarmType.COMMENT);
     }
 
     private void validateParentComment(Comment parentComment, Long postId) {
@@ -507,7 +508,7 @@ public class PostService {
         String content = "새로운 대댓글: " + replyContent;
         String queryParam = parentComment.getPostTypeName().toLowerCase();
         String redirectURL = "/community/" + postId + "?type=" + queryParam;
-        createAlarm(parentComment.getWriterId(), content, redirectURL, AlarmType.COMMENT);
+        alarmService.sendAlarm(parentComment.getWriterId(), content, redirectURL, AlarmType.COMMENT);
     }
 
     private void decrementCommentCount(Comment comment, Long postId) {
@@ -658,16 +659,6 @@ public class PostService {
 
     private boolean isLastChildComment(Comment comment) {
         return !commentRepository.existsByParentIdAndDateAfter(comment.getParent().getId(), comment.getCreatedDate());
-    }
-
-    private void createAlarm(Long userId, String content, String redirectURL, AlarmType alarmType) {
-        AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
-                userId,
-                content,
-                redirectURL,
-                LocalDateTime.now(),
-                alarmType);
-        brokerService.produceAlarmToUser(userId, alarmDTO);
     }
 
     private void deleteImagesInS3(List<Long> retainedImageIds, List<PostImage> postImages) {

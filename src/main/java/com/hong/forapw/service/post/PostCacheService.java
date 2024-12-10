@@ -1,8 +1,9 @@
-package com.hong.forapw.service;
+package com.hong.forapw.service.post;
 
 import com.hong.forapw.domain.post.Post;
 import com.hong.forapw.repository.post.CommentRepository;
 import com.hong.forapw.repository.post.PostRepository;
+import com.hong.forapw.service.RedisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

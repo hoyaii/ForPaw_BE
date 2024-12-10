@@ -5,7 +5,7 @@ import com.hong.forapw.controller.dto.PostResponse;
 import com.hong.forapw.core.security.CustomUserDetails;
 import com.hong.forapw.core.utils.ApiUtils;
 import com.hong.forapw.domain.post.PostType;
-import com.hong.forapw.service.PostService;
+import com.hong.forapw.service.post.PostService;
 import com.hong.forapw.service.like.LikeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
