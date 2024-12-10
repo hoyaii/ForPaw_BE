@@ -45,6 +45,7 @@ import static com.hong.forapw.core.utils.DateTimeUtils.YEAR_HOUR_DAY_FORMAT;
 import static com.hong.forapw.core.utils.PaginationUtils.isLastPage;
 import static com.hong.forapw.core.utils.UriUtils.buildAnimalOpenApiURI;
 import static com.hong.forapw.core.utils.UriUtils.convertHttpUrlToHttps;
+import static com.hong.forapw.core.utils.mapper.AnimalMapper.*;
 
 @Service
 @RequiredArgsConstructor
@@ -101,7 +102,10 @@ public class AnimalService {
 
         Page<Animal> animalPage = animalRepository.findByAnimalType(AnimalType.fromString(type), pageable);
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> createAnimalDTO(animal, likedAnimalIds))
+                .map(animal -> {
+                    Long likeCount = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
+                    return toAnimalDTO(animal, likeCount, likedAnimalIds);
+                })
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindAnimalListDTO(animalDTOS, isLastPage(animalPage));
@@ -114,7 +118,10 @@ public class AnimalService {
 
         List<Animal> animals = animalRepository.findByIds(recommendedAnimalIds);
         List<AnimalResponse.AnimalDTO> animalDTOS = animals.stream()
-                .map(animal -> createAnimalDTO(animal, likedAnimalIds))
+                .map(animal -> {
+                    Long likeCount = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
+                    return toAnimalDTO(animal, likeCount, likedAnimalIds);
+                })
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindRecommendedAnimalList(animalDTOS);
@@ -124,7 +131,10 @@ public class AnimalService {
     public AnimalResponse.FindLikeAnimalListDTO findLikeAnimalList(Long userId) {
         List<Animal> animalPage = favoriteAnimalRepository.findAnimalsByUserId(userId);
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.stream()
-                .map(animal -> createAnimalDTO(animal, Collections.emptyList()))
+                .map(animal -> {
+                    Long likeCount = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
+                    return toAnimalDTO(animal, likeCount, Collections.emptyList());
+                })
                 .collect(Collectors.toList());
 
         return new AnimalResponse.FindLikeAnimalListDTO(animalDTOS);
@@ -136,28 +146,10 @@ public class AnimalService {
                 () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
         );
 
-        boolean isLike = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent();
+        boolean isLikedAnimal = favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animal.getId()).isPresent();
         saveSearchRecord(animalId, userId);
 
-        return new AnimalResponse.FindAnimalByIdDTO(animalId,
-                animal.getName(),
-                animal.getAge(),
-                animal.getGender(),
-                animal.getSpecialMark(),
-                animal.getRegion(),
-                isLike,
-                animal.getProfileURL(),
-                animal.getHappenPlace(),
-                animal.getKind(),
-                animal.getColor(),
-                animal.getWeight(),
-                animal.getNoticeSdt(),
-                animal.getNoticeEdt(),
-                animal.getProcessState(),
-                animal.getNeuter(),
-                animal.getIntroductionTitle(),
-                animal.getIntroductionContent(),
-                animal.isAdopted());
+        return toFindAnimalByIdDTO(animal,isLikedAnimal);
     }
 
     @Transactional
@@ -225,7 +217,11 @@ public class AnimalService {
                 .stream()
                 .filter(item -> isNewAnimal(item, existingAnimalIds))
                 .filter(this::isActiveAnimal)
-                .map(item -> buildAnimalFromItemDTO(item, shelter))
+                .map(item -> {
+                    String name = createAnimalName();
+                    String kind = parseSpecies(item.kindCd());
+                    return buildAnimal(item, name, kind, shelter);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -237,32 +233,7 @@ public class AnimalService {
         return LocalDate.parse(item.noticeEdt(), YEAR_HOUR_DAY_FORMAT).isAfter(LocalDate.now());
     }
 
-    private Animal buildAnimalFromItemDTO(AnimalDTO.ItemDTO itemDTO, Shelter shelter) {
-        DateTimeFormatter formatter = YEAR_HOUR_DAY_FORMAT;
-        return Animal.builder()
-                .id(Long.valueOf(itemDTO.desertionNo()))
-                .name(createAnimalName())
-                .shelter(shelter)
-                .happenDt(LocalDate.parse(itemDTO.happenDt(), formatter))
-                .happenPlace(itemDTO.happenPlace())
-                .kind(parseSpecies(itemDTO.kindCd()))
-                .category(AnimalType.fromPrefix(itemDTO.kindCd()))
-                .color(itemDTO.colorCd())
-                .age(itemDTO.age())
-                .weight(itemDTO.weight())
-                .noticeSdt(LocalDate.parse(itemDTO.noticeSdt(), formatter))
-                .noticeEdt(LocalDate.parse(itemDTO.noticeEdt(), formatter))
-                .profileURL(convertHttpUrlToHttps(itemDTO.popfile()))
-                .processState(itemDTO.processState())
-                .gender(itemDTO.sexCd())
-                .neuter(itemDTO.neuterYn())
-                .specialMark(itemDTO.specialMark())
-                .region(shelter.getRegionCode().getUprName() + " " + shelter.getRegionCode().getOrgName())
-                .introductionContent("소개글을 작성중입니다!")
-                .build();
-    }
-
-    private static String parseSpecies(String input) {
+    private String parseSpecies(String input) {
         Pattern pattern = Pattern.compile("\\[.*?\\] (.+)");
         Matcher matcher = pattern.matcher(input);
 
@@ -273,7 +244,6 @@ public class AnimalService {
         return null;
     }
 
-    // 동물 이름 지어주는 메서드
     private String createAnimalName() {
         int index = ThreadLocalRandom.current().nextInt(animalNames.length);
         return animalNames[index];
@@ -471,24 +441,5 @@ public class AnimalService {
 
     private List<Long> limitToMaxSize(List<Long> animalIds, int maxSize) {
         return animalIds.size() > maxSize ? animalIds.subList(0, maxSize) : animalIds;
-    }
-
-    private AnimalResponse.AnimalDTO createAnimalDTO(Animal animal, List<Long> likedAnimalIds) {
-        Long likeNum = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
-        return new AnimalResponse.AnimalDTO(
-                animal.getId(),
-                animal.getName(),
-                animal.getAge(),
-                animal.getGender(),
-                animal.getSpecialMark(),
-                animal.getKind(),
-                animal.getWeight(),
-                animal.getNeuter(),
-                animal.getProcessState(),
-                animal.getRegion(),
-                animal.getInquiryNum(),
-                likeNum,
-                likedAnimalIds.contains(animal.getId()),
-                animal.getProfileURL());
     }
 }
