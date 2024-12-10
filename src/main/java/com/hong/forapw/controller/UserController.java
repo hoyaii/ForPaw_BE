@@ -5,7 +5,6 @@ import com.hong.forapw.controller.dto.UserResponse;
 import com.hong.forapw.core.security.CustomUserDetails;
 import com.hong.forapw.core.utils.ApiUtils;
 import com.hong.forapw.service.UserService;
-import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -16,11 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.util.Map;
 
 import static com.hong.forapw.core.security.JWTProvider.createRefreshTokenCookie;
-
 
 @RestController
 @RequiredArgsConstructor
@@ -150,24 +147,6 @@ public class UserController {
     public ResponseEntity<?> withdrawMember(@AuthenticationPrincipal CustomUserDetails userDetails) {
         userService.withdrawMember(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
-    }
-
-    @PostMapping("/supports")
-    public ResponseEntity<?> submitInquiry(@RequestBody @Valid UserRequest.SubmitInquiry requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        UserResponse.SubmitInquiryDTO responseDTO = userService.submitInquiry(requestDTO, userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
-    }
-
-    @PatchMapping("/supports/{inquiryId}")
-    public ResponseEntity<?> updateInquiry(@RequestBody @Valid UserRequest.UpdateInquiry requestDTO, @PathVariable Long inquiryId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        userService.updateInquiry(requestDTO, inquiryId, userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
-    }
-
-    @GetMapping("/supports")
-    public ResponseEntity<?> findInquiryList(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        UserResponse.FindInquiryListDTO responseDTO = userService.findInquiryList(userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/validate/accessToken")
