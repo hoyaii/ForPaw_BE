@@ -5,6 +5,7 @@ import com.hong.forapw.core.security.CustomUserDetails;
 import com.hong.forapw.core.utils.ApiUtils;
 import com.hong.forapw.domain.user.User;
 import com.hong.forapw.service.AnimalService;
+import com.hong.forapw.service.like.LikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -23,6 +24,7 @@ import java.util.Optional;
 public class AnimalController {
 
     private final AnimalService animalService;
+    private final LikeService likeService;
     private static final String SORT_BY_DATE = "createdDate";
 
     // 테스트시에만 열어둠
@@ -59,7 +61,7 @@ public class AnimalController {
 
     @PostMapping("/animals/{animalId}/like")
     public ResponseEntity<?> likeAnimal(@PathVariable Long animalId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        animalService.likeAnimal(userDetails.getUser().getId(), animalId);
+        likeService.likeAnimal(animalId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 

@@ -18,4 +18,8 @@ public enum PostType {
     public boolean isImageRequired() {
         return this != QUESTION;
     }
+
+    public boolean isQuestion() {
+        return this == QUESTION;
+    }
 }

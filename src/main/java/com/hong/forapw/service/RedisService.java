@@ -1,6 +1,10 @@
 package com.hong.forapw.service;
 
+import com.hong.forapw.core.errors.CustomException;
+import com.hong.forapw.core.errors.ExceptionCode;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -15,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 public class RedisService {
 
     private final StringRedisTemplate redisTemplate;
+    private final RedissonClient redissonClient;
 
     public void storeValue(String type, String id, String value, Long expirationTime) {
         redisTemplate.opsForValue().set(buildKey(type, id), value, expirationTime, TimeUnit.MILLISECONDS);
@@ -49,8 +54,8 @@ public class RedisService {
         redisTemplate.opsForValue().decrement(buildKey(type, id), value);
     }
 
-    public void setExpireDate(String type, String id, Long expirationTime) {
-        redisTemplate.expire(buildKey(type, id), expirationTime, TimeUnit.MILLISECONDS);
+    public void setKeyExpiration(String key, long expirationSeconds) {
+        redisTemplate.expire(key, expirationSeconds, TimeUnit.SECONDS);
     }
 
     public void removeValue(String type, String id) {
@@ -64,6 +69,10 @@ public class RedisService {
     public void removeListElement(String key, String value) {
         ListOperations<String, String> listOps = redisTemplate.opsForList();
         listOps.remove(key, 0, value);
+    }
+
+    public void removeSetElement(String key, String member) {
+        redisTemplate.opsForSet().remove(key, member);
     }
 
     public boolean isValueExist(String type, String id) {
@@ -82,6 +91,11 @@ public class RedisService {
     public boolean isStoredValue(String type, String id, String value) {
         String storedValue = redisTemplate.opsForValue().get(buildKey(type, id));
         return storedValue != null && storedValue.equals(value);
+    }
+
+    public boolean isMemberOfSet(String key, String member) {
+        Boolean result = redisTemplate.opsForSet().isMember(key, member);
+        return Boolean.TRUE.equals(result);
     }
 
     public String getValueInString(String type, String id) {
@@ -103,6 +117,35 @@ public class RedisService {
     public Set<String> getMembersOfSet(String key) {
         SetOperations<String, String> setOps = redisTemplate.opsForSet();
         return setOps.members(key);
+    }
+
+    // key format: "user:<userId>:liked_posts"
+    public Long extractUserIdFromKey(String key) {
+        String[] parts = key.split(":");
+        return Long.valueOf(parts[1]);
+    }
+
+    public Set<String> keys(String pattern) {
+        return redisTemplate.keys(pattern);
+    }
+
+    public RLock getLock(String lockKey) {
+        return redissonClient.getLock(lockKey);
+    }
+
+    public void tryToAcquireLock(RLock lock, long waitTime, long leaseTime, TimeUnit timeUnit) {
+        try {
+            lock.tryLock(waitTime, leaseTime, timeUnit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new CustomException(ExceptionCode.LOCK_ACQUIRE_INTERRUPT);
+        }
+    }
+
+    public void safelyReleaseLock(RLock lock) {
+        if (lock.isHeldByCurrentThread()) {
+            lock.unlock();
+        }
     }
 
     private String buildKey(String type, String id) {

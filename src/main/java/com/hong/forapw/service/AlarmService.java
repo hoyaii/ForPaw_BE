@@ -1,9 +1,11 @@
 package com.hong.forapw.service;
 
+import com.hong.forapw.controller.dto.AlarmRequest;
 import com.hong.forapw.controller.dto.AlarmResponse;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.domain.alarm.Alarm;
+import com.hong.forapw.domain.alarm.AlarmType;
 import com.hong.forapw.repository.alarm.AlarmRepository;
 import com.hong.forapw.repository.alarm.EmitterRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ public class AlarmService {
 
     private final AlarmRepository alarmRepository;
     private final EmitterRepository emitterRepository;
+    private final BrokerService brokerService;
 
     private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 60;
 
@@ -44,6 +47,16 @@ public class AlarmService {
         emitAlarmEvent(emitter, eventId, emitterId, "ForPaw");
 
         return emitter;
+    }
+
+    public void sendAlarm(Long userId, String content, String redirectURL, AlarmType alarmType) {
+        AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
+                userId,
+                content,
+                redirectURL,
+                LocalDateTime.now(),
+                alarmType);
+        brokerService.produceAlarmToUser(userId, alarmDTO);
     }
 
     @Transactional

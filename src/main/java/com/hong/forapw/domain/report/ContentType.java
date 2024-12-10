@@ -10,5 +10,9 @@ public enum ContentType {
     POST("게시글"),
     COMMENT("댓글");
 
-    private String description;
+    private final String description;
+
+    public boolean isNotValidTypeForReport() {
+        return !(this == ContentType.POST || this == ContentType.COMMENT);
+    }
 }

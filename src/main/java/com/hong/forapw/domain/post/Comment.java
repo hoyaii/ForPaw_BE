@@ -1,5 +1,6 @@
 package com.hong.forapw.domain.post;
 
+import com.hong.forapw.domain.Province;
 import com.hong.forapw.domain.TimeStamp;
 import com.hong.forapw.domain.user.User;
 import jakarta.persistence.*;
@@ -47,6 +48,13 @@ public class Comment extends TimeStamp {
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
 
+    @Builder
+    public Comment(User user, Post post, String content) {
+        this.user = user;
+        this.post = post;
+        this.content = content;
+    }
+
     // 연관 관계 메서드
     public void addChildComment(Comment child) {
         this.children.add(child);
@@ -61,10 +69,71 @@ public class Comment extends TimeStamp {
         this.content = content;
     }
 
-    @Builder
-    public Comment(User user, Post post, String content) {
-        this.user = user;
-        this.post = post;
-        this.content = content;
+    public String getWriterNickname() {
+        return user.getNickname();
+    }
+
+    public String getWriterProfileURL() {
+        return user.getProfileURL();
+    }
+
+    public Province getWriterProvince() {
+        return user.getProvince();
+    }
+
+    public String getParentWriterNickname() {
+        return parent.getUser().getNickname();
+    }
+
+    public Long getParentId() {
+        return parent.getId();
+    }
+
+    public Long getPostId() {
+        return post.getId();
+    }
+
+    public String getPostTitle() {
+        return post.getTitle();
+    }
+
+    public Long getPostCommentNumber() {
+        return post.getCommentNum();
+    }
+
+    public String getPostTypeValue(){
+        return post.getPostType().getValue();
+    }
+
+    public String getPostTypeName(){
+        return post.getPostType().name();
+    }
+
+    public Long getWriterId() {
+        return user.getId();
+    }
+
+    public long getReplyCount(){
+        return children.size();
+    }
+
+    public boolean isPostBlocked(){
+        return post.isBlocked();
+    }
+
+    public boolean isNotReply() {
+        return parent == null;
+    }
+
+    public boolean isReply() {
+        return parent != null;
+    }
+
+    public boolean isNotBelongToPost(Long postId) {
+        return !this.post.getId().equals(postId);
+    }
+
+    public boolean isDeleted() {
+        return removedAt != null;
     }
 }

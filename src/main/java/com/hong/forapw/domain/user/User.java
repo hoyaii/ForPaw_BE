@@ -95,7 +95,7 @@ public class User extends TimeStamp {
         this.profileURL = profileURL;
     }
 
-    public void deactivateUser(){
+    public void deactivateUser() {
         status.updateActiveness(false);
     }
 
@@ -131,7 +131,15 @@ public class User extends TimeStamp {
         return !this.nickname.equals(nickname);
     }
 
-    public boolean isNotSameUser(Long userId){
+    public boolean isNotSameUser(Long userId) {
         return !this.id.equals(userId);
+    }
+
+    public boolean isSameUser(Long userId) {
+        return this.id.equals(userId);
+    }
+
+    public boolean isAdmin() {
+        return role.equals(UserRole.ADMIN) || role.equals(UserRole.SUPER);
     }
 }

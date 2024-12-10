@@ -95,7 +95,7 @@ public class Post extends TimeStamp {
         child.updateParent(this);
     }
 
-    public void updateTitleAndContent(String title, String content) {
+    public void updateContent(String title, String content) {
         this.title = title;
         this.content = content;
     }
@@ -124,12 +124,12 @@ public class Post extends TimeStamp {
         this.answerNum++;
     }
 
-    public boolean isNotQuestionType() {
-        return postType != PostType.QUESTION;
-    }
-
     public String getFirstImageURL() {
         return postImages.isEmpty() ? null : postImages.get(0).getImageURL();
+    }
+
+    public Long getWriterId() {
+        return user.getId();
     }
 
     public String getWriterNickName() {
@@ -144,19 +144,31 @@ public class Post extends TimeStamp {
         return postType.toString().toLowerCase();
     }
 
-    public boolean isMyPost(Long userId) {
+    public Long getParentId() {
+        return parent.getId();
+    }
+
+    public boolean isOwner(Long userId) {
         return user.getId().equals(userId);
     }
 
-    public boolean isQuestionType(){
+    public boolean isQuestionType() {
         return postType == PostType.QUESTION;
     }
 
-    public boolean isNoticeType(){
+    public boolean isNotQuestionType() {
+        return postType != PostType.QUESTION;
+    }
+
+    public boolean isNoticeType() {
         return postType == PostType.NOTICE;
     }
 
-    public boolean isScreened(){
+    public boolean isNotAnswerType() {
+        return postType != PostType.ANSWER;
+    }
+
+    public boolean isScreened() {
         return title.equals("이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.");
     }
 }

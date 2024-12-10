@@ -47,6 +47,7 @@ dependencies {
 
 	// Redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.redisson:redisson:3.23.5'
 
 	// Webflux
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
