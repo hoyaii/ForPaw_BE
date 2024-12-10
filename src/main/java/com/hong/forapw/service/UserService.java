@@ -8,8 +8,6 @@ import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.domain.authentication.LoginAttempt;
 import com.hong.forapw.domain.group.GroupUser;
-import com.hong.forapw.domain.inquiry.Inquiry;
-import com.hong.forapw.domain.inquiry.InquiryStatus;
 import com.hong.forapw.domain.post.PostType;
 import com.hong.forapw.domain.user.AuthProvider;
 import com.hong.forapw.domain.user.User;
@@ -23,14 +21,12 @@ import com.hong.forapw.repository.chat.ChatUserRepository;
 import com.hong.forapw.repository.group.FavoriteGroupRepository;
 import com.hong.forapw.repository.group.GroupUserRepository;
 import com.hong.forapw.repository.group.MeetingUserRepository;
-import com.hong.forapw.repository.inquiry.InquiryRepository;
 import com.hong.forapw.repository.post.CommentLikeRepository;
 import com.hong.forapw.repository.post.CommentRepository;
 import com.hong.forapw.repository.post.PostLikeRepository;
 import com.hong.forapw.repository.post.PostRepository;
 import com.hong.forapw.repository.UserRepository;
 import com.hong.forapw.repository.UserStatusRepository;
-import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -138,6 +134,7 @@ public class UserService {
     private static final String ACCESS_TOKEN_KEY_PREFIX = "accessToken";
     private static final String EMAIL = "email";
     private static final String LOGIN_FAIL_DAILY_KEY_PREFIX = "loginFailDaily";
+    private final static String ALL_CHARS = "!@#$%^&*0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     private static final String LOGIN_FAIL_CURRENT_KEY_PREFIX = "loginFail";
     private static final String CODE_TO_EMAIL_KEY_PREFIX = "codeToEmail";
     private static final String USER_QUEUE_PREFIX = "user.";
@@ -491,35 +488,31 @@ public class UserService {
             redisService.storeValue(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code(), requestDTO.email(), 5 * 60 * 1000L);
     }
 
-    // 알파벳, 숫자, 특수문자가 모두 포함되도록 해서 임시 비밀번호 생성
     private String generatePassword() {
-        String specialChars = "!@#$%^&*";
-        String numbers = "0123456789";
-        String upperCaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        String lowerCaseLetters = "abcdefghijklmnopqrstuvwxyz";
-        String allChars = specialChars + numbers + upperCaseLetters + lowerCaseLetters;
-
         SecureRandom random = new SecureRandom();
+        StringBuilder password = new StringBuilder()
+                .append(pickRandomChar(random, 8, 0))  // 특수 문자
+                .append(pickRandomChar(random, 10, 8)) // 숫자
+                .append(pickRandomChar(random, 26, 18)) // 대문자
+                .append(pickRandomChar(random, 26, 44)); // 소문자
 
-        // 각 범주에서 랜덤하게 하나씩 선택
-        StringBuilder password = new StringBuilder(8);
-        password.append(specialChars.charAt(random.nextInt(specialChars.length())));
-        password.append(numbers.charAt(random.nextInt(numbers.length())));
-        password.append(upperCaseLetters.charAt(random.nextInt(upperCaseLetters.length())));
-        password.append(lowerCaseLetters.charAt(random.nextInt(lowerCaseLetters.length())));
-
-        // 나머지 자리를 전체 문자 집합에서 선택
         for (int i = 4; i < 8; i++) {
-            password.append(allChars.charAt(random.nextInt(allChars.length())));
+            password.append(pickRandomChar(random, ALL_CHARS.length(), 0));  // 나머지 문자 랜덤 추가
         }
 
-        // 최종 문자열 섞기
-        List<Character> passwordChars = password.chars()
+        return shufflePassword(password);
+    }
+
+    private char pickRandomChar(SecureRandom random, int range, int offset) {
+        return ALL_CHARS.charAt(random.nextInt(range) + offset);
+    }
+
+    private String shufflePassword(StringBuilder password) {
+        List<Character> characters = password.chars()
                 .mapToObj(c -> (char) c)
                 .collect(Collectors.toList());
-        Collections.shuffle(passwordChars);
-
-        return passwordChars.stream()
+        Collections.shuffle(characters);
+        return characters.stream()
                 .map(String::valueOf)
                 .collect(Collectors.joining());
     }
