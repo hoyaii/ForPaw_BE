@@ -5,6 +5,7 @@ import com.hong.forapw.controller.dto.PostRequest;
 import com.hong.forapw.controller.dto.PostResponse;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
+import com.hong.forapw.core.utils.mapper.PostMapper;
 import com.hong.forapw.domain.alarm.AlarmType;
 import com.hong.forapw.domain.post.*;
 import com.hong.forapw.domain.report.ContentType;
@@ -16,7 +17,6 @@ import com.hong.forapw.repository.ReportRepository;
 import com.hong.forapw.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import org.redisson.api.RLock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,9 +29,10 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static com.hong.forapw.core.utils.mapper.PostMapper.*;
 
 @Service
 @RequiredArgsConstructor
@@ -64,8 +65,8 @@ public class PostService {
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId) {
         validatePostRequest(requestDTO);
 
-        List<PostImage> postImages = convertToPostImages(requestDTO.images());
-        Post post = buildPostEntity(userId, postImages, requestDTO);
+        List<PostImage> postImages = buildPostImages(requestDTO.images());
+        Post post = buildPost(userId, postImages, requestDTO);
         postRepository.save(post);
 
         initializePostInRedis(post.getId());
@@ -80,7 +81,7 @@ public class PostService {
         );
         validateQuestionPostType(questionPost);
 
-        List<PostImage> answerImages = buildPostImages(requestDTO);
+        List<PostImage> answerImages = buildPostImages(requestDTO.images());
         Post answerPost = buildAnswerPost(questionPost, userId, answerImages, requestDTO);
         postRepository.save(answerPost);
 
@@ -94,7 +95,7 @@ public class PostService {
     public PostResponse.FindPostListDTO findPostsByType(Pageable pageable, PostType postType) {
         Page<Post> postPage = postRepository.findByPostTypeWithUser(postType, pageable);
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
-                .map(this::convertToPostDTO)
+                .map(post -> toPostDTO(post, getCachedPostLikeNum(post.getId())))
                 .toList();
 
         return new PostResponse.FindPostListDTO(postDTOS, postPage.isLast());
@@ -105,7 +106,7 @@ public class PostService {
         Page<PopularPost> popularPostPage = popularPostRepository.findByPostTypeWithPost(postType, pageable);
         List<PostResponse.PostDTO> postDTOS = popularPostPage.getContent().stream()
                 .map(PopularPost::getPost)
-                .map(this::convertToPostDTO)
+                .map(post -> toPostDTO(post, getCachedPostLikeNum(post.getId())))
                 .toList();
 
         return new PostResponse.FindPostListDTO(postDTOS, popularPostPage.isLast());
@@ -115,7 +116,7 @@ public class PostService {
     public PostResponse.FindQnaListDTO findQuestions(Pageable pageable) {
         Page<Post> questionPage = postRepository.findByPostTypeWithUser(PostType.QUESTION, pageable);
         List<PostResponse.QnaDTO> qnaDTOS = questionPage.getContent().stream()
-                .map(this::convertToQnaDTO)
+                .map(PostMapper::toQnaDTO)
                 .toList();
 
         return new PostResponse.FindQnaListDTO(qnaDTOS, questionPage.isLast());
@@ -126,7 +127,7 @@ public class PostService {
         List<PostType> postTypes = List.of(PostType.ADOPTION, PostType.FOSTERING);
         Page<Post> postPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
         List<PostResponse.MyPostDTO> postDTOS = postPage.getContent().stream()
-                .map(this::convertToMyPostDTO)
+                .map(post -> toMyPostDTO(post, getCachedPostLikeNum(post.getId())))
                 .toList();
 
         return new PostResponse.FindMyPostListDTO(postDTOS, postPage.isLast());
@@ -137,7 +138,7 @@ public class PostService {
         List<PostType> postTypes = List.of(PostType.QUESTION);
         Page<Post> questionPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
         List<PostResponse.QnaDTO> qnaDTOS = questionPage.getContent().stream()
-                .map(this::convertToQnaDTO)
+                .map(PostMapper::toQnaDTO)
                 .toList();
 
         return new PostResponse.FindQnaListDTO(qnaDTOS, questionPage.isLast());
@@ -148,7 +149,7 @@ public class PostService {
         Page<Post> questionPage = postRepository.findQnaOfAnswerByUserIdWithUser(userId, pageable);
         Set<Post> question = new HashSet<>(questionPage.getContent()); // 중복 제거
         List<PostResponse.QnaDTO> qnaDTOS = question.stream()
-                .map(this::convertToQnaDTO)
+                .map(PostMapper::toQnaDTO)
                 .toList();
 
         return new PostResponse.FindQnaListDTO(qnaDTOS, questionPage.isLast());
@@ -158,7 +159,7 @@ public class PostService {
     public PostResponse.FindMyCommentListDTO findMyComments(Long userId, Pageable pageable) {
         Page<Comment> myCommentPage = commentRepository.findByUserIdWithPost(userId, pageable);
         List<PostResponse.MyCommentDTO> myCommentDTOS = myCommentPage.getContent().stream()
-                .map(this::convertToMyCommentDTO)
+                .map(PostMapper::toMyCommentDTO)
                 .toList();
 
         return new PostResponse.FindMyCommentListDTO(myCommentDTOS, myCommentPage.isLast());
@@ -174,7 +175,7 @@ public class PostService {
         List<Comment> comments = commentRepository.findByPostIdWithUserAndParentAndRemoved(postId);
         List<Long> likedCommentIds = commentLikeRepository.findCommentIdsByUserId(userId);
         List<PostResponse.CommentDTO> commentDTOS = convertToCommentDTO(comments, likedCommentIds);
-        List<PostResponse.PostImageDTO> postImageDTOS = convertToPostImageDTOs(post);
+        List<PostResponse.PostImageDTO> postImageDTOS = toPostImageDTOs(post);
 
         incrementPostViewCount(postId);
         markNoticeAsReadIfApplicable(post, userId, postId);
@@ -190,8 +191,8 @@ public class PostService {
         validateQna(qna);
 
         List<Post> answers = postRepository.findByParentIdWithUser(qnaId);
-        List<PostResponse.AnswerDTO> answerDTOS = convertToAnswerDTOs(answers, userId);
-        List<PostResponse.PostImageDTO> qnaImageDTOS = convertToPostImageDTOs(qna);
+        List<PostResponse.AnswerDTO> answerDTOS = toAnswerDTOs(answers, userId);
+        List<PostResponse.PostImageDTO> qnaImageDTOS =toPostImageDTOs(qna);
 
         incrementPostViewCount(qnaId);
 
@@ -205,7 +206,7 @@ public class PostService {
         );
         validateAnswer(answer);
 
-        List<PostResponse.PostImageDTO> postImageDTOS = convertToPostImageDTOs(answer);
+        List<PostResponse.PostImageDTO> postImageDTOS =toPostImageDTOs(answer);
         return new PostResponse.FindAnswerByIdDTO(answer.getWriterNickName(), answer.getContent(), answer.getCreatedDate(), postImageDTOS, answer.isOwner(userId));
     }
 
@@ -364,7 +365,7 @@ public class PostService {
         }
     }
 
-    private Post buildPostEntity(Long userId, List<PostImage> postImages, PostRequest.CreatePostDTO requestDTO) {
+    private Post buildPost(Long userId, List<PostImage> postImages, PostRequest.CreatePostDTO requestDTO) {
         User userRef = entityManager.getReference(User.class, userId);
         Post post = Post.builder()
                 .user(userRef)
@@ -377,7 +378,7 @@ public class PostService {
         return post;
     }
 
-    private List<PostImage> convertToPostImages(List<PostRequest.PostImageDTO> imageDTOs) {
+    private List<PostImage> buildPostImages(List<PostRequest.PostImageDTO> imageDTOs) {
         return imageDTOs.stream()
                 .map(postImageDTO -> PostImage.builder()
                         .imageURL(postImageDTO.imageURL())
@@ -395,14 +396,6 @@ public class PostService {
         if (questionPost.isNotQuestionType()) {
             throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
         }
-    }
-
-    private List<PostImage> buildPostImages(PostRequest.CreateAnswerDTO requestDTO) {
-        return requestDTO.images().stream()
-                .map(postImageDTO -> PostImage.builder()
-                        .imageURL(postImageDTO.imageURL())
-                        .build())
-                .toList();
     }
 
     private Post buildAnswerPost(Post questionPost, Long userId, List<PostImage> answerImages, PostRequest.CreateAnswerDTO requestDTO) {
@@ -427,60 +420,6 @@ public class PostService {
         createAlarm(questionPost.getUser().getId(), content, redirectURL, AlarmType.ANSWER);
     }
 
-    private PostResponse.PostDTO convertToPostDTO(Post post) {
-        return new PostResponse.PostDTO(
-                post.getId(),
-                post.getWriterNickName(),
-                post.getTitle(),
-                post.getContent(),
-                post.getCreatedDate(),
-                post.getCommentNum(),
-                getCachedPostLikeNum(post.getId()),
-                post.getFirstImageURL(),
-                post.isBlocked()
-        );
-    }
-
-    private PostResponse.QnaDTO convertToQnaDTO(Post post) {
-        return new PostResponse.QnaDTO(
-                post.getId(),
-                post.getWriterNickName(),
-                post.getWriterProfileURL(),
-                post.getTitle(),
-                post.getContent(),
-                post.getCreatedDate(),
-                post.getAnswerNum(),
-                post.isBlocked()
-        );
-    }
-
-    private PostResponse.MyPostDTO convertToMyPostDTO(Post post) {
-        return new PostResponse.MyPostDTO(
-                post.getId(),
-                post.getWriterNickName(),
-                post.getTitle(),
-                post.getContent(),
-                post.getCreatedDate(),
-                post.getCommentNum(),
-                getCachedPostLikeNum(post.getId()),
-                post.getFirstImageURL(),
-                post.isBlocked(),
-                post.getPostTypeString()
-        );
-    }
-
-    private PostResponse.MyCommentDTO convertToMyCommentDTO(Comment comment) {
-        return new PostResponse.MyCommentDTO(
-                comment.getId(),
-                comment.getPostId(),
-                comment.getPostTypeValue(),
-                comment.getContent(),
-                comment.getCreatedDate(),
-                comment.getPostTitle(),
-                comment.getPostCommentNumber(),
-                comment.isPostBlocked());
-    }
-
     private void validatePost(Post post) {
         if (post.isQuestionType()) {
             throw new CustomException(ExceptionCode.NOT_QUESTION_TYPE);
@@ -489,12 +428,6 @@ public class PostService {
         if (post.isScreened()) {
             throw new CustomException(ExceptionCode.SCREENED_POST);
         }
-    }
-
-    private List<PostResponse.PostImageDTO> convertToPostImageDTOs(Post post) {
-        return post.getPostImages().stream()
-                .map(postImage -> new PostResponse.PostImageDTO(postImage.getId(), postImage.getImageURL()))
-                .toList();
     }
 
     private boolean isPostLiked(Long postId, Long userId) {
@@ -521,25 +454,6 @@ public class PostService {
         if (qna.isScreened()) {
             throw new CustomException(ExceptionCode.SCREENED_POST);
         }
-    }
-
-    private List<PostResponse.AnswerDTO> convertToAnswerDTOs(List<Post> answers, Long userId) {
-        return answers.stream()
-                .map(answer -> new PostResponse.AnswerDTO(
-                        answer.getId(),
-                        answer.getWriterNickName(),
-                        answer.getWriterProfileURL(),
-                        answer.getContent(),
-                        answer.getCreatedDate(),
-                        convertPostImagesToDTOs(answer.getPostImages()),
-                        answer.isOwner(userId)))
-                .toList();
-    }
-
-    private List<PostResponse.PostImageDTO> convertPostImagesToDTOs(List<PostImage> postImages) {
-        return postImages.stream()
-                .map(image -> new PostResponse.PostImageDTO(image.getId(), image.getImageURL()))
-                .collect(Collectors.toList());
     }
 
     private void validateAnswer(Post answer) {
@@ -747,7 +661,7 @@ public class PostService {
         comments.forEach(comment -> {
             Long likeCount = getCachedCommentLikeNum(comment.getId());
             if (comment.isNotReply()) {
-                PostResponse.CommentDTO parentCommentDTO = convertToParentCommentDTO(comment, likeCount, likedCommentIds.contains(comment.getId()));
+                PostResponse.CommentDTO parentCommentDTO = toParentCommentDTO(comment, likeCount, likedCommentIds.contains(comment.getId()));
                 parentComments.add(parentCommentDTO);
                 parentCommentMap.put(comment.getId(), parentCommentDTO);
             } else {
@@ -758,46 +672,18 @@ public class PostService {
         return parentComments;
     }
 
-    private PostResponse.CommentDTO convertToParentCommentDTO(Comment comment, Long likeCount, boolean isLikedByUser) {
-        return new PostResponse.CommentDTO(
-                comment.getId(),
-                comment.getWriterNickname(),
-                comment.getWriterProfileURL(),
-                comment.getContent(),
-                comment.getCreatedDate(),
-                comment.getWriterProvince(),
-                likeCount,
-                isLikedByUser,
-                new ArrayList<>() // 답변을 담을 리스트
-        );
-    }
-
     private void handleChildComment(Comment childComment, Map<Long, PostResponse.CommentDTO> parentCommentMap, List<Long> likedCommentIds, Long likeCount) {
         if (childComment.isDeleted() && isLastChildComment(childComment)) {
             return; // 삭제된 댓글이 마지막 대댓글이면, 보이지 않고. 반면, 마지막 대댓글이 아니면, '삭제된 댓글입니다' 처리
         }
 
         PostResponse.CommentDTO parentCommentDTO = parentCommentMap.get(childComment.getParentId());
-        PostResponse.ReplyDTO childCommentDTO = convertToReplyDTO(childComment, likedCommentIds.contains(childComment.getId()), likeCount);
+        PostResponse.ReplyDTO childCommentDTO = toReplyDTO(childComment, likedCommentIds.contains(childComment.getId()), likeCount);
         parentCommentDTO.replies().add(childCommentDTO);
     }
 
     private boolean isLastChildComment(Comment comment) {
         return !commentRepository.existsByParentIdAndDateAfter(comment.getParent().getId(), comment.getCreatedDate());
-    }
-
-    private PostResponse.ReplyDTO convertToReplyDTO(Comment childComment, boolean isLikedByUser, Long likeCount) {
-        return new PostResponse.ReplyDTO(
-                childComment.getId(),
-                childComment.getWriterNickname(),
-                childComment.getWriterProfileURL(),
-                childComment.getParentWriterNickname(),
-                childComment.getContent(),
-                childComment.getCreatedDate(),
-                childComment.getWriterProvince(),
-                likeCount,
-                isLikedByUser
-        );
     }
 
     private Long getCachedPostLikeNum(Long key) {
@@ -838,7 +724,6 @@ public class PostService {
                 redirectURL,
                 LocalDateTime.now(),
                 alarmType);
-
         brokerService.produceAlarmToUser(userId, alarmDTO);
     }
 
