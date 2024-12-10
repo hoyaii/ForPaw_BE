@@ -29,7 +29,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.hong.forapw.core.utils.mapper.PostMapper.*;
@@ -47,19 +46,13 @@ public class PostService {
     private final ReportRepository reportRepository;
     private final PopularPostRepository popularPostRepository;
     private final UserRepository userRepository;
-    private final RedisService redisService;
+    private final PostCacheService postCacheService;
     private final S3Service s3Service;
     private final BrokerService brokerService;
     private final EntityManager entityManager;
 
-    public static final Long POST_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
-    public static final Long POST_READ_EXP = 60L * 60 * 24 * 360; // 1년
     private static final String POST_SCREENED = "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.";
-    private static final String POST_READ_KEY_PREFIX = "user:readPosts:";
-    private static final String POST_VIEW_NUM_PREFIX = "postViewNum";
     private static final String COMMENT_DELETED = "삭제된 댓글 입니다.";
-    private static final String POST_LIKE_NUM_KEY_PREFIX = "post:like:count:";
-    private static final String COMMENT_LIKE_NUM_KEY_PREFIX = "comment:like:count:";
 
     @Transactional
     public PostResponse.CreatePostDTO createPost(PostRequest.CreatePostDTO requestDTO, Long userId) {
@@ -70,7 +63,7 @@ public class PostService {
         setPostRelationships(post, postImages);
         postRepository.save(post);
 
-        initializePostInRedis(post.getId());
+        postCacheService.initializePostCache(post.getId());
 
         return new PostResponse.CreatePostDTO(post.getId());
     }
@@ -97,7 +90,7 @@ public class PostService {
     public PostResponse.FindPostListDTO findPostsByType(Pageable pageable, PostType postType) {
         Page<Post> postPage = postRepository.findByPostTypeWithUser(postType, pageable);
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
-                .map(post -> toPostDTO(post, getCachedPostLikeNum(post.getId())))
+                .map(post -> toPostDTO(post, postCacheService.getPostLikeCount(post.getId())))
                 .toList();
 
         return new PostResponse.FindPostListDTO(postDTOS, postPage.isLast());
@@ -108,7 +101,7 @@ public class PostService {
         Page<PopularPost> popularPostPage = popularPostRepository.findByPostTypeWithPost(postType, pageable);
         List<PostResponse.PostDTO> postDTOS = popularPostPage.getContent().stream()
                 .map(PopularPost::getPost)
-                .map(post -> toPostDTO(post, getCachedPostLikeNum(post.getId())))
+                .map(post -> toPostDTO(post, postCacheService.getPostLikeCount(post.getId())))
                 .toList();
 
         return new PostResponse.FindPostListDTO(postDTOS, popularPostPage.isLast());
@@ -129,7 +122,7 @@ public class PostService {
         List<PostType> postTypes = List.of(PostType.ADOPTION, PostType.FOSTERING);
         Page<Post> postPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
         List<PostResponse.MyPostDTO> postDTOS = postPage.getContent().stream()
-                .map(post -> toMyPostDTO(post, getCachedPostLikeNum(post.getId())))
+                .map(post -> toMyPostDTO(post, postCacheService.getPostLikeCount(post.getId())))
                 .toList();
 
         return new PostResponse.FindMyPostListDTO(postDTOS, postPage.isLast());
@@ -179,10 +172,10 @@ public class PostService {
         List<PostResponse.CommentDTO> commentDTOS = convertToCommentDTO(comments, likedCommentIds);
         List<PostResponse.PostImageDTO> postImageDTOS = toPostImageDTOs(post);
 
-        incrementPostViewCount(postId);
-        markNoticeAsReadIfApplicable(post, userId, postId);
+        postCacheService.incrementPostViewCount(postId);
+        postCacheService.markNoticePostAsRead(post, userId, postId);
 
-        return new PostResponse.FindPostByIdDTO(post.getUser().getNickname(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), getCachedPostLikeNum(postId), post.isOwner(userId), isPostLiked(postId, userId), postImageDTOS, commentDTOS);
+        return new PostResponse.FindPostByIdDTO(post.getUser().getNickname(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), postCacheService.getPostLikeCount(postId), post.isOwner(userId), isPostLiked(postId, userId), postImageDTOS, commentDTOS);
     }
 
     @Transactional(readOnly = true)
@@ -196,7 +189,7 @@ public class PostService {
         List<PostResponse.AnswerDTO> answerDTOS = toAnswerDTOs(answers, userId);
         List<PostResponse.PostImageDTO> qnaImageDTOS =toPostImageDTOs(qna);
 
-        incrementPostViewCount(qnaId);
+        postCacheService.incrementPostViewCount(qnaId);
 
         return new PostResponse.FindQnaByIdDTO(qna.getWriterNickName(), qna.getWriterProfileURL(), qna.getTitle(), qna.getContent(), qna.getCreatedDate(), qnaImageDTOS, answerDTOS, qna.isOwner(userId));
     }
@@ -264,7 +257,7 @@ public class PostService {
         commentRepository.save(comment);
 
         incrementCommentCount(postId);
-        initializeCommentInRedis(comment.getId());
+        postCacheService.initializeCommentCache(comment.getId());
         sendNewCommentAlarm(requestDTO.content(), postId, post.getPostType(), post.getWriterId());
 
         return new PostResponse.CreateCommentDTO(comment.getId());
@@ -282,7 +275,7 @@ public class PostService {
         commentRepository.save(reply);
 
         incrementCommentCount(postId);
-        initializeCommentInRedis(reply.getId());
+        postCacheService.initializeCommentCache(reply.getId());
         sendNewReplyAlarm(requestDTO.content(), postId, parentComment);
 
         return new PostResponse.CreateCommentDTO(reply.getId());
@@ -349,7 +342,7 @@ public class PostService {
         List<Post> posts = postRepository.findPostIdsWithinDate(oneWeeksAgo);
 
         for (Post post : posts) {
-            Long readCnt = redisService.getValueInLongWithNull(POST_VIEW_NUM_PREFIX, post.getId().toString());
+            Long readCnt = postCacheService.getPostViewCount(post);
 
             if (readCnt != null) {
                 post.updateReadCnt(readCnt);
@@ -387,12 +380,6 @@ public class PostService {
                         .imageURL(postImageDTO.imageURL())
                         .build())
                 .toList();
-    }
-
-    /** 좋아요의 경우, 3개월 동안만 좋아요를 할 수 있다.*/
-    private void initializePostInRedis(Long postId) {
-        redisService.storeValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), "0", POST_EXP);
-        redisService.storeValue(POST_VIEW_NUM_PREFIX, postId.toString(), "0", POST_EXP);
     }
 
     private void validateQuestionPostType(Post questionPost) {
@@ -435,18 +422,6 @@ public class PostService {
 
     private boolean isPostLiked(Long postId, Long userId) {
         return postLikeRepository.existsByPostIdAndUserId(postId, userId);
-    }
-
-    /** 공지 사항의 경우, 게시글 읽음 여부를 저장 (1년동안) */
-    private void markNoticeAsReadIfApplicable(Post post, Long userId, Long postId) {
-        if (post.isNoticeType()) {
-            String key = POST_READ_KEY_PREFIX + userId;
-            redisService.addSetElement(key, postId, POST_READ_EXP);
-        }
-    }
-
-    private void incrementPostViewCount(Long postId) {
-        redisService.incrementValue(POST_VIEW_NUM_PREFIX, postId.toString(), 1L);
     }
 
     private void validateQna(Post qna) {
@@ -509,10 +484,6 @@ public class PostService {
 
     private void incrementCommentCount(Long postId) {
         postRepository.incrementCommentNum(postId);
-    }
-
-    private void initializeCommentInRedis(Long commentId) {
-        redisService.storeValue(COMMENT_LIKE_NUM_KEY_PREFIX, commentId.toString(), "0", POST_EXP);
     }
 
     private void sendNewCommentAlarm(String commentContent, Long postId, PostType postType, Long writerId) {
@@ -597,9 +568,9 @@ public class PostService {
     }
 
     private double calculateHotPoint(Post post) {
-        double viewPoints = getCachedPostViewNum(post.getId(), post::getReadCnt) * 0.001;
+        double viewPoints = postCacheService.getPostViewCount(post.getId(), post) * 0.001;
         double commentPoints = post.getCommentNum();
-        double likePoints = getCachedPostLikeNum(post.getId()) * 5;
+        double likePoints = postCacheService.getPostLikeCount(post.getId()) * 5;
         return viewPoints + commentPoints + likePoints;
     }
 
@@ -662,7 +633,7 @@ public class PostService {
         Map<Long, PostResponse.CommentDTO> parentCommentMap = new HashMap<>(); // ParentComment Id로 빠르게 ParentComment를 찾을 용도
 
         comments.forEach(comment -> {
-            Long likeCount = getCachedCommentLikeNum(comment.getId());
+            Long likeCount = postCacheService.getCommentLikeCount(comment.getId());
             if (comment.isNotReply()) {
                 PostResponse.CommentDTO parentCommentDTO = toParentCommentDTO(comment, likeCount, likedCommentIds.contains(comment.getId()));
                 parentComments.add(parentCommentDTO);
@@ -687,37 +658,6 @@ public class PostService {
 
     private boolean isLastChildComment(Comment comment) {
         return !commentRepository.existsByParentIdAndDateAfter(comment.getParent().getId(), comment.getCreatedDate());
-    }
-
-    private Long getCachedPostLikeNum(Long key) {
-        Long likeNum = redisService.getValueInLongWithNull(PostService.POST_LIKE_NUM_KEY_PREFIX, key.toString());
-        if (likeNum == null) {
-            likeNum = postRepository.countLikesByPostId(key);
-            redisService.storeValue(PostService.POST_LIKE_NUM_KEY_PREFIX, key.toString(), likeNum.toString(), POST_EXP);
-        }
-
-        return likeNum;
-    }
-
-    private Long getCachedCommentLikeNum(Long key) {
-        Long likeNum = redisService.getValueInLongWithNull(PostService.COMMENT_LIKE_NUM_KEY_PREFIX, key.toString());
-
-        if (likeNum == null) {
-            likeNum = commentRepository.countLikesByCommentId(key);
-            redisService.storeValue(PostService.COMMENT_LIKE_NUM_KEY_PREFIX, key.toString(), likeNum.toString(), POST_EXP);
-        }
-
-        return likeNum;
-    }
-
-    private Long getCachedPostViewNum(Long key, Supplier<Long> dbFallback) {
-        Long viewNum = redisService.getValueInLongWithNull(PostService.POST_VIEW_NUM_PREFIX, key.toString());
-
-        if (viewNum == null) {
-            viewNum = dbFallback.get();
-        }
-
-        return viewNum;
     }
 
     private void createAlarm(Long userId, String content, String redirectURL, AlarmType alarmType) {
