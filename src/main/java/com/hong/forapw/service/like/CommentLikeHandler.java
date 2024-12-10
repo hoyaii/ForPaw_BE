@@ -27,16 +27,9 @@ public class CommentLikeHandler implements LikeHandler {
     private static final String COMMENT_LIKED_SET_KEY_PREFIX = "user:%s:liked_comments";
 
     @Override
-    public Long findOwnerId(Long commentId) {
-        return commentRepository.findUserIdById(commentId)
-                .orElseThrow(() -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND));
-    }
-
-    @Override
-    public void validateNotSelfLike(Long ownerId, Long userId) {
-        if (ownerId.equals(userId)) {
-            throw new CustomException(ExceptionCode.CANT_LIKE_MY_POST);
-        }
+    public void validateBeforeLike(Long commentId, Long userId) {
+        Long ownerId = findOwnerId(commentId);
+        validateNotSelfLike(ownerId, userId);
     }
 
     @Override
@@ -72,6 +65,17 @@ public class CommentLikeHandler implements LikeHandler {
 
     private String buildUserLikedSetKey(Long userId) {
         return String.format(COMMENT_LIKED_SET_KEY_PREFIX, userId);
+    }
+
+    private Long findOwnerId(Long commentId) {
+        return commentRepository.findUserIdById(commentId)
+                .orElseThrow(() -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND));
+    }
+
+    private void validateNotSelfLike(Long ownerId, Long userId) {
+        if (ownerId.equals(userId)) {
+            throw new CustomException(ExceptionCode.CANT_LIKE_MY_POST);
+        }
     }
 }
 

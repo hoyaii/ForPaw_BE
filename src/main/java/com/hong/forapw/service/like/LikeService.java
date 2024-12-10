@@ -1,7 +1,5 @@
 package com.hong.forapw.service.like;
 
-import com.hong.forapw.core.errors.CustomException;
-import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.service.RedisService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -34,10 +32,14 @@ public class LikeService {
         handleLike(commentId, userId, LikeTarget.COMMENT);
     }
 
+    @Transactional
+    public void likeAnimal(Long animalId, Long userId) {
+        handleLike(animalId, userId, LikeTarget.ANIMAL);
+    }
+
     private void handleLike(Long targetId, Long userId, LikeTarget target) {
         LikeHandler handler = likeHandlers.get(target);
-        Long ownerId = handler.findOwnerId(targetId);
-        handler.validateNotSelfLike(ownerId, userId);
+        handler.validateBeforeLike(targetId, userId);
 
         String lockKey = handler.buildLockKey(targetId);
         executeWithLock(lockKey, () -> toggleLike(handler, targetId, userId));

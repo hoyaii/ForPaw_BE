@@ -26,17 +26,11 @@ public class PostLikeHandler implements LikeHandler {
     private static final String POST_LIKE_NUM_KEY_PREFIX = "post:like:count:";
     private static final String POST_LIKED_SET_KEY_PREFIX = "user:%s:liked_posts";
 
-    @Override
-    public Long findOwnerId(Long postId) {
-        return postRepository.findUserIdById(postId)
-                .orElseThrow(() -> new CustomException(ExceptionCode.POST_NOT_FOUND));
-    }
 
     @Override
-    public void validateNotSelfLike(Long ownerId, Long userId) {
-        if (ownerId.equals(userId)) {
-            throw new CustomException(ExceptionCode.CANT_LIKE_MY_POST);
-        }
+    public void validateBeforeLike(Long postId, Long userId) {
+        Long ownerId = findOwnerId(postId);
+        validateNotSelfLike(ownerId, userId);
     }
 
     @Override
@@ -72,6 +66,17 @@ public class PostLikeHandler implements LikeHandler {
 
     private String buildUserLikedSetKey(Long userId) {
         return String.format(POST_LIKED_SET_KEY_PREFIX, userId);
+    }
+
+    private Long findOwnerId(Long postId) {
+        return postRepository.findUserIdById(postId)
+                .orElseThrow(() -> new CustomException(ExceptionCode.POST_NOT_FOUND));
+    }
+
+    private void validateNotSelfLike(Long ownerId, Long userId) {
+        if (ownerId.equals(userId)) {
+            throw new CustomException(ExceptionCode.CANT_LIKE_MY_POST);
+        }
     }
 }
 

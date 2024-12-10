@@ -152,17 +152,6 @@ public class AnimalService {
         return toFindAnimalByIdDTO(animal,isLikedAnimal);
     }
 
-    @Transactional
-    public void likeAnimal(Long userId, Long animalId) {
-        validateAnimalExistence(animalId);
-
-        favoriteAnimalRepository.findByUserIdAndAnimalId(userId, animalId)
-                .ifPresentOrElse(
-                        this::removeAnimalLike,
-                        () -> addAnimalLike(userId, animalId)
-                );
-    }
-
     // 로그인 X => 그냥 최신순, 로그인 O => 검색 기록을 바탕으로 추천 => 검색 기록이 없다면 위치를 기준으로 주변 보호소의 동물 추천
     public List<Long> findRecommendedAnimalIds(Long userId) {
         if (userId == null) {
@@ -326,29 +315,6 @@ public class AnimalService {
     private void resolveDuplicateShelters() {
         List<String> duplicateCareTels = shelterRepository.findDuplicateCareTels();
         duplicateCareTels.forEach(this::handleDuplicateSheltersForCareTel);
-    }
-
-    private void validateAnimalExistence(Long animalId) {
-        if (!animalRepository.existsById(animalId)) {
-            throw new CustomException(ExceptionCode.ANIMAL_NOT_FOUND);
-        }
-    }
-
-    private void removeAnimalLike(FavoriteAnimal favoriteAnimal) {
-        favoriteAnimalRepository.delete(favoriteAnimal);
-        redisService.decrementValue(ANIMAL_LIKE_NUM_KEY_PREFIX, favoriteAnimal.getAnimal().getId().toString(), 1L);
-    }
-
-    private void addAnimalLike(Long userId, Long animalId) {
-        Animal animalRef = entityManager.getReference(Animal.class, animalId);
-        User userRef = entityManager.getReference(User.class, userId);
-        FavoriteAnimal favoriteAnimal = FavoriteAnimal.builder()
-                .user(userRef)
-                .animal(animalRef)
-                .build();
-
-        favoriteAnimalRepository.save(favoriteAnimal);
-        redisService.incrementValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString(), 1L);
     }
 
     @Transactional
