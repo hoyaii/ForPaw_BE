@@ -11,7 +11,6 @@ import com.hong.forapw.domain.group.GroupUser;
 import com.hong.forapw.domain.post.PostType;
 import com.hong.forapw.domain.user.AuthProvider;
 import com.hong.forapw.domain.user.User;
-import com.hong.forapw.domain.user.UserRole;
 import com.hong.forapw.domain.user.UserStatus;
 import com.hong.forapw.repository.alarm.AlarmRepository;
 import com.hong.forapw.repository.animal.FavoriteAnimalRepository;
@@ -42,17 +41,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.hong.forapw.core.security.JWTProvider;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -86,33 +77,9 @@ public class UserService {
     private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final FavoriteGroupRepository favoriteGroupRepository;
     private final RedisService redisService;
-    private final WebClient webClient;
+    private final OAuthService oAuthService;
     private final BrokerService brokerService;
     private final EmailService emailService;
-
-    @Value("${kakao.key}")
-    private String kakaoApiKey;
-
-    @Value("${kakao.oauth.token.uri}")
-    private String kakaoTokenUri;
-
-    @Value("${kakao.oauth.userInfo.uri}")
-    private String kakaoUserInfoUri;
-
-    @Value("${google.client.id}")
-    private String googleClientId;
-
-    @Value("${google.oauth.token.uri}")
-    private String googleTokenUri;
-
-    @Value("${google.client.passowrd}")
-    private String googleClientSecret;
-
-    @Value("${google.oauth.redirect.uri}")
-    private String googleRedirectUri;
-
-    @Value("${google.oauth.userInfo.uri}")
-    private String googleUserInfoUri;
 
     @Value("${social.join.redirect.uri}")
     private String redirectJoinUri;
@@ -135,10 +102,7 @@ public class UserService {
     private static final String CODE_TO_EMAIL_KEY_PREFIX = "codeToEmail";
     private static final String USER_QUEUE_PREFIX = "user.";
     private static final String ALARM_EXCHANGE = "alarm.exchange";
-    private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String USER_AGENT_HEADER = "User-Agent";
-    private static final String BEARER_PREFIX = "Bearer ";
-    private static final String AUTH_CODE_GRANT_TYPE = "authorization_code";
     private static final String UNKNOWN = "unknown";
     private static final String[] IP_HEADER_CANDIDATES = {"X-Forwarded-For", "Proxy-Client-IP", "WL-Proxy-Client-IP", "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR"};
     private static final String CODE_TYPE_RECOVERY = "recovery";
@@ -147,6 +111,8 @@ public class UserService {
     private static final String QUERY_PARAM_EMAIL = "email";
     private static final String QUERY_PARAM_AUTH_PROVIDER = "authProvider";
     private static final String QUERY_PARAM_ACCESS_TOKEN = "accessToken";
+    private static final long LOGIN_FAIL_EXPIRATION_MS = 300_000L; // 5분
+    private static final long DAILY_FAILURE_LIMIT = 3L;
 
     @Transactional
     public Map<String, String> login(UserRequest.LoginDTO requestDTO, HttpServletRequest request) {
@@ -154,8 +120,8 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
         );
 
-        checkAlreadyExit(user);
-        checkIsActiveMember(user);
+        validateUserNotExited(user);
+        validateUserActive(user);
         Long loginFailNum = checkLoginFailures(user);
 
         if (isPasswordUnmatched(user, requestDTO.password())) {
@@ -168,8 +134,8 @@ public class UserService {
 
     @Transactional
     public Map<String, String> kakaoLogin(String code, HttpServletRequest request) {
-        KakaoOauthDTO.TokenDTO token = getKakaoToken(code);
-        KakaoOauthDTO.UserInfoDTO userInfo = getKakaoUserInfo(token.access_token());
+        KakaoOauthDTO.TokenDTO token = oAuthService.getKakaoToken(code);
+        KakaoOauthDTO.UserInfoDTO userInfo = oAuthService.getKakaoUserInfo(token.access_token());
         String email = userInfo.kakao_account().email();
 
         return processSocialLogin(email, request);
@@ -177,8 +143,8 @@ public class UserService {
 
     @Transactional
     public Map<String, String> googleLogin(String code, HttpServletRequest request) {
-        GoogleOauthDTO.TokenDTO token = getGoogleToken(code);
-        GoogleOauthDTO.UserInfoDTO userInfoDTO = getGoogleUserInfo(token.access_token());
+        GoogleOauthDTO.TokenDTO token = oAuthService.getGoogleToken(code);
+        GoogleOauthDTO.UserInfoDTO userInfoDTO = oAuthService.getGoogleUserInfo(token.access_token());
         String email = userInfoDTO.email();
 
         return processSocialLogin(email, request);
@@ -186,9 +152,9 @@ public class UserService {
 
     @Transactional
     public void join(UserRequest.JoinDTO requestDTO) {
-        checkConfirmPasswordCorrect(requestDTO.password(), requestDTO.passwordConfirm());
-        checkAlreadyJoin(requestDTO.email());
-        checkDuplicateNickname(requestDTO.nickName());
+        validateConfirmPasswordMatch(requestDTO.password(), requestDTO.passwordConfirm());
+        checkEmailNotRegistered(requestDTO.email());
+        validateNicknameUniqueness(requestDTO.nickName());
 
         User user = buildUser(requestDTO, passwordEncoder.encode(requestDTO.password()));
         userRepository.save(user);
@@ -199,8 +165,8 @@ public class UserService {
 
     @Transactional
     public void socialJoin(UserRequest.SocialJoinDTO requestDTO) {
-        checkAlreadyJoin(requestDTO.email());
-        checkDuplicateNickname(requestDTO.nickName());
+        checkEmailNotRegistered(requestDTO.email());
+        validateNicknameUniqueness(requestDTO.nickName());
 
         User user = buildUser(requestDTO, passwordEncoder.encode(generatePassword()));
         userRepository.save(user);
@@ -285,8 +251,8 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        checkIsPasswordMatched(user, requestDTO.curPassword());
-        checkConfirmPasswordCorrect(requestDTO.curPassword(), requestDTO.newPasswordConfirm());
+        validatePasswordMatch(user, requestDTO.curPassword());
+        validateConfirmPasswordMatch(requestDTO.curPassword(), requestDTO.newPasswordConfirm());
 
         user.updatePassword(passwordEncoder.encode(requestDTO.newPassword()));
     }
@@ -331,7 +297,7 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        checkAlreadyExit(user);
+        validateUserNotExited(user);
         checkIsGroupCreator(user);
 
         deleteUserRelatedData(userId);
@@ -398,12 +364,12 @@ public class UserService {
 
     private Long checkLoginFailures(User user) {
         Long dailyFailureCount = redisService.getValueInLong(LOGIN_FAIL_DAILY_KEY_PREFIX, user.getId().toString());
-        if (dailyFailureCount >= 3L) {
+        if (dailyFailureCount >= DAILY_FAILURE_LIMIT) {
             throw new CustomException(ExceptionCode.ACCOUNT_LOCKED);
         }
 
         Long currentFailureCount = redisService.getValueInLong(LOGIN_FAIL_CURRENT_KEY_PREFIX, user.getId().toString());
-        if (currentFailureCount >= 3L) {
+        if (currentFailureCount >= DAILY_FAILURE_LIMIT) {
             handleDailyFailureLimitExceeded(user, dailyFailureCount);
             throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
         }
@@ -415,7 +381,7 @@ public class UserService {
         dailyFailureCount++;
         updateDailyFailureCount(user, dailyFailureCount);
 
-        if (dailyFailureCount == 3L) {
+        if (dailyFailureCount == DAILY_FAILURE_LIMIT) {
             sendAccountSuspensionEmail(user);
         }
     }
@@ -457,7 +423,7 @@ public class UserService {
 
     private void cacheVerificationInfoIfRecovery(UserRequest.VerifyCodeDTO requestDTO, String codeType) {
         if (CODE_TYPE_RECOVERY.equals(codeType))
-            redisService.storeValue(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code(), requestDTO.email(), 5 * 60 * 1000L);
+            redisService.storeValue(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code(), requestDTO.email(), LOGIN_FAIL_EXPIRATION_MS);
     }
 
     private String generatePassword() {
@@ -474,6 +440,7 @@ public class UserService {
 
         return shufflePassword(password);
     }
+
     private char pickRandomChar(SecureRandom random, int range, int offset) {
         return ALL_CHARS.charAt(random.nextInt(range) + offset);
     }
@@ -554,9 +521,9 @@ public class UserService {
         }
 
         User user = userOP.get();
-        checkAlreadyExit(user);
-        checkIsActiveMember(user);
-        checkIsLocalJoined(user);
+        validateUserNotExited(user);
+        validateUserActive(user);
+        checkNotLocalJoined(user);
 
         recordLoginAttempt(user, request);
 
@@ -567,65 +534,10 @@ public class UserService {
         return Map.of("email", email);
     }
 
-    private void checkIsLocalJoined(User user) {
+    private void checkNotLocalJoined(User user) {
         if (user.isLocalJoined()) {
             throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
         }
-    }
-
-    private KakaoOauthDTO.TokenDTO getKakaoToken(String code) {
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("grant_type", AUTH_CODE_GRANT_TYPE);
-        formData.add("client_id", kakaoApiKey);
-        formData.add("code", code);
-
-        Mono<KakaoOauthDTO.TokenDTO> response = webClient.post()
-                .uri(kakaoTokenUri)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData(formData))
-                .retrieve()
-                .bodyToMono(KakaoOauthDTO.TokenDTO.class);
-
-        return response.block();
-    }
-
-    private KakaoOauthDTO.UserInfoDTO getKakaoUserInfo(String token) {
-        Flux<KakaoOauthDTO.UserInfoDTO> response = webClient.get()
-                .uri(kakaoUserInfoUri)
-                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
-                .retrieve()
-                .bodyToFlux(KakaoOauthDTO.UserInfoDTO.class);
-
-        return response.blockFirst();
-    }
-
-    private GoogleOauthDTO.TokenDTO getGoogleToken(String code) {
-        String decode = URLDecoder.decode(code, StandardCharsets.UTF_8);
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("code", decode);
-        formData.add("client_id", googleClientId);
-        formData.add("client_secret", googleClientSecret);
-        formData.add("redirect_uri", googleRedirectUri);
-        formData.add("grant_type", AUTH_CODE_GRANT_TYPE);
-
-        Mono<GoogleOauthDTO.TokenDTO> response = webClient.post()
-                .uri(googleTokenUri)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData(formData))
-                .retrieve()
-                .bodyToMono(GoogleOauthDTO.TokenDTO.class);
-
-        return response.block();
-    }
-
-    private GoogleOauthDTO.UserInfoDTO getGoogleUserInfo(String token) {
-        Flux<GoogleOauthDTO.UserInfoDTO> response = webClient.get()
-                .uri(googleUserInfoUri)
-                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + token)
-                .retrieve()
-                .bodyToFlux(GoogleOauthDTO.UserInfoDTO.class);
-
-        return response.blockFirst();
     }
 
     private void setAlarmQueue(User user) {
@@ -646,17 +558,17 @@ public class UserService {
                 });
     }
 
-    private void checkConfirmPasswordCorrect(String password, String confirmPassword) {
+    private void validateConfirmPasswordMatch(String password, String confirmPassword) {
         if (!password.equals(confirmPassword))
             throw new CustomException(ExceptionCode.USER_PASSWORD_MATCH_WRONG);
     }
 
-    private void checkIsPasswordMatched(User user, String inputPassword) {
+    private void validatePasswordMatch(User user, String inputPassword) {
         if (!passwordEncoder.matches(user.getPassword(), inputPassword))
             throw new CustomException(ExceptionCode.USER_PASSWORD_MATCH_WRONG);
     }
 
-    private void checkAlreadyJoin(String email) {
+    private void checkEmailNotRegistered(String email) {
         userRepository.findAuthProviderByEmail(email).ifPresent(authProvider -> {
             if (authProvider == AuthProvider.LOCAL) {
                 throw new CustomException(ExceptionCode.JOINED_BY_LOCAL);
@@ -667,12 +579,12 @@ public class UserService {
         });
     }
 
-    private void checkDuplicateNickname(String nickName) {
+    private void validateNicknameUniqueness(String nickName) {
         if (userRepository.existsByNicknameWithRemoved(nickName))
             throw new CustomException(ExceptionCode.USER_NICKNAME_EXIST);
     }
 
-    private void checkAlreadyExit(User user) {
+    private void validateUserNotExited(User user) {
         if (user.isExitMember()) {
             throw new CustomException(ExceptionCode.USER_ALREADY_EXIT);
         }
@@ -693,7 +605,7 @@ public class UserService {
         throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG, message);
     }
 
-    private void checkIsActiveMember(User user) {
+    private void validateUserActive(User user) {
         if (user.isUnActive()) {
             throw new CustomException(ExceptionCode.USER_SUSPENDED);
         }
