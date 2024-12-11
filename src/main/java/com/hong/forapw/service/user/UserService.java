@@ -96,9 +96,9 @@ public class UserService {
     private static final String REFRESH_TOKEN_KEY_PREFIX = "refreshToken";
     private static final String ACCESS_TOKEN_KEY_PREFIX = "accessToken";
     private static final String EMAIL = "email";
-    private static final String LOGIN_FAIL_DAILY_KEY_PREFIX = "loginFailDaily";
+    private static final String MAX_DAILY_LOGIN_FAILURES = "loginFailDaily";
     private static final String ALL_CHARS = "!@#$%^&*0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    private static final String LOGIN_FAIL_CURRENT_KEY_PREFIX = "loginFail";
+    private static final String MAX_LOGIN_ATTEMPTS_BEFORE_LOCK = "loginFail";
     private static final String CODE_TO_EMAIL_KEY_PREFIX = "codeToEmail";
     private static final String USER_QUEUE_PREFIX = "user.";
     private static final String ALARM_EXCHANGE = "alarm.exchange";
@@ -111,8 +111,10 @@ public class UserService {
     private static final String QUERY_PARAM_EMAIL = "email";
     private static final String QUERY_PARAM_AUTH_PROVIDER = "authProvider";
     private static final String QUERY_PARAM_ACCESS_TOKEN = "accessToken";
-    private static final long LOGIN_FAIL_EXPIRATION_MS = 300_000L; // 5분
+    private static final long LOGIN_FAIL_CURRENT_EXPIRATION_MS = 300_000L; // 5분
+    private static final long CURRENT_FAILURE_LIMIT = 3L;
     private static final long DAILY_FAILURE_LIMIT = 3L;
+    private static final long LOGIN_FAIL_DAILY_EXPIRATION_MS = 86400000L; // 24시간
 
     @Transactional
     public Map<String, String> login(UserRequest.LoginDTO requestDTO, HttpServletRequest request) {
@@ -122,10 +124,11 @@ public class UserService {
 
         validateUserNotExited(user);
         validateUserActive(user);
-        Long loginFailNum = checkLoginFailures(user);
+        validateLoginAttempts(user);
 
         if (isPasswordUnmatched(user, requestDTO.password())) {
-            infoLoginFail(user, loginFailNum);
+            handleLoginFailures(user);
+            infoLoginFail(user);
         }
 
         recordLoginAttempt(user, request);
@@ -231,8 +234,7 @@ public class UserService {
         updateNewPassword(email, requestDTO.newPassword());
     }
 
-    // 재설정 화면에서 실시간으로 일치여부를 확인하기 위해 사용
-    @Transactional
+    @Transactional(readOnly = true)
     public UserResponse.VerifyPasswordDTO verifyPassword(UserRequest.CurPasswordDTO requestDTO, Long userId) {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
@@ -362,36 +364,49 @@ public class UserService {
         }
     }
 
-    private Long checkLoginFailures(User user) {
-        Long dailyFailureCount = redisService.getValueInLong(LOGIN_FAIL_DAILY_KEY_PREFIX, user.getId().toString());
-        if (dailyFailureCount >= DAILY_FAILURE_LIMIT) {
+    private void validateLoginAttempts(User user) {
+        Long dailyLoginFailures = redisService.getValueInLong(MAX_DAILY_LOGIN_FAILURES, user.getId().toString());
+        if (dailyLoginFailures >= DAILY_FAILURE_LIMIT) {
             throw new CustomException(ExceptionCode.ACCOUNT_LOCKED);
         }
 
-        Long currentFailureCount = redisService.getValueInLong(LOGIN_FAIL_CURRENT_KEY_PREFIX, user.getId().toString());
-        if (currentFailureCount >= DAILY_FAILURE_LIMIT) {
-            handleDailyFailureLimitExceeded(user, dailyFailureCount);
+        Long currentLoginFailures = redisService.getValueInLong(MAX_LOGIN_ATTEMPTS_BEFORE_LOCK, user.getId().toString());
+        if (currentLoginFailures >= CURRENT_FAILURE_LIMIT) {
             throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
         }
-
-        return currentFailureCount;
     }
 
-    private void handleDailyFailureLimitExceeded(User user, Long dailyFailureCount) {
-        dailyFailureCount++;
-        updateDailyFailureCount(user, dailyFailureCount);
+    private void handleLoginFailures(User user) {
+        long currentFailures = incrementCurrentLoginFailures(user);
 
-        if (dailyFailureCount == DAILY_FAILURE_LIMIT) {
-            sendAccountSuspensionEmail(user);
+        if(currentFailures >= 3L) {
+            long dailyFailures = incrementDailyLoginFailures(user);
+
+            if(dailyFailures == 3L){
+                emailService.sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), MAIL_TEMPLATE_FOR_LOCK_ACCOUNT, new HashMap<>());
+            }
+            throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
         }
     }
 
-    private void updateDailyFailureCount(User user, Long dailyFailureCount) {
-        redisService.storeValue(LOGIN_FAIL_DAILY_KEY_PREFIX, user.getId().toString(), dailyFailureCount.toString(), 86400000L);  // 24시간
+    private long incrementDailyLoginFailures(User user) {
+        long dailyFailures = redisService.getValueInLong(MAX_DAILY_LOGIN_FAILURES, user.getId().toString());
+        dailyFailures++;
+        redisService.storeValue(MAX_DAILY_LOGIN_FAILURES, user.getId().toString(), Long.toString(dailyFailures), LOGIN_FAIL_DAILY_EXPIRATION_MS);
+        return dailyFailures;
     }
 
-    private void sendAccountSuspensionEmail(User user) {
-        emailService.sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), MAIL_TEMPLATE_FOR_LOCK_ACCOUNT, new HashMap<>());
+    private long incrementCurrentLoginFailures(User user) {
+        long currentFailures = redisService.getValueInLong(MAX_LOGIN_ATTEMPTS_BEFORE_LOCK, user.getId().toString());
+        currentFailures++;
+        redisService.storeValue(MAX_LOGIN_ATTEMPTS_BEFORE_LOCK, user.getId().toString(), Long.toString(currentFailures), LOGIN_FAIL_CURRENT_EXPIRATION_MS );
+        return currentFailures;
+    }
+
+    private void infoLoginFail(User user) {
+        Long loginFailNum = redisService.getValueInLong(MAX_LOGIN_ATTEMPTS_BEFORE_LOCK, user.getId().toString());
+        String message = String.format("로그인에 실패했습니다. 이메일 또는 비밀번호를 확인해 주세요. (%d회 실패)", loginFailNum);
+        throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG, message);
     }
 
     private String determineRedirectUri(Map<String, String> tokenOrEmail, String authProvider, HttpServletResponse response) throws IOException {
@@ -423,7 +438,7 @@ public class UserService {
 
     private void cacheVerificationInfoIfRecovery(UserRequest.VerifyCodeDTO requestDTO, String codeType) {
         if (CODE_TYPE_RECOVERY.equals(codeType))
-            redisService.storeValue(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code(), requestDTO.email(), LOGIN_FAIL_EXPIRATION_MS);
+            redisService.storeValue(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code(), requestDTO.email(), LOGIN_FAIL_CURRENT_EXPIRATION_MS);
     }
 
     private String generatePassword() {
@@ -597,12 +612,6 @@ public class UserService {
 
     private boolean isPasswordUnmatched(User user, String inputPassword) {
         return !passwordEncoder.matches(inputPassword, user.getPassword());
-    }
-
-    private void infoLoginFail(User user, Long loginFailNum) {
-        redisService.storeValue(LOGIN_FAIL_CURRENT_KEY_PREFIX, user.getId().toString(), Long.toString(++loginFailNum), 300000L); // 5분
-        String message = String.format("로그인에 실패했습니다. 이메일 또는 비밀번호를 확인해 주세요. (%d회 실패)", loginFailNum);
-        throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG, message);
     }
 
     private void validateUserActive(User user) {
