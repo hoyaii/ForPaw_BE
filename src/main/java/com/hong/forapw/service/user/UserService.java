@@ -1,4 +1,4 @@
-package com.hong.forapw.service;
+package com.hong.forapw.service.user;
 
 import com.hong.forapw.controller.dto.GoogleOauthDTO;
 import com.hong.forapw.controller.dto.KakaoOauthDTO;
@@ -27,6 +27,9 @@ import com.hong.forapw.repository.post.PostLikeRepository;
 import com.hong.forapw.repository.post.PostRepository;
 import com.hong.forapw.repository.UserRepository;
 import com.hong.forapw.repository.UserStatusRepository;
+import com.hong.forapw.service.BrokerService;
+import com.hong.forapw.service.EmailService;
+import com.hong.forapw.service.RedisService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -111,12 +114,6 @@ public class UserService {
     @Value("${google.oauth.userInfo.uri}")
     private String googleUserInfoUri;
 
-    @Value("${admin.email}")
-    private String adminEmail;
-
-    @Value("${admin.password}")
-    private String adminPwd;
-
     @Value("${social.join.redirect.uri}")
     private String redirectJoinUri;
 
@@ -126,7 +123,6 @@ public class UserService {
     @Value("${social.login.redirect.uri}")
     private String redirectLoginUri;
 
-    private static final String ADMIN_NAME = "admin";
     private static final String MAIL_TEMPLATE_FOR_CODE = "verification_code_email.html";
     private static final String MAIL_TEMPLATE_FOR_LOCK_ACCOUNT = "lock_account.html";
     private static final String EMAIL_CODE_KEY_PREFIX = "code:";
@@ -134,7 +130,7 @@ public class UserService {
     private static final String ACCESS_TOKEN_KEY_PREFIX = "accessToken";
     private static final String EMAIL = "email";
     private static final String LOGIN_FAIL_DAILY_KEY_PREFIX = "loginFailDaily";
-    private final static String ALL_CHARS = "!@#$%^&*0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    private static final String ALL_CHARS = "!@#$%^&*0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     private static final String LOGIN_FAIL_CURRENT_KEY_PREFIX = "loginFail";
     private static final String CODE_TO_EMAIL_KEY_PREFIX = "codeToEmail";
     private static final String USER_QUEUE_PREFIX = "user.";
@@ -151,30 +147,6 @@ public class UserService {
     private static final String QUERY_PARAM_EMAIL = "email";
     private static final String QUERY_PARAM_AUTH_PROVIDER = "authProvider";
     private static final String QUERY_PARAM_ACCESS_TOKEN = "accessToken";
-
-    // 테스트 기간에만 사용하고, 운영에는 사용 X
-    @Transactional
-    public void initSuperAdmin() {
-        if (!userRepository.existsByNickname(ADMIN_NAME)) {
-            User admin = User.builder()
-                    .email(adminEmail)
-                    .name(ADMIN_NAME)
-                    .nickName(ADMIN_NAME)
-                    .password(passwordEncoder.encode(adminPwd))
-                    .role(UserRole.SUPER)
-                    .build();
-            userRepository.save(admin);
-
-            UserStatus status = UserStatus.builder()
-                    .user(admin)
-                    .isActive(true)
-                    .build();
-            userStatusRepository.save(status);
-            admin.updateStatus(status);
-
-            setAlarmQueue(admin);
-        }
-    }
 
     @Transactional
     public Map<String, String> login(UserRequest.LoginDTO requestDTO, HttpServletRequest request) {
@@ -502,7 +474,6 @@ public class UserService {
 
         return shufflePassword(password);
     }
-
     private char pickRandomChar(SecureRandom random, int range, int offset) {
         return ALL_CHARS.charAt(random.nextInt(range) + offset);
     }
