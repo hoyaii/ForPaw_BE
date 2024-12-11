@@ -5,6 +5,8 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.SignatureVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.hong.forapw.core.errors.CustomException;
+import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.domain.user.User;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
@@ -78,12 +80,11 @@ public class JWTProvider {
         return decodedJWT.getClaim("id").asLong();
     }
 
-    public static boolean isInvalidJwtFormat(String jwt) {
+    public static void validateTokenFormat(String refreshToken) {
         try {
-            decodeJWT(jwt);
-            return false;
+            decodeJWT(refreshToken);
         } catch (JWTVerificationException exception) { // 잘못된 서명 등 디코딩이 안되는 잘못된 토큰
-            return true;
+            throw new CustomException(ExceptionCode.TOKEN_WRONG);
         }
     }
 

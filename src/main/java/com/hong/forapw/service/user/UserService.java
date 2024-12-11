@@ -4,6 +4,7 @@ import com.hong.forapw.controller.dto.GoogleOauthDTO;
 import com.hong.forapw.controller.dto.KakaoOauthDTO;
 import com.hong.forapw.controller.dto.UserRequest;
 import com.hong.forapw.controller.dto.UserResponse;
+import com.hong.forapw.controller.dto.query.PostTypeCountDTO;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.domain.authentication.LoginAttempt;
@@ -50,6 +51,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.hong.forapw.core.security.JWTProvider.createRefreshTokenCookie;
+import static com.hong.forapw.core.security.JWTProvider.validateTokenFormat;
 import static com.hong.forapw.core.utils.UriUtils.createRedirectUri;
 import static com.hong.forapw.core.utils.mapper.UserMapper.*;
 import static com.hong.forapw.service.EmailService.generateVerificationCode;
@@ -178,12 +180,6 @@ public class UserService {
         setAlarmQueue(user);
     }
 
-    @Transactional(readOnly = true)
-    public UserResponse.CheckEmailExistDTO checkEmailExist(String email) {
-        boolean isValid = !userRepository.existsByEmailWithRemoved(email);
-        return new UserResponse.CheckEmailExistDTO(isValid);
-    }
-
     @Async
     public void sendCodeByEmail(String email, String codeType) {
         checkAlreadySendCode(email, codeType);
@@ -200,7 +196,6 @@ public class UserService {
             return new UserResponse.VerifyEmailCodeDTO(false);
 
         cacheVerificationInfoIfRecovery(requestDTO, codeType);
-
         return new UserResponse.VerifyEmailCodeDTO(true);
     }
 
@@ -218,8 +213,8 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserResponse.CheckAccountExistDTO checkAccountExist(UserRequest.EmailDTO requestDTO) {
-        boolean isValid = userRepository.existsByEmail(requestDTO.email());
+    public UserResponse.CheckAccountExistDTO checkAccountExist(String email) {
+        boolean isValid = userRepository.existsByEmail(email);
         return new UserResponse.CheckAccountExistDTO(isValid);
     }
 
@@ -280,15 +275,14 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public Map<String, String> updateAccessToken(String refreshToken) {
-        checkTokenFormat(refreshToken);
+        validateTokenFormat(refreshToken);
 
         Long userId = JWTProvider.extractUserIdFromToken(refreshToken);
-        checkIsAccessTokenStored(userId);
+        validateAccessTokenStored(userId);
 
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
-
         return createAccessToken(user);
     }
 
@@ -310,17 +304,9 @@ public class UserService {
         userRepository.deleteById(userId);
     }
 
-    // 탈퇴한지 6개월 지난 유저 데이터 삭제 (매일 자정 30분에 실행)
-    @Transactional
-    @Scheduled(cron = "0 30 0 * * ?")
-    public void deleteExpiredUserData() {
-        LocalDateTime sixMonthsAgo = LocalDateTime.now().minusMonths(6);
-        userRepository.hardDeleteRemovedBefore(sixMonthsAgo);
-    }
-
     @Transactional(readOnly = true)
     public UserResponse.ValidateAccessTokenDTO validateAccessToken(@CookieValue String accessToken) {
-        checkTokenFormat(accessToken);
+        validateTokenFormat(accessToken);
 
         Long userIdFromToken = JWTProvider.extractUserIdFromToken(accessToken);
         if (!redisService.isStoredValue(ACCESS_TOKEN_KEY_PREFIX, String.valueOf(userIdFromToken), accessToken)) {
@@ -338,12 +324,9 @@ public class UserService {
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
-        List<Object[]> postTypeCounts = postRepository.countByUserIdAndType(userId, List.of(PostType.ADOPTION, PostType.FOSTERING, PostType.QUESTION, PostType.ANSWER));
+        List<PostTypeCountDTO> postTypeCounts = postRepository.countByUserIdAndType(userId, List.of(PostType.ADOPTION, PostType.FOSTERING, PostType.QUESTION, PostType.ANSWER));
         Map<PostType, Long> postCountMap = postTypeCounts.stream()
-                .collect(Collectors.toMap(
-                        result -> (PostType) result[0],
-                        result -> (Long) result[1]
-                ));
+                .collect(Collectors.toMap(PostTypeCountDTO::postType, PostTypeCountDTO::count));
 
         Long adoptionNum = postCountMap.getOrDefault(PostType.ADOPTION, 0L);
         Long fosteringNum = postCountMap.getOrDefault(PostType.FOSTERING, 0L);
@@ -605,7 +588,7 @@ public class UserService {
         }
     }
 
-    private void checkIsAccessTokenStored(Long userId) {
+    private void validateAccessTokenStored(Long userId) {
         if (redisService.isValueNotExist(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(userId)))
             throw new CustomException(ExceptionCode.TOKEN_EXPIRED);
     }
@@ -700,11 +683,5 @@ public class UserService {
 
         userStatusRepository.save(status);
         user.updateStatus(status);
-    }
-
-    private void checkTokenFormat(String refreshToken) {
-        if (JWTProvider.isInvalidJwtFormat(refreshToken)) {
-            throw new CustomException(ExceptionCode.TOKEN_WRONG);
-        }
     }
 }

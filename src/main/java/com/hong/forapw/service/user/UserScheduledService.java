@@ -88,6 +88,14 @@ public class UserScheduledService {
         redisService.removeValue(key);
     }
 
+    // 탈퇴한지 6개월 지난 유저 데이터 삭제 (매일 자정 30분에 실행)
+    @org.springframework.transaction.annotation.Transactional
+    @Scheduled(cron = "0 30 0 * * ?")
+    public void deleteExpiredUserData() {
+        LocalDateTime sixMonthsAgo = LocalDateTime.now().minusMonths(6);
+        userRepository.hardDeleteRemovedBefore(sixMonthsAgo);
+    }
+
     private void setAlarmQueue(User user) {
         String queueName = USER_QUEUE_PREFIX + user.getId();
         String listenerId = USER_QUEUE_PREFIX + user.getId();

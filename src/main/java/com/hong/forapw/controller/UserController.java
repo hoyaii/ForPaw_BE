@@ -68,7 +68,7 @@ public class UserController {
 
     @PostMapping("/accounts/check/email")
     public ResponseEntity<?> checkEmailAndSendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) {
-        UserResponse.CheckEmailExistDTO responseDTO = userService.checkEmailExist(requestDTO.email());
+        UserResponse.CheckAccountExistDTO responseDTO = userService.checkAccountExist(requestDTO.email());
         if(responseDTO.isValid()) userService.sendCodeByEmail(requestDTO.email(), CODE_TYPE_JOIN);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
@@ -93,7 +93,7 @@ public class UserController {
 
     @PostMapping("/accounts/withdraw/code")
     public ResponseEntity<?> sendCodeForWithdraw(@RequestBody @Valid UserRequest.EmailDTO requestDTO) {
-        UserResponse.CheckAccountExistDTO responseDTO = userService.checkAccountExist(requestDTO);
+        UserResponse.CheckAccountExistDTO responseDTO = userService.checkAccountExist(requestDTO.email());
         if(responseDTO.isValid()) userService.sendCodeByEmail(requestDTO.email(), CODE_TYPE_WITHDRAW);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
