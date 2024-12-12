@@ -29,6 +29,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.hong.forapw.core.utils.mapper.ChatMapper.toMessageDTO;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -45,39 +47,14 @@ public class ChatService {
 
     @Transactional
     public ChatResponse.SendMessageDTO sendMessage(ChatRequest.SendMessageDTO requestDTO, Long senderId, String senderNickName) {
-        // 권한 체크
-        checkChatAuthority(senderId, requestDTO.chatRoomId());
+        validateChatAuthorization(senderId, requestDTO.chatRoomId());
 
-        String profileURL = userRepository.findProfileURL(senderId).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
-        );
-
-        // 전송을 위한 메시지 DTO
         String messageId = UUID.randomUUID().toString();
-        LocalDateTime sendDate = LocalDateTime.now();
+        LinkMetadata metadata = extractMetadataIfApplicable(requestDTO);
+        String senderProfileURL = getUserProfileURL(senderId);
 
-        // 1st content에서 URL 추출 => 2nd URL의 metaData 추출
-        String linkURL = Optional.ofNullable(requestDTO.messageType())
-                .filter(type -> type.equals(MessageType.TEXT))
-                .map(type -> extractFirstURL(requestDTO.content()))
-                .orElse(null);
-        LinkMetadata metadata = (linkURL != null) ? MetaDataUtils.fetchMetadata(linkURL) : null;
-
-        ChatRequest.MessageDTO messageDTO = new ChatRequest.MessageDTO(
-                messageId,
-                senderNickName,
-                profileURL,
-                requestDTO.content(),
-                (metadata != null) ? MessageType.LINK : requestDTO.messageType(),
-                requestDTO.objects(),
-                sendDate,
-                requestDTO.chatRoomId(),
-                senderId,
-                metadata
-        );
-
-        // 메시지 브로커에 비동기로 전송 (알람과 이미지는 비동기로 처리)
-        CompletableFuture.runAsync(() -> brokerService.produceChatToRoom(requestDTO.chatRoomId(), messageDTO));
+        ChatRequest.MessageDTO messageDTO = toMessageDTO(requestDTO, senderNickName, messageId, metadata, senderProfileURL, senderId);
+        sendMessageAsyncToBroker(requestDTO.chatRoomId(), messageDTO);
 
         return new ChatResponse.SendMessageDTO(messageId);
     }
@@ -171,7 +148,7 @@ public class ChatService {
     @Transactional
     public ChatResponse.FindChatRoomDrawerDTO findChatRoomDrawer(Long chatRoomId, Long userId) {
         // 권한 체크
-        checkChatAuthority(userId, chatRoomId);
+        validateChatAuthorization(userId, chatRoomId);
 
         // 채팅방에 참여한 유저
         List<ChatResponse.ChatUserDTO> chatUserDTOS = chatRoomRepository.findUsersByChatRoomIdExcludingRole(chatRoomId, GroupRole.TEMP).stream()
@@ -191,7 +168,7 @@ public class ChatService {
     @Transactional
     public ChatResponse.FindImageObjectListDTO findImageObjectList(Long chatRoomId, Long userId, Pageable pageable) {
         // 권한 체크
-        checkChatAuthority(userId, chatRoomId);
+        validateChatAuthorization(userId, chatRoomId);
 
         List<ChatResponse.ImageObjectDTO> imageObjectDTOS = new ArrayList<>();
 
@@ -217,7 +194,7 @@ public class ChatService {
     @Transactional
     public ChatResponse.FindFileObjectList findFileObjectList(Long chatRoomId, Long userId, Pageable pageable) {
         // 권한 체크
-        checkChatAuthority(userId, chatRoomId);
+        validateChatAuthorization(userId, chatRoomId);
 
         List<ChatResponse.FileObjectDTO> fileObjectDTOS = new ArrayList<>();
 
@@ -242,7 +219,7 @@ public class ChatService {
     @Transactional
     public ChatResponse.FindLinkObjectList findLinkObjectList(Long chatRoomId, Long userId, Pageable pageable) {
         // 권한 체크
-        checkChatAuthority(userId, chatRoomId);
+        validateChatAuthorization(userId, chatRoomId);
 
         List<ChatResponse.LinkObjectDTO> linkObjectDTOS = new ArrayList<>();
 
@@ -270,20 +247,34 @@ public class ChatService {
                 () -> new CustomException(ExceptionCode.MESSAGE_NOT_FOUND)
         );
 
-        ChatUser chatUser = checkChatAuthority(message.getSenderId(), message.getChatRoomId());
+        ChatUser chatUser = validateChatAuthorization(message.getSenderId(), message.getChatRoomId());
         chatUser.updateLastMessage(message.getId(), chatUser.getLastMessageIdx() + 1);
 
         return new ChatResponse.ReadMessageDTO(messageId);
     }
 
-    private ChatUser checkChatAuthority(Long userId, Long chatRoomId) {
-        // 채팅방에 들어와있는지 여부 체크
-        Optional<ChatUser> chatUserOP = chatUserRepository.findByUserIdAndChatRoomId(userId, chatRoomId);
-        if (chatUserOP.isEmpty()) {
-            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        }
+    // 채팅방에 들어와있는지 여부 체크
+    private ChatUser validateChatAuthorization(Long senderId, Long chatRoomId) {
+        return chatUserRepository.findByUserIdAndChatRoomId(senderId, chatRoomId)
+                .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
+    }
 
-        return chatUserOP.get();
+    private String getUserProfileURL(Long senderId) {
+        return userRepository.findProfileURL(senderId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+    }
+
+    private LinkMetadata extractMetadataIfApplicable(ChatRequest.SendMessageDTO requestDTO) {
+        if (requestDTO.messageType() == MessageType.TEXT) {
+            String linkURL = extractFirstURL(requestDTO.content());
+            return (linkURL != null) ? MetaDataUtils.fetchMetadata(linkURL) : null;
+        }
+        return null;
+    }
+
+    private void sendMessageAsyncToBroker(Long chatRoomId, ChatRequest.MessageDTO messageDTO) {
+        CompletableFuture.runAsync(() -> brokerService.produceChatToRoom(chatRoomId, messageDTO));
     }
 
     private String extractFirstURL(String content) {
