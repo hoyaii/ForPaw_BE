@@ -100,7 +100,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isRefreshTokenValid(User user, String refreshToken) {
-        return redisService.isStoredValue(REFRESH_TOKEN, String.valueOf(user.getId()), refreshToken);
+        return redisService.doesValueMatch(REFRESH_TOKEN, String.valueOf(user.getId()), refreshToken);
     }
 
     private void authenticateUser(User user) {

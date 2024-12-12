@@ -29,7 +29,6 @@ import com.hong.forapw.repository.UserRepository;
 import com.hong.forapw.repository.UserStatusRepository;
 import com.hong.forapw.service.BrokerService;
 import com.hong.forapw.service.EmailService;
-import com.hong.forapw.service.RedisService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -37,16 +36,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.hong.forapw.core.security.JWTProvider;
-import org.springframework.web.bind.annotation.CookieValue;
 
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -78,10 +74,10 @@ public class UserService {
     private final VisitRepository visitRepository;
     private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final FavoriteGroupRepository favoriteGroupRepository;
-    private final RedisService redisService;
     private final OAuthService oAuthService;
     private final BrokerService brokerService;
     private final EmailService emailService;
+    private final UserCacheService userCacheService;
 
     @Value("${social.join.redirect.uri}")
     private String redirectJoinUri;
@@ -94,29 +90,22 @@ public class UserService {
 
     private static final String MAIL_TEMPLATE_FOR_CODE = "verification_code_email.html";
     private static final String MAIL_TEMPLATE_FOR_LOCK_ACCOUNT = "lock_account.html";
-    private static final String EMAIL_CODE_KEY_PREFIX = "code:";
     private static final String REFRESH_TOKEN_KEY_PREFIX = "refreshToken";
     private static final String ACCESS_TOKEN_KEY_PREFIX = "accessToken";
     private static final String EMAIL = "email";
-    private static final String MAX_DAILY_LOGIN_FAILURES = "loginFailDaily";
     private static final String ALL_CHARS = "!@#$%^&*0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    private static final String MAX_LOGIN_ATTEMPTS_BEFORE_LOCK = "loginFail";
-    private static final String CODE_TO_EMAIL_KEY_PREFIX = "codeToEmail";
     private static final String USER_QUEUE_PREFIX = "user.";
     private static final String ALARM_EXCHANGE = "alarm.exchange";
     private static final String USER_AGENT_HEADER = "User-Agent";
     private static final String UNKNOWN = "unknown";
     private static final String[] IP_HEADER_CANDIDATES = {"X-Forwarded-For", "Proxy-Client-IP", "WL-Proxy-Client-IP", "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR"};
     private static final String CODE_TYPE_RECOVERY = "recovery";
-    private static final long VERIFICATION_CODE_EXPIRATION_MS = 175 * 1000L;
     private static final String MODEL_KEY_CODE = "code";
     private static final String QUERY_PARAM_EMAIL = "email";
     private static final String QUERY_PARAM_AUTH_PROVIDER = "authProvider";
     private static final String QUERY_PARAM_ACCESS_TOKEN = "accessToken";
-    private static final long LOGIN_FAIL_CURRENT_EXPIRATION_MS = 300_000L; // 5분
     private static final long CURRENT_FAILURE_LIMIT = 3L;
     private static final long DAILY_FAILURE_LIMIT = 3L;
-    private static final long LOGIN_FAIL_DAILY_EXPIRATION_MS = 86400000L; // 24시간
 
     @Transactional
     public Map<String, String> login(UserRequest.LoginDTO requestDTO, HttpServletRequest request) {
@@ -182,20 +171,22 @@ public class UserService {
 
     @Async
     public void sendCodeByEmail(String email, String codeType) {
-        checkAlreadySendCode(email, codeType);
+        userCacheService.validateEmailCodeNotSent(email, codeType);
 
         String verificationCode = generateVerificationCode();
-        storeVerificationCode(email, codeType, verificationCode);
+        userCacheService.storeVerificationCode(email, codeType, verificationCode);
 
         Map<String, Object> templateModel = createTemplateModel(verificationCode);
         emailService.sendMail(email, VERIFICATION_CODE.getSubject(), MAIL_TEMPLATE_FOR_CODE, templateModel);
     }
 
     public UserResponse.VerifyEmailCodeDTO verifyCode(UserRequest.VerifyCodeDTO requestDTO, String codeType) {
-        if (redisService.isNotStoredValue(getCodeTypeKey(codeType), requestDTO.email(), requestDTO.code()))
+        if (userCacheService.isCodeMismatch(requestDTO.email(), requestDTO.code(), codeType))
             return new UserResponse.VerifyEmailCodeDTO(false);
 
-        cacheVerificationInfoIfRecovery(requestDTO, codeType);
+        if (CODE_TYPE_RECOVERY.equals(codeType))
+            userCacheService.storeCodeToEmail(requestDTO.code(), requestDTO.email());
+
         return new UserResponse.VerifyEmailCodeDTO(true);
     }
 
@@ -220,12 +211,12 @@ public class UserService {
 
     @Transactional
     public void resetPassword(UserRequest.ResetPasswordDTO requestDTO) {
-        String email = getEmailByVerificationCode(requestDTO);
+        String email = userCacheService.getEmailByVerificationCode(requestDTO.code());
         if (email == null) {
             throw new CustomException(ExceptionCode.BAD_APPROACH);
         }
 
-        redisService.removeValue(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code());
+        userCacheService.deleteCodeToEmail(requestDTO.code());
         updateNewPassword(email, requestDTO.newPassword());
     }
 
@@ -278,11 +269,10 @@ public class UserService {
         validateTokenFormat(refreshToken);
 
         Long userId = JWTProvider.extractUserIdFromToken(refreshToken);
-        validateAccessTokenStored(userId);
-
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
+
         return createAccessToken(user);
     }
 
@@ -298,23 +288,20 @@ public class UserService {
 
         deleteUserRelatedData(userId);
         deleteUserAssociations(userId);
-        deleteTokenInSession(userId);
+        userCacheService.deleteUserTokens(userId);
         user.deactivateUser();
 
         userRepository.deleteById(userId);
     }
 
     @Transactional(readOnly = true)
-    public UserResponse.ValidateAccessTokenDTO validateAccessToken(@CookieValue String accessToken) {
+    public UserResponse.ValidateAccessTokenDTO validateAccessToken(String accessToken) {
         validateTokenFormat(accessToken);
 
         Long userIdFromToken = JWTProvider.extractUserIdFromToken(accessToken);
-        if (!redisService.isStoredValue(ACCESS_TOKEN_KEY_PREFIX, String.valueOf(userIdFromToken), accessToken)) {
-            throw new CustomException(ExceptionCode.ACCESS_TOKEN_WRONG);
-        }
+        userCacheService.validateAccessToken(accessToken, userIdFromToken);
 
         String profile = userRepository.findProfileById(userIdFromToken).orElse(null);
-
         return new UserResponse.ValidateAccessTokenDTO(profile);
     }
 
@@ -348,47 +335,33 @@ public class UserService {
     }
 
     private void validateLoginAttempts(User user) {
-        Long dailyLoginFailures = redisService.getValueInLong(MAX_DAILY_LOGIN_FAILURES, user.getId().toString());
+        long dailyLoginFailures = userCacheService.getDailyLoginFailures(user.getId());
         if (dailyLoginFailures >= DAILY_FAILURE_LIMIT) {
             throw new CustomException(ExceptionCode.ACCOUNT_LOCKED);
         }
 
-        Long currentLoginFailures = redisService.getValueInLong(MAX_LOGIN_ATTEMPTS_BEFORE_LOCK, user.getId().toString());
+        long currentLoginFailures = userCacheService.getCurrentLoginFailures(user.getId());
         if (currentLoginFailures >= CURRENT_FAILURE_LIMIT) {
             throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
         }
     }
 
     private void handleLoginFailures(User user) {
-        long currentFailures = incrementCurrentLoginFailures(user);
+        long currentFailures = userCacheService.incrementCurrentLoginFailures(user.getId());
 
-        if(currentFailures >= 3L) {
-            long dailyFailures = incrementDailyLoginFailures(user);
+        if (currentFailures >= 3L) {
+            long dailyFailures = userCacheService.incrementDailyLoginFailures(user);
 
-            if(dailyFailures == 3L){
+            if (dailyFailures == 3L) {
                 emailService.sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), MAIL_TEMPLATE_FOR_LOCK_ACCOUNT, new HashMap<>());
             }
             throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
         }
     }
 
-    private long incrementDailyLoginFailures(User user) {
-        long dailyFailures = redisService.getValueInLong(MAX_DAILY_LOGIN_FAILURES, user.getId().toString());
-        dailyFailures++;
-        redisService.storeValue(MAX_DAILY_LOGIN_FAILURES, user.getId().toString(), Long.toString(dailyFailures), LOGIN_FAIL_DAILY_EXPIRATION_MS);
-        return dailyFailures;
-    }
-
-    private long incrementCurrentLoginFailures(User user) {
-        long currentFailures = redisService.getValueInLong(MAX_LOGIN_ATTEMPTS_BEFORE_LOCK, user.getId().toString());
-        currentFailures++;
-        redisService.storeValue(MAX_LOGIN_ATTEMPTS_BEFORE_LOCK, user.getId().toString(), Long.toString(currentFailures), LOGIN_FAIL_CURRENT_EXPIRATION_MS );
-        return currentFailures;
-    }
-
     private void infoLoginFail(User user) {
-        Long loginFailNum = redisService.getValueInLong(MAX_LOGIN_ATTEMPTS_BEFORE_LOCK, user.getId().toString());
-        String message = String.format("로그인에 실패했습니다. 이메일 또는 비밀번호를 확인해 주세요. (%d회 실패)", loginFailNum);
+        Long currentLoginFailures = userCacheService.getCurrentLoginFailures(user.getId());
+        String message = String.format("로그인에 실패했습니다. 이메일 또는 비밀번호를 확인해 주세요. (%d회 실패)", currentLoginFailures);
         throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG, message);
     }
 
@@ -417,11 +390,6 @@ public class UserService {
 
     private boolean isJoined(Map<String, String> tokenOrEmail) {
         return tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX) != null;
-    }
-
-    private void cacheVerificationInfoIfRecovery(UserRequest.VerifyCodeDTO requestDTO, String codeType) {
-        if (CODE_TYPE_RECOVERY.equals(codeType))
-            redisService.storeValue(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code(), requestDTO.email(), LOGIN_FAIL_CURRENT_EXPIRATION_MS);
     }
 
     private String generatePassword() {
@@ -459,10 +427,6 @@ public class UserService {
         return templateModel;
     }
 
-    private String getEmailByVerificationCode(UserRequest.ResetPasswordDTO requestDTO) {
-        return redisService.getValueInString(CODE_TO_EMAIL_KEY_PREFIX, requestDTO.code());
-    }
-
     private void updateNewPassword(String email, String newPassword) {
         User user = userRepository.findByEmail(email).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND)
@@ -471,39 +435,23 @@ public class UserService {
         user.updatePassword(passwordEncoder.encode(newPassword));
     }
 
-    private void checkAlreadySendCode(String email, String codeType) {
-        if (redisService.isValueExist(getCodeTypeKey(codeType), email)) {
-            throw new CustomException(ExceptionCode.ALREADY_SEND_EMAIL);
-        }
-    }
-
-    private void storeVerificationCode(String email, String codeType, String verificationCode) {
-        redisService.storeValue(getCodeTypeKey(codeType), email, verificationCode, VERIFICATION_CODE_EXPIRATION_MS);
-    }
-
-    private String getCodeTypeKey(String codeType) {
-        return UserService.EMAIL_CODE_KEY_PREFIX + codeType;
-    }
 
     private Map<String, String> createToken(User user) {
         String accessToken = JWTProvider.createAccessToken(user);
         String refreshToken = JWTProvider.createRefreshToken(user);
 
-        redisService.storeValue(ACCESS_TOKEN_KEY_PREFIX, String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP_MILLI);
-        redisService.storeValue(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(user.getId()), refreshToken, JWTProvider.REFRESH_EXP_MILLI);
+        Map<String, String> userTokens = new HashMap<>();
+        userTokens.put(ACCESS_TOKEN_KEY_PREFIX, accessToken);
+        userTokens.put(REFRESH_TOKEN_KEY_PREFIX, refreshToken);
 
-        Map<String, String> tokens = new HashMap<>();
-        tokens.put(ACCESS_TOKEN_KEY_PREFIX, accessToken);
-        tokens.put(REFRESH_TOKEN_KEY_PREFIX, refreshToken);
-
-        return tokens;
+        userCacheService.storeUserTokens(user.getId(), userTokens);
+        return userTokens;
     }
 
     private Map<String, String> createAccessToken(User user) {
+        String refreshToken = userCacheService.getValidRefreshToken(user.getId());
         String accessToken = JWTProvider.createAccessToken(user);
-        String refreshToken = redisService.getValueInString(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(user.getId()));
-
-        redisService.storeValue(ACCESS_TOKEN_KEY_PREFIX, String.valueOf(user.getId()), accessToken, JWTProvider.ACCESS_EXP_MILLI);
+        userCacheService.storeAccessToken(user.getId(), accessToken);
 
         Map<String, String> tokens = new HashMap<>();
         tokens.put(ACCESS_TOKEN_KEY_PREFIX, accessToken);
@@ -588,11 +536,6 @@ public class UserService {
         }
     }
 
-    private void validateAccessTokenStored(Long userId) {
-        if (redisService.isValueNotExist(REFRESH_TOKEN_KEY_PREFIX, String.valueOf(userId)))
-            throw new CustomException(ExceptionCode.TOKEN_EXPIRED);
-    }
-
     private boolean isPasswordUnmatched(User user, String inputPassword) {
         return !passwordEncoder.matches(inputPassword, user.getPassword());
     }
@@ -635,11 +578,6 @@ public class UserService {
                             groupUserRepository.delete(groupUser);
                         }
                 );
-    }
-
-    private void deleteTokenInSession(Long userId) {
-        redisService.removeValue(ACCESS_TOKEN_KEY_PREFIX, userId.toString());
-        redisService.removeValue(REFRESH_TOKEN_KEY_PREFIX, userId.toString());
     }
 
     public void recordLoginAttempt(User user, HttpServletRequest request) {
