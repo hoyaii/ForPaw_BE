@@ -32,14 +32,14 @@ public class ChatController {
 
     @GetMapping("/chatRooms")
     public ResponseEntity<?> findChatRoomList(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        ChatResponse.FindChatRoomListDTO responseDTO = chatService.findChatRoomList(userDetails.getUser().getId());
+        ChatResponse.FindChatRoomsDTO responseDTO = chatService.findChatRooms(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/chatRooms/{chatRoomId}/messages")
     public ResponseEntity<?> findMessageListInRoom(@PathVariable Long chatRoomId,
                                                    @PageableDefault(size = 50, sort = SORT_BY_DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        ChatResponse.FindMessageListInRoomDTO responseDTO = chatService.findMessageListInRoom(chatRoomId, userDetails.getUser().getId(), pageable);
+        ChatResponse.FindMessagesInRoomDTO responseDTO = chatService.findMessageListInRoom(chatRoomId, userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -52,21 +52,21 @@ public class ChatController {
     @GetMapping("/chatRooms/{chatRoomId}/images")
     public ResponseEntity<?> findImageObjectList(@PathVariable Long chatRoomId,
                                                  @PageableDefault(size = 6, sort = SORT_BY_DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        ChatResponse.FindImageObjectListDTO responseDTO = chatService.findImageObjectList(chatRoomId, userDetails.getUser().getId(), pageable);
+        ChatResponse.FindImageObjectsDTO responseDTO = chatService.findImageObjects(chatRoomId, userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/chatRooms/{chatRoomId}/files")
     public ResponseEntity<?> findFileObjectList(@PathVariable Long chatRoomId,
                                                 @PageableDefault(size = 6, sort = SORT_BY_DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        ChatResponse.FindFileObjectList responseDTO = chatService.findFileObjectList(chatRoomId, userDetails.getUser().getId(), pageable);
+        ChatResponse.FindFileObjects responseDTO = chatService.findFileObjects(chatRoomId, userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @GetMapping("/chatRooms/{chatRoomId}/links")
     public ResponseEntity<?> findLinkObjectList(@PathVariable Long chatRoomId,
                                                 @PageableDefault(size = 6, sort = SORT_BY_DATE, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        ChatResponse.FindLinkObjectList responseDTO = chatService.findLinkObjectList(chatRoomId, userDetails.getUser().getId(), pageable);
+        ChatResponse.FindLinkObjects responseDTO = chatService.findLinkObjects(chatRoomId, userDetails.getUser().getId(), pageable);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

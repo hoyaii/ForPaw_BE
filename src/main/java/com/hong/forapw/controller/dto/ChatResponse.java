@@ -11,8 +11,8 @@ public class ChatResponse {
     public record SendMessageDTO(String messageId) {
     }
 
-    public record FindMessageListInRoomDTO(String chatRoomName, String lastMessageId, String myNickName,
-                                           List<MessageDTO> messages) {
+    public record FindMessagesInRoomDTO(String chatRoomName, String lastMessageId, String myNickName,
+                                        List<MessageDTO> messages) {
     }
 
     public record MessageDTO(String messageId,
@@ -58,7 +58,7 @@ public class ChatResponse {
                               String profileURL) {
     }
 
-    public record FindChatRoomListDTO(List<ChatResponse.RoomDTO> rooms) {
+    public record FindChatRoomsDTO(List<ChatResponse.RoomDTO> rooms) {
     }
 
     public record RoomDTO(Long chatRoomId,
@@ -69,13 +69,13 @@ public class ChatResponse {
                           String profileURL) {
     }
 
-    public record FindImageObjectListDTO(List<ImageObjectDTO> images, boolean isLastPage) {
+    public record FindImageObjectsDTO(List<ImageObjectDTO> images, boolean isLastPage) {
     }
 
-    public record FindFileObjectList(List<FileObjectDTO> files, boolean isLastPage) {
+    public record FindFileObjects(List<FileObjectDTO> files, boolean isLastPage) {
     }
 
-    public record FindLinkObjectList(List<LinkObjectDTO> links, boolean isLastPage) {
+    public record FindLinkObjects(List<LinkObjectDTO> links, boolean isLastPage) {
     }
 
     public record ReadMessageDTO(String id) {

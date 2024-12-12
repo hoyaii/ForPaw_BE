@@ -1,6 +1,8 @@
 package com.hong.forapw.core.utils.mapper;
 
 import com.hong.forapw.controller.dto.ChatRequest;
+import com.hong.forapw.controller.dto.ChatResponse;
+import com.hong.forapw.domain.chat.ChatUser;
 import com.hong.forapw.domain.chat.LinkMetadata;
 import com.hong.forapw.domain.chat.MessageType;
 
@@ -23,5 +25,15 @@ public class ChatMapper {
                 requestDTO.chatRoomId(),
                 senderId,
                 metadata);
+    }
+
+    public static ChatResponse.RoomDTO toRoomDTO(ChatUser chatUser, String lastMessageContent, LocalDateTime lastMessageDate, long offset) {
+        return new ChatResponse.RoomDTO(
+                chatUser.getChatRoomId(),
+                chatUser.getRoomName(),
+                lastMessageContent,
+                lastMessageDate,
+                offset,
+                chatUser.getGroupProfileURL());
     }
 }
