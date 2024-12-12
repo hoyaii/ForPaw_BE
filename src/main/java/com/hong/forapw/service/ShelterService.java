@@ -259,9 +259,8 @@ public class ShelterService {
         return likeNum;
     }
 
-    /**
-     * Shelter 리스트를 Province와 District 기준으로 그룹화
-     */
+
+     // Shelter 리스트를 Province와 District 기준으로 그룹화
     private Map<Province, Map<District, List<Shelter>>> groupSheltersByProvinceAndDistrict(List<Shelter> shelters) {
         return shelters.stream()
                 .collect(Collectors.groupingBy(
@@ -272,9 +271,7 @@ public class ShelterService {
                 ));
     }
 
-    /**
-     * Province-District-Shelter 구조의 맵을 응답 데이터 구조(Map<String, List<DistrictDTO>>)로 변환
-     */
+     // Province-District-Shelter 구조의 맵을 응답 데이터 구조(Map<String, List<DistrictDTO>>)로 변환
     private Map<String, List<ShelterResponse.DistrictDTO>> createShlelterResponseMap(
             Map<Province, Map<District, List<Shelter>>> groupedShelters) {
         return groupedShelters.entrySet().stream()

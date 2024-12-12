@@ -56,32 +56,11 @@ public class AuthenticationService {
     private final ApplyRepository applyRepository;
     private final InquiryRepository inquiryRepository;
     private final EntityManager entityManager;
-    private final RedisService redisService;
     private final UserStatusRepository userStatusRepository;
     private final FaqRepository faqRepository;
 
     private static final String POST_SCREENED = "이 게시글은 커뮤니티 규정을 위반하여 숨겨졌습니다.";
     private static final String COMMENT_SCREENED = "커뮤니티 규정을 위반하여 가려진 댓글입니다.";
-
-    @Transactional
-    @Scheduled(cron = "0 3 * * * *") // 매 시간 3분에 실행
-    public void syncVisits() {
-        String key = getPreviousHourKey();
-        LocalDateTime visitTime = parseDateTimeFromKey(key);
-
-        Set<String> visitSet = redisService.getMembersOfSet(key);
-        visitSet.forEach(visitorId -> {
-            User userRef = entityManager.getReference(User.class, visitorId);
-            Visit visit = Visit.builder()
-                    .user(userRef)
-                    .date(visitTime)
-                    .build();
-
-            visitRepository.save(visit);
-        });
-
-        redisService.removeValue(key);
-    }
 
     @Transactional(readOnly = true)
     public AuthenticationResponse.FindDashboardStatsDTO findDashboardStats(Long userId) {
@@ -462,18 +441,6 @@ public class AuthenticationService {
                 .build();
 
         faqRepository.save(faq);
-    }
-
-    private String getPreviousHourKey() {
-        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");
-        return "visit:" + oneHourAgo.format(formatter);
-    }
-
-    private LocalDateTime parseDateTimeFromKey(String key) {
-        int lastColon = key.lastIndexOf(':');
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");
-        return LocalDateTime.parse(key.substring(lastColon + 1), formatter); // 마지막 ':' 이후부터 문자열을 파싱
     }
 
     public void checkAdminAuthority(Long userId) {

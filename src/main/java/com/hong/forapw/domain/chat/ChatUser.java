@@ -42,4 +42,16 @@ public class ChatUser extends TimeStamp {
         this.lastMessageId = lastMessageId;
         this.lastMessageIdx = lastMessageIdx;
     }
+
+    public Long getChatRoomId() {
+        return chatRoom.getId();
+    }
+
+    public String getRoomName(){
+        return chatRoom.getName();
+    }
+
+    public String getGroupProfileURL(){
+        return chatRoom.getGroup().getProfileURL();
+    }
 }

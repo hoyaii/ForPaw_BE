@@ -9,7 +9,7 @@ import com.hong.forapw.domain.inquiry.InquiryStatus;
 import com.hong.forapw.domain.report.ReportStatus;
 import com.hong.forapw.service.AuthenticationService;
 
-import com.hong.forapw.service.UserService;
+import com.hong.forapw.service.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;

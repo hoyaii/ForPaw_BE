@@ -1,5 +1,6 @@
 package com.hong.forapw.repository.post;
 
+import com.hong.forapw.controller.dto.query.PostTypeCountDTO;
 import com.hong.forapw.domain.post.Post;
 import com.hong.forapw.domain.post.PostType;
 import com.hong.forapw.domain.user.User;
@@ -107,8 +108,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT COUNT(p) FROM Post p WHERE p.createdDate >= :date AND p.removedAt IS NULL")
     Long countALlWithinDate(LocalDateTime date);
 
-    @Query("SELECT p.postType, COUNT(p) FROM Post p WHERE p.user.id = :userId AND p.removedAt IS NULL AND p.postType IN :postTypes GROUP BY p.postType")
-    List<Object[]> countByUserIdAndType(@Param("userId") Long userId, @Param("postTypes") List<PostType> postTypes);
+    @Query("SELECT new com.hong.forapw.controller.dto.query.PostTypeCountDTO(p.postType, COUNT(p)) " +
+            "FROM Post p " +
+            "WHERE p.user.id = :userId AND p.removedAt IS NULL AND p.postType IN :postTypes GROUP BY p.postType")
+    List<PostTypeCountDTO> countByUserIdAndType(@Param("userId") Long userId, @Param("postTypes") List<PostType> postTypes);
 
     @Query("SELECT COUNT(pl) FROM PostLike pl WHERE pl.post.id = :postId")
     Long countLikesByPostId(@Param("postId") Long postId);

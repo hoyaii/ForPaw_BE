@@ -75,20 +75,20 @@ public class RedisService {
         redisTemplate.opsForSet().remove(key, member);
     }
 
-    public boolean isValueExist(String type, String id) {
+    public boolean isValueStored(String type, String id) {
         return Boolean.TRUE.equals(redisTemplate.hasKey(buildKey(type, id)));
     }
 
-    public boolean isValueNotExist(String type, String id) {
+    public boolean isValueNotStored(String type, String id) {
         return !Boolean.TRUE.equals(redisTemplate.hasKey(buildKey(type, id)));
     }
 
-    public boolean isNotStoredValue(String type, String id, String value) {
+    public boolean doesValueMismatch(String type, String id, String value) {
         String storedValue = redisTemplate.opsForValue().get(buildKey(type, id));
         return (storedValue == null) || !storedValue.equals(value);
     }
 
-    public boolean isStoredValue(String type, String id, String value) {
+    public boolean doesValueMatch(String type, String id, String value) {
         String storedValue = redisTemplate.opsForValue().get(buildKey(type, id));
         return storedValue != null && storedValue.equals(value);
     }

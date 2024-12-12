@@ -13,9 +13,6 @@ public class UserResponse {
     public record LoginDTO(String accessToken) {
     }
 
-    public record CheckEmailExistDTO(boolean isValid) {
-    }
-
     public record CheckAccountExistDTO(boolean isValid) {
     }
 

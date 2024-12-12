@@ -4,7 +4,7 @@ import com.hong.forapw.controller.dto.UserRequest;
 import com.hong.forapw.controller.dto.UserResponse;
 import com.hong.forapw.core.security.CustomUserDetails;
 import com.hong.forapw.core.utils.ApiUtils;
-import com.hong.forapw.service.UserService;
+import com.hong.forapw.service.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -68,7 +68,7 @@ public class UserController {
 
     @PostMapping("/accounts/check/email")
     public ResponseEntity<?> checkEmailAndSendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) {
-        UserResponse.CheckEmailExistDTO responseDTO = userService.checkEmailExist(requestDTO.email());
+        UserResponse.CheckAccountExistDTO responseDTO = userService.checkAccountExist(requestDTO.email());
         if(responseDTO.isValid()) userService.sendCodeByEmail(requestDTO.email(), CODE_TYPE_JOIN);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
@@ -93,7 +93,7 @@ public class UserController {
 
     @PostMapping("/accounts/withdraw/code")
     public ResponseEntity<?> sendCodeForWithdraw(@RequestBody @Valid UserRequest.EmailDTO requestDTO) {
-        UserResponse.CheckAccountExistDTO responseDTO = userService.checkAccountExist(requestDTO);
+        UserResponse.CheckAccountExistDTO responseDTO = userService.checkAccountExist(requestDTO.email());
         if(responseDTO.isValid()) userService.sendCodeByEmail(requestDTO.email(), CODE_TYPE_WITHDRAW);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }

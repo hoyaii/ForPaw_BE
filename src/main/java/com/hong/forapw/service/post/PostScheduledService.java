@@ -16,7 +16,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class ScheduledTaskService {
+public class PostScheduledService {
 
     private final PostRepository postRepository;
     private final PostService postService;
