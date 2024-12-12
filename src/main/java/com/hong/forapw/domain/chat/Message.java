@@ -52,4 +52,8 @@ public class Message implements Serializable {
         this.metadata = metadata;
         this.date = date;
     }
+
+    public MessageType getMessageType() {
+        return (metadata != null) ? MessageType.LINK : messageType;
+    }
 }

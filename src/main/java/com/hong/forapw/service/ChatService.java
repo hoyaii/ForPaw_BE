@@ -72,50 +72,22 @@ public class ChatService {
         return new ChatResponse.FindChatRoomsDTO(roomDTOS);
     }
 
-    @Transactional
-    public ChatResponse.FindMessagesInRoomDTO findMessageListInRoom(Long chatRoomId, Long userId, Pageable pageable) {
-        // 권한 체크
+    @Transactional(readOnly = true)
+    public ChatResponse.FindMessagesInRoomDTO findMessagesInRoom(Long chatRoomId, Long userId, Pageable pageable) {
+        String nickName = userRepository.findNickname(userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
+        );
+
         ChatUser chatUser = chatUserRepository.findByUserIdAndChatRoomIdWithChatRoom(userId, chatRoomId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_FORBIDDEN)
         );
 
         Page<Message> messages = messageRepository.findByChatRoomId(chatRoomId, pageable);
-        List<ChatResponse.MessageDTO> messageDTOS = new ArrayList<>(messages.getContent().stream()
-                .map(message -> {
-                    List<ChatResponse.ChatObjectDTO> imageDTOS = message.getObjectURLs().stream()
-                            .map(ChatResponse.ChatObjectDTO::new)
-                            .toList();
+        List<ChatResponse.MessageDTO> messageDTOs = convertToMessageDTOs(messages.getContent(), userId);
+        Collections.reverse(messageDTOs);
 
-                    // 링크 메타 데이터가 있으면 => 타입은 LINK
-                    MessageType messageType = (message.getMetadata() != null) ? MessageType.LINK : message.getMessageType();
-
-                    return new ChatResponse.MessageDTO(
-                            message.getId(),
-                            message.getNickName(),
-                            message.getProfileURL(),
-                            message.getContent(),
-                            messageType,
-                            imageDTOS,
-                            message.getMetadata(),
-                            message.getDate(),
-                            message.getSenderId().equals(userId));
-                })
-                .toList());
-
-        // messageDTOS 리스트의 순서를 역순으로 바꿈
-        Collections.reverse(messageDTOS);
-
-        // 마지막으로 읽은 메시지의 id와 index 업데이트
-        if (!messageDTOS.isEmpty()) {
-            ChatResponse.MessageDTO lastMessage = messageDTOS.get(messageDTOS.size() - 1);
-            long chatNum = messageRepository.countByChatRoomId(chatRoomId);
-            chatUser.updateLastMessage(lastMessage.messageId(), chatNum - 1);
-        }
-
-        // 채팅방에 들어가는 유저의 닉네임
-        String nickName = userRepository.findNickname(userId);
-
-        return new ChatResponse.FindMessagesInRoomDTO(chatUser.getChatRoom().getName(), chatUser.getLastMessageId(), nickName, messageDTOS);
+        updateLastReadMessage(chatUser, messageDTOs, chatRoomId);
+        return new ChatResponse.FindMessagesInRoomDTO(chatUser.getRoomName(), chatUser.getLastMessageId(), nickName, messageDTOs);
     }
 
     @Transactional
@@ -215,7 +187,6 @@ public class ChatService {
 
     @Transactional
     public ChatResponse.ReadMessageDTO readMessage(String messageId) {
-        // 권한 체크
         Message message = messageRepository.findById(messageId).orElseThrow(
                 () -> new CustomException(ExceptionCode.MESSAGE_NOT_FOUND)
         );
@@ -289,5 +260,24 @@ public class ChatService {
 
         long lastReadPage = lastReadMessageIdx / 50;
         return totalPages - lastReadPage;
+    }
+
+    private List<ChatResponse.MessageDTO> convertToMessageDTOs(List<Message> messages, Long userId) {
+        return messages.stream()
+                .map(message -> {
+                    List<ChatResponse.ChatObjectDTO> imageDTOs = message.getObjectURLs().stream()
+                            .map(ChatResponse.ChatObjectDTO::new)
+                            .toList();
+                    return toMessageDTO(message, imageDTOs, userId);
+                })
+                .toList();
+    }
+
+    private void updateLastReadMessage(ChatUser chatUser, List<ChatResponse.MessageDTO> messageDTOs, Long chatRoomId) {
+        if (!messageDTOs.isEmpty()) {
+            ChatResponse.MessageDTO lastMessage = messageDTOs.get(messageDTOs.size() - 1);
+            long totalMessages = messageRepository.countByChatRoomId(chatRoomId);
+            chatUser.updateLastMessage(lastMessage.messageId(), totalMessages - 1);
+        }
     }
 }

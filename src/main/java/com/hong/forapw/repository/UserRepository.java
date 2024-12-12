@@ -23,7 +23,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findAll();
 
     @Query("SELECT u.nickname FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
-    String findNickname(@Param("id") Long id);
+    Optional<String> findNickname(@Param("id") Long id);
 
     @Query("SELECT u.profileURL FROM User u WHERE u.id = :id AND u.removedAt IS NULL")
     Optional<String> findProfileURL(@Param("id") Long id);
