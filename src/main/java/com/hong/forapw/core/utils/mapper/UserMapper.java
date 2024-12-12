@@ -45,18 +45,6 @@ public class UserMapper {
                 .build();
     }
 
-    public static Inquiry buildInquiry(UserRequest.SubmitInquiry requestDTO, InquiryStatus status, User user) {
-        return Inquiry.builder()
-                .questioner(user)
-                .title(requestDTO.title())
-                .description(requestDTO.description())
-                .contactMail(requestDTO.contactMail())
-                .status(status)
-                .type(requestDTO.inquiryType())
-                .imageURL(requestDTO.imageURL())
-                .build();
-    }
-
     public static UserResponse.ProfileDTO toProfileDTO(User user) {
         return new UserResponse.ProfileDTO(
                 user.getEmail(),
@@ -69,17 +57,5 @@ public class UserMapper {
                 user.isSocialJoined(),
                 user.isShelterOwns(),
                 user.isMarketingAgreed());
-    }
-
-    public static UserResponse.InquiryDTO toInquiryDTO(Inquiry inquiry, UserResponse.AnswerDTO answerDTO) {
-        return new UserResponse.InquiryDTO(
-                inquiry.getId(),
-                inquiry.getTitle(),
-                inquiry.getDescription(),
-                inquiry.getStatus(),
-                inquiry.getImageURL(),
-                inquiry.getType(),
-                inquiry.getCreatedDate(),
-                answerDTO);
     }
 }

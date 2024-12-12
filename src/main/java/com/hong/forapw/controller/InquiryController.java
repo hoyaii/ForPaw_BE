@@ -33,7 +33,7 @@ public class InquiryController {
 
     @GetMapping("/supports")
     public ResponseEntity<?> findInquiryList(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        UserResponse.FindInquiryListDTO responseDTO = inquiryService.findInquiryList(userDetails.getUser().getId());
+        UserResponse.FindInquiryListDTO responseDTO = inquiryService.findInquiries(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }

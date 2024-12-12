@@ -4,24 +4,22 @@ import com.hong.forapw.controller.dto.UserRequest;
 import com.hong.forapw.controller.dto.UserResponse;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
+import com.hong.forapw.core.utils.mapper.InquiryMapper;
 import com.hong.forapw.domain.inquiry.Inquiry;
 import com.hong.forapw.domain.inquiry.InquiryStatus;
 import com.hong.forapw.domain.user.User;
 import com.hong.forapw.repository.inquiry.InquiryRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static com.hong.forapw.core.utils.mapper.UserMapper.buildInquiry;
-import static com.hong.forapw.core.utils.mapper.UserMapper.toInquiryDTO;
+import static com.hong.forapw.core.utils.mapper.InquiryMapper.buildInquiry;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class InquiryService {
 
     private final InquiryRepository inquiryRepository;
@@ -48,20 +46,10 @@ public class InquiryService {
     }
 
     @Transactional(readOnly = true)
-    public UserResponse.FindInquiryListDTO findInquiryList(Long userId) {
-        List<Inquiry> customerInquiries = inquiryRepository.findAllByQuestionerId(userId);
-
-        List<UserResponse.InquiryDTO> inquiryDTOS = customerInquiries.stream()
-                .map(inquiry -> {
-                    UserResponse.AnswerDTO answerDTO = null;
-                    if (inquiry.getAnswer() != null) {
-                        answerDTO = new UserResponse.AnswerDTO(
-                                inquiry.getAnswer(),
-                                inquiry.getAnswerer().getName()
-                        );
-                    }
-                    return toInquiryDTO(inquiry, answerDTO);
-                })
+    public UserResponse.FindInquiryListDTO findInquiries(Long userId) {
+        List<Inquiry> inquiries = inquiryRepository.findAllByQuestionerId(userId);
+        List<UserResponse.InquiryDTO> inquiryDTOS = inquiries.stream()
+                .map(InquiryMapper::toInquiryDTO)
                 .toList();
 
         return new UserResponse.FindInquiryListDTO(inquiryDTOS);
