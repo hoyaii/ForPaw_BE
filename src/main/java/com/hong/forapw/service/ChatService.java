@@ -84,8 +84,8 @@ public class ChatService {
                 () -> new CustomException(ExceptionCode.USER_FORBIDDEN)
         );
 
-        Page<Message> messages = messageRepository.findByChatRoomId(chatRoomId, pageable);
-        List<ChatResponse.MessageDTO> messageDTOs = convertToMessageDTOs(messages.getContent(), userId);
+        List<Message> messages = messageRepository.findByChatRoomId(chatRoomId, pageable).getContent();
+        List<ChatResponse.MessageDTO> messageDTOs = convertToMessageDTOs(messages, userId);
         Collections.reverse(messageDTOs);
 
         updateLastReadMessage(chatUser, messageDTOs, chatRoomId);
@@ -125,27 +125,15 @@ public class ChatService {
         return new ChatResponse.FindFileObjects(fileObjectDTOs, fileMessages.isLast());
     }
 
-    @Transactional
     public ChatResponse.FindLinkObjects findLinkObjects(Long chatRoomId, Long userId, Pageable pageable) {
         validateChatAuthorization(userId, chatRoomId);
 
-        List<ChatResponse.LinkObjectDTO> linkObjectDTOS = new ArrayList<>();
+        Page<Message> linkMessages = messageRepository.findByChatRoomIdAndMetadataOgUrlIsNotNull(chatRoomId, pageable);
+        List<ChatResponse.LinkObjectDTO> linkObjectDTOS = linkMessages.getContent().stream()
+                .map(ChatMapper::toLinkObjectDTO)
+                .toList();
 
-        Page<Message> messages = messageRepository.findByChatRoomIdAndMetadataOgUrlIsNotNull(chatRoomId, pageable);
-        messages.getContent().forEach(message -> {
-            LinkMetadata metadata = message.getMetadata();
-            ChatResponse.LinkObjectDTO fileObjectDTO = new ChatResponse.LinkObjectDTO(
-                    message.getId(),
-                    Optional.ofNullable(metadata).map(LinkMetadata::getTitle).orElse(null),
-                    Optional.ofNullable(metadata).map(LinkMetadata::getDescription).orElse(null),
-                    Optional.ofNullable(metadata).map(LinkMetadata::getImage).orElse(null),
-                    Optional.ofNullable(metadata).map(LinkMetadata::getOgUrl).orElse(null),
-                    message.getDate());
-
-            linkObjectDTOS.add(fileObjectDTO);
-        });
-
-        return new ChatResponse.FindLinkObjects(linkObjectDTOS, messages.isLast());
+        return new ChatResponse.FindLinkObjects(linkObjectDTOS, linkMessages.isLast());
     }
 
     @Transactional
@@ -160,9 +148,8 @@ public class ChatService {
         return new ChatResponse.ReadMessageDTO(messageId);
     }
 
-    // 채팅방에 들어와있는지 여부 체크
     private ChatUser validateChatAuthorization(Long senderId, Long chatRoomId) {
-        return chatUserRepository.findByUserIdAndChatRoomId(senderId, chatRoomId)
+        return chatUserRepository.findByUserIdAndChatRoomId(senderId, chatRoomId)  // 채팅방에 들어와있는지 여부 체크
                 .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
     }
 
@@ -227,12 +214,7 @@ public class ChatService {
 
     private List<ChatResponse.MessageDTO> convertToMessageDTOs(List<Message> messages, Long userId) {
         return messages.stream()
-                .map(message -> {
-                    List<ChatResponse.ChatObjectDTO> imageDTOs = message.getObjectURLs().stream()
-                            .map(ChatResponse.ChatObjectDTO::new)
-                            .toList();
-                    return toMessageDTO(message, imageDTOs, userId);
-                })
+                .map(message -> toMessageDTO(message, userId))
                 .toList();
     }
 

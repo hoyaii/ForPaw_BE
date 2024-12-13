@@ -10,6 +10,7 @@ import com.hong.forapw.domain.user.User;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public class ChatMapper {
 
@@ -30,14 +31,18 @@ public class ChatMapper {
                 metadata);
     }
 
-    public static ChatResponse.MessageDTO toMessageDTO(Message message, List<ChatResponse.ChatObjectDTO> imageDTOS, Long userId) {
+    public static ChatResponse.MessageDTO toMessageDTO(Message message, Long userId) {
+        List<ChatResponse.ChatObjectDTO> imageDTOs = message.getObjectURLs().stream()
+                .map(ChatResponse.ChatObjectDTO::new)
+                .toList();
+
         return new ChatResponse.MessageDTO(
                 message.getId(),
                 message.getNickName(),
                 message.getProfileURL(),
                 message.getContent(),
                 message.getMessageType(),
-                imageDTOS,
+                imageDTOs,
                 message.getMetadata(),
                 message.getDate(),
                 message.getSenderId().equals(userId));
@@ -83,5 +88,15 @@ public class ChatMapper {
                 message.getContent(),
                 chatObjectDTOS,
                 message.getDate());
+    }
+
+    public static ChatResponse.LinkObjectDTO toLinkObjectDTO(Message message) {
+        LinkMetadata metadata = message.getMetadata();
+        String title = metadata != null ? metadata.getTitle() : null;
+        String description = metadata != null ? metadata.getDescription() : null;
+        String image = metadata != null ? metadata.getImage() : null;
+        String ogUrl = metadata != null ? metadata.getOgUrl() : null;
+
+        return new ChatResponse.LinkObjectDTO(message.getId(), title, description, image, ogUrl, message.getDate());
     }
 }
