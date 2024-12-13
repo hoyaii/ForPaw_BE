@@ -16,4 +16,13 @@ public class AlarmMapper {
                 alarm.getCreatedDate(),
                 alarm.getIsRead());
     }
+
+    public static AlarmResponse.AlarmDTO toAlarmDTO(Alarm alarm, boolean isRead) {
+        return new AlarmResponse.AlarmDTO(
+                alarm.getId(),
+                alarm.getContent(),
+                alarm.getRedirectURL(),
+                alarm.getCreatedDate(),
+                isRead);
+    }
 }

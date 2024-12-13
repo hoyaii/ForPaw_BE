@@ -79,27 +79,12 @@ public class AlarmService {
         alarm.updateIsRead(true, LocalDateTime.now());
     }
 
-    @Transactional
     public void sendAlarmBySSE(Alarm alarm) {
-        // 이벤트 ID 생성
-        String receiverId = alarm.getReceiver().getId().toString();
+        String receiverId = alarm.getReceiverId().toString();
         String eventId = generateIdByTime(receiverId);
 
-        // SSE Emitter 조회 => 사용자가 여러 기기에서 접속하여 여러 Emitter를 생성했더라도, 모든 Emitter를 찾아 알림을 전송
         Map<String, SseEmitter> emitters = emitterRepository.findAllEmitterStartWithMemberId(receiverId);
-
-        // 각 Emitter로 알림 전송
-        emitters.forEach(
-                (key, emitter) -> {
-                    AlarmResponse.AlarmDTO alarmDTO = new AlarmResponse.AlarmDTO(
-                            alarm.getId(),
-                            alarm.getContent(),
-                            alarm.getRedirectURL(),
-                            alarm.getCreatedDate(),
-                            false);
-                    emitAlarmEvent(emitter, eventId, key, alarmDTO);
-                }
-        );
+        sendAlarmToEmitters(alarm, emitters, eventId);
     }
 
     // 매일 새벽 1시 30분에 알람 데이터 청소
@@ -130,6 +115,15 @@ public class AlarmService {
         if (!alarm.getReceiverId().equals(userId)) {
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
+    }
+
+    private void sendAlarmToEmitters(Alarm alarm, Map<String, SseEmitter> emitters, String eventId) {
+        emitters.forEach(
+                (key, emitter) -> {
+                    AlarmResponse.AlarmDTO alarmDTO = toAlarmDTO(alarm, false);
+                    emitAlarmEvent(emitter, eventId, key, alarmDTO);
+                }
+        );
     }
 
     private void emitAlarmEvent(SseEmitter emitter, String eventId, String emitterId, Object data) {
