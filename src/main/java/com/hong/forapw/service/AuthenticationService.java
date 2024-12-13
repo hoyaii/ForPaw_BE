@@ -30,14 +30,12 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -70,10 +68,10 @@ public class AuthenticationService {
         LocalDateTime now = LocalDateTime.now();
 
         // 유저 통계
-        Long activeUsersNum = userRepository.countActiveUsers();
-        Long inActiveUsersNum = userRepository.countInActiveUsers();
+        Long activeUserCount = userRepository.countActiveUsers();
+        Long notActiveUserCount = userRepository.countNotActiveUsers();
 
-        AuthenticationResponse.UserStatsDTO userStatsDTO = new AuthenticationResponse.UserStatsDTO(activeUsersNum, inActiveUsersNum);
+        AuthenticationResponse.UserStatsDTO userStatsDTO = new AuthenticationResponse.UserStatsDTO(activeUserCount, notActiveUserCount);
 
         // 유기 동물 통계
         Long waitingForAdoptionNum = animalRepository.countAnimal();
@@ -121,7 +119,7 @@ public class AuthenticationService {
                 .collect(Collectors.toList());
 
         // 오늘 발생한 이벤트 요약
-        Long entryNum = userRepository.countALlWithinDate(nowDateOnly);
+        Long entryNum = userRepository.countAllUsersCreatedAfter(nowDateOnly);
         Long newPostNum = postRepository.countALlWithinDate(nowDateOnly);
         Long newCommentNum = commentRepository.countALlWithinDate(nowDateOnly);
         Long newAdoptApplicationNum = applyRepository.countByStatusWithinDate(ApplyStatus.PROCESSING, nowDateOnly);
@@ -192,7 +190,7 @@ public class AuthenticationService {
     public void changeUserRole(AuthenticationRequest.ChangeUserRoleDTO requestDTO, Long adminId, UserRole adminRole) {
         checkAdminAuthority(adminId);
 
-        User user = userRepository.findById(requestDTO.userId()).orElseThrow(
+        User user = userRepository.findNonWithdrawnById(requestDTO.userId()).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 

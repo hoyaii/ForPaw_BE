@@ -219,7 +219,7 @@ public class UserService {
     }
 
     public UserResponse.VerifyPasswordDTO verifyPassword(UserRequest.CurPasswordDTO requestDTO, Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(
+        User user = userRepository.findNonWithdrawnById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
@@ -232,7 +232,7 @@ public class UserService {
 
     @Transactional
     public void updatePassword(UserRequest.UpdatePasswordDTO requestDTO, Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(
+        User user = userRepository.findNonWithdrawnById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
@@ -243,7 +243,7 @@ public class UserService {
     }
 
     public UserResponse.ProfileDTO findProfile(Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(
+        User user = userRepository.findNonWithdrawnById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
@@ -252,7 +252,7 @@ public class UserService {
 
     @Transactional
     public void updateProfile(UserRequest.UpdateProfileDTO requestDTO, Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(
+        User user = userRepository.findNonWithdrawnById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
@@ -264,7 +264,7 @@ public class UserService {
         validateTokenFormat(refreshToken);
 
         Long userId = JWTProvider.extractUserIdFromToken(refreshToken);
-        User user = userRepository.findById(userId).orElseThrow(
+        User user = userRepository.findNonWithdrawnById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 
@@ -286,7 +286,7 @@ public class UserService {
         userCacheService.deleteUserTokens(userId);
         user.deactivateUser();
 
-        userRepository.deleteById(userId);
+        userRepository.markAsRemovedById(userId);
     }
 
     public UserResponse.ValidateAccessTokenDTO validateAccessToken(String accessToken) {
@@ -300,7 +300,7 @@ public class UserService {
     }
 
     public UserResponse.FindCommunityRecord findCommunityStats(Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(
+        User user = userRepository.findNonWithdrawnById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
 

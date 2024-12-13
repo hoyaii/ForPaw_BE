@@ -5,7 +5,6 @@ import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.core.utils.JsonParser;
 import com.hong.forapw.domain.animal.AnimalType;
-import com.hong.forapw.domain.animal.FavoriteAnimal;
 import com.hong.forapw.domain.user.User;
 import com.hong.forapw.domain.animal.Animal;
 import com.hong.forapw.domain.Shelter;
@@ -34,7 +33,6 @@ import reactor.util.retry.Retry;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
@@ -44,7 +42,6 @@ import java.util.stream.Collectors;
 import static com.hong.forapw.core.utils.DateTimeUtils.YEAR_HOUR_DAY_FORMAT;
 import static com.hong.forapw.core.utils.PaginationUtils.isLastPage;
 import static com.hong.forapw.core.utils.UriUtils.buildAnimalOpenApiURI;
-import static com.hong.forapw.core.utils.UriUtils.convertHttpUrlToHttps;
 import static com.hong.forapw.core.utils.mapper.AnimalMapper.*;
 
 @Service
@@ -260,7 +257,7 @@ public class AnimalService {
     }
 
     private void removeAnimalsFromUserSearchHistory(List<Animal> expiredAnimals) {
-        List<User> users = userRepository.findAll();
+        List<User> users = userRepository.findAllNonWithdrawn();
         for (User user : users) {
             String key = ANIMAL_SEARCH_KEY_PREFIX + ":" + user.getId();
             expiredAnimals.forEach(animal ->

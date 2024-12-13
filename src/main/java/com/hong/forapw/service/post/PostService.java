@@ -308,7 +308,7 @@ public class PostService {
 
     @Transactional
     public void submitReport(PostRequest.SubmitReport requestDTO, Long userId) {
-        User reporter = userRepository.findById(userId).orElseThrow(
+        User reporter = userRepository.findNonWithdrawnById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
         validateReportRequest(requestDTO.contentId(), requestDTO.contentType(), userId);

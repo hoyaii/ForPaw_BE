@@ -48,7 +48,7 @@ public class UserScheduledService {
 
     // 테스트 기간에만 사용하고, 운영에는 사용 X
     public void initSuperAdmin() {
-        if (!userRepository.existsByNickname(adminName)) {
+        if (!userRepository.existsByNicknameWithRemoved(adminName)) {
             User admin = User.builder()
                     .email(adminEmail)
                     .name(adminName)
@@ -89,11 +89,11 @@ public class UserScheduledService {
     }
 
     // 탈퇴한지 6개월 지난 유저 데이터 삭제 (매일 자정 30분에 실행)
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     @Scheduled(cron = "0 30 0 * * ?")
     public void deleteExpiredUserData() {
         LocalDateTime sixMonthsAgo = LocalDateTime.now().minusMonths(6);
-        userRepository.hardDeleteRemovedBefore(sixMonthsAgo);
+        userRepository.deleteBySoftDeletedBefore(sixMonthsAgo);
     }
 
     private void setAlarmQueue(User user) {

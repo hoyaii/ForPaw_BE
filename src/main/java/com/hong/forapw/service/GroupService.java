@@ -181,7 +181,7 @@ public class GroupService {
 
         // 로그인이 되어 있어서 userId를 받는다면 => 가입 시 기재한 주소를 바탕으로 그룹 조회
         if (userId != null) {
-            Optional<User> userOptional = userRepository.findById(userId);
+            Optional<User> userOptional = userRepository.findNonWithdrawnById(userId);
             if (userOptional.isPresent()) {
                 User user = userOptional.get();
                 province = user.getProvince();
@@ -701,7 +701,7 @@ public class GroupService {
         }
 
         // 권한 체크 (메니저급만 생성 가능)
-        User creator = userRepository.findById(userId).orElseThrow(
+        User creator = userRepository.findNonWithdrawnById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
         checkGroupAdminAuthority(groupId, creator.getId());
