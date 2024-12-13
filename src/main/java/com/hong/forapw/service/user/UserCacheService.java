@@ -2,10 +2,10 @@ package com.hong.forapw.service.user;
 
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
-import com.hong.forapw.core.security.JWTProvider;
 import com.hong.forapw.domain.user.User;
 import com.hong.forapw.service.RedisService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -15,6 +15,12 @@ import java.util.Map;
 public class UserCacheService {
 
     private final RedisService redisService;
+
+    @Value("${jwt.access-exp-milli}")
+    public Long accessExpMilli;
+
+    @Value("${jwt.refresh-exp-milli}")
+    public Long refreshExpMilli;
 
     private static final String REFRESH_TOKEN_KEY_PREFIX = "refreshToken";
     private static final String ACCESS_TOKEN_KEY_PREFIX = "accessToken";
@@ -27,7 +33,7 @@ public class UserCacheService {
     private static final long LOGIN_FAIL_DAILY_EXPIRATION_MS = 86400000L; // 24시간
 
     public void storeAccessToken(Long userId, String accessToken) {
-        redisService.storeValue(ACCESS_TOKEN_KEY_PREFIX, userId.toString(), accessToken, JWTProvider.ACCESS_EXP_MILLI);
+        redisService.storeValue(ACCESS_TOKEN_KEY_PREFIX, userId.toString(), accessToken, accessExpMilli);
     }
 
     public void storeVerificationCode(String email, String codeType, String verificationCode) {
@@ -39,8 +45,8 @@ public class UserCacheService {
     }
 
     public void storeUserTokens(Long userId, Map<String, String> tokens) {
-        redisService.storeValue(ACCESS_TOKEN_KEY_PREFIX, userId.toString(), tokens.get(ACCESS_TOKEN_KEY_PREFIX), JWTProvider.ACCESS_EXP_MILLI);
-        redisService.storeValue(REFRESH_TOKEN_KEY_PREFIX, userId.toString(), tokens.get(REFRESH_TOKEN_KEY_PREFIX), JWTProvider.REFRESH_EXP_MILLI);
+        redisService.storeValue(ACCESS_TOKEN_KEY_PREFIX, userId.toString(), tokens.get(ACCESS_TOKEN_KEY_PREFIX), accessExpMilli);
+        redisService.storeValue(REFRESH_TOKEN_KEY_PREFIX, userId.toString(), tokens.get(REFRESH_TOKEN_KEY_PREFIX), refreshExpMilli);
     }
 
     public long incrementDailyLoginFailures(User user) {

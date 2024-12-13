@@ -2,13 +2,6 @@ package com.hong.forapw.service.user;
 
 import com.hong.forapw.controller.dto.GoogleOauthDTO;
 import com.hong.forapw.controller.dto.KakaoOauthDTO;
-import com.hong.forapw.core.errors.CustomException;
-import com.hong.forapw.core.errors.ExceptionCode;
-import com.hong.forapw.core.security.JWTProvider;
-import com.hong.forapw.domain.user.User;
-import com.hong.forapw.repository.UserRepository;
-import com.hong.forapw.service.RedisService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -17,14 +10,9 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor

@@ -13,7 +13,7 @@ public class FilterConfig {
     }
 
     @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(RedisService redisService) {
-        return new JwtAuthenticationFilter(redisService);
+    public JwtAuthenticationFilter jwtAuthenticationFilter(RedisService redisService, JwtUtils jwtProvider) {
+        return new JwtAuthenticationFilter(redisService, jwtProvider);
     }
 }

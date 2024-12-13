@@ -3,6 +3,7 @@ package com.hong.forapw.controller;
 import com.hong.forapw.controller.dto.UserRequest;
 import com.hong.forapw.controller.dto.UserResponse;
 import com.hong.forapw.core.security.CustomUserDetails;
+import com.hong.forapw.core.security.JwtUtils;
 import com.hong.forapw.core.utils.ApiUtils;
 import com.hong.forapw.service.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,14 +18,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-import static com.hong.forapw.core.security.JWTProvider.createRefreshTokenCookie;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
 public class UserController {
 
     private final UserService userService;
+    private final JwtUtils jwtUtils;
 
     private static final String AUTH_KAKAO = "KAKAO";
     private static final String AUTH_GOOGLE = "GOOGLE";
@@ -38,7 +38,7 @@ public class UserController {
     public ResponseEntity<?> login(@RequestBody @Valid UserRequest.LoginDTO requestDTO, HttpServletRequest request) {
         Map<String, String> tokens = userService.login(requestDTO, request);
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokens.get(REFRESH_TOKEN)))
+                .header(HttpHeaders.SET_COOKIE, jwtUtils.refreshTokenCookie(tokens.get(REFRESH_TOKEN)))
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokens.get(ACCESS_TOKEN))));
     }
 
@@ -139,7 +139,7 @@ public class UserController {
     public ResponseEntity<?> updateAccessToken(@CookieValue String refreshToken) {
         Map<String, String> tokens = userService.updateAccessToken(refreshToken);
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokens.get(REFRESH_TOKEN)))
+                .header(HttpHeaders.SET_COOKIE, jwtUtils.refreshTokenCookie(tokens.get(REFRESH_TOKEN)))
                 .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(tokens.get(ACCESS_TOKEN))));
     }
 

@@ -54,6 +54,7 @@ public enum ExceptionCode {
     // 토큰 관련 에러
     TOKEN_WRONG(HttpStatus.BAD_REQUEST, "잘못된 토큰 형식입니다."),
     TOKEN_EXPIRED(HttpStatus.BAD_REQUEST, "토큰이 만료됐습니다."),
+    TOKEN_INVALID_SIGNATURE(HttpStatus.BAD_REQUEST, "잘못된 토큰 시그니쳐"),
 
     // 동물 관련 에러
     ANIMAL_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 동물을 찾을 수 없습니다."),

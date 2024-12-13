@@ -39,15 +39,13 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.hong.forapw.core.security.JWTProvider;
+import com.hong.forapw.core.security.JwtUtils;
 
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.hong.forapw.core.security.JWTProvider.createRefreshTokenCookie;
-import static com.hong.forapw.core.security.JWTProvider.validateTokenFormat;
 import static com.hong.forapw.core.utils.UriUtils.createRedirectUri;
 import static com.hong.forapw.core.utils.mapper.UserMapper.*;
 import static com.hong.forapw.service.EmailService.generateVerificationCode;
@@ -79,6 +77,7 @@ public class UserService {
     private final BrokerService brokerService;
     private final EmailService emailService;
     private final UserCacheService userCacheService;
+    private final JwtUtils jwtUtils;
 
     @Value("${social.join.redirect.uri}")
     private String redirectJoinUri;
@@ -261,9 +260,9 @@ public class UserService {
     }
 
     public Map<String, String> updateAccessToken(String refreshToken) {
-        validateTokenFormat(refreshToken);
+        jwtUtils.validateTokenFormat(refreshToken);
 
-        Long userId = JWTProvider.extractUserIdFromToken(refreshToken);
+        Long userId = jwtUtils.extractUserId(refreshToken);
         User user = userRepository.findNonWithdrawnById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
@@ -290,9 +289,9 @@ public class UserService {
     }
 
     public UserResponse.ValidateAccessTokenDTO validateAccessToken(String accessToken) {
-        validateTokenFormat(accessToken);
+        jwtUtils.validateTokenFormat(accessToken);
 
-        Long userId = JWTProvider.extractUserIdFromToken(accessToken);
+        Long userId = jwtUtils.extractUserId(accessToken);
         userCacheService.validateAccessToken(accessToken, userId);
 
         String profile = userRepository.findProfileById(userId).orElse(null);
@@ -365,15 +364,15 @@ public class UserService {
                     QUERY_PARAM_AUTH_PROVIDER, authProvider
             ));
         } else if (isJoined(tokenOrEmail)) {
-            response.addHeader(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokenOrEmail.get(REFRESH_TOKEN_KEY_PREFIX)));
+            String refreshToken = tokenOrEmail.get(REFRESH_TOKEN_KEY_PREFIX);
+            String accessToken = tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX);
+            response.addHeader(HttpHeaders.SET_COOKIE, jwtUtils.refreshTokenCookie(refreshToken));
             return createRedirectUri(redirectHomeUri, Map.of(
-                    QUERY_PARAM_ACCESS_TOKEN, tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX),
+                    QUERY_PARAM_ACCESS_TOKEN, accessToken,
                     QUERY_PARAM_AUTH_PROVIDER, authProvider
             ));
         } else {
-            return createRedirectUri(redirectLoginUri, Map.of(
-                    QUERY_PARAM_AUTH_PROVIDER, authProvider
-            ));
+            return createRedirectUri(redirectLoginUri, Map.of(QUERY_PARAM_AUTH_PROVIDER, authProvider));
         }
     }
 
@@ -430,8 +429,8 @@ public class UserService {
 
 
     private Map<String, String> createToken(User user) {
-        String accessToken = JWTProvider.createAccessToken(user);
-        String refreshToken = JWTProvider.createRefreshToken(user);
+        String accessToken = jwtUtils.createAccessToken(user);
+        String refreshToken = jwtUtils.createRefreshToken(user);
 
         Map<String, String> userTokens = new HashMap<>();
         userTokens.put(ACCESS_TOKEN_KEY_PREFIX, accessToken);
@@ -443,7 +442,7 @@ public class UserService {
 
     private Map<String, String> createAccessToken(User user) {
         String refreshToken = userCacheService.getValidRefreshToken(user.getId());
-        String accessToken = JWTProvider.createAccessToken(user);
+        String accessToken = jwtUtils.createAccessToken(user);
         userCacheService.storeAccessToken(user.getId(), accessToken);
 
         Map<String, String> tokens = new HashMap<>();

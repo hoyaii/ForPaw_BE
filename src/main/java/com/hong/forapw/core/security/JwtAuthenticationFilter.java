@@ -32,12 +32,15 @@ import static com.hong.forapw.core.utils.DateTimeUtils.formatLocalDateTime;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final RedisService redisService;
+    private final JwtUtils jwtProvider;
 
     private static final String REFRESH_TOKEN = "refreshToken";
     private static final String ACCESS_TOKEN = "accessToken";
+    public static final String TOKEN_PREFIX = "Bearer ";
 
-    public JwtAuthenticationFilter(RedisService redisService) {
+    public JwtAuthenticationFilter(RedisService redisService, JwtUtils jwtProvider) {
         this.redisService = redisService;
+        this.jwtProvider = jwtProvider;
     }
 
     @Override
@@ -65,15 +68,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String extractAccessToken(HttpServletRequest request) {
-        String authorizationHeader = request.getHeader(JWTProvider.AUTHORIZATION);
-        if (authorizationHeader != null && authorizationHeader.startsWith(JWTProvider.TOKEN_PREFIX)) {
-            return authorizationHeader.replace(JWTProvider.TOKEN_PREFIX, "");
+        String jwt = request.getHeader(JwtUtils.AUTHORIZATION);
+        if (jwt != null && jwt.startsWith(TOKEN_PREFIX)) {
+            return removeTokenPrefix(jwt);
         }
         return null;
     }
 
     private String extractRefreshToken(HttpServletRequest request) {
-        return CookieUtils.getFromRequest(JWTProvider.REFRESH_TOKEN_KEY_PREFIX, request);
+        return CookieUtils.getFromRequest(JwtUtils.REFRESH_TOKEN_KEY_PREFIX, request);
     }
 
     private boolean areTokensEmpty(String accessToken, String refreshToken) {
@@ -126,7 +129,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private User getUserFromToken(String token) {
         try {
-            DecodedJWT decodedJWT = JWTProvider.decodeJWT(token);
+            String encodedJWT = removeTokenPrefix(token);
+            DecodedJWT decodedJWT = jwtProvider.decodeJWT(encodedJWT);
 
             Long id = decodedJWT.getClaim("id").asLong();
             UserRole role = decodedJWT.getClaim("role").as(UserRole.class);
@@ -140,5 +144,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             log.error("토큰 디코딩 실패 {}: {}", token, jde.getMessage());
         }
         return null;
+    }
+
+    private String removeTokenPrefix(String jwt) {
+        return jwt.replace(TOKEN_PREFIX, "");
     }
 }
