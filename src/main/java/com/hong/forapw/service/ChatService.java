@@ -114,34 +114,19 @@ public class ChatService {
         return new ChatResponse.FindImageObjectsDTO(imageObjectDTOs, imageMessages.isLast());
     }
 
-    @Transactional
     public ChatResponse.FindFileObjects findFileObjects(Long chatRoomId, Long userId, Pageable pageable) {
-        // 권한 체크
         validateChatAuthorization(userId, chatRoomId);
 
-        List<ChatResponse.FileObjectDTO> fileObjectDTOS = new ArrayList<>();
+        Page<Message> fileMessages = messageRepository.findByChatRoomIdAndMessageType(chatRoomId, MessageType.FILE, pageable);
+        List<ChatResponse.FileObjectDTO> fileObjectDTOs = fileMessages.getContent().stream()
+                .map(ChatMapper::toFileObjectDTO)
+                .toList();
 
-        Page<Message> messages = messageRepository.findByChatRoomIdAndMessageType(chatRoomId, MessageType.FILE, pageable);
-        messages.getContent().forEach(message -> {
-            List<ChatResponse.ChatObjectDTO> chatObjectDTOS = message.getObjectURLs().stream()
-                    .map(ChatResponse.ChatObjectDTO::new)
-                    .toList();
-
-            ChatResponse.FileObjectDTO fileObjectDTO = new ChatResponse.FileObjectDTO(
-                    message.getId(),
-                    message.getContent(),
-                    chatObjectDTOS,
-                    message.getDate());
-
-            fileObjectDTOS.add(fileObjectDTO);
-        });
-
-        return new ChatResponse.FindFileObjects(fileObjectDTOS, messages.isLast());
+        return new ChatResponse.FindFileObjects(fileObjectDTOs, fileMessages.isLast());
     }
 
     @Transactional
     public ChatResponse.FindLinkObjects findLinkObjects(Long chatRoomId, Long userId, Pageable pageable) {
-        // 권한 체크
         validateChatAuthorization(userId, chatRoomId);
 
         List<ChatResponse.LinkObjectDTO> linkObjectDTOS = new ArrayList<>();
@@ -257,13 +242,5 @@ public class ChatService {
             long totalMessages = messageRepository.countByChatRoomId(chatRoomId);
             chatUser.updateLastMessage(lastMessage.messageId(), totalMessages - 1);
         }
-    }
-
-    private ChatResponse.ImageObjectDTO convertToImageObjectDTO(Message message) {
-        List<ChatResponse.ChatObjectDTO> chatObjectDTOs = message.getObjectURLs().stream()
-                .map(ChatResponse.ChatObjectDTO::new)
-                .toList();
-
-        return toImageObjectDTO(message);
     }
 }

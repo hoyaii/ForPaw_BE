@@ -72,4 +72,16 @@ public class ChatMapper {
                 chatObjectDTOs,
                 message.getDate());
     }
+
+    public static ChatResponse.FileObjectDTO toFileObjectDTO(Message message) {
+        List<ChatResponse.ChatObjectDTO> chatObjectDTOS = message.getObjectURLs().stream()
+                .map(ChatResponse.ChatObjectDTO::new)
+                .toList();
+
+        return new ChatResponse.FileObjectDTO(
+                message.getId(),
+                message.getContent(),
+                chatObjectDTOS,
+                message.getDate());
+    }
 }
