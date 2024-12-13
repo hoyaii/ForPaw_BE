@@ -4,6 +4,7 @@ import com.hong.forapw.controller.dto.AlarmRequest;
 import com.hong.forapw.controller.dto.AlarmResponse;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
+import com.hong.forapw.core.utils.mapper.AlarmMapper;
 import com.hong.forapw.domain.alarm.Alarm;
 import com.hong.forapw.domain.alarm.AlarmType;
 import com.hong.forapw.repository.alarm.AlarmRepository;
@@ -21,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.hong.forapw.core.utils.mapper.AlarmMapper.toAlarmDTO;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -33,18 +36,12 @@ public class AlarmService {
     private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 60;
 
     @Transactional
-    public SseEmitter connectToAlarm(String userId) { // 여기서 userId는 서버에 연결된 클라이언트의 id
-        // SseEmitter 객체 생성
+    public SseEmitter connectToAlarm(String userId) {
         String emitterId = generateIdByTime(userId);
         SseEmitter emitter = emitterRepository.save(emitterId, new SseEmitter(DEFAULT_TIMEOUT));
 
-        // 연결 종료 시 이벤트 리소스 정리
-        emitter.onCompletion(() -> emitterRepository.deleteById(emitterId));
-        emitter.onTimeout(() -> emitterRepository.deleteById(emitterId));
-
-        // 503 에러를 방지하기 위한 더미 이벤트 전송
-        String eventId = generateIdByTime(userId);
-        emitAlarmEvent(emitter, eventId, emitterId, "ForPaw");
+        handleEmitterCompletion(emitter, emitterId);
+        sendDummyEvent(userId, emitter, emitterId);
 
         return emitter;
     }
@@ -59,39 +56,26 @@ public class AlarmService {
         brokerService.produceAlarmToUser(userId, alarmDTO);
     }
 
-    @Transactional
     public AlarmResponse.FindAlarmListDTO findAlarmList(Long userId) {
         List<Alarm> alarms = alarmRepository.findByReceiverId(userId);
-
         if (alarms.isEmpty()) {
             throw new CustomException(ExceptionCode.ALARM_NOT_EXIST);
         }
 
         List<AlarmResponse.AlarmDTO> alarmDTOS = alarms.stream()
-                .map(alarm -> new AlarmResponse.AlarmDTO(
-                        alarm.getId(),
-                        alarm.getContent(),
-                        alarm.getRedirectURL(),
-                        alarm.getCreatedDate(),
-                        alarm.getIsRead()))
-                .collect(Collectors.toList());
+                .map(AlarmMapper::toAlarmDTO)
+                .toList();
 
         return new AlarmResponse.FindAlarmListDTO(alarmDTOS);
     }
 
     @Transactional
     public void readAlarm(Long alarmId, Long userId) {
-        // 존재하지 않으면 에러
         Alarm alarm = alarmRepository.findById(alarmId).orElseThrow(
                 () -> new CustomException(ExceptionCode.ALARM_NOT_FOUND)
         );
 
-        // 권한 없음
-        if (!alarm.getReceiver().getId().equals(userId)) {
-            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
-        }
-
-        // 현재 시간을 기준으로 읽었다고 업데이트
+        validateAlarmAuthorization(userId, alarm);
         alarm.updateIsRead(true, LocalDateTime.now());
     }
 
@@ -123,12 +107,29 @@ public class AlarmService {
     @Scheduled(cron = "0 30 1 * * *")
     public void cleanUpAlarms() {
         // 읽은 알람은 일주일 후에 삭제
-        LocalDateTime oneWeekAgo = LocalDateTime.now().minus(1, ChronoUnit.WEEKS);
+        LocalDateTime oneWeekAgo = LocalDateTime.now().minusWeeks(1);
         alarmRepository.deleteReadAlarmBefore(oneWeekAgo);
 
         // 읽지 않은 알람은 한 달 후에 삭제
-        LocalDateTime oneMonthAgo = LocalDateTime.now().minus(1, ChronoUnit.MONTHS);
+        LocalDateTime oneMonthAgo = LocalDateTime.now().minusMonths(1);
         alarmRepository.deleteNotReadAlarmBefore(oneMonthAgo);
+    }
+
+    // 503 에러를 방지하기 위해 더미 이벤트 전송
+    private void sendDummyEvent(String userId, SseEmitter emitter, String emitterId) {
+        String eventId = generateIdByTime(userId);
+        emitAlarmEvent(emitter, eventId, emitterId, "ForPaw");
+    }
+
+    private void handleEmitterCompletion(SseEmitter emitter, String emitterId) {
+        emitter.onCompletion(() -> emitterRepository.deleteById(emitterId));
+        emitter.onTimeout(() -> emitterRepository.deleteById(emitterId));
+    }
+
+    private void validateAlarmAuthorization(Long userId, Alarm alarm) {
+        if (!alarm.getReceiverId().equals(userId)) {
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
     }
 
     private void emitAlarmEvent(SseEmitter emitter, String eventId, String emitterId, Object data) {

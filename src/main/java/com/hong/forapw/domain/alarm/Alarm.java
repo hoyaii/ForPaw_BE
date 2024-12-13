@@ -53,4 +53,8 @@ public class Alarm extends TimeStamp {
         this.isRead = isRead;
         this.readDate = readDate;
     }
+
+    public Long getReceiverId() {
+        return receiver.getId();
+    }
 }

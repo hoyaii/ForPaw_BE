@@ -23,8 +23,7 @@ public class AlarmController {
 
     @GetMapping(value = "/alarms/connect", produces = "text/event-stream")
     public SseEmitter connectToAlarm(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        SseEmitter sseEmitter = alarmService.connectToAlarm(userDetails.getUser().getId().toString());
-        return sseEmitter;
+        return alarmService.connectToAlarm(userDetails.getUser().getId().toString());
     }
 
     @GetMapping("/alarms")
