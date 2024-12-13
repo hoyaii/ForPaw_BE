@@ -56,6 +56,7 @@ import static com.hong.forapw.core.utils.MailTemplate.VERIFICATION_CODE;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 @Slf4j
 public class UserService {
 
@@ -190,20 +191,17 @@ public class UserService {
         return new UserResponse.VerifyEmailCodeDTO(true);
     }
 
-    @Transactional
     public UserResponse.CheckNickNameDTO checkNickName(UserRequest.CheckNickDTO requestDTO) {
         boolean isDuplicate = userRepository.existsByNicknameWithRemoved(requestDTO.nickName());
         return new UserResponse.CheckNickNameDTO(isDuplicate);
     }
 
-    @Transactional(readOnly = true)
     public UserResponse.CheckLocalAccountExistDTO checkLocalAccountExist(UserRequest.EmailDTO requestDTO) {
         return userRepository.findByEmail(requestDTO.email())
                 .map(user -> new UserResponse.CheckLocalAccountExistDTO(true, user.isLocalJoined()))
                 .orElse(new UserResponse.CheckLocalAccountExistDTO(false, false));
     }
 
-    @Transactional(readOnly = true)
     public UserResponse.CheckAccountExistDTO checkAccountExist(String email) {
         boolean isValid = userRepository.existsByEmail(email);
         return new UserResponse.CheckAccountExistDTO(isValid);
@@ -220,7 +218,6 @@ public class UserService {
         updateNewPassword(email, requestDTO.newPassword());
     }
 
-    @Transactional(readOnly = true)
     public UserResponse.VerifyPasswordDTO verifyPassword(UserRequest.CurPasswordDTO requestDTO, Long userId) {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
@@ -245,7 +242,6 @@ public class UserService {
         user.updatePassword(passwordEncoder.encode(requestDTO.newPassword()));
     }
 
-    @Transactional(readOnly = true)
     public UserResponse.ProfileDTO findProfile(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
@@ -264,7 +260,6 @@ public class UserService {
         user.updateProfile(requestDTO.nickName(), requestDTO.province(), requestDTO.district(), requestDTO.subDistrict(), requestDTO.profileURL());
     }
 
-    @Transactional(readOnly = true)
     public Map<String, String> updateAccessToken(String refreshToken) {
         validateTokenFormat(refreshToken);
 
@@ -294,18 +289,16 @@ public class UserService {
         userRepository.deleteById(userId);
     }
 
-    @Transactional(readOnly = true)
     public UserResponse.ValidateAccessTokenDTO validateAccessToken(String accessToken) {
         validateTokenFormat(accessToken);
 
-        Long userIdFromToken = JWTProvider.extractUserIdFromToken(accessToken);
-        userCacheService.validateAccessToken(accessToken, userIdFromToken);
+        Long userId = JWTProvider.extractUserIdFromToken(accessToken);
+        userCacheService.validateAccessToken(accessToken, userId);
 
-        String profile = userRepository.findProfileById(userIdFromToken).orElse(null);
+        String profile = userRepository.findProfileById(userId).orElse(null);
         return new UserResponse.ValidateAccessTokenDTO(profile);
     }
 
-    @Transactional(readOnly = true)
     public UserResponse.FindCommunityRecord findCommunityStats(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)

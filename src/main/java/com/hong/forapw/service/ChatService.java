@@ -173,7 +173,6 @@ public class ChatService {
         if (matcher.find()) {
             return matcher.group();
         }
-
         return null;
     }
 
