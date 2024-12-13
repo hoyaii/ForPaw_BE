@@ -12,7 +12,6 @@ import com.hong.forapw.domain.chat.LinkMetadata;
 import com.hong.forapw.domain.chat.Message;
 import com.hong.forapw.domain.chat.MessageType;
 import com.hong.forapw.domain.group.GroupRole;
-import com.hong.forapw.domain.user.User;
 import com.hong.forapw.repository.chat.ChatRoomRepository;
 import com.hong.forapw.repository.chat.ChatUserRepository;
 import com.hong.forapw.repository.chat.MessageRepository;
@@ -44,10 +43,10 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final BrokerService brokerService;
 
-    private static final String SORT_BY_DATE = "date";
+    private static final String SORT_BY_MESSAGE_DATE = "date";
     private static final String URL_REGEX = "(https?://[\\w\\-\\._~:/?#\\[\\]@!$&'()*+,;=%]+)";
     private static final Pattern URL_PATTERN = Pattern.compile(URL_REGEX);
-    private static final Pageable DEFAULT_IMAGE_PAGEABLE = PageRequest.of(0, 6, Sort.by(Sort.Direction.DESC, SORT_BY_DATE));
+    private static final Pageable DEFAULT_IMAGE_PAGEABLE = PageRequest.of(0, 6, Sort.by(Sort.Direction.DESC, SORT_BY_MESSAGE_DATE));
 
     @Transactional
     public ChatResponse.SendMessageDTO sendMessage(ChatRequest.SendMessageDTO requestDTO, Long senderId, String senderNickName) {
@@ -58,14 +57,13 @@ public class ChatService {
         String senderProfileURL = getUserProfileURL(senderId);
 
         ChatRequest.MessageDTO messageDTO = toMessageDTO(requestDTO, senderNickName, messageId, metadata, senderProfileURL, senderId);
-        sendMessageAsyncToBroker(requestDTO.chatRoomId(), messageDTO);
+        publishMessageToBroker(requestDTO.chatRoomId(), messageDTO);
 
         return new ChatResponse.SendMessageDTO(messageId);
     }
 
     public ChatResponse.FindChatRoomsDTO findChatRooms(Long userId) {
-        // chatRoom이랑 Group도 같이 가져와야할 거 같음
-        List<ChatUser> chatUsers = chatUserRepository.findByUserIdWithChatRoom(userId);
+        List<ChatUser> chatUsers = chatUserRepository.findAllByUserIdWithChatRoomAndGroup(userId);
 
         List<ChatResponse.RoomDTO> roomDTOS = chatUsers.stream()
                 .map(this::buildRoomDTO)
@@ -89,7 +87,7 @@ public class ChatService {
         Collections.reverse(messageDTOs);
 
         updateLastReadMessage(chatUser, messageDTOs, chatRoomId);
-        return new ChatResponse.FindMessagesInRoomDTO(chatUser.getRoomName(), chatUser.getLastMessageId(), nickName, messageDTOs);
+        return new ChatResponse.FindMessagesInRoomDTO(chatUser.getRoomName(), chatUser.getLastReadMessageId(), nickName, messageDTOs);
     }
 
     public ChatResponse.FindChatRoomDrawerDTO findChatRoomDrawer(Long chatRoomId, Long userId) {
@@ -142,15 +140,18 @@ public class ChatService {
                 () -> new CustomException(ExceptionCode.MESSAGE_NOT_FOUND)
         );
 
-        ChatUser chatUser = validateChatAuthorization(message.getSenderId(), message.getChatRoomId());
-        chatUser.updateLastMessage(message.getId(), chatUser.getLastMessageIdx() + 1);
+        ChatUser chatUser = chatUserRepository.findByUserIdAndChatRoomId(message.getSenderId(), message.getChatRoomId())
+                .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
 
+        chatUser.updateLastMessage(message.getId(), chatUser.getLastReadMessageIndex() + 1);
         return new ChatResponse.ReadMessageDTO(messageId);
     }
 
-    private ChatUser validateChatAuthorization(Long senderId, Long chatRoomId) {
-        return chatUserRepository.findByUserIdAndChatRoomId(senderId, chatRoomId)  // 채팅방에 들어와있는지 여부 체크
-                .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
+    private void validateChatAuthorization(Long senderId, Long chatRoomId) {
+        boolean isMemberOfChatRoom = chatUserRepository.existsByUserIdAndChatRoomId(senderId, chatRoomId);
+        if (!isMemberOfChatRoom) {
+            throw new CustomException(ExceptionCode.USER_FORBIDDEN);
+        }
     }
 
     private String getUserProfileURL(Long senderId) {
@@ -161,14 +162,10 @@ public class ChatService {
 
     private LinkMetadata extractMetadataIfApplicable(ChatRequest.SendMessageDTO requestDTO) {
         if (requestDTO.messageType() == MessageType.TEXT) {
-            String linkURL = extractFirstURL(requestDTO.content());
-            return (linkURL != null) ? MetaDataUtils.fetchMetadata(linkURL) : null;
+            String metadataURL = extractFirstURL(requestDTO.content());
+            return (metadataURL != null) ? MetaDataUtils.fetchMetadata(metadataURL) : null;
         }
         return null;
-    }
-
-    private void sendMessageAsyncToBroker(Long chatRoomId, ChatRequest.MessageDTO messageDTO) {
-        CompletableFuture.runAsync(() -> brokerService.produceChatToRoom(chatRoomId, messageDTO));
     }
 
     private String extractFirstURL(String content) {
@@ -180,17 +177,21 @@ public class ChatService {
         return null;
     }
 
-    private ChatResponse.RoomDTO buildRoomDTO(ChatUser chatUser) {
-        String lastMessageId = chatUser.getLastMessageId();
-        MessageDetailDTO lastMessageDetails = fetchLastMessageDetails(lastMessageId);
-
-        Long lastReadMessageIdx = chatUser.getLastMessageIdx();
-        long lastReadMessageOffset = calculateMessageOffset(chatUser.getChatRoom().getId(), lastReadMessageIdx);
-
-        return toRoomDTO(chatUser, lastMessageDetails.content(), lastMessageDetails.date(), lastReadMessageOffset);
+    private void publishMessageToBroker(Long chatRoomId, ChatRequest.MessageDTO messageDTO) {
+        CompletableFuture.runAsync(() -> brokerService.produceChatToRoom(chatRoomId, messageDTO));
     }
 
-    private MessageDetailDTO fetchLastMessageDetails(String lastMessageId) {
+    private ChatResponse.RoomDTO buildRoomDTO(ChatUser chatUser) {
+        String lastMessageId = chatUser.getLastReadMessageId();
+        MessageDetailDTO lastMessageDetails = fetchLastMessageContentAndDate(lastMessageId);
+
+        Long unreadMessageIndex = chatUser.getLastReadMessageIndex();
+        long unreadMessageOffset = calculateUnreadMessageOffset(chatUser.getChatRoom().getId(), unreadMessageIndex);
+
+        return toRoomDTO(chatUser, lastMessageDetails.content(), lastMessageDetails.date(), unreadMessageOffset);
+    }
+
+    private MessageDetailDTO fetchLastMessageContentAndDate(String lastMessageId) {
         if (lastMessageId == null) {
             return new MessageDetailDTO(null, null);
         }
@@ -200,7 +201,7 @@ public class ChatService {
                 .orElse(new MessageDetailDTO(null, null));
     }
 
-    private long calculateMessageOffset(Long chatRoomId, Long lastReadMessageIdx) {
+    private long calculateUnreadMessageOffset(Long chatRoomId, Long lastReadMessageIdx) {
         long totalMessages = messageRepository.countByChatRoomId(chatRoomId);
         long totalPages = totalMessages != 0L ? (totalMessages / 50) : 0L;
 

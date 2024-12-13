@@ -16,6 +16,8 @@ public interface ChatUserRepository extends JpaRepository<ChatUser, Long> {
 
     Optional<ChatUser> findByUserIdAndChatRoomId(Long userId, Long chatRoomId);
 
+    boolean existsByUserIdAndChatRoomId(Long userId, Long chatRoomId);
+
     @EntityGraph(attributePaths = {"chatRoom"})
     @Query("SELECT cu FROM ChatUser cu " +
             "JOIN cu.user u " +
@@ -23,12 +25,11 @@ public interface ChatUserRepository extends JpaRepository<ChatUser, Long> {
             "WHERE u.id = :userId AND cr.id = :chatRoomId")
     Optional<ChatUser> findByUserIdAndChatRoomIdWithChatRoom(@Param("userId") Long userId, @Param("chatRoomId") Long chatRoomId);
 
+    @EntityGraph(attributePaths = {"chatRoom.group"})
     @Query("SELECT cu FROM ChatUser cu " +
-            "JOIN FETCH cu.chatRoom cr " +
-            "JOIN FETCH cr.group g " +
             "JOIN cu.user u " +
             "WHERE u.id = :userId")
-    List<ChatUser> findByUserIdWithChatRoom(@Param("userId") Long userId);
+    List<ChatUser> findAllByUserIdWithChatRoomAndGroup(@Param("userId") Long userId);
 
     @Modifying
     @Query("DELETE FROM ChatUser cu WHERE cu.chatRoom.id IN (SELECT cr.id FROM ChatRoom cr WHERE cr.group.id = :groupId)")

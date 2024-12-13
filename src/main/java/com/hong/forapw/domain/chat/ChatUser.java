@@ -27,10 +27,10 @@ public class ChatUser extends TimeStamp {
     private ChatRoom chatRoom;
 
     @Column
-    private String lastMessageId;
+    private String lastReadMessageId;
 
     @Column
-    private Long lastMessageIdx = 0L;
+    private Long lastReadMessageIndex = 0L;
 
     @Builder
     public ChatUser(User user, ChatRoom chatRoom) {
@@ -38,20 +38,20 @@ public class ChatUser extends TimeStamp {
         this.chatRoom = chatRoom;
     }
 
-    public void updateLastMessage(String lastMessageId, Long lastMessageIdx) {
-        this.lastMessageId = lastMessageId;
-        this.lastMessageIdx = lastMessageIdx;
+    public void updateLastMessage(String lastReadMessageId, Long lastReadMessageIndex) {
+        this.lastReadMessageId = lastReadMessageId;
+        this.lastReadMessageIndex = lastReadMessageIndex;
     }
 
     public Long getChatRoomId() {
         return chatRoom.getId();
     }
 
-    public String getRoomName(){
+    public String getRoomName() {
         return chatRoom.getName();
     }
 
-    public String getGroupProfileURL(){
+    public String getGroupProfileURL() {
         return chatRoom.getGroup().getProfileURL();
     }
 }
