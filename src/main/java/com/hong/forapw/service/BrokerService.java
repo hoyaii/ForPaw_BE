@@ -161,7 +161,7 @@ public class BrokerService {
                     .build();
 
             // 알람 실시간 전송 후 저장
-            alarmService.sendAlarmBySSE(alarm);
+            alarmService.sendAlarmViaSSE(alarm);
             alarmRepository.save(alarm);
         });
 

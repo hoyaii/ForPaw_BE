@@ -23,18 +23,18 @@ public class AlarmController {
 
     @GetMapping(value = "/alarms/connect", produces = "text/event-stream")
     public SseEmitter connectToAlarm(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        return alarmService.connectToAlarm(userDetails.getUser().getId().toString());
+        return alarmService.connectToSseForAlarms(userDetails.getUser().getId().toString());
     }
 
     @GetMapping("/alarms")
     public ResponseEntity<?> findAlarmList(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        AlarmResponse.FindAlarmListDTO responseDTO = alarmService.findAlarmList(userDetails.getUser().getId());
+        AlarmResponse.FindAlarmListDTO responseDTO = alarmService.findAlarms(userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/alarms/read")
     public ResponseEntity<?> readAlarm(@RequestBody @Valid AlarmRequest.ReadAlarmDTO requestDTO, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        alarmService.readAlarm(requestDTO.id(), userDetails.getUser().getId());
+        alarmService.updateAlarmAsRead(requestDTO.id(), userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 }
