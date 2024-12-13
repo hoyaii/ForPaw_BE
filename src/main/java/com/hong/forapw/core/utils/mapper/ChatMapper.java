@@ -6,6 +6,7 @@ import com.hong.forapw.domain.chat.ChatUser;
 import com.hong.forapw.domain.chat.LinkMetadata;
 import com.hong.forapw.domain.chat.Message;
 import com.hong.forapw.domain.chat.MessageType;
+import com.hong.forapw.domain.user.User;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,7 +30,7 @@ public class ChatMapper {
                 metadata);
     }
 
-    public static ChatResponse.MessageDTO toMessageDTO(Message message, List<ChatResponse.ChatObjectDTO> imageDTOS, Long userId){
+    public static ChatResponse.MessageDTO toMessageDTO(Message message, List<ChatResponse.ChatObjectDTO> imageDTOS, Long userId) {
         return new ChatResponse.MessageDTO(
                 message.getId(),
                 message.getNickName(),
@@ -50,5 +51,25 @@ public class ChatMapper {
                 lastMessageDate,
                 offset,
                 chatUser.getGroupProfileURL());
+    }
+
+    public static ChatResponse.ChatUserDTO toChatUserDTO(User user) {
+        return new ChatResponse.ChatUserDTO(
+                user.getId(),
+                user.getNickname(),
+                user.getProfileURL());
+    }
+
+    public static ChatResponse.ImageObjectDTO toImageObjectDTO(Message message) {
+        List<ChatResponse.ChatObjectDTO> chatObjectDTOs = message.getObjectURLs().stream()
+                .map(ChatResponse.ChatObjectDTO::new)
+                .toList();
+
+        return new ChatResponse.ImageObjectDTO(
+                message.getId(),
+                message.getNickName(),
+                message.getProfileURL(),
+                chatObjectDTOs,
+                message.getDate());
     }
 }

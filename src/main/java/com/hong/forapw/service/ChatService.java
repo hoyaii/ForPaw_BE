@@ -6,11 +6,13 @@ import com.hong.forapw.controller.dto.MessageDetailDTO;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.core.utils.MetaDataUtils;
+import com.hong.forapw.core.utils.mapper.ChatMapper;
 import com.hong.forapw.domain.chat.ChatUser;
 import com.hong.forapw.domain.chat.LinkMetadata;
 import com.hong.forapw.domain.chat.Message;
 import com.hong.forapw.domain.chat.MessageType;
 import com.hong.forapw.domain.group.GroupRole;
+import com.hong.forapw.domain.user.User;
 import com.hong.forapw.repository.chat.ChatRoomRepository;
 import com.hong.forapw.repository.chat.ChatUserRepository;
 import com.hong.forapw.repository.chat.MessageRepository;
@@ -29,8 +31,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static com.hong.forapw.core.utils.mapper.ChatMapper.toMessageDTO;
-import static com.hong.forapw.core.utils.mapper.ChatMapper.toRoomDTO;
+import static com.hong.forapw.core.utils.mapper.ChatMapper.*;
 
 @Service
 @RequiredArgsConstructor
@@ -42,9 +43,11 @@ public class ChatService {
     private final UserRepository userRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final BrokerService brokerService;
+
     private static final String SORT_BY_DATE = "date";
     private static final String URL_REGEX = "(https?://[\\w\\-\\._~:/?#\\[\\]@!$&'()*+,;=%]+)";
     private static final Pattern URL_PATTERN = Pattern.compile(URL_REGEX);
+    private static final Pageable DEFAULT_IMAGE_PAGEABLE = PageRequest.of(0, 6, Sort.by(Sort.Direction.DESC, SORT_BY_DATE));
 
     @Transactional
     public ChatResponse.SendMessageDTO sendMessage(ChatRequest.SendMessageDTO requestDTO, Long senderId, String senderNickName) {
@@ -60,7 +63,6 @@ public class ChatService {
         return new ChatResponse.SendMessageDTO(messageId);
     }
 
-    @Transactional(readOnly = true)
     public ChatResponse.FindChatRoomsDTO findChatRooms(Long userId) {
         // chatRoom이랑 Group도 같이 가져와야할 거 같음
         List<ChatUser> chatUsers = chatUserRepository.findByUserIdWithChatRoom(userId);
@@ -72,7 +74,7 @@ public class ChatService {
         return new ChatResponse.FindChatRoomsDTO(roomDTOS);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ChatResponse.FindMessagesInRoomDTO findMessagesInRoom(Long chatRoomId, Long userId, Pageable pageable) {
         String nickName = userRepository.findNickname(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
@@ -90,50 +92,26 @@ public class ChatService {
         return new ChatResponse.FindMessagesInRoomDTO(chatUser.getRoomName(), chatUser.getLastMessageId(), nickName, messageDTOs);
     }
 
-    @Transactional
     public ChatResponse.FindChatRoomDrawerDTO findChatRoomDrawer(Long chatRoomId, Long userId) {
-        // 권한 체크
         validateChatAuthorization(userId, chatRoomId);
 
-        // 채팅방에 참여한 유저
-        List<ChatResponse.ChatUserDTO> chatUserDTOS = chatRoomRepository.findUsersByChatRoomIdExcludingRole(chatRoomId, GroupRole.TEMP).stream()
-                .map(user -> new ChatResponse.ChatUserDTO(
-                        user.getId(),
-                        user.getNickname(),
-                        user.getProfileURL()))
+        List<ChatResponse.ChatUserDTO> chatUserDTOs = chatRoomRepository.findUsersByChatRoomIdExcludingRole(chatRoomId, GroupRole.TEMP).stream()
+                .map(ChatMapper::toChatUserDTO)
                 .toList();
 
-        // 채팅방의 S3 객체 => 처음 조회해오는 객체는 6개로 고정
-        Pageable pageable = PageRequest.of(0, 6, Sort.by(Sort.Direction.DESC, SORT_BY_DATE));
-        List<ChatResponse.ImageObjectDTO> imageObjectDTOS = findImageObjects(chatRoomId, userId, pageable).images();
-
-        return new ChatResponse.FindChatRoomDrawerDTO(imageObjectDTOS, chatUserDTOS);
+        List<ChatResponse.ImageObjectDTO> imageObjectDTOS = findImageObjects(chatRoomId, userId, DEFAULT_IMAGE_PAGEABLE).images();
+        return new ChatResponse.FindChatRoomDrawerDTO(imageObjectDTOS, chatUserDTOs);
     }
 
-    @Transactional
     public ChatResponse.FindImageObjectsDTO findImageObjects(Long chatRoomId, Long userId, Pageable pageable) {
-        // 권한 체크
         validateChatAuthorization(userId, chatRoomId);
 
-        List<ChatResponse.ImageObjectDTO> imageObjectDTOS = new ArrayList<>();
+        Page<Message> imageMessages = messageRepository.findByChatRoomIdAndMessageType(chatRoomId, MessageType.IMAGE, pageable);
+        List<ChatResponse.ImageObjectDTO> imageObjectDTOs = imageMessages.getContent().stream()
+                .map(ChatMapper::toImageObjectDTO)
+                .toList();
 
-        Page<Message> messages = messageRepository.findByChatRoomIdAndMessageType(chatRoomId, MessageType.IMAGE, pageable);
-        messages.getContent().forEach(message -> {
-            List<ChatResponse.ChatObjectDTO> chatObjectDTOS = message.getObjectURLs().stream()
-                    .map(ChatResponse.ChatObjectDTO::new)
-                    .toList();
-
-            ChatResponse.ImageObjectDTO imageObjectDTO = new ChatResponse.ImageObjectDTO(
-                    message.getId(),
-                    message.getNickName(),
-                    message.getProfileURL(),
-                    chatObjectDTOS,
-                    message.getDate());
-
-            imageObjectDTOS.add(imageObjectDTO);
-        });
-
-        return new ChatResponse.FindImageObjectsDTO(imageObjectDTOS, messages.isLast());
+        return new ChatResponse.FindImageObjectsDTO(imageObjectDTOs, imageMessages.isLast());
     }
 
     @Transactional
@@ -279,5 +257,13 @@ public class ChatService {
             long totalMessages = messageRepository.countByChatRoomId(chatRoomId);
             chatUser.updateLastMessage(lastMessage.messageId(), totalMessages - 1);
         }
+    }
+
+    private ChatResponse.ImageObjectDTO convertToImageObjectDTO(Message message) {
+        List<ChatResponse.ChatObjectDTO> chatObjectDTOs = message.getObjectURLs().stream()
+                .map(ChatResponse.ChatObjectDTO::new)
+                .toList();
+
+        return toImageObjectDTO(message);
     }
 }
