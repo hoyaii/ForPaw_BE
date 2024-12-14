@@ -67,14 +67,13 @@ public class AnimalLikeHandler implements LikeHandler {
 
     @Override
     public Long getLikeCount(Long animalId) {
-        Long likeNum = redisService.getValueInLongWithNull(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString());
-
-        if (likeNum == null) {
-            likeNum = animalRepository.countLikesByAnimalId(animalId);
-            redisService.storeValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString(), likeNum.toString(), ANIMAL_CACHE_EXPIRATION_MS);
+        Long likeCount = redisService.getValueInLongWithNull(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString());
+        if (likeCount == null) {
+            likeCount = animalRepository.countLikesByAnimalId(animalId);
+            redisService.storeValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString(), likeCount.toString(), ANIMAL_CACHE_EXPIRATION_MS);
         }
 
-        return likeNum;
+        return likeCount;
     }
 
     @Override

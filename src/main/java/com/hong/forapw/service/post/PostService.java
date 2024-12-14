@@ -16,6 +16,7 @@ import com.hong.forapw.repository.ReportRepository;
 import com.hong.forapw.repository.UserRepository;
 import com.hong.forapw.service.AlarmService;
 import com.hong.forapw.service.S3Service;
+import com.hong.forapw.service.like.LikeService;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -46,6 +47,7 @@ public class PostService {
     private final PopularPostRepository popularPostRepository;
     private final UserRepository userRepository;
     private final PostCacheService postCacheService;
+    private final LikeService likeService;
     private final S3Service s3Service;
     private final AlarmService alarmService;
     private final EntityManager entityManager;
@@ -89,7 +91,7 @@ public class PostService {
     public PostResponse.FindPostListDTO findPostsByType(Pageable pageable, PostType postType) {
         Page<Post> postPage = postRepository.findByPostTypeWithUser(postType, pageable);
         List<PostResponse.PostDTO> postDTOS = postPage.getContent().stream()
-                .map(post -> toPostDTO(post, postCacheService.getPostLikeCount(post.getId())))
+                .map(post -> toPostDTO(post, likeService.getPostLikeCount(post.getId())))
                 .toList();
 
         return new PostResponse.FindPostListDTO(postDTOS, postPage.isLast());
@@ -100,7 +102,7 @@ public class PostService {
         Page<PopularPost> popularPostPage = popularPostRepository.findByPostTypeWithPost(postType, pageable);
         List<PostResponse.PostDTO> postDTOS = popularPostPage.getContent().stream()
                 .map(PopularPost::getPost)
-                .map(post -> toPostDTO(post, postCacheService.getPostLikeCount(post.getId())))
+                .map(post -> toPostDTO(post, likeService.getPostLikeCount(post.getId())))
                 .toList();
 
         return new PostResponse.FindPostListDTO(postDTOS, popularPostPage.isLast());
@@ -121,7 +123,7 @@ public class PostService {
         List<PostType> postTypes = List.of(PostType.ADOPTION, PostType.FOSTERING);
         Page<Post> postPage = postRepository.findPostsByUserIdAndTypesWithUser(userId, postTypes, pageable);
         List<PostResponse.MyPostDTO> postDTOS = postPage.getContent().stream()
-                .map(post -> toMyPostDTO(post, postCacheService.getPostLikeCount(post.getId())))
+                .map(post -> toMyPostDTO(post, likeService.getPostLikeCount(post.getId())))
                 .toList();
 
         return new PostResponse.FindMyPostListDTO(postDTOS, postPage.isLast());
@@ -174,7 +176,7 @@ public class PostService {
         postCacheService.incrementPostViewCount(postId);
         postCacheService.markNoticePostAsRead(post, userId, postId);
 
-        return new PostResponse.FindPostByIdDTO(post.getUser().getNickname(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), postCacheService.getPostLikeCount(postId), post.isOwner(userId), isPostLiked(postId, userId), postImageDTOS, commentDTOS);
+        return new PostResponse.FindPostByIdDTO(post.getUser().getNickname(), post.getUser().getProfileURL(), post.getTitle(), post.getContent(), post.getCreatedDate(), post.getCommentNum(), likeService.getPostLikeCount(postId), post.isOwner(userId), isPostLiked(postId, userId), postImageDTOS, commentDTOS);
     }
 
     @Transactional(readOnly = true)
@@ -546,7 +548,7 @@ public class PostService {
     private double calculateHotPoint(Post post) {
         double viewPoints = postCacheService.getPostViewCount(post.getId(), post) * 0.001;
         double commentPoints = post.getCommentNum();
-        double likePoints = postCacheService.getPostLikeCount(post.getId()) * 5;
+        double likePoints = likeService.getPostLikeCount(post.getId()) * 5;
         return viewPoints + commentPoints + likePoints;
     }
 
@@ -609,7 +611,7 @@ public class PostService {
         Map<Long, PostResponse.CommentDTO> parentCommentMap = new HashMap<>(); // ParentComment Id로 빠르게 ParentComment를 찾을 용도
 
         comments.forEach(comment -> {
-            Long likeCount = postCacheService.getCommentLikeCount(comment.getId());
+            Long likeCount = likeService.getCommentLikeCount(comment.getId());
             if (comment.isNotReply()) { // 부모 댓글
                 PostResponse.CommentDTO parentCommentDTO = toParentCommentDTO(comment, likeCount, likedCommentIds.contains(comment.getId()));
                 parentComments.add(parentCommentDTO);

@@ -14,8 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class PostCacheService {
 
     private final RedisService redisService;
-    private final PostRepository postRepository;
-    private final CommentRepository commentRepository;
 
     /** 게시글 좋아요/뷰 카운트를 캐싱하는 기간 (3개월) */
     private static final Long POST_CACHE_EXPIRATION = 1000L * 60 * 60 * 24 * 90;
@@ -44,24 +42,6 @@ public class PostCacheService {
 
     public void incrementPostViewCount(Long postId) {
         redisService.incrementValue(REDIS_POST_VIEW_COUNT_KEY_PREFIX, postId.toString(), 1L);
-    }
-
-    public Long getPostLikeCount(Long postId) {
-        Long likeCount = redisService.getValueInLongWithNull(REDIS_POST_LIKE_COUNT_KEY_PREFIX, postId.toString());
-        if (likeCount == null) {
-            likeCount = postRepository.countLikesByPostId(postId);
-            redisService.storeValue(REDIS_POST_LIKE_COUNT_KEY_PREFIX, postId.toString(), likeCount.toString(), POST_CACHE_EXPIRATION);
-        }
-        return likeCount;
-    }
-
-    public Long getCommentLikeCount(Long commentId) {
-        Long likeCount = redisService.getValueInLongWithNull(REDIS_COMMENT_LIKE_COUNT_KEY_PREFIX, commentId.toString());
-        if (likeCount == null) {
-            likeCount = commentRepository.countLikesByCommentId(commentId);
-            redisService.storeValue(REDIS_COMMENT_LIKE_COUNT_KEY_PREFIX, commentId.toString(), likeCount.toString(), POST_CACHE_EXPIRATION);
-        }
-        return likeCount;
     }
 
     public Long getPostViewCount(Long postId, Post post) {

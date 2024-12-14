@@ -23,8 +23,9 @@ public class CommentLikeHandler implements LikeHandler {
     private final EntityManager entityManager;
     private final RedisService redisService;
 
-    private static final String COMMENT_LIKE_NUM_KEY_PREFIX = "comment:like:count:";
+    private static final String COMMENT_LIKE_NUM_KEY_PREFIX = "comment:like:count";
     private static final String COMMENT_LIKED_SET_KEY_PREFIX = "user:%s:liked_comments";
+    private static final Long POST_CACHE_EXPIRATION_MS = 1000L * 60 * 60 * 24 * 90;
 
     @Override
     public void validateBeforeLike(Long commentId, Long userId) {
@@ -59,8 +60,14 @@ public class CommentLikeHandler implements LikeHandler {
     }
 
     @Override
-    public Long getLikeCount(Long targetId) {
-        return 0L;
+    public Long getLikeCount(Long commentId) {
+        Long likeCount = redisService.getValueInLongWithNull(COMMENT_LIKE_NUM_KEY_PREFIX, commentId.toString());
+        if (likeCount == null) {
+            likeCount = commentRepository.countLikesByCommentId(commentId);
+            redisService.storeValue(COMMENT_LIKE_NUM_KEY_PREFIX, commentId.toString(), likeCount.toString(), POST_CACHE_EXPIRATION_MS);
+        }
+
+        return likeCount;
     }
 
     @Override

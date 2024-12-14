@@ -23,9 +23,9 @@ public class PostLikeHandler implements LikeHandler {
     private final EntityManager entityManager;
     private final RedisService redisService;
 
-    private static final String POST_LIKE_NUM_KEY_PREFIX = "post:like:count:";
+    private static final String POST_LIKE_NUM_KEY_PREFIX = "post:like:count";
     private static final String POST_LIKED_SET_KEY_PREFIX = "user:%s:liked_posts";
-
+    private static final Long POST_CACHE_EXPIRATION_MS = 1000L * 60 * 60 * 24 * 90;
 
     @Override
     public void validateBeforeLike(Long postId, Long userId) {
@@ -57,6 +57,16 @@ public class PostLikeHandler implements LikeHandler {
 
         redisService.removeSetElement(buildUserLikedSetKey(userId), postId.toString());
         redisService.decrementValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), 1L);
+    }
+
+    @Override
+    public Long getLikeCount(Long postId) {
+        Long likeCount = redisService.getValueInLongWithNull(POST_LIKE_NUM_KEY_PREFIX, postId.toString());
+        if (likeCount == null) {
+            likeCount = postRepository.countLikesByPostId(postId);
+            redisService.storeValue(POST_LIKE_NUM_KEY_PREFIX, postId.toString(), likeCount.toString(), POST_CACHE_EXPIRATION_MS);
+        }
+        return likeCount;
     }
 
     @Override

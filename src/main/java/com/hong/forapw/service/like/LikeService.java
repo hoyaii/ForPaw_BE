@@ -39,6 +39,16 @@ public class LikeService {
     }
 
     @Transactional
+    public Long getPostLikeCount(Long postId) {
+        return postLikeHandler.getLikeCount(postId);
+    }
+
+    @Transactional
+    public Long getCommentLikeCount(Long commentId) {
+        return commentLikeHandler.getLikeCount(commentId);
+    }
+
+    @Transactional
     public Long getAnimalLikeCount(Long animalId) {
         return animalLikeHandler.getLikeCount(animalId);
     }
