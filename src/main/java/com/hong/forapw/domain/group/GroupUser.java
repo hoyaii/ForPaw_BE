@@ -1,5 +1,7 @@
 package com.hong.forapw.domain.group;
 
+import com.hong.forapw.domain.District;
+import com.hong.forapw.domain.Province;
 import com.hong.forapw.domain.TimeStamp;
 import com.hong.forapw.domain.user.User;
 import jakarta.persistence.*;
@@ -47,5 +49,29 @@ public class GroupUser extends TimeStamp {
 
     public boolean isCreator(){
         return groupRole == GroupRole.CREATOR;
+    }
+
+    public Long getUserId() {
+        return user.getId();
+    }
+
+    public String getUserNickname() {
+        return user.getNickname();
+    }
+
+    public String getUserProfileURL() {
+        return user.getProfileURL();
+    }
+
+    public String getUserEmail() {
+        return user.getEmail();
+    }
+
+    public Province getUserProvince(){
+        return user.getProvince();
+    }
+
+    public District getUserDistrict(){
+        return user.getDistrict();
     }
 }

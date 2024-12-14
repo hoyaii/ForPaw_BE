@@ -6,13 +6,13 @@ import com.hong.forapw.controller.dto.GroupResponse;
 import com.hong.forapw.controller.dto.query.MeetingUserProfileDTO;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
+import com.hong.forapw.core.utils.mapper.GroupMapper;
 import com.hong.forapw.domain.alarm.AlarmType;
 import com.hong.forapw.domain.chat.ChatRoom;
 import com.hong.forapw.domain.chat.ChatUser;
 import com.hong.forapw.domain.group.*;
 import com.hong.forapw.domain.post.Post;
 import com.hong.forapw.domain.post.PostImage;
-import com.hong.forapw.domain.post.PostType;
 import com.hong.forapw.domain.District;
 import com.hong.forapw.domain.Province;
 import com.hong.forapw.domain.user.User;
@@ -22,7 +22,6 @@ import com.hong.forapw.repository.chat.ChatUserRepository;
 import com.hong.forapw.repository.group.*;
 import com.hong.forapw.repository.post.*;
 import com.hong.forapw.repository.UserRepository;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -36,6 +35,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
 import java.util.stream.Collectors;
+
+import static com.hong.forapw.core.utils.mapper.GroupMapper.*;
 
 @Service
 @RequiredArgsConstructor
@@ -76,18 +77,7 @@ public class GroupService {
             throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
         }
 
-        Group group = Group.builder()
-                .name(requestDTO.name())
-                .province(requestDTO.province())
-                .district(requestDTO.district())
-                .subDistrict(requestDTO.subDistrict())
-                .description(requestDTO.description())
-                .category(requestDTO.category())
-                .profileURL(requestDTO.profileURL())
-                .maxNum(requestDTO.maxNum())
-                .isShelterOwns(requestDTO.isShelterOwns())
-                .shelterName(requestDTO.shelterName())
-                .build();
+        Group group = buildGroup(requestDTO);
 
         groupRepository.save(group);
 
@@ -130,7 +120,6 @@ public class GroupService {
     }
 
     // 수정 화면에서 사용하는 API
-    @Transactional(readOnly = true)
     public GroupResponse.FindGroupByIdDTO findGroupById(Long groupId, Long userId) {
         // 조회 권한 체크
         checkGroupAdminAuthority(groupId, userId);
@@ -139,16 +128,7 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
 
-        return new GroupResponse.FindGroupByIdDTO(
-                group.getName(),
-                group.getProvince(),
-                group.getDistrict(),
-                group.getSubDistrict(),
-                group.getDescription(),
-                group.getCategory(),
-                group.getProfileURL(),
-                group.getMaxNum()
-        );
+        return toFindGroupByIdDTO(group);
     }
 
     @Transactional
@@ -173,7 +153,6 @@ public class GroupService {
         group.updateInfo(requestDTO.name(), requestDTO.province(), requestDTO.district(), group.getSubDistrict(), requestDTO.description(), requestDTO.category(), requestDTO.profileURL(), requestDTO.maxNum());
     }
 
-    @Transactional(readOnly = true)
     public GroupResponse.FindAllGroupListDTO findGroupList(Long userId) {
         Province province = DEFAULT_PROVINCE;
         District district = DEFAULT_DISTRICT;
@@ -209,32 +188,18 @@ public class GroupService {
         return new GroupResponse.FindAllGroupListDTO(recommendGroupDTOS, newGroupDTOS, myGroupDTOS);
     }
 
-    @Transactional(readOnly = true)
     public List<GroupResponse.LocalGroupDTO> findLocalGroupList(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable) {
         Page<Group> localGroupPage = groupRepository.findByProvinceAndDistrictWithoutMyGroup(province, district, userId, GroupRole.TEMP, pageable);
 
         return localGroupPage.getContent().stream()
                 .map(group -> {
                     Long likeNum = getCachedLikeNum(GROUP_LIKE_NUM_KEY_PREFIX, group.getId());
-                    return new GroupResponse.LocalGroupDTO(
-                            group.getId(),
-                            group.getName(),
-                            group.getDescription(),
-                            group.getParticipantNum(),
-                            group.getCategory(),
-                            group.getProvince(),
-                            group.getDistrict(),
-                            group.getProfileURL(),
-                            likeNum,
-                            likedGroupIds.contains(group.getId()),
-                            group.isShelterOwns(),
-                            group.getShelterName());
+                    boolean isLikedGroup = likedGroupIds.contains(group.getId());
+                    return toLocalGroupDTO(group, likeNum, isLikedGroup);
                 })
                 .collect(Collectors.toList());
     }
 
-    // 새 그룹 추가 조회
-    @Transactional(readOnly = true)
     public List<GroupResponse.NewGroupDTO> findNewGroupList(Long userId, Province province, Pageable pageable) {
         // 1. 로그인된 상태고 province가 요청값으로 들어오지 않으면 프로필에서 설정한 province 사용, 2. 로그인도 되지 않으면 디폴트 값 사용
         province = Optional.ofNullable(province)
@@ -245,17 +210,10 @@ public class GroupService {
         Page<Group> newGroupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, GroupRole.TEMP, pageable);
 
         return newGroupPage.getContent().stream()
-                .map(group -> new GroupResponse.NewGroupDTO(
-                        group.getId(),
-                        group.getName(),
-                        group.getCategory(),
-                        group.getProvince(),
-                        group.getDistrict(),
-                        group.getProfileURL()))
+                .map(GroupMapper::toNewGroupDTO)
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
     public GroupResponse.FindLocalAndNewGroupListDTO findLocalAndNewGroupList(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable) {
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = findLocalGroupList(userId, province, district, likedGroupIds, pageable);
         List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroupList(userId, province, pageable);
@@ -263,32 +221,18 @@ public class GroupService {
         return new GroupResponse.FindLocalAndNewGroupListDTO(localGroupDTOS, newGroupDTOS);
     }
 
-    // 내 그룹 추가 조회
-    @Transactional(readOnly = true)
     public List<GroupResponse.MyGroupDTO> findMyGroupList(Long userId, List<Long> likedGroupIds, Pageable pageable) {
         List<Group> joinedGroups = groupUserRepository.findGroupByUserId(userId, pageable).getContent();
 
         return joinedGroups.stream()
                 .map(group -> {
                     Long likeNum = getCachedLikeNum(GROUP_LIKE_NUM_KEY_PREFIX, group.getId());
-                    return new GroupResponse.MyGroupDTO(
-                            group.getId(),
-                            group.getName(),
-                            group.getDescription(),
-                            group.getParticipantNum(),
-                            group.getCategory(),
-                            group.getProvince(),
-                            group.getDistrict(),
-                            group.getProfileURL(),
-                            likeNum,
-                            likedGroupIds.contains(group.getId()),
-                            group.isShelterOwns(),
-                            group.getShelterName());
+                    boolean isLikedGroup = likedGroupIds.contains(group.getId());
+                    return toMyGroupDTO(group, likeNum, isLikedGroup);
                 })
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
     public GroupResponse.FindGroupDetailByIdDTO findGroupDetailById(Long userId, Long groupId) {
         // 그룹이 존재하지 않으면 에러
         Group group = groupRepository.findById(groupId).orElseThrow(
@@ -310,8 +254,6 @@ public class GroupService {
         return new GroupResponse.FindGroupDetailByIdDTO(group.getProfileURL(), group.getName(), group.getDescription(), noticeDTOS, meetingDTOS, memberDTOS);
     }
 
-    // 공지사항 추가조회
-    @Transactional(readOnly = true)
     public List<GroupResponse.NoticeDTO> findNoticeList(Long userId, Long groupId, Pageable pageable) {
         // 해당 유저가 읽은 post의 id 목록
         String key = POST_READ_KEY_PREFIX + userId;
@@ -320,17 +262,13 @@ public class GroupService {
         Page<Post> noticePage = postRepository.findNoticeByGroupIdWithUser(groupId, pageable);
 
         return noticePage.getContent().stream()
-                .map(notice -> new GroupResponse.NoticeDTO(
-                        notice.getId(),
-                        notice.getUser().getNickname(),
-                        notice.getCreatedDate(),
-                        notice.getTitle(),
-                        postIds.contains(notice.getId().toString()))
-                )
-                .collect(Collectors.toList());
+                .map(notice -> {
+                    boolean isRead = postIds.contains(notice.getId().toString());
+                    return toNoticeDTO(notice, isRead);
+                })
+                .toList();
     }
 
-    @Transactional(readOnly = true)
     public List<GroupResponse.MeetingDTO> findMeetingList(Long groupId, Pageable pageable) {
         Page<Meeting> meetingPage = meetingRepository.findByGroupId(groupId, pageable);
 
@@ -342,22 +280,13 @@ public class GroupService {
         }
 
         return meetingPage.getContent().stream()
-                .map(meeting -> new GroupResponse.MeetingDTO(
-                        meeting.getId(),
-                        meeting.getName(),
-                        meeting.getMeetDate(),
-                        meeting.getLocation(),
-                        meeting.getCost(),
-                        meeting.getParticipantNum(),
-                        meeting.getMaxNum(),
-                        meeting.getProfileURL(),
-                        meeting.getDescription(),
-                        meetingUserMap.get(meeting.getId()))
-                )
+                .map(meeting -> {
+                    List<String> participants = meetingUserMap.get(meeting.getId());
+                    return toMeetingDTO(meeting, participants);
+                })
                 .toList();
     }
 
-    @Transactional(readOnly = true)
     public GroupResponse.FindMeetingByIdDTO findMeetingById(Long meetingId, Long groupId, Long userId) {
         // 그룹 존재 여부 체크
         checkGroupExist(groupId);
@@ -388,13 +317,7 @@ public class GroupService {
 
         List<GroupResponse.MemberDetailDTO> memberDetailDTOS = groupUserRepository.findByGroupIdWithGroup(groupId).stream()
                 .filter(groupUser -> !groupUser.getGroupRole().equals(GroupRole.TEMP))
-                .map(groupUser -> new GroupResponse.MemberDetailDTO(
-                        groupUser.getUser().getId(),
-                        groupUser.getUser().getNickname(),
-                        groupUser.getUser().getProfileURL(),
-                        groupUser.getCreatedDate(),
-                        groupUser.getGroupRole()
-                ))
+                .map(GroupMapper::toMemberDetailDTO)
                 .toList();
 
         return new GroupResponse.FindGroupMemberListDTO(group.getParticipantNum(), group.getMaxNum(), memberDetailDTOS);
@@ -481,15 +404,7 @@ public class GroupService {
 
         List<GroupUser> applicants = groupUserRepository.findByGroupRole(groupId, GroupRole.TEMP);
         List<GroupResponse.ApplicantDTO> applicantDTOS = applicants.stream()
-                .map(gu -> new GroupResponse.ApplicantDTO(
-                        gu.getUser().getId(),
-                        gu.getUser().getNickname(),
-                        gu.getGreeting(),
-                        gu.getUser().getEmail(),
-                        gu.getUser().getProfileURL(),
-                        gu.getUser().getProvince(),
-                        gu.getUser().getDistrict(),
-                        gu.getCreatedDate()))
+                .map(GroupMapper::toApplicantDTO)
                 .toList();
 
         return new GroupResponse.FindApplicantListDTO(applicantDTOS);
@@ -577,13 +492,7 @@ public class GroupService {
                         .build())
                 .toList();
 
-        Post notice = Post.builder()
-                .user(noticer)
-                .group(group)
-                .postType(PostType.NOTICE)
-                .title(requestDTO.title())
-                .content(requestDTO.content())
-                .build();
+        Post notice = buildNotice(requestDTO, noticer, group);
 
         // 연관관계 설정
         postImages.forEach(notice::addImage);
@@ -707,17 +616,7 @@ public class GroupService {
         checkGroupAdminAuthority(groupId, creator.getId());
 
         Group group = groupRepository.getReferenceById(groupId);
-        Meeting meeting = Meeting.builder()
-                .group(group)
-                .creator(creator)
-                .name(requestDTO.name())
-                .meetDate(requestDTO.meetDate())
-                .location(requestDTO.location())
-                .cost(requestDTO.cost())
-                .maxNum(requestDTO.maxNum())
-                .description(requestDTO.description())
-                .profileURL(requestDTO.profileURL())
-                .build();
+        Meeting meeting = buildMeeting(requestDTO, group, creator);
 
         // 주최자를 맴버로 저장
         MeetingUser meetingUser = MeetingUser.builder()
@@ -830,7 +729,6 @@ public class GroupService {
         meetingRepository.deleteById(meetingId);
     }
 
-    @Transactional(readOnly = true)
     public List<GroupResponse.RecommendGroupDTO> findRecommendGroupList(Long userId, Province province, List<Long> likedGroupIds) {
         // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순
         Sort sort = Sort.by(Sort.Order.desc(SORT_BY_PARTICIPANT_NUM));
@@ -840,19 +738,8 @@ public class GroupService {
         List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = groupPage.getContent().stream()
                 .map(group -> {
                     Long likeNum = getCachedLikeNum(GROUP_LIKE_NUM_KEY_PREFIX, group.getId());
-                    return new GroupResponse.RecommendGroupDTO(
-                            group.getId(),
-                            group.getName(),
-                            group.getDescription(),
-                            group.getParticipantNum(),
-                            group.getCategory(),
-                            group.getProvince(),
-                            group.getDistrict(),
-                            group.getProfileURL(),
-                            likeNum,
-                            likedGroupIds.contains(group.getId()),
-                            group.isShelterOwns(),
-                            group.getShelterName());
+                    boolean isLike = likedGroupIds.contains(group.getId());
+                    return toRecommendGroupDTO(group, likeNum, isLike);
                 })
                 .collect(Collectors.toList());
 
@@ -867,14 +754,12 @@ public class GroupService {
 
         // 매번 동일하게 추천을 할 수는 없으니, 간추린 추천 목록 중에서 5개를 랜덤으로 보내준다.
         Collections.shuffle(allRecommendGroupDTOS);
-        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = allRecommendGroupDTOS.stream()
+
+        return allRecommendGroupDTOS.stream()
                 .limit(5)
                 .collect(Collectors.toList());
-
-        return recommendGroupDTOS;
     }
 
-    @Transactional(readOnly = true)
     public void checkGroupAndIsMember(Long groupId, Long userId) {
         // 그룹 존재 여부 체크
         checkGroupExist(groupId);
@@ -883,7 +768,6 @@ public class GroupService {
         checkIsMember(groupId, userId);
     }
 
-    @Transactional(readOnly = true)
     public List<Long> getLikedGroupList(Long userId) {
         return userId != null ? favoriteGroupRepository.findGroupIdByUserId(userId) : Collections.emptyList();
     }
@@ -958,12 +842,7 @@ public class GroupService {
 
         return groupUsers.stream()
                 .filter(groupUser -> !groupUser.getGroupRole().equals(GroupRole.TEMP)) // 가입 승인 상태가 아니면 제외
-                .map(groupUser -> new GroupResponse.MemberDTO(
-                        groupUser.getUser().getId(),
-                        groupUser.getUser().getNickname(),
-                        groupUser.getGroupRole(),
-                        groupUser.getUser().getProfileURL(),
-                        groupUser.getCreatedDate()))
+                .map(GroupMapper::toMemberDTO)
                 .collect(Collectors.toList());
     }
 
@@ -993,19 +872,8 @@ public class GroupService {
         return groupRepository.findAllWithoutMyGroup(userId, pageable).getContent().stream()
                 .map(group -> {
                     Long likeNum = getCachedLikeNum(GROUP_LIKE_NUM_KEY_PREFIX, group.getId());
-                    return new GroupResponse.RecommendGroupDTO(
-                            group.getId(),
-                            group.getName(),
-                            group.getDescription(),
-                            group.getParticipantNum(),
-                            group.getCategory(),
-                            group.getProvince(),
-                            group.getDistrict(),
-                            group.getProfileURL(),
-                            likeNum,
-                            likedGroupIds.contains(group.getId()),
-                            group.isShelterOwns(),
-                            group.getShelterName());
+                    boolean isLike = likedGroupIds.contains(group.getId());
+                    return toRecommendGroupDTO(group, likeNum, isLike);
                 })
                 .collect(Collectors.toList());
     }
