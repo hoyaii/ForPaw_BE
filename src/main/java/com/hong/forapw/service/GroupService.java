@@ -972,7 +972,7 @@ public class GroupService {
         String queueName = ROOM_QUEUE_PREFIX + chatRoom.getId();
         String listenerId = ROOM_QUEUE_PREFIX + chatRoom.getId();
 
-        brokerService.registerDirectExQueue(CHAT_EXCHANGE, queueName);
+        brokerService.bindDirectExchangeToQueue(CHAT_EXCHANGE, queueName);
         brokerService.registerChatListener(listenerId, queueName);
     }
 
@@ -984,7 +984,7 @@ public class GroupService {
                 LocalDateTime.now(),
                 alarmType);
 
-        brokerService.produceAlarmToUser(userId, alarmDTO);
+        brokerService.sendAlarmToUser(userId, alarmDTO);
     }
 
     private List<GroupResponse.RecommendGroupDTO> fetchAdditionalGroups(Long userId, List<Long> likedGroupIds, Sort sort) {

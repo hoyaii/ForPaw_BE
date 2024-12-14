@@ -64,7 +64,7 @@ public class AlarmService {
                 redirectURL,
                 LocalDateTime.now(),
                 alarmType);
-        brokerService.produceAlarmToUser(userId, alarmDTO);
+        brokerService.sendAlarmToUser(userId, alarmDTO);
     }
 
     public void sendAlarmViaSSE(Alarm alarm) {

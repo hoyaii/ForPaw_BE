@@ -100,7 +100,7 @@ public class UserScheduledService {
         String queueName = USER_QUEUE_PREFIX + user.getId();
         String listenerId = USER_QUEUE_PREFIX + user.getId();
 
-        brokerService.registerDirectExQueue(ALARM_EXCHANGE, queueName);
+        brokerService.bindDirectExchangeToQueue(ALARM_EXCHANGE, queueName);
         brokerService.registerAlarmListener(listenerId, queueName);
     }
 

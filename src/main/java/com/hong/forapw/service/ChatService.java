@@ -177,7 +177,7 @@ public class ChatService {
     }
 
     private void publishMessageToBroker(Long chatRoomId, ChatRequest.MessageDTO messageDTO) {
-        CompletableFuture.runAsync(() -> brokerService.produceChatToRoom(chatRoomId, messageDTO));
+        CompletableFuture.runAsync(() -> brokerService.sendChatMessageToRoom(chatRoomId, messageDTO));
     }
 
     private ChatResponse.RoomDTO buildRoomDTO(ChatUser chatUser) {
