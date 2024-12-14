@@ -8,6 +8,7 @@ import com.hong.forapw.domain.District;
 import com.hong.forapw.domain.Province;
 import com.hong.forapw.domain.user.User;
 import com.hong.forapw.service.GroupService;
+import com.hong.forapw.service.like.LikeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +29,7 @@ import java.util.Optional;
 public class GroupController {
 
     private final GroupService groupService;
+    private final LikeService likeService;
     private static final String SORT_BY_ID = "id";
 
     @PostMapping("/groups")
@@ -167,7 +169,7 @@ public class GroupController {
 
     @PostMapping("/groups/{groupId}/like")
     public ResponseEntity<?> likeGroup(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        groupService.likeGroup(userDetails.getUser().getId(), groupId);
+        likeService.likeGroup(groupId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 

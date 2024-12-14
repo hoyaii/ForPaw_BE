@@ -1,10 +1,10 @@
 package com.hong.forapw.service.like;
 
 import com.hong.forapw.service.RedisService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RLock;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -16,6 +16,7 @@ public class LikeService {
     private final RedisService redisService;
     private final PostLikeHandler postLikeHandler;
     private final CommentLikeHandler commentLikeHandler;
+    private final GroupLikeHandler groupLikeHandler;
 
     private final Map<LikeTarget, LikeHandler> likeHandlers = Map.of(
             LikeTarget.POST, postLikeHandler,
@@ -39,18 +40,28 @@ public class LikeService {
     }
 
     @Transactional
+    public void likeGroup(Long groupId, Long userId) {
+        handleLike(groupId, userId, LikeTarget.GROUP);
+    }
+
+    @Transactional(readOnly = true)
     public Long getPostLikeCount(Long postId) {
         return postLikeHandler.getLikeCount(postId);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Long getCommentLikeCount(Long commentId) {
         return commentLikeHandler.getLikeCount(commentId);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Long getAnimalLikeCount(Long animalId) {
         return animalLikeHandler.getLikeCount(animalId);
+    }
+
+    @Transactional(readOnly = true)
+    public Long getGroupLikeCount(Long groupId) {
+        return groupLikeHandler.getLikeCount(groupId);
     }
 
     private void handleLike(Long targetId, Long userId, LikeTarget target) {

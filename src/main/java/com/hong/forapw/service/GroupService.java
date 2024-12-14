@@ -22,6 +22,7 @@ import com.hong.forapw.repository.chat.ChatUserRepository;
 import com.hong.forapw.repository.group.*;
 import com.hong.forapw.repository.post.*;
 import com.hong.forapw.repository.UserRepository;
+import com.hong.forapw.service.like.LikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -58,17 +59,16 @@ public class GroupService {
     private final UserRepository userRepository;
     private final RedisService redisService;
     private final BrokerService brokerService;
+    private final LikeService likeService;
 
     private static final Province DEFAULT_PROVINCE = Province.DAEGU;
     private static final District DEFAULT_DISTRICT = District.SUSEONG;
     private static final String SORT_BY_ID = "id";
-    private static final String SORT_BY_LIKE_NUM = "likeNum";
     private static final String SORT_BY_PARTICIPANT_NUM = "participantNum";
     private static final String POST_READ_KEY_PREFIX = "user:readPosts:";
     private static final String GROUP_LIKE_NUM_KEY_PREFIX = "groupLikeNum";
     private static final String ROOM_QUEUE_PREFIX = "room.";
     private static final String CHAT_EXCHANGE = "chat.exchange";
-    public static final Long GROUP_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
 
     @Transactional
     public GroupResponse.CreateGroupDTO createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId) {
@@ -193,7 +193,7 @@ public class GroupService {
 
         return localGroupPage.getContent().stream()
                 .map(group -> {
-                    Long likeNum = getCachedLikeNum(GROUP_LIKE_NUM_KEY_PREFIX, group.getId());
+                    Long likeNum = likeService.getGroupLikeCount(group.getId());
                     boolean isLikedGroup = likedGroupIds.contains(group.getId());
                     return toLocalGroupDTO(group, likeNum, isLikedGroup);
                 })
@@ -226,7 +226,7 @@ public class GroupService {
 
         return joinedGroups.stream()
                 .map(group -> {
-                    Long likeNum = getCachedLikeNum(GROUP_LIKE_NUM_KEY_PREFIX, group.getId());
+                    Long likeNum = likeService.getGroupLikeCount(group.getId());
                     boolean isLikedGroup = likedGroupIds.contains(group.getId());
                     return toMyGroupDTO(group, likeNum, isLikedGroup);
                 })
@@ -512,31 +512,6 @@ public class GroupService {
     }
 
     @Transactional
-    public void likeGroup(Long userId, Long groupId) {
-        // 존재하지 않는 그룹이면 에러
-        checkGroupExist(groupId);
-
-        Optional<FavoriteGroup> favoriteGroupOP = favoriteGroupRepository.findByUserIdAndGroupId(userId, groupId);
-
-        // 좋아요가 이미 있다면 삭제, 없다면 추가
-        if (favoriteGroupOP.isPresent()) {
-            favoriteGroupRepository.delete(favoriteGroupOP.get());
-            redisService.decrementValue(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString(), 1L);
-        } else {
-            Group group = groupRepository.getReferenceById(groupId);
-            User user = userRepository.getReferenceById(userId);
-
-            FavoriteGroup favoriteGroup = FavoriteGroup.builder()
-                    .user(user)
-                    .group(group)
-                    .build();
-
-            favoriteGroupRepository.save(favoriteGroup);
-            redisService.incrementValue(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString(), 1L);
-        }
-    }
-
-    @Transactional
     public void deleteGroup(Long groupId, Long userId) {
         // 존재하지 않는 그룹이면 에러
         checkGroupExist(groupId);
@@ -737,7 +712,7 @@ public class GroupService {
         Page<Group> groupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, GroupRole.TEMP, pageable);
         List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = groupPage.getContent().stream()
                 .map(group -> {
-                    Long likeNum = getCachedLikeNum(GROUP_LIKE_NUM_KEY_PREFIX, group.getId());
+                    Long likeNum = likeService.getGroupLikeCount(group.getId());
                     boolean isLike = likedGroupIds.contains(group.getId());
                     return toRecommendGroupDTO(group, likeNum, isLike);
                 })
@@ -871,21 +846,10 @@ public class GroupService {
 
         return groupRepository.findAllWithoutMyGroup(userId, pageable).getContent().stream()
                 .map(group -> {
-                    Long likeNum = getCachedLikeNum(GROUP_LIKE_NUM_KEY_PREFIX, group.getId());
+                    Long likeNum = likeService.getGroupLikeCount(group.getId());
                     boolean isLike = likedGroupIds.contains(group.getId());
                     return toRecommendGroupDTO(group, likeNum, isLike);
                 })
                 .collect(Collectors.toList());
-    }
-
-    private Long getCachedLikeNum(String keyPrefix, Long key) {
-        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
-
-        if (likeNum == null) {
-            likeNum = groupRepository.countLikesByGroupId(key);
-            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), GROUP_EXP);
-        }
-
-        return likeNum;
     }
 }
