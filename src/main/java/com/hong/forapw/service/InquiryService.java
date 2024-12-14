@@ -8,8 +8,8 @@ import com.hong.forapw.core.utils.mapper.InquiryMapper;
 import com.hong.forapw.domain.inquiry.Inquiry;
 import com.hong.forapw.domain.inquiry.InquiryStatus;
 import com.hong.forapw.domain.user.User;
+import com.hong.forapw.repository.UserRepository;
 import com.hong.forapw.repository.inquiry.InquiryRepository;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,12 +23,12 @@ import static com.hong.forapw.core.utils.mapper.InquiryMapper.buildInquiry;
 public class InquiryService {
 
     private final InquiryRepository inquiryRepository;
-    private final EntityManager entityManager;
+    private final UserRepository userRepository;
 
     @Transactional
     public UserResponse.SubmitInquiryDTO submitInquiry(UserRequest.SubmitInquiry requestDTO, Long userId) {
-        User user = entityManager.getReference(User.class, userId);
-        Inquiry inquiry = buildInquiry(requestDTO, InquiryStatus.PROCESSING, user);
+        User submitter = userRepository.getReferenceById(userId);
+        Inquiry inquiry = buildInquiry(requestDTO, InquiryStatus.PROCESSING, submitter);
 
         inquiryRepository.save(inquiry);
 
