@@ -119,12 +119,6 @@ public class RedisService {
         return setOps.members(key);
     }
 
-    // key format: "user:<userId>:liked_posts"
-    public Long extractUserIdFromKey(String key) {
-        String[] parts = key.split(":");
-        return Long.valueOf(parts[1]);
-    }
-
     public Set<String> keys(String pattern) {
         return redisTemplate.keys(pattern);
     }

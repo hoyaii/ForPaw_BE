@@ -21,6 +21,7 @@ public class LikeService {
             LikeTarget.POST, postLikeHandler,
             LikeTarget.COMMENT, commentLikeHandler
     );
+    private final AnimalLikeHandler animalLikeHandler;
 
     @Transactional
     public void likePost(Long postId, Long userId) {
@@ -35,6 +36,11 @@ public class LikeService {
     @Transactional
     public void likeAnimal(Long animalId, Long userId) {
         handleLike(animalId, userId, LikeTarget.ANIMAL);
+    }
+
+    @Transactional
+    public Long getAnimalLikeCount(Long animalId) {
+        return animalLikeHandler.getLikeCount(animalId);
     }
 
     private void handleLike(Long targetId, Long userId, LikeTarget target) {

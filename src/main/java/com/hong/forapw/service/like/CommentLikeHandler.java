@@ -59,6 +59,11 @@ public class CommentLikeHandler implements LikeHandler {
     }
 
     @Override
+    public Long getLikeCount(Long targetId) {
+        return 0L;
+    }
+
+    @Override
     public String buildLockKey(Long commentId) {
         return "comment:" + commentId + ":like:lock";
     }

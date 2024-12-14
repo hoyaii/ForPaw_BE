@@ -5,6 +5,7 @@ import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.domain.animal.Animal;
 import com.hong.forapw.domain.animal.FavoriteAnimal;
 import com.hong.forapw.domain.user.User;
+import com.hong.forapw.repository.UserRepository;
 import com.hong.forapw.repository.animal.AnimalRepository;
 import com.hong.forapw.repository.animal.FavoriteAnimalRepository;
 import com.hong.forapw.service.AnimalService;
@@ -20,12 +21,13 @@ import java.util.Optional;
 public class AnimalLikeHandler implements LikeHandler {
 
     private final RedisService redisService;
-    private final EntityManager entityManager;
     private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final AnimalRepository animalRepository;
+    private final UserRepository userRepository;
 
-    private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animal:like:count:";
+    private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animal:like:count";
     private static final String ANIMAL_LIKED_SET_KEY_PREFIX = "user:%s:liked_animals";
+    private static final long ANIMAL_CACHE_EXPIRATION_MS = 1000L * 60 * 60 * 24 * 90; // 90 days
 
     @Override
     public void validateBeforeLike(Long animalId, Long userId) {
@@ -41,12 +43,12 @@ public class AnimalLikeHandler implements LikeHandler {
 
     @Override
     public void addLike(Long animalId, Long userId) {
-        Animal animalRef = entityManager.getReference(Animal.class, animalId);
-        User userRef = entityManager.getReference(User.class, userId);
+        Animal animal = animalRepository.getReferenceById(animalId);
+        User userRef = userRepository.getReferenceById(userId);
 
         FavoriteAnimal favoriteAnimal = FavoriteAnimal.builder()
                 .user(userRef)
-                .animal(animalRef)
+                .animal(animal)
                 .build();
         favoriteAnimalRepository.save(favoriteAnimal);
 
@@ -61,6 +63,18 @@ public class AnimalLikeHandler implements LikeHandler {
 
         redisService.removeSetElement(buildUserLikedSetKey(userId), animalId.toString());
         redisService.decrementValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString(), 1L);
+    }
+
+    @Override
+    public Long getLikeCount(Long animalId) {
+        Long likeNum = redisService.getValueInLongWithNull(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString());
+
+        if (likeNum == null) {
+            likeNum = animalRepository.countLikesByAnimalId(animalId);
+            redisService.storeValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString(), likeNum.toString(), ANIMAL_CACHE_EXPIRATION_MS);
+        }
+
+        return likeNum;
     }
 
     @Override

@@ -12,6 +12,7 @@ import com.hong.forapw.repository.animal.AnimalRepository;
 import com.hong.forapw.repository.animal.FavoriteAnimalRepository;
 import com.hong.forapw.repository.ShelterRepository;
 import com.hong.forapw.repository.UserRepository;
+import com.hong.forapw.service.like.LikeService;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,6 +56,7 @@ public class AnimalService {
     private final UserRepository userRepository;
     private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final RedisService redisService;
+    private final LikeService likeService;
     private final ShelterService shelterService;
     private final EntityManager entityManager;
     private final WebClient webClient;
@@ -77,7 +79,6 @@ public class AnimalService {
 
     private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
     private static final String ANIMAL_SEARCH_KEY_PREFIX = "animalSearch";
-    private static final Long ANIMAL_EXP = 1000L * 60 * 60 * 24 * 90; // 세 달
     private static final Pageable DEFAULT_PAGE_REQUEST = PageRequest.of(0, 5);
 
     @Transactional
@@ -100,7 +101,7 @@ public class AnimalService {
         Page<Animal> animalPage = animalRepository.findByAnimalType(AnimalType.fromString(type), pageable);
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
                 .map(animal -> {
-                    Long likeCount = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
+                    Long likeCount = likeService.getAnimalLikeCount(animal.getId());
                     return toAnimalDTO(animal, likeCount, likedAnimalIds);
                 })
                 .collect(Collectors.toList());
@@ -116,7 +117,7 @@ public class AnimalService {
         List<Animal> animals = animalRepository.findByIds(recommendedAnimalIds);
         List<AnimalResponse.AnimalDTO> animalDTOS = animals.stream()
                 .map(animal -> {
-                    Long likeCount = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
+                    Long likeCount = likeService.getAnimalLikeCount(animal.getId());
                     return toAnimalDTO(animal, likeCount, likedAnimalIds);
                 })
                 .collect(Collectors.toList());
@@ -129,7 +130,7 @@ public class AnimalService {
         List<Animal> animalPage = favoriteAnimalRepository.findAnimalsByUserId(userId);
         List<AnimalResponse.AnimalDTO> animalDTOS = animalPage.stream()
                 .map(animal -> {
-                    Long likeCount = getCachedLikeNum(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId());
+                    Long likeCount = likeService.getAnimalLikeCount(animal.getId());
                     return toAnimalDTO(animal, likeCount, Collections.emptyList());
                 })
                 .collect(Collectors.toList());
@@ -339,17 +340,6 @@ public class AnimalService {
                 .filter(shelter -> !shelter.equals(targetShelter))
                 .map(Shelter::getId)
                 .collect(Collectors.toList());
-    }
-
-    private Long getCachedLikeNum(String keyPrefix, Long key) {
-        Long likeNum = redisService.getValueInLongWithNull(keyPrefix, key.toString());
-
-        if (likeNum == null) {
-            likeNum = animalRepository.countLikesByAnimalId(key);
-            redisService.storeValue(keyPrefix, key.toString(), likeNum.toString(), ANIMAL_EXP);
-        }
-
-        return likeNum;
     }
 
     private void saveSearchRecord(Long animalId, Long userId) {

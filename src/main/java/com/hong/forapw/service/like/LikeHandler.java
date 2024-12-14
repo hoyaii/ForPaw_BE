@@ -9,6 +9,8 @@ public interface LikeHandler {
 
     void removeLike(Long targetId, Long userId);
 
+    Long getLikeCount(Long targetId);
+
     String buildLockKey(Long targetId);
 }
 
