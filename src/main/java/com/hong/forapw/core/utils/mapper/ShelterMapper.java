@@ -4,8 +4,6 @@ import com.hong.forapw.controller.dto.ShelterResponse;
 import com.hong.forapw.domain.Shelter;
 import com.hong.forapw.domain.animal.Animal;
 
-import java.util.List;
-
 public class ShelterMapper {
 
     private ShelterMapper() {

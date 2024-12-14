@@ -20,6 +20,7 @@ import static com.hong.forapw.core.utils.mapper.InquiryMapper.buildInquiry;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class InquiryService {
 
     private final InquiryRepository inquiryRepository;
@@ -45,7 +46,6 @@ public class InquiryService {
         inquiry.updateInquiry(requestDTO.title(), requestDTO.description(), requestDTO.contactMail());
     }
 
-    @Transactional(readOnly = true)
     public UserResponse.FindInquiryListDTO findInquiries(Long userId) {
         List<Inquiry> inquiries = inquiryRepository.findAllByQuestionerId(userId);
         List<UserResponse.InquiryDTO> inquiryDTOS = inquiries.stream()
