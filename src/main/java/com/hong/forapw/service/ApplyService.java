@@ -70,7 +70,8 @@ public class ApplyService {
                 requestDTO.tel(),
                 requestDTO.roadNameAddress(),
                 requestDTO.addressDetail(),
-                requestDTO.zipCode());
+                requestDTO.zipCode()
+        );
     }
 
     @Transactional

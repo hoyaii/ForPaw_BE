@@ -31,7 +31,6 @@ public class UserScheduledService {
     private final RedisService redisService;
     private final UserRepository userRepository;
     private final VisitRepository visitRepository;
-    private final EntityManager entityManager;
     private final UserStatusRepository userStatusRepository;
 
     @Value("${admin.email}")
@@ -76,9 +75,9 @@ public class UserScheduledService {
 
         Set<String> visitSet = redisService.getMembersOfSet(key);
         visitSet.forEach(visitorId -> {
-            User userRef = entityManager.getReference(User.class, visitorId);
+            User visitor = userRepository.getReferenceById(Long.parseLong(visitorId));
             Visit visit = Visit.builder()
-                    .user(userRef)
+                    .user(visitor)
                     .date(visitTime)
                     .build();
 
