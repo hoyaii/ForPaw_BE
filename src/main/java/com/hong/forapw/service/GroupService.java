@@ -56,7 +56,6 @@ public class GroupService {
     private final ChatUserRepository chatUserRepository;
     private final UserRepository userRepository;
     private final RedisService redisService;
-    private final EntityManager entityManager;
     private final BrokerService brokerService;
 
     private static final Province DEFAULT_PROVINCE = Province.DAEGU;
@@ -93,10 +92,10 @@ public class GroupService {
         groupRepository.save(group);
 
         // 그룹장 설정
-        User userRef = entityManager.getReference(User.class, userId);
+        User groupOwner = userRepository.getReferenceById(userId);
         GroupUser groupUser = GroupUser.builder()
                 .group(group)
-                .user(userRef)
+                .user(groupOwner)
                 .groupRole(GroupRole.CREATOR)
                 .build();
 
@@ -116,7 +115,7 @@ public class GroupService {
         // 그룹장 채팅방에 추가
         ChatUser chatUser = ChatUser.builder()
                 .chatRoom(chatRoom)
-                .user(userRef)
+                .user(groupOwner)
                 .build();
 
         chatUserRepository.save(chatUser);
@@ -415,10 +414,10 @@ public class GroupService {
         // 이미 가입했거나 신청한 회원이면 에러 처리
         checkAlreadyMemberOrApply(groupId, userId);
 
-        User userRef = entityManager.getReference(User.class, userId);
+        User applicant = userRepository.getReferenceById(userId);
         GroupUser groupUser = GroupUser.builder()
                 .groupRole(GroupRole.TEMP)
-                .user(userRef)
+                .user(applicant)
                 .group(group)
                 .greeting(requestDTO.greeting())
                 .build();
@@ -528,7 +527,8 @@ public class GroupService {
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.CHAT_ROOM_NOT_FOUND)
         );
-        User applicant = entityManager.getReference(User.class, applicantId);
+
+        User applicant = userRepository.getReferenceById(applicantId);
 
         ChatUser chatUser = ChatUser.builder()
                 .user(applicant)
@@ -569,8 +569,8 @@ public class GroupService {
         // 권한 체크
         checkGroupAdminAuthority(groupId, userId);
 
-        Group groupRef = entityManager.getReference(Group.class, groupId);
-        User userRef = entityManager.getReference(User.class, userId);
+        Group group = groupRepository.getReferenceById(groupId);
+        User noticer = userRepository.getReferenceById(userId);
         List<PostImage> postImages = requestDTO.images().stream()
                 .map(postImageDTO -> PostImage.builder()
                         .imageURL(postImageDTO.imageURL())
@@ -578,8 +578,8 @@ public class GroupService {
                 .toList();
 
         Post notice = Post.builder()
-                .user(userRef)
-                .group(groupRef)
+                .user(noticer)
+                .group(group)
                 .postType(PostType.NOTICE)
                 .title(requestDTO.title())
                 .content(requestDTO.content())
@@ -614,12 +614,12 @@ public class GroupService {
             favoriteGroupRepository.delete(favoriteGroupOP.get());
             redisService.decrementValue(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString(), 1L);
         } else {
-            Group groupRef = entityManager.getReference(Group.class, groupId);
-            User userRef = entityManager.getReference(User.class, userId);
+            Group group = groupRepository.getReferenceById(groupId);
+            User user = userRepository.getReferenceById(userId);
 
             FavoriteGroup favoriteGroup = FavoriteGroup.builder()
-                    .user(userRef)
-                    .group(groupRef)
+                    .user(user)
+                    .group(group)
                     .build();
 
             favoriteGroupRepository.save(favoriteGroup);
@@ -706,9 +706,9 @@ public class GroupService {
         );
         checkGroupAdminAuthority(groupId, creator.getId());
 
-        Group groupRef = entityManager.getReference(Group.class, groupId);
+        Group group = groupRepository.getReferenceById(groupId);
         Meeting meeting = Meeting.builder()
-                .group(groupRef)
+                .group(group)
                 .creator(creator)
                 .name(requestDTO.name())
                 .meetDate(requestDTO.meetDate())
@@ -786,9 +786,9 @@ public class GroupService {
         }
 
         // 기본 프로필은 나중에 주소를 설정해야 함
-        User userRef = entityManager.getReference(User.class, userId);
+        User joiner = userRepository.getReferenceById(userId);
         MeetingUser meetingUser = MeetingUser.builder()
-                .user(userRef)
+                .user(joiner)
                 .build();
 
         // 양방향 관계 설정 후 meeting 저장
