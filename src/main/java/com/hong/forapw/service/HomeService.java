@@ -8,6 +8,7 @@ import com.hong.forapw.domain.post.Post;
 import com.hong.forapw.repository.animal.AnimalRepository;
 import com.hong.forapw.repository.group.FavoriteGroupRepository;
 import com.hong.forapw.repository.post.PopularPostRepository;
+import com.hong.forapw.service.group.GroupService;
 import com.hong.forapw.service.like.LikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;

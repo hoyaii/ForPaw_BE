@@ -7,7 +7,7 @@ import com.hong.forapw.core.utils.ApiUtils;
 import com.hong.forapw.domain.District;
 import com.hong.forapw.domain.Province;
 import com.hong.forapw.domain.user.User;
-import com.hong.forapw.service.GroupService;
+import com.hong.forapw.service.group.GroupService;
 import com.hong.forapw.service.like.LikeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -113,18 +113,6 @@ public class GroupController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @GetMapping("/groups/{groupId}/meetings/{meetingId}")
-    public ResponseEntity<?> findMeetingById(@PathVariable Long groupId, @PathVariable Long meetingId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        GroupResponse.FindMeetingByIdDTO responseDTO = groupService.findMeetingById(meetingId, groupId, userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
-    }
-
-    @GetMapping("/groups/{groupId}/members")
-    public ResponseEntity<?> findGroupMemberList(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        GroupResponse.FindGroupMemberListDTO responseDTO = groupService.findGroupMemberList(userDetails.getUser().getId(), groupId);
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
-    }
-
     @PostMapping("/groups/{groupId}/join")
     public ResponseEntity<?> joinGroup(@RequestBody @Valid GroupRequest.JoinGroupDTO requestDTO, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails) {
         groupService.joinGroup(requestDTO, userDetails.getUser().getId(), groupId);
@@ -182,36 +170,6 @@ public class GroupController {
     @PatchMapping("/groups/{groupId}/userRole")
     public ResponseEntity<?> updateUserRole(@RequestBody @Valid GroupRequest.UpdateUserRoleDTO requestDTO, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails) {
         groupService.updateUserRole(requestDTO, groupId, userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
-    }
-
-    @PostMapping("/groups/{groupId}/meetings")
-    public ResponseEntity<?> createMeeting(@RequestBody @Valid GroupRequest.CreateMeetingDTO requestDTO, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        GroupResponse.CreateMeetingDTO responseDTO = groupService.createMeeting(requestDTO, groupId, userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
-    }
-
-    @PatchMapping("/groups/{groupId}/meetings/{meetingId}")
-    public ResponseEntity<?> updateMeeting(@RequestBody @Valid GroupRequest.UpdateMeetingDTO requestDTO, @PathVariable Long groupId, @PathVariable Long meetingId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        groupService.updateMeeting(requestDTO, groupId, meetingId, userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
-    }
-
-    @PostMapping("/groups/{groupId}/meetings/{meetingId}/join")
-    public ResponseEntity<?> joinMeeting(@PathVariable Long groupId, @PathVariable Long meetingId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        groupService.joinMeeting(groupId, meetingId, userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
-    }
-
-    @PostMapping("/groups/{groupId}/meetings/{meetingId}/withdraw")
-    public ResponseEntity<?> withdrawMeeting(@PathVariable Long groupId, @PathVariable Long meetingId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        groupService.withdrawMeeting(groupId, meetingId, userDetails.getUser().getId());
-        return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
-    }
-
-    @DeleteMapping("/groups/{groupId}/meetings/{meetingId}")
-    public ResponseEntity<?> deleteMeeting(@PathVariable Long groupId, @PathVariable Long meetingId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        groupService.deleteMeeting(groupId, meetingId, userDetails.getUser().getId());
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, null));
     }
 
