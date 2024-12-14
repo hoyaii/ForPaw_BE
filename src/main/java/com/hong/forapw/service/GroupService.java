@@ -99,24 +99,16 @@ public class GroupService {
 
     @Transactional
     public void updateGroup(GroupRequest.UpdateGroupDTO requestDTO, Long groupId, Long userId) {
-        // 수정 권한 체크
         validateAdminAuthorization(groupId, userId);
 
         Group group = groupRepository.findById(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
 
-        // 이름 중복 체크 (현재 사용하는 이름은 제외하고 체크)
-        if (groupRepository.existsByNameExcludingId(requestDTO.name(), groupId)) {
-            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
-        }
+        validateGroupNameNotDuplicate(groupId, requestDTO.name());
+        updateChatRoomName(groupId, requestDTO.name());
 
-        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId).orElseThrow(
-                () -> new CustomException(ExceptionCode.CHAT_ROOM_NOT_FOUND)
-        );
-        chatRoom.updateName(requestDTO.name());
-
-        group.updateInfo(requestDTO.name(), requestDTO.province(), requestDTO.district(), group.getSubDistrict(), requestDTO.description(), requestDTO.category(), requestDTO.profileURL(), requestDTO.maxNum());
+        updateGroupInfo(group, requestDTO);
     }
 
     public GroupResponse.FindAllGroupListDTO findGroupList(Long userId) {
@@ -753,6 +745,32 @@ public class GroupService {
         if (groupRepository.existsByName(groupName)) {
             throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
         }
+    }
+
+    private void validateGroupNameNotDuplicate(Long groupId, String groupName) {
+        if (groupRepository.existsByNameExcludingId(groupName, groupId)) {
+            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
+        }
+    }
+
+    private void updateChatRoomName(Long groupId, String groupName){
+        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.CHAT_ROOM_NOT_FOUND)
+        );
+        chatRoom.updateName(groupName);
+    }
+
+    private void updateGroupInfo(Group group, GroupRequest.UpdateGroupDTO requestDTO) {
+        group.updateInfo(
+                requestDTO.name(),
+                requestDTO.province(),
+                requestDTO.district(),
+                group.getSubDistrict(),
+                requestDTO.description(),
+                requestDTO.category(),
+                requestDTO.profileURL(),
+                requestDTO.maxNum()
+        );
     }
 
     private void checkIsMember(Long groupId, Long userId) {
