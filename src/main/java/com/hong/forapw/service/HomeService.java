@@ -8,7 +8,7 @@ import com.hong.forapw.domain.post.Post;
 import com.hong.forapw.repository.animal.AnimalRepository;
 import com.hong.forapw.repository.group.FavoriteGroupRepository;
 import com.hong.forapw.repository.post.PopularPostRepository;
-import com.hong.forapw.repository.post.PostRepository;
+import com.hong.forapw.service.like.LikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,18 +29,13 @@ import static com.hong.forapw.core.utils.mapper.HomeMapper.toPostDTO;
 public class HomeService {
 
     private final AnimalRepository animalRepository;
-    private final PostRepository postRepository;
     private final PopularPostRepository popularPostRepository;
     private final GroupService groupService;
-    private final RedisService redisService;
+    private final LikeService likeService;
     private final AnimalService animalService;
     private final FavoriteGroupRepository favoriteGroupRepository;
 
     private static final Province DEFAULT_PROVINCE = Province.DAEGU;
-    private static final Long POST_CACHE_EXPIRATION_MS = 1000L * 60 * 60 * 24 * 90; // 세 달
-    private static final Long ANIMAL_CACHE_EXPIRATION_MS = 1000L * 60 * 60 * 24 * 90; // 세 달
-    private static final String POST_LIKE_NUM_KEY_PREFIX = "postLikeNum";
-    private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
     private static final String SORT_BY_DATE = "createdDate";
     private static final int POPULAR_POST_PAGE_INDEX = 0;
     private static final int POPULAR_POST_PAGE_SIZE = 5;
@@ -58,7 +53,7 @@ public class HomeService {
 
         return animalRepository.findByIds(recommendedAnimalIds).stream()
                 .map(animal -> {
-                    Long likeCount = getAnimalLikeCountFromCache(animal.getId());
+                    Long likeCount = likeService.getAnimalLikeCount(animal.getId());
                     return toAnimalDTO(animal, likeCount);
                 })
                 .toList();
@@ -72,7 +67,7 @@ public class HomeService {
                 .map(PopularPost::getPost)
                 .map(post -> {
                     String imageURL = extractFirstImageUrl(post);
-                    Long likeCount = getPostLikeCountFromCache(post.getId());
+                    Long likeCount = likeService.getPostLikeCount(post.getId());
                     return toPostDTO(post, likeCount, imageURL);
                 })
                 .toList();
@@ -88,27 +83,5 @@ public class HomeService {
                 .orElse(Collections.emptyList());
 
         return groupService.findRecommendGroupList(userId, DEFAULT_PROVINCE, likedGroupIds);
-    }
-
-    private Long getPostLikeCountFromCache(Long key) {
-        Long likeNum = redisService.getValueInLongWithNull(POST_LIKE_NUM_KEY_PREFIX, key.toString());
-
-        if (likeNum == null) {
-            likeNum = postRepository.countLikesByPostId(key);
-            redisService.storeValue(POST_LIKE_NUM_KEY_PREFIX, key.toString(), likeNum.toString(), POST_CACHE_EXPIRATION_MS);
-        }
-
-        return likeNum;
-    }
-
-    private Long getAnimalLikeCountFromCache(Long key) {
-        Long likeNum = redisService.getValueInLongWithNull(ANIMAL_LIKE_NUM_KEY_PREFIX, key.toString());
-
-        if (likeNum == null) {
-            likeNum = animalRepository.countLikesByAnimalId(key);
-            redisService.storeValue(ANIMAL_LIKE_NUM_KEY_PREFIX, key.toString(), likeNum.toString(), ANIMAL_CACHE_EXPIRATION_MS);
-        }
-
-        return likeNum;
     }
 }
