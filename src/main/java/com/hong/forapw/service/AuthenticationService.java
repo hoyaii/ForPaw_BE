@@ -53,7 +53,6 @@ public class AuthenticationService {
     private final ReportRepository reportRepository;
     private final ApplyRepository applyRepository;
     private final InquiryRepository inquiryRepository;
-    private final EntityManager entityManager;
     private final UserStatusRepository userStatusRepository;
     private final FaqRepository faqRepository;
 
@@ -407,8 +406,8 @@ public class AuthenticationService {
             throw new CustomException(ExceptionCode.INQUIRY_ALREADY_ANSWER);
         }
 
-        User adminRef = entityManager.getReference(User.class, adminId);
-        inquiry.updateAnswer(requestDTO.content(), adminRef);
+        User admin = userRepository.getReferenceById(adminId);
+        inquiry.updateAnswer(requestDTO.content(), admin);
 
         // 문의글은 처리 완료
         inquiry.updateStatus(InquiryStatus.PROCESSED);
