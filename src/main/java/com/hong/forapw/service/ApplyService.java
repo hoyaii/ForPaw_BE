@@ -1,17 +1,15 @@
 package com.hong.forapw.service;
 
-import com.hong.forapw.controller.dto.AnimalResponse;
 import com.hong.forapw.controller.dto.ApplyRequest;
 import com.hong.forapw.controller.dto.ApplyResponse;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.domain.animal.Animal;
 import com.hong.forapw.domain.apply.Apply;
-import com.hong.forapw.domain.apply.ApplyStatus;
 import com.hong.forapw.domain.user.User;
 import com.hong.forapw.repository.ApplyRepository;
+import com.hong.forapw.repository.UserRepository;
 import com.hong.forapw.repository.animal.AnimalRepository;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.hong.forapw.core.utils.mapper.ApplyMapper.buildApply;
 
 @Service
 @RequiredArgsConstructor
@@ -28,41 +28,22 @@ public class ApplyService {
 
     private final ApplyRepository applyRepository;
     private final AnimalRepository animalRepository;
-    private final EntityManager entityManager;
+    private final UserRepository userRepository;
 
     @Transactional
     public ApplyResponse.CreateApplyDTO applyAdoption(ApplyRequest.ApplyAdoptionDTO requestDTO, Long userId, Long animalId) {
-        // 동물이 존재하지 않으면 에러
         Animal animal = animalRepository.findById(animalId).orElseThrow(
                 () -> new CustomException(ExceptionCode.ANIMAL_NOT_FOUND)
         );
 
-        // 이미 입양된 동물이면 에러
-        if (animal.isAdopted()) {
-            throw new CustomException(ExceptionCode.ANIMAL_NOT_FOUND);
-        }
+        validateAnimalNotAdopted(animal);
+        validateNoPreviousApplication(userId, animalId);
 
-        // 이미 지원하였으면 에러
-        if (applyRepository.existsByUserIdAndAnimalId(userId, animalId)) {
-            throw new CustomException(ExceptionCode.ANIMAL_ALREADY_APPLY);
-        }
-
-        User userRef = entityManager.getReference(User.class, userId);
-        Apply apply = Apply.builder()
-                .user(userRef)
-                .animal(animal)
-                .status(ApplyStatus.PROCESSING)
-                .name(requestDTO.name())
-                .tel(requestDTO.tel())
-                .roadNameAddress(requestDTO.roadNameAddress())
-                .addressDetail(requestDTO.addressDetail())
-                .zipCode(requestDTO.zipCode())
-                .build();
-
+        User user = userRepository.getReferenceById(userId);
+        Apply apply = buildApply(requestDTO, user, animal);
         applyRepository.save(apply);
 
-        // 동물의 문의 횟수 증가
-        animalRepository.incrementInquiryNumById(animalId);
+        animal.incrementInquiryNum();
 
         return new ApplyResponse.CreateApplyDTO(apply.getId());
     }
@@ -122,5 +103,17 @@ public class ApplyService {
         animal.decrementInquiryNum();
 
         applyRepository.deleteById(applyId);
+    }
+
+    private void validateAnimalNotAdopted(Animal animal) {
+        if (animal.isAdopted()) {
+            throw new CustomException(ExceptionCode.ANIMAL_ALREADY_ADOPTED);
+        }
+    }
+
+    private void validateNoPreviousApplication(Long userId, Long animalId) {
+        if (applyRepository.existsByUserIdAndAnimalId(userId, animalId)) {
+            throw new CustomException(ExceptionCode.ANIMAL_ALREADY_APPLY);
+        }
     }
 }

@@ -118,8 +118,14 @@ public class Animal extends TimeStamp {
         this.isAdopted = false;
     }
 
+    public void incrementInquiryNum() {
+        inquiryNum++;
+    }
+
     public void decrementInquiryNum() {
-        inquiryNum -= 1;
+        if(inquiryNum > 0) {
+            inquiryNum--;
+        }
     }
 
     public void finishAdoption() {
