@@ -4,6 +4,7 @@ import com.hong.forapw.controller.dto.*;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.core.utils.JsonParser;
+import com.hong.forapw.core.utils.mapper.ShelterMapper;
 import com.hong.forapw.domain.animal.Animal;
 import com.hong.forapw.domain.animal.AnimalType;
 import com.hong.forapw.domain.District;
@@ -38,6 +39,8 @@ import java.util.stream.Collectors;
 import static com.hong.forapw.core.utils.DateTimeUtils.YEAR_HOUR_DAY_FORMAT;
 import static com.hong.forapw.core.utils.PaginationUtils.isLastPage;
 import static com.hong.forapw.core.utils.UriUtils.*;
+import static com.hong.forapw.core.utils.mapper.ShelterMapper.toAnimalDTO;
+import static com.hong.forapw.core.utils.mapper.ShelterMapper.toFindShelterInfoDTO;
 
 @Service
 @RequiredArgsConstructor
@@ -89,53 +92,39 @@ public class ShelterService {
         updateShelterAddressByGoogle();
     }
 
-    @Transactional
-    public ShelterResponse.FindShelterListDTO findActiveShelterList() {
+    public ShelterResponse.FindShelterListDTO findActiveShelters() {
         List<Shelter> shelters = shelterRepository.findAllWithAnimalAndLatitude();
 
         List<ShelterResponse.ShelterDTO> shelterDTOS = shelters.stream()
-                .map(shelter -> new ShelterResponse.ShelterDTO(
-                        shelter.getId(),
-                        shelter.getName(),
-                        shelter.getLatitude(),
-                        shelter.getLongitude(),
-                        shelter.getCareAddr(),
-                        shelter.getCareTel()))
-                .collect(Collectors.toList());
+                .map(ShelterMapper::toShelterDTO)
+                .toList();
 
         return new ShelterResponse.FindShelterListDTO(shelterDTOS);
     }
 
-    @Transactional(readOnly = true)
     public ShelterResponse.FindShelterInfoByIdDTO findShelterInfoById(Long shelterId) {
         Shelter shelter = shelterRepository.findById(shelterId).orElseThrow(
                 () -> new CustomException(ExceptionCode.SHELTER_NOT_FOUND)
         );
 
-        return new ShelterResponse.FindShelterInfoByIdDTO(
-                shelter.getId(),
-                shelter.getName(),
-                shelter.getLatitude(),
-                shelter.getLongitude(),
-                shelter.getCareAddr(),
-                shelter.getCareTel(),
-                shelter.getAnimalCnt()
-        );
+        return toFindShelterInfoDTO(shelter);
     }
 
-    @Transactional(readOnly = true)
     public ShelterResponse.FindShelterAnimalsByIdDTO findAnimalsByShelter(Long shelterId, Long userId, String type, Pageable pageable) {
         List<Long> userLikedAnimalIds = findUserLikedAnimalIds(userId);
 
         Page<Animal> animalPage = animalRepository.findByShelterIdAndType(AnimalType.fromString(type), shelterId, pageable);
         List<ShelterResponse.AnimalDTO> animalDTOS = animalPage.getContent().stream()
-                .map(animal -> createAnimalDTO(animal, userLikedAnimalIds))
+                .map(animal -> {
+                    Long likeNum = getCachedLikeNum(animal.getId());
+                    boolean isLikedAnimal = userLikedAnimalIds.contains(animal.getId());
+                    return toAnimalDTO(animal, isLikedAnimal, likeNum);
+                })
                 .collect(Collectors.toList());
 
         return new ShelterResponse.FindShelterAnimalsByIdDTO(animalDTOS, isLastPage(animalPage));
     }
 
-    @Transactional(readOnly = true)
     public ShelterResponse.FindShelterListWithAddr findShelterListWithAddress() {
         List<Shelter> shelters = shelterRepository.findAll();
 
@@ -250,7 +239,6 @@ public class ShelterService {
 
     private Long getCachedLikeNum(Long key) {
         Long likeNum = redisService.getValueInLongWithNull(ShelterService.ANIMAL_LIKE_NUM_KEY_PREFIX, key.toString());
-
         if (likeNum == null) {
             likeNum = animalRepository.countLikesByAnimalId(key);
             redisService.storeValue(ShelterService.ANIMAL_LIKE_NUM_KEY_PREFIX, key.toString(), likeNum.toString(), ANIMAL_EXP);
@@ -296,25 +284,6 @@ public class ShelterService {
     }
 
     private List<Long> findUserLikedAnimalIds(Long userId) {
-        // 로그인하지 않은 경우 빈 리스트 반환
         return (userId != null) ? favoriteAnimalRepository.findAnimalIdsByUserId(userId) : Collections.emptyList();
-    }
-
-    private ShelterResponse.AnimalDTO createAnimalDTO(Animal animal, List<Long> userLikedAnimalIds) {
-        return new ShelterResponse.AnimalDTO(
-                animal.getId(),
-                animal.getName(),
-                animal.getAge(),
-                animal.getGender(),
-                animal.getSpecialMark(),
-                animal.getKind(),
-                animal.getWeight(),
-                animal.getNeuter(),
-                animal.getProcessState(),
-                animal.getRegion(),
-                animal.getInquiryNum(),
-                getCachedLikeNum(animal.getId()),
-                userLikedAnimalIds.contains(animal.getId()),
-                animal.getProfileURL());
     }
 }
