@@ -211,7 +211,7 @@ public class PostService {
         Post post = postRepository.findByIdWithUser(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
-        checkAccessorAuthority(user, post.getWriterId());
+        validateAccessorAuthorization(user, post.getWriterId());
 
         post.updateContent(requestDTO.title(), requestDTO.content());
 
@@ -224,7 +224,7 @@ public class PostService {
         Post post = postRepository.findByIdWithUserAndParent(postId).orElseThrow(
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
-        checkAccessorAuthority(user, post.getWriterId());
+        validateAccessorAuthorization(user, post.getWriterId());
 
         postLikeRepository.deleteAllByPostId(postId);
         commentLikeRepository.deleteByPostId(postId);
@@ -240,7 +240,7 @@ public class PostService {
                 () -> new CustomException(ExceptionCode.POST_NOT_FOUND)
         );
         validateAnswer(answer);
-        checkAccessorAuthority(user, answer.getWriterId());
+        validateAccessorAuthorization(user, answer.getWriterId());
 
         decrementAnswerCount(answer);
         postImageRepository.deleteByPostId(answerId);
@@ -288,7 +288,7 @@ public class PostService {
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
         validateCommentBelongsToPost(comment, postId);
-        checkAccessorAuthority(user, comment.getWriterId());
+        validateAccessorAuthorization(user, comment.getWriterId());
 
         comment.updateContent(requestDTO.content());
     }
@@ -299,7 +299,7 @@ public class PostService {
                 () -> new CustomException(ExceptionCode.COMMENT_NOT_FOUND)
         );
         validateCommentBelongsToPost(comment, postId);
-        checkAccessorAuthority(user, comment.getWriterId());
+        validateAccessorAuthorization(user, comment.getWriterId());
 
         comment.updateContent(COMMENT_DELETED);
         commentRepository.deleteById(commentId);
@@ -580,7 +580,7 @@ public class PostService {
         });
     }
 
-    private void checkAccessorAuthority(User accessor, Long writerId) {
+    private void validateAccessorAuthorization(User accessor, Long writerId) {
         if (accessor.isAdmin()) {
             return;
         }

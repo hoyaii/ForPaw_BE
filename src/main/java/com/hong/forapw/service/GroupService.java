@@ -66,63 +66,29 @@ public class GroupService {
     private static final String SORT_BY_ID = "id";
     private static final String SORT_BY_PARTICIPANT_NUM = "participantNum";
     private static final String POST_READ_KEY_PREFIX = "user:readPosts:";
-    private static final String GROUP_LIKE_NUM_KEY_PREFIX = "groupLikeNum";
+    private static final String GROUP_LIKE_NUM_KEY_PREFIX = "group:like:count";
     private static final String ROOM_QUEUE_PREFIX = "room.";
     private static final String CHAT_EXCHANGE = "chat.exchange";
 
     @Transactional
-    public GroupResponse.CreateGroupDTO createGroup(GroupRequest.CreateGroupDTO requestDTO, Long userId) {
-        // 이름 중복 체크
-        if (groupRepository.existsByName(requestDTO.name())) {
-            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
-        }
+    public GroupResponse.CreateGroupDTO createGroup(GroupRequest.CreateGroupDTO requestDTO, Long creatorId) {
+        validateGroupNameNotDuplicate(requestDTO.name());
 
         Group group = buildGroup(requestDTO);
-
         groupRepository.save(group);
 
-        // 그룹장 설정
-        User groupOwner = userRepository.getReferenceById(userId);
-        GroupUser groupUser = GroupUser.builder()
-                .group(group)
-                .user(groupOwner)
-                .groupRole(GroupRole.CREATOR)
-                .build();
+        User groupOwner = addGroupOwner(group, creatorId);
+        ChatRoom chatRoom = addChatRoom(group);
+        addChatUserToRoom(chatRoom, groupOwner);
 
-        groupUserRepository.save(groupUser);
-
-        // 그룹 참여자 수 증가 (그룹장 참여)
-        group.incrementParticipantNum();
-
-        // 그룹 채팅방 생성
-        ChatRoom chatRoom = ChatRoom.builder()
-                .group(group)
-                .name(group.getName())
-                .build();
-
-        chatRoomRepository.save(chatRoom);
-
-        // 그룹장 채팅방에 추가
-        ChatUser chatUser = ChatUser.builder()
-                .chatRoom(chatRoom)
-                .user(groupOwner)
-                .build();
-
-        chatUserRepository.save(chatUser);
-
-        // 레디스에 저장될 '좋아요 수' 값 초기화  (그룹의 경우 유효기간이 없고, 그룹이 삭제되기 전까지 남아 있음)
-        redisService.storeValue(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString(), "0");
-
-        // RabbitMQ 설정
-        registerQueueAndListener(chatRoom);
+        initializeGroupLikeCount(group);
+        configureRabbitMQForChatRoom(chatRoom);
 
         return new GroupResponse.CreateGroupDTO(group.getId());
     }
 
-    // 수정 화면에서 사용하는 API
     public GroupResponse.FindGroupByIdDTO findGroupById(Long groupId, Long userId) {
-        // 조회 권한 체크
-        checkGroupAdminAuthority(groupId, userId);
+        validateAdminAuthorization(groupId, userId);
 
         Group group = groupRepository.findById(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
@@ -134,7 +100,7 @@ public class GroupService {
     @Transactional
     public void updateGroup(GroupRequest.UpdateGroupDTO requestDTO, Long groupId, Long userId) {
         // 수정 권한 체크
-        checkGroupAdminAuthority(groupId, userId);
+        validateAdminAuthorization(groupId, userId);
 
         Group group = groupRepository.findById(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
@@ -313,7 +279,7 @@ public class GroupService {
         );
 
         // 관리자만 멤버들을 볼 수 있음
-        checkGroupAdminAuthority(groupId, userId);
+        validateAdminAuthorization(groupId, userId);
 
         List<GroupResponse.MemberDetailDTO> memberDetailDTOS = groupUserRepository.findByGroupIdWithGroup(groupId).stream()
                 .filter(groupUser -> !groupUser.getGroupRole().equals(GroupRole.TEMP))
@@ -378,7 +344,7 @@ public class GroupService {
         );
 
         // 권한 체크
-        checkGroupAdminAuthority(groupId, adminId);
+        validateAdminAuthorization(groupId, adminId);
 
         // 그룹 참가자 수 감소
         group.decrementParticipantNum();
@@ -400,7 +366,7 @@ public class GroupService {
         checkGroupExist(groupId);
 
         // 권한 체크
-        checkGroupAdminAuthority(groupId, managerId);
+        validateAdminAuthorization(groupId, managerId);
 
         List<GroupUser> applicants = groupUserRepository.findByGroupRole(groupId, GroupRole.TEMP);
         List<GroupResponse.ApplicantDTO> applicantDTOS = applicants.stream()
@@ -418,7 +384,7 @@ public class GroupService {
         );
 
         // 권한 체크
-        checkGroupAdminAuthority(groupId, managerId);
+        validateAdminAuthorization(groupId, managerId);
 
         // 신청한 적이 없거나 이미 가입했는지 체크
         GroupUser groupUser = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId).orElseThrow(
@@ -459,7 +425,7 @@ public class GroupService {
         checkGroupExist(groupId);
 
         // 권한 체크
-        checkGroupAdminAuthority(groupId, userId);
+        validateAdminAuthorization(groupId, userId);
 
         // 신청한 적이 없거나 이미 가입했는지 체크
         GroupUser groupUser = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId).orElseThrow(
@@ -482,7 +448,7 @@ public class GroupService {
         checkGroupExist(groupId);
 
         // 권한 체크
-        checkGroupAdminAuthority(groupId, userId);
+        validateAdminAuthorization(groupId, userId);
 
         Group group = groupRepository.getReferenceById(groupId);
         User noticer = userRepository.getReferenceById(userId);
@@ -588,7 +554,7 @@ public class GroupService {
         User creator = userRepository.findNonWithdrawnById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
-        checkGroupAdminAuthority(groupId, creator.getId());
+        validateAdminAuthorization(groupId, creator.getId());
 
         Group group = groupRepository.getReferenceById(groupId);
         Meeting meeting = buildMeeting(requestDTO, group, creator);
@@ -635,7 +601,7 @@ public class GroupService {
         checkMeetingExist(meetingId);
 
         // 권한 체크(메니저급만 수정 가능)
-        checkGroupAdminAuthority(groupId, userId);
+        validateAdminAuthorization(groupId, userId);
 
         Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(
                 () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
@@ -698,7 +664,7 @@ public class GroupService {
         checkMeetingExist(meetingId);
 
         // 권한 체크 (메니저급만 삭제 가능)
-        checkGroupAdminAuthority(groupId, userId);
+        validateAdminAuthorization(groupId, userId);
 
         meetingUserRepository.deleteAllByMeetingId(meetingId);
         meetingRepository.deleteById(meetingId);
@@ -747,6 +713,48 @@ public class GroupService {
         return userId != null ? favoriteGroupRepository.findGroupIdByUserId(userId) : Collections.emptyList();
     }
 
+    private User addGroupOwner(Group group, Long ownerId) {
+        User groupOwner = userRepository.getReferenceById(ownerId);
+
+        GroupUser groupUser = GroupUser.builder()
+                .group(group)
+                .user(groupOwner)
+                .groupRole(GroupRole.CREATOR)
+                .build();
+        groupUserRepository.save(groupUser);
+        group.incrementParticipantNum();
+
+        return groupOwner;
+    }
+
+    private ChatRoom addChatRoom(Group group){
+        ChatRoom chatRoom = ChatRoom.builder()
+                .group(group)
+                .name(group.getName())
+                .build();
+        chatRoomRepository.save(chatRoom);
+
+        return chatRoom;
+    }
+
+    private void addChatUserToRoom(ChatRoom chatRoom, User groupOwner) {
+        ChatUser chatUser = ChatUser.builder()
+                .chatRoom(chatRoom)
+                .user(groupOwner)
+                .build();
+        chatUserRepository.save(chatUser);
+    }
+
+    private void initializeGroupLikeCount(Group group) {
+        redisService.storeValue(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString(), "0");
+    }
+
+    private void validateGroupNameNotDuplicate(String groupName) {
+        if (groupRepository.existsByName(groupName)) {
+            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
+        }
+    }
+
     private void checkIsMember(Long groupId, Long userId) {
         Set<GroupRole> roles = EnumSet.of(GroupRole.USER, GroupRole.ADMIN, GroupRole.CREATOR);
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
@@ -761,7 +769,7 @@ public class GroupService {
         }
     }
 
-    private void checkGroupAdminAuthority(Long groupId, Long userId) {
+    private void validateAdminAuthorization(Long groupId, Long userId) {
         // 서비스 운영자는 접근 가능
         if (checkServiceAdminAuthority(userId)) {
             return;
@@ -821,7 +829,7 @@ public class GroupService {
                 .collect(Collectors.toList());
     }
 
-    private void registerQueueAndListener(ChatRoom chatRoom) {
+    private void configureRabbitMQForChatRoom(ChatRoom chatRoom) {
         // 그룹 채팅방의 exchange 등록 후 그룹장에 대한 큐와 리스너 등록
         String queueName = ROOM_QUEUE_PREFIX + chatRoom.getId();
         String listenerId = ROOM_QUEUE_PREFIX + chatRoom.getId();
