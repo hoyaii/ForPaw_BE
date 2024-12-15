@@ -27,7 +27,8 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
     @Query("SELECT g FROM Group g WHERE g.province = :province " +
             "AND (:userId IS NULL OR g.id NOT IN " +
-            "(SELECT g.id FROM GroupUser gu JOIN gu.group g JOIN gu.user u WHERE u.id = :userId AND gu.groupRole != :role))")
+            "(SELECT g.id FROM GroupUser gu JOIN gu.group g JOIN gu.user u " +
+            "WHERE u.id = :userId AND gu.groupRole != :role))")
     Page<Group> findByProvinceWithoutMyGroup(@Param("province") Province province,
                                              @Param("userId") Long userId,
                                              @Param("role") GroupRole role,

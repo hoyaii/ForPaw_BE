@@ -63,7 +63,6 @@ public class GroupService {
     private final MeetingService meetingService;
 
     private static final Province DEFAULT_PROVINCE = Province.DAEGU;
-    private static final District DEFAULT_DISTRICT = District.SUSEONG;
     private static final String SORT_BY_ID = "id";
     private static final String SORT_BY_PARTICIPANT_NUM = "participantNum";
     private static final String POST_READ_KEY_PREFIX = "user:readPosts:";
@@ -71,6 +70,9 @@ public class GroupService {
     private static final String ROOM_QUEUE_PREFIX = "room.";
     private static final String CHAT_EXCHANGE = "chat.exchange";
     private static final Pageable DEFAULT_PAGE_REQUEST = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, SORT_BY_ID));
+    private static final int DEFAULT_RECOMMENDATION_LIMIT = 5;
+    private static final int ADDITIONAL_GROUP_FETCH_LIMIT = 30;
+    private static final Sort DEFAULT_SORT = Sort.by(Sort.Order.desc(SORT_BY_PARTICIPANT_NUM));
 
     @Transactional
     public GroupResponse.CreateGroupDTO createGroup(GroupRequest.CreateGroupDTO requestDTO, Long creatorId) {
@@ -126,25 +128,34 @@ public class GroupService {
         return new GroupResponse.FindGroupMemberListDTO(group.getParticipantNum(), group.getMaxNum(), memberDetails);
     }
 
-    public GroupResponse.FindAllGroupListDTO findGroupList(Long userId) {
+    public GroupResponse.FindAllGroupListDTO findGroups(Long userId) {
         Province province = determineProvince(userId);
 
         List<Long> likedGroupIdList = findLikedGroupIds(userId);
-        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = findRecommendGroupList(userId, province, likedGroupIdList);
+        List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = findRecommendGroups(userId, province, likedGroupIdList);
         List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroupList(userId, province, DEFAULT_PAGE_REQUEST);
         List<GroupResponse.MyGroupDTO> myGroupDTOS = findMyGroupList(userId, likedGroupIdList);
 
         return new GroupResponse.FindAllGroupListDTO(recommendGroupDTOS, newGroupDTOS, myGroupDTOS);
     }
 
+    // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순
+    public List<GroupResponse.RecommendGroupDTO> findRecommendGroups(Long userId, Province province, List<Long> likedGroupIds) {
+        List<GroupResponse.RecommendGroupDTO> recommendedGroups = fetchGroupsByProvince(province, userId, likedGroupIds);
+        List<GroupResponse.RecommendGroupDTO> additionalGroups = fetchAdditionalGroupsIfNeeded(userId, likedGroupIds, recommendedGroups);
+
+        List<GroupResponse.RecommendGroupDTO> finalRecommendations = mergeAndRandomizeGroups(recommendedGroups, additionalGroups);
+
+        return finalRecommendations.stream()
+                .limit(DEFAULT_RECOMMENDATION_LIMIT)
+                .toList();
+    }
+
     public List<GroupResponse.LocalGroupDTO> findLocalGroupList(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable) {
         Page<Group> localGroupPage = groupRepository.findByProvinceAndDistrictWithoutMyGroup(province, district, userId, GroupRole.TEMP, pageable);
+
         return localGroupPage.getContent().stream()
-                .map(group -> {
-                    Long likeNum = likeService.getGroupLikeCount(group.getId());
-                    boolean isLikedGroup = likedGroupIds.contains(group.getId());
-                    return toLocalGroupDTO(group, likeNum, isLikedGroup);
-                })
+                .map(group -> toLocalGroupDTO(group, likeService.getGroupLikeCount(group.getId()), likedGroupIds.contains(group.getId())))
                 .collect(Collectors.toList());
     }
 
@@ -484,35 +495,31 @@ public class GroupService {
         return favoriteGroupRepository.findGroupIdByUserId(userId);
     }
 
-    public List<GroupResponse.RecommendGroupDTO> findRecommendGroupList(Long userId, Province province, List<Long> likedGroupIds) {
-        // 1. 같은 지역의 그룹  2. 좋아요, 사용자 순
-        Sort sort = Sort.by(Sort.Order.desc(SORT_BY_PARTICIPANT_NUM));
-        Pageable pageable = PageRequest.of(0, 30, sort);
+    private List<GroupResponse.RecommendGroupDTO> fetchGroupsByProvince(Province province, Long userId, List<Long> likedGroupIds) {
+        Pageable pageable = PageRequest.of(0, ADDITIONAL_GROUP_FETCH_LIMIT, DEFAULT_SORT);
+        return groupRepository.findByProvinceWithoutMyGroup(province, userId, GroupRole.TEMP, pageable).getContent().stream()
+                .map(group -> toRecommendGroupDTO(group, likeService.getGroupLikeCount(group.getId()), likedGroupIds.contains(group.getId())))
+                .toList();
+    }
 
-        Page<Group> groupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, GroupRole.TEMP, pageable);
-        List<GroupResponse.RecommendGroupDTO> allRecommendGroupDTOS = groupPage.getContent().stream()
-                .map(group -> {
-                    Long likeNum = likeService.getGroupLikeCount(group.getId());
-                    boolean isLike = likedGroupIds.contains(group.getId());
-                    return toRecommendGroupDTO(group, likeNum, isLike);
-                })
-                .collect(Collectors.toList());
-
-        // District를 바탕으로 한 추천 그룹의 개수가 부족하면, 다른 District의 그룹을 추가
-        if (allRecommendGroupDTOS.size() < 5) {
-            List<GroupResponse.RecommendGroupDTO> additionalGroupDTOS = fetchAdditionalGroups(userId, likedGroupIds, sort);
-            additionalGroupDTOS.stream()
-                    .filter(newGroupDTO -> allRecommendGroupDTOS.stream() // 중복된 그룹을 제외하고 추가
-                            .noneMatch(oldGroupDTO -> oldGroupDTO.id().equals(newGroupDTO.id())))
-                    .forEach(allRecommendGroupDTOS::add);
+    private List<GroupResponse.RecommendGroupDTO> fetchAdditionalGroupsIfNeeded(Long userId, List<Long> likedGroupIds, List<GroupResponse.RecommendGroupDTO> existingGroups) {
+        if (existingGroups.size() >= DEFAULT_RECOMMENDATION_LIMIT) {
+            return Collections.emptyList();
         }
 
-        // 매번 동일하게 추천을 할 수는 없으니, 간추린 추천 목록 중에서 5개를 랜덤으로 보내준다.
-        Collections.shuffle(allRecommendGroupDTOS);
+        Pageable pageable = PageRequest.of(0, ADDITIONAL_GROUP_FETCH_LIMIT, DEFAULT_SORT);
+        return groupRepository.findAllWithoutMyGroup(userId, pageable).stream()
+                .map(group -> toRecommendGroupDTO(group, likeService.getGroupLikeCount(group.getId()), likedGroupIds.contains(group.getId())))
+                .filter(newGroup -> existingGroups.stream().noneMatch(existingGroup -> existingGroup.id().equals(newGroup.id())))
+                .toList();
+    }
 
-        return allRecommendGroupDTOS.stream()
-                .limit(5)
-                .collect(Collectors.toList());
+    private List<GroupResponse.RecommendGroupDTO> mergeAndRandomizeGroups(List<GroupResponse.RecommendGroupDTO> recommendedGroups, List<GroupResponse.RecommendGroupDTO> additionalGroups) {
+        List<GroupResponse.RecommendGroupDTO> mergedGroups = new ArrayList<>(recommendedGroups);
+        mergedGroups.addAll(additionalGroups);
+        Collections.shuffle(mergedGroups); // 랜덤화
+
+        return mergedGroups;
     }
 
     public void checkGroupAndIsMember(Long groupId, Long userId) {
@@ -690,17 +697,6 @@ public class GroupService {
         brokerService.sendAlarmToUser(userId, alarmDTO);
     }
 
-    private List<GroupResponse.RecommendGroupDTO> fetchAdditionalGroups(Long userId, List<Long> likedGroupIds, Sort sort) {
-        Pageable pageable = PageRequest.of(0, 10, sort);
-
-        return groupRepository.findAllWithoutMyGroup(userId, pageable).getContent().stream()
-                .map(group -> {
-                    Long likeNum = likeService.getGroupLikeCount(group.getId());
-                    boolean isLike = likedGroupIds.contains(group.getId());
-                    return toRecommendGroupDTO(group, likeNum, isLike);
-                })
-                .collect(Collectors.toList());
-    }
 
     private void validateGroupAdminAuthorization(User user, Long groupId) {
         if (user.isAdmin()) {

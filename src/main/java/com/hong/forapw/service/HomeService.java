@@ -83,6 +83,6 @@ public class HomeService {
                 .map(favoriteGroupRepository::findGroupIdByUserId)
                 .orElse(Collections.emptyList());
 
-        return groupService.findRecommendGroupList(userId, DEFAULT_PROVINCE, likedGroupIds);
+        return groupService.findRecommendGroups(userId, DEFAULT_PROVINCE, likedGroupIds);
     }
 }

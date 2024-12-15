@@ -52,7 +52,7 @@ public class GroupController {
 
     @GetMapping("/groups")
     public ResponseEntity<?> findGroups(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        GroupResponse.FindAllGroupListDTO responseDTO = groupService.findGroupList(getUserIdSafely(userDetails));
+        GroupResponse.FindAllGroupListDTO responseDTO = groupService.findGroups(getUserIdSafely(userDetails));
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
