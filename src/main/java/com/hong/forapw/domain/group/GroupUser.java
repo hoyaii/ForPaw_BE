@@ -47,8 +47,12 @@ public class GroupUser extends TimeStamp {
         this.groupRole = groupRole;
     }
 
-    public boolean isCreator(){
+    public boolean isCreator() {
         return groupRole == GroupRole.CREATOR;
+    }
+
+    public boolean isActiveMember() {
+        return groupRole != GroupRole.TEMP;
     }
 
     public Long getUserId() {
@@ -67,11 +71,11 @@ public class GroupUser extends TimeStamp {
         return user.getEmail();
     }
 
-    public Province getUserProvince(){
+    public Province getUserProvince() {
         return user.getProvince();
     }
 
-    public District getUserDistrict(){
+    public District getUserDistrict() {
         return user.getDistrict();
     }
 }

@@ -166,7 +166,7 @@ public class GroupController {
 
     @GetMapping("/groups/{groupId}/members")
     public ResponseEntity<?> findGroupMembers(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        GroupResponse.FindGroupMemberListDTO responseDTO = groupService.findGroupMemberList(userDetails.getUser().getId(), groupId);
+        GroupResponse.FindGroupMemberListDTO responseDTO = groupService.findGroupMembers(userDetails.getUser().getId(), groupId);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 

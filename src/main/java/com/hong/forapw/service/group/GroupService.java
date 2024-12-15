@@ -113,23 +113,17 @@ public class GroupService {
         updateGroupInfo(group, requestDTO);
     }
 
-    @Transactional
-    public GroupResponse.FindGroupMemberListDTO findGroupMemberList(Long userId, Long groupId) {
-        // 그룹 존재 여부 체크
+    public GroupResponse.FindGroupMemberListDTO findGroupMembers(Long userId, Long groupId) {
         Group group = groupRepository.findById(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
 
-        // 관리자만 멤버들을 볼 수 있음
         User groupAdmin = userRepository.getReferenceById(userId);
         validateGroupAdminAuthorization(groupAdmin, groupId);
 
-        List<GroupResponse.MemberDetailDTO> memberDetailDTOS = groupUserRepository.findByGroupIdWithGroup(groupId).stream()
-                .filter(groupUser -> !groupUser.getGroupRole().equals(GroupRole.TEMP))
-                .map(GroupMapper::toMemberDetailDTO)
-                .toList();
+        List<GroupResponse.MemberDetailDTO> memberDetails = getMemberDetails(groupId);
 
-        return new GroupResponse.FindGroupMemberListDTO(group.getParticipantNum(), group.getMaxNum(), memberDetailDTOS);
+        return new GroupResponse.FindGroupMemberListDTO(group.getParticipantNum(), group.getMaxNum(), memberDetails);
     }
 
     public GroupResponse.FindAllGroupListDTO findGroupList(Long userId) {
@@ -597,6 +591,13 @@ public class GroupService {
                 requestDTO.profileURL(),
                 requestDTO.maxNum()
         );
+    }
+
+    private List<GroupResponse.MemberDetailDTO> getMemberDetails(Long groupId) {
+        return groupUserRepository.findByGroupIdWithGroup(groupId).stream()
+                .filter(GroupUser::isActiveMember)
+                .map(GroupMapper::toMemberDetailDTO)
+                .toList();
     }
 
     private void validateIsMember(Long groupId, Long userId) {
