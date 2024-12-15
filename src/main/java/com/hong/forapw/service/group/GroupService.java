@@ -61,11 +61,11 @@ public class GroupService {
     private final BrokerService brokerService;
     private final LikeService likeService;
     private final MeetingService meetingService;
+    private final GroupCacheService groupCacheService;
 
     private static final Province DEFAULT_PROVINCE = Province.DAEGU;
     private static final String SORT_BY_ID = "id";
     private static final String SORT_BY_PARTICIPANT_NUM = "participantNum";
-    private static final String POST_READ_KEY_PREFIX = "user:readPosts:";
     private static final String GROUP_LIKE_NUM_KEY_PREFIX = "group:like:count";
     private static final String ROOM_QUEUE_PREFIX = "room.";
     private static final String CHAT_EXCHANGE = "chat.exchange";
@@ -199,24 +199,18 @@ public class GroupService {
         );
 
         List<GroupResponse.MeetingDTO> meetingDTOS = meetingService.findMeetings(groupId, DEFAULT_PAGE_REQUEST);
-        List<GroupResponse.NoticeDTO> noticeDTOS = findNoticeList(userId, groupId, DEFAULT_PAGE_REQUEST);
-        List<GroupResponse.MemberDTO> memberDTOS = findMemberList(groupId);
+        List<GroupResponse.NoticeDTO> noticeDTOS = findNotices(userId, groupId, DEFAULT_PAGE_REQUEST);
+        List<GroupResponse.MemberDTO> memberDTOS = findMembers(groupId);
 
         return new GroupResponse.FindGroupDetailByIdDTO(group.getProfileURL(), group.getName(), group.getDescription(), noticeDTOS, meetingDTOS, memberDTOS);
     }
 
-    public List<GroupResponse.NoticeDTO> findNoticeList(Long userId, Long groupId, Pageable pageable) {
-        // 해당 유저가 읽은 post의 id 목록
-        String key = POST_READ_KEY_PREFIX + userId;
-        Set<String> postIds = userId != null ? redisService.getMembersOfSet(key) : Collections.emptySet();
+    public List<GroupResponse.NoticeDTO> findNotices(Long userId, Long groupId, Pageable pageable) {
+        List<Post> notices = postRepository.findNoticeByGroupIdWithUser(groupId, pageable).getContent();
+        Set<String> readPostIds = groupCacheService.getReadPostIds(userId);
 
-        Page<Post> noticePage = postRepository.findNoticeByGroupIdWithUser(groupId, pageable);
-
-        return noticePage.getContent().stream()
-                .map(notice -> {
-                    boolean isRead = postIds.contains(notice.getId().toString());
-                    return toNoticeDTO(notice, isRead);
-                })
+        return notices.stream()
+                .map(notice -> toNoticeDTO(notice, readPostIds.contains(notice.getId().toString())))
                 .toList();
     }
 
@@ -626,14 +620,13 @@ public class GroupService {
         }
     }
 
-    private List<GroupResponse.MemberDTO> findMemberList(Long groupId) {
-        // user를 패치조인 해서 조회
+    private List<GroupResponse.MemberDTO> findMembers(Long groupId) {
         List<GroupUser> groupUsers = groupUserRepository.findByGroupIdWithUserInAsc(groupId);
 
         return groupUsers.stream()
-                .filter(groupUser -> !groupUser.getGroupRole().equals(GroupRole.TEMP)) // 가입 승인 상태가 아니면 제외
+                .filter(GroupUser::isActiveMember)
                 .map(GroupMapper::toMemberDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private void validateGroupCapacity(Group group) {

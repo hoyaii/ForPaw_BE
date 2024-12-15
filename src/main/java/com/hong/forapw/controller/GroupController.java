@@ -99,7 +99,7 @@ public class GroupController {
     public ResponseEntity<?> findNotices(@PathVariable Long groupId,
                                          @PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
         groupService.checkGroupAndIsMember(groupId, userDetails.getUser().getId());
-        List<GroupResponse.NoticeDTO> noticeDTOS = groupService.findNoticeList(userDetails.getUser().getId(), groupId, pageable);
+        List<GroupResponse.NoticeDTO> noticeDTOS = groupService.findNotices(userDetails.getUser().getId(), groupId, pageable);
         GroupResponse.FindNoticeListDTO responseDTO = new GroupResponse.FindNoticeListDTO(noticeDTOS);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
