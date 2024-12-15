@@ -124,7 +124,6 @@ public class GroupService {
         validateGroupAdminAuthorization(groupAdmin, groupId);
 
         List<GroupResponse.MemberDetailDTO> memberDetails = getMemberDetails(groupId);
-
         return new GroupResponse.FindGroupMemberListDTO(group.getParticipantNum(), group.getMaxNum(), memberDetails);
     }
 
@@ -134,7 +133,7 @@ public class GroupService {
         List<Long> likedGroupIdList = findLikedGroupIds(userId);
         List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = findRecommendGroups(userId, province, likedGroupIdList);
         List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroups(userId, province, DEFAULT_PAGE_REQUEST);
-        List<GroupResponse.MyGroupDTO> myGroupDTOS = findMyGroupList(userId, likedGroupIdList);
+        List<GroupResponse.MyGroupDTO> myGroupDTOS = findMyGroups(userId, likedGroupIdList);
 
         return new GroupResponse.FindAllGroupListDTO(recommendGroupDTOS, newGroupDTOS, myGroupDTOS);
     }
@@ -152,43 +151,38 @@ public class GroupService {
     }
 
     public List<GroupResponse.LocalGroupDTO> findLocalGroups(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable) {
-        Page<Group> localGroupPage = groupRepository.findByProvinceAndDistrictWithoutMyGroup(province, district, userId, GroupRole.TEMP, pageable);
+        List<Group> localGroups = groupRepository.findByProvinceAndDistrictWithoutMyGroup(province, district, userId, GroupRole.TEMP, pageable).getContent();
 
-        return localGroupPage.getContent().stream()
+        return localGroups.stream()
                 .map(group -> toLocalGroupDTO(group, likeService.getGroupLikeCount(group.getId()), likedGroupIds.contains(group.getId())))
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    public List<GroupResponse.NewGroupDTO> findNewGroups(Long userId, Province province, Pageable pageable) {
-        // 1. 로그인된 상태고 province가 요청값으로 들어오지 않으면 프로필에서 설정한 province 사용, 2. 로그인도 되지 않으면 디폴트 값 사용
-        province = Optional.ofNullable(province)
-                .or(() -> Optional.ofNullable(userId)
-                        .flatMap(userRepository::findProvinceById))
-                .orElse(DEFAULT_PROVINCE);
+    public List<GroupResponse.NewGroupDTO> findNewGroups(Long userId, Province inputProvince, Pageable pageable) {
+        Province province = resolveProvince(userId, inputProvince);
+        List<Group> newGroups = groupRepository.findByProvinceWithoutMyGroup(province, userId, GroupRole.TEMP, pageable).getContent();
 
-        Page<Group> newGroupPage = groupRepository.findByProvinceWithoutMyGroup(province, userId, GroupRole.TEMP, pageable);
-
-        return newGroupPage.getContent().stream()
+        return newGroups.stream()
                 .map(GroupMapper::toNewGroupDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    private List<GroupResponse.MyGroupDTO> findMyGroupList(Long userId, List<Long> likedGroupIds) {
+    private List<GroupResponse.MyGroupDTO> findMyGroups(Long userId, List<Long> likedGroupIds) {
         if (userId == null) {
             return Collections.emptyList();
         }
 
-        return findMyGroupList(userId, likedGroupIds, DEFAULT_PAGE_REQUEST);
+        return findMyGroups(userId, likedGroupIds, DEFAULT_PAGE_REQUEST);
     }
 
-    public GroupResponse.FindLocalAndNewGroupListDTO findLocalAndNewGroupList(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable) {
+    public GroupResponse.FindLocalAndNewGroupListDTO findLocalAndNewGroups(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable) {
         List<GroupResponse.LocalGroupDTO> localGroupDTOS = findLocalGroups(userId, province, district, likedGroupIds, pageable);
         List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroups(userId, province, pageable);
 
         return new GroupResponse.FindLocalAndNewGroupListDTO(localGroupDTOS, newGroupDTOS);
     }
 
-    public List<GroupResponse.MyGroupDTO> findMyGroupList(Long userId, List<Long> likedGroupIds, Pageable pageable) {
+    public List<GroupResponse.MyGroupDTO> findMyGroups(Long userId, List<Long> likedGroupIds, Pageable pageable) {
         List<Group> joinedGroups = groupUserRepository.findGroupByUserId(userId, pageable).getContent();
         return joinedGroups.stream()
                 .map(group -> {
@@ -501,6 +495,19 @@ public class GroupService {
         Collections.shuffle(mergedGroups); // 랜덤화
 
         return mergedGroups;
+    }
+
+    // 1. 로그인된 상태고 province가 요청값으로 들어오지 않으면 프로필에서 설정한 province 사용, 2. 로그인도 되지 않으면 디폴트 값 사용
+    private Province resolveProvince(Long userId, Province inputProvince) {
+        if (inputProvince != null) {
+            return inputProvince;
+        }
+
+        if (userId != null) {
+            return userRepository.findProvinceById(userId).orElse(DEFAULT_PROVINCE);
+        }
+
+        return DEFAULT_PROVINCE;
     }
 
     public void checkGroupAndIsMember(Long groupId, Long userId) {
