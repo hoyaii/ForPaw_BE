@@ -28,6 +28,11 @@ public class PostLikeHandler implements LikeHandler {
     private static final Long POST_CACHE_EXPIRATION_MS = 1000L * 60 * 60 * 24 * 90;
 
     @Override
+    public void initCount(Long targetId) {
+
+    }
+
+    @Override
     public void validateBeforeLike(Long postId, Long userId) {
         Long ownerId = findOwnerId(postId);
         validateNotSelfLike(ownerId, userId);
@@ -72,6 +77,11 @@ public class PostLikeHandler implements LikeHandler {
     @Override
     public String buildLockKey(Long postId) {
         return "post:" + postId + ":like:lock";
+    }
+
+    @Override
+    public void clear(Long targetId) {
+
     }
 
     private String buildUserLikedSetKey(Long userId) {

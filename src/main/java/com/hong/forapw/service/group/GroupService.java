@@ -22,7 +22,6 @@ import com.hong.forapw.repository.group.*;
 import com.hong.forapw.repository.post.*;
 import com.hong.forapw.repository.UserRepository;
 import com.hong.forapw.service.BrokerService;
-import com.hong.forapw.service.RedisService;
 import com.hong.forapw.service.like.LikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -57,7 +56,6 @@ public class GroupService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatUserRepository chatUserRepository;
     private final UserRepository userRepository;
-    private final RedisService redisService;
     private final BrokerService brokerService;
     private final LikeService likeService;
     private final MeetingService meetingService;
@@ -66,7 +64,6 @@ public class GroupService {
     private static final Province DEFAULT_PROVINCE = Province.DAEGU;
     private static final String SORT_BY_ID = "id";
     private static final String SORT_BY_PARTICIPANT_NUM = "participantNum";
-    private static final String GROUP_LIKE_NUM_KEY_PREFIX = "group:like:count";
     private static final String ROOM_QUEUE_PREFIX = "room.";
     private static final String CHAT_EXCHANGE = "chat.exchange";
     private static final Pageable DEFAULT_PAGE_REQUEST = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, SORT_BY_ID));
@@ -85,7 +82,7 @@ public class GroupService {
         ChatRoom chatRoom = addChatRoom(group);
         addChatUserToRoom(chatRoom, groupOwner);
 
-        initializeGroupLikeCount(group);
+        likeService.initGroupLikeCount(group.getId());
         configureRabbitMQForChatRoom(chatRoom);
 
         return new GroupResponse.CreateGroupDTO(group.getId());
@@ -394,9 +391,7 @@ public class GroupService {
         commentRepository.hardDeleteParentByGroupId(groupId);
         postImageRepository.deleteByGroupId(groupId);
         postRepository.hardDeleteByGroupId(groupId);
-
-        // 레디스에 저장된 좋아요 수 삭제
-        redisService.removeValue(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString());
+        likeService.clearGroupLikeData(groupId);
 
         // 그룹 채팅방 삭제
         ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId).orElseThrow(
@@ -536,10 +531,6 @@ public class GroupService {
                 .user(groupOwner)
                 .build();
         chatUserRepository.save(chatUser);
-    }
-
-    private void initializeGroupLikeCount(Group group) {
-        redisService.storeValue(GROUP_LIKE_NUM_KEY_PREFIX, group.getId().toString(), "0");
     }
 
     private void validateGroupNameNotDuplicate(String groupName) {

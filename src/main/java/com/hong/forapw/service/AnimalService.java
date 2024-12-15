@@ -77,7 +77,6 @@ public class AnimalService {
     @Value("${openAPI.animal.uri}")
     private String animalURI;
 
-    private static final String ANIMAL_LIKE_NUM_KEY_PREFIX = "animalLikeNum";
     private static final String ANIMAL_SEARCH_KEY_PREFIX = "animalSearch";
     private static final Pageable DEFAULT_PAGE_REQUEST = PageRequest.of(0, 5);
 
@@ -252,9 +251,7 @@ public class AnimalService {
     }
 
     private void removeAnimalLikesFromCache(List<Animal> expiredAnimals) {
-        expiredAnimals.forEach(animal ->
-                redisService.removeValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animal.getId().toString())
-        );
+        expiredAnimals.forEach(animal -> likeService.clearAnimalLikeData(animal.getId()));
     }
 
     private void removeAnimalsFromUserSearchHistory(List<Animal> expiredAnimals) {

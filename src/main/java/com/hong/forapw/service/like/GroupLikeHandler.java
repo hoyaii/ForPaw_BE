@@ -28,6 +28,11 @@ public class GroupLikeHandler implements LikeHandler {
     public static final Long GROUP_CACHE_EXPIRATION_MS = 1000L * 60 * 60 * 24 * 90; // 세 달
 
     @Override
+    public void initCount(Long groupId) {
+        redisService.storeValue(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString(), "0");
+    }
+
+    @Override
     public void validateBeforeLike(Long groupId, Long userId) {
         if (!groupRepository.existsById(groupId)) {
             throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
@@ -77,6 +82,11 @@ public class GroupLikeHandler implements LikeHandler {
     @Override
     public String buildLockKey(Long groupId) {
         return "group:" + groupId + ":like:lock";
+    }
+
+    @Override
+    public void clear(Long groupId) {
+        redisService.removeValue(GROUP_LIKE_NUM_KEY_PREFIX, groupId.toString());
     }
 
     private String buildUserLikedSetKey(Long userId) {

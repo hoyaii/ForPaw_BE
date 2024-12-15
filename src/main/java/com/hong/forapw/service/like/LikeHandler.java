@@ -1,6 +1,8 @@
 package com.hong.forapw.service.like;
 
 public interface LikeHandler {
+    void initCount(Long targetId);
+
     void validateBeforeLike(Long targetId, Long userId);
 
     boolean isAlreadyLiked(Long targetId, Long userId);
@@ -12,5 +14,7 @@ public interface LikeHandler {
     Long getLikeCount(Long targetId);
 
     String buildLockKey(Long targetId);
+
+    void clear(Long targetId);
 }
 

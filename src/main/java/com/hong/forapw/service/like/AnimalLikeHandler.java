@@ -30,6 +30,11 @@ public class AnimalLikeHandler implements LikeHandler {
     private static final long ANIMAL_CACHE_EXPIRATION_MS = 1000L * 60 * 60 * 24 * 90; // 90 days
 
     @Override
+    public void initCount(Long targetId) {
+
+    }
+
+    @Override
     public void validateBeforeLike(Long animalId, Long userId) {
         if (!animalRepository.existsById(animalId)) {
             throw new CustomException(ExceptionCode.ANIMAL_NOT_FOUND);
@@ -79,6 +84,11 @@ public class AnimalLikeHandler implements LikeHandler {
     @Override
     public String buildLockKey(Long animalId) {
         return "animal:" + animalId + ":like:lock";
+    }
+
+    @Override
+    public void clear(Long animalId) {
+        redisService.removeValue(ANIMAL_LIKE_NUM_KEY_PREFIX, animalId.toString());
     }
 
     private String buildUserLikedSetKey(Long userId) {

@@ -28,6 +28,11 @@ public class CommentLikeHandler implements LikeHandler {
     private static final Long POST_CACHE_EXPIRATION_MS = 1000L * 60 * 60 * 24 * 90;
 
     @Override
+    public void initCount(Long targetId) {
+
+    }
+
+    @Override
     public void validateBeforeLike(Long commentId, Long userId) {
         Long ownerId = findOwnerId(commentId);
         validateNotSelfLike(ownerId, userId);
@@ -73,6 +78,11 @@ public class CommentLikeHandler implements LikeHandler {
     @Override
     public String buildLockKey(Long commentId) {
         return "comment:" + commentId + ":like:lock";
+    }
+
+    @Override
+    public void clear(Long commentId) {
+        redisService.removeValue(COMMENT_LIKE_NUM_KEY_PREFIX, commentId.toString());
     }
 
     private String buildUserLikedSetKey(Long userId) {

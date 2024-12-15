@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class LikeService {
 
     private final RedisService redisService;
@@ -23,6 +24,11 @@ public class LikeService {
             LikeTarget.COMMENT, commentLikeHandler
     );
     private final AnimalLikeHandler animalLikeHandler;
+
+    @Transactional
+    public void initGroupLikeCount(Long groupId) {
+        groupLikeHandler.initCount(groupId);
+    }
 
     @Transactional
     public void likePost(Long postId, Long userId) {
@@ -44,22 +50,28 @@ public class LikeService {
         handleLike(groupId, userId, LikeTarget.GROUP);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
+    public void clearAnimalLikeData(Long animalId) {
+        animalLikeHandler.clear(animalId);
+    }
+
+    @Transactional
+    public void clearGroupLikeData(Long groupId) {
+        groupLikeHandler.clear(groupId);
+    }
+
     public Long getPostLikeCount(Long postId) {
         return postLikeHandler.getLikeCount(postId);
     }
 
-    @Transactional(readOnly = true)
     public Long getCommentLikeCount(Long commentId) {
         return commentLikeHandler.getLikeCount(commentId);
     }
 
-    @Transactional(readOnly = true)
     public Long getAnimalLikeCount(Long animalId) {
         return animalLikeHandler.getLikeCount(animalId);
     }
 
-    @Transactional(readOnly = true)
     public Long getGroupLikeCount(Long groupId) {
         return groupLikeHandler.getLikeCount(groupId);
     }
