@@ -88,11 +88,11 @@ public class Meeting extends TimeStamp {
         meetingUser.updateMeeting(this);
     }
 
-    public void incrementParticipantNum() {
+    public void incrementParticipantCount() {
         participantNum++;
     }
 
-    public void decrementParticipantNum() {
+    public void decrementParticipantCount() {
         participantNum--;
     }
 }

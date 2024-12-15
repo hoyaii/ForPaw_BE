@@ -557,7 +557,7 @@ public class UserService {
     private void deleteAllMeetingUserData(Long userId) {
         meetingUserRepository.findByUserIdWithMeeting(userId)
                 .forEach(meetingUser -> {
-                            meetingUser.getMeeting().decrementParticipantNum();
+                            meetingUser.getMeeting().decrementParticipantCount();
                             meetingUserRepository.delete(meetingUser);
                         }
                 );

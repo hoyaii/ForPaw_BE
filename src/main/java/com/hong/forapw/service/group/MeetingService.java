@@ -62,7 +62,7 @@ public class MeetingService {
         return new GroupResponse.CreateMeetingDTO(meeting.getId());
     }
 
-    @Scheduled(cron = "0 0 0 * * *") // 매일 자정에 실행
+    @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void deleteExpiredMeetings() {
         LocalDateTime now = LocalDateTime.now();
@@ -83,7 +83,7 @@ public class MeetingService {
                 () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
         );
 
-        meeting.updateMeeting(requestDTO.name(), requestDTO.meetDate(), requestDTO.location(), requestDTO.cost(), requestDTO.maxNum(), requestDTO.description(), requestDTO.profileURL());
+        updateMeeting(requestDTO, meeting);
     }
 
     @Transactional
@@ -101,21 +101,15 @@ public class MeetingService {
 
     @Transactional
     public void withdrawMeeting(Long groupId, Long meetingId, Long userId) {
-        // 존재하지 않는 모임이면 에러 처리
-        validateMeetingExists(meetingId);
+        Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(
+                () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
+        );
 
-        // 그룹의 맴버가 아니면 에러 처리
         validateIsGroupMember(groupId, userId);
-
-        // 참가중이 맴버가 아니라면 에러 처리
-        if (!meetingUserRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
-            throw new CustomException(ExceptionCode.MEETING_NOT_MEMBER);
-        }
+        validateMeetingParticipation(meetingId, userId);
 
         meetingUserRepository.deleteByMeetingIdAndUserId(meetingId, userId);
-
-        // 참가자 수 감소
-        meetingRepository.decrementParticipantNum(meetingId);
+        meeting.decrementParticipantCount();
     }
 
     @Transactional
@@ -173,7 +167,7 @@ public class MeetingService {
         meeting.addMeetingUser(meetingUser); // cascade에 의해 meetingUser도 자동으로 저장됨
         meetingRepository.save(meeting);
 
-        meeting.incrementParticipantNum();
+        meeting.incrementParticipantCount();
     }
 
     private void validateMeetingNameNotDuplicate(GroupRequest.CreateMeetingDTO requestDTO, Long groupId) {
@@ -198,7 +192,13 @@ public class MeetingService {
         meeting.addMeetingUser(meetingUser);
         meetingUserRepository.save(meetingUser);
 
-        meeting.incrementParticipantNum();
+        meeting.incrementParticipantCount();
+    }
+
+    private void validateMeetingParticipation(Long meetingId, Long userId) {
+        if (!meetingUserRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
+            throw new CustomException(ExceptionCode.MEETING_NOT_MEMBER);
+        }
     }
 
     private void validateNotAlreadyParticipant(Long meetingId, Long userId) {
@@ -211,6 +211,18 @@ public class MeetingService {
         if (!meetingRepository.existsById(meetingId)) {
             throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
         }
+    }
+
+    private void updateMeeting(GroupRequest.UpdateMeetingDTO requestDTO, Meeting meeting) {
+        meeting.updateMeeting(
+                requestDTO.name(),
+                requestDTO.meetDate(),
+                requestDTO.location(),
+                requestDTO.cost(),
+                requestDTO.maxNum(),
+                requestDTO.description(),
+                requestDTO.profileURL()
+        );
     }
 
     private void validateIsGroupMember(Long groupId, Long userId) {
