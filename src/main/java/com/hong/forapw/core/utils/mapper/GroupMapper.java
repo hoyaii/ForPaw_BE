@@ -117,6 +117,12 @@ public class GroupMapper {
                 groupUser.getCreatedDate());
     }
 
+    public static List<GroupResponse.ApplicantDTO> toApplicantDTOS(List<GroupUser> applicants) {
+        return applicants.stream()
+                .map(GroupMapper::toApplicantDTO)
+                .toList();
+    }
+
     public static GroupResponse.RecommendGroupDTO toRecommendGroupDTO(Group group, Long likeNum, boolean isLike) {
         return new GroupResponse.RecommendGroupDTO(
                 group.getId(),

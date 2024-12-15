@@ -266,18 +266,14 @@ public class GroupService {
         meetingRepository.decrementParticipantCountForUserMeetings(groupId, memberId);
     }
 
-    @Transactional
-    public GroupResponse.FindApplicantListDTO findApplicantList(Long adminId, Long groupId) {
-        // 존재하지 않는 그룹이면 에러
-        checkGroupExist(groupId);
+    public GroupResponse.FindApplicantListDTO findApplicants(Long adminId, Long groupId) {
+        validateGroupExists(groupId);
 
         User groupAdmin = userRepository.getReferenceById(adminId);
         validateGroupAdminAuthorization(groupAdmin, groupId);
 
         List<GroupUser> applicants = groupUserRepository.findByGroupRole(groupId, GroupRole.TEMP);
-        List<GroupResponse.ApplicantDTO> applicantDTOS = applicants.stream()
-                .map(GroupMapper::toApplicantDTO)
-                .toList();
+        List<GroupResponse.ApplicantDTO> applicantDTOS = toApplicantDTOS(applicants);
 
         return new GroupResponse.FindApplicantListDTO(applicantDTOS);
     }
@@ -328,7 +324,7 @@ public class GroupService {
     @Transactional
     public void rejectJoin(Long userId, Long applicantId, Long groupId) {
         // 존재하지 않는 그룹이면 에러
-        checkGroupExist(groupId);
+        validateGroupExists(groupId);
 
         User groupAdmin = userRepository.getReferenceById(userId);
         validateGroupAdminAuthorization(groupAdmin, groupId);
@@ -351,7 +347,7 @@ public class GroupService {
     @Transactional
     public GroupResponse.CreateNoticeDTO createNotice(GroupRequest.CreateNoticeDTO requestDTO, Long userId, Long groupId) {
         // 존재하지 않는 그룹이면 에러
-        checkGroupExist(groupId);
+        validateGroupExists(groupId);
 
         User groupAdmin = userRepository.getReferenceById(userId);
         validateGroupAdminAuthorization(groupAdmin, groupId);
@@ -386,7 +382,7 @@ public class GroupService {
     @Transactional
     public void deleteGroup(Long groupId, Long userId) {
         // 존재하지 않는 그룹이면 에러
-        checkGroupExist(groupId);
+        validateGroupExists(groupId);
 
         // 권한체크
         checkGroupCreatorAuthority(groupId, userId);
@@ -423,7 +419,7 @@ public class GroupService {
     @Transactional
     public void updateUserRole(GroupRequest.UpdateUserRoleDTO requestDTO, Long groupId, Long creatorId) {
         // 존재하지 않는 그룹이면 에러
-        checkGroupExist(groupId);
+        validateGroupExists(groupId);
 
         // 가입되지 않은 회원이면 에러
         if (!groupUserRepository.existsByGroupIdAndUserId(groupId, requestDTO.userId())) {
@@ -506,7 +502,7 @@ public class GroupService {
 
     public void checkGroupAndIsMember(Long groupId, Long userId) {
         // 그룹 존재 여부 체크
-        checkGroupExist(groupId);
+        validateGroupExists(groupId);
 
         // 맴버인지 체크
         validateIsGroupMember(groupId, userId);
@@ -624,7 +620,7 @@ public class GroupService {
         }
     }
 
-    private void checkGroupExist(Long groupId) {
+    private void validateGroupExists(Long groupId) {
         if (!groupRepository.existsById(groupId)) {
             throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
         }
