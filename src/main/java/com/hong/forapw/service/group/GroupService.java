@@ -91,8 +91,10 @@ public class GroupService {
         return new GroupResponse.CreateGroupDTO(group.getId());
     }
 
+    // 클라이언트단에서 수정할 때 사용하는 API
     public GroupResponse.FindGroupByIdDTO findGroupById(Long groupId, Long userId) {
-        validateAdminAuthorization(groupId, userId);
+        User groupAdmin = userRepository.getReferenceById(userId);
+        validateGroupAdminAuthorization(groupAdmin, groupId);
 
         Group group = groupRepository.findById(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
@@ -103,7 +105,8 @@ public class GroupService {
 
     @Transactional
     public void updateGroup(GroupRequest.UpdateGroupDTO requestDTO, Long groupId, Long userId) {
-        validateAdminAuthorization(groupId, userId);
+        User groupAdmin = userRepository.getReferenceById(userId);
+        validateGroupAdminAuthorization(groupAdmin, groupId);
 
         Group group = groupRepository.findById(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
@@ -184,12 +187,9 @@ public class GroupService {
 
     public List<GroupResponse.MyGroupDTO> findMyGroups(Long userId, List<Long> likedGroupIds, Pageable pageable) {
         List<Group> joinedGroups = groupUserRepository.findGroupByUserId(userId, pageable).getContent();
+
         return joinedGroups.stream()
-                .map(group -> {
-                    Long likeNum = likeService.getGroupLikeCount(group.getId());
-                    boolean isLikedGroup = likedGroupIds.contains(group.getId());
-                    return toMyGroupDTO(group, likeNum, isLikedGroup);
-                })
+                .map(group -> toMyGroupDTO(group, likeService.getGroupLikeCount(group.getId()), likedGroupIds.contains(group.getId())))
                 .collect(Collectors.toList());
     }
 
@@ -255,30 +255,24 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
 
-        // 권한 체크
-        validateAdminAuthorization(groupId, adminId);
+        User groupAdmin = userRepository.getReferenceById(adminId);
+        validateGroupAdminAuthorization(groupAdmin, groupId);
 
-        // 그룹 참가자 수 감소
-        group.decrementParticipantNum();
         groupUserRepository.deleteByGroupIdAndUserId(groupId, memberId);
-
-        // 그룹 채팅방에서 탈퇴
         chatUserRepository.deleteByGroupIdAndUserId(groupId, memberId);
-
-        // 맴버가 가입한 정기모임에서도 탈퇴
         meetingUserRepository.deleteByGroupIdAndUserId(groupId, memberId);
 
-        // 참가자 수 감소
+        group.decrementParticipantNum();
         meetingRepository.decrementParticipantCountForUserMeetings(groupId, memberId);
     }
 
     @Transactional
-    public GroupResponse.FindApplicantListDTO findApplicantList(Long managerId, Long groupId) {
+    public GroupResponse.FindApplicantListDTO findApplicantList(Long adminId, Long groupId) {
         // 존재하지 않는 그룹이면 에러
         checkGroupExist(groupId);
 
-        // 권한 체크
-        validateAdminAuthorization(groupId, managerId);
+        User groupAdmin = userRepository.getReferenceById(adminId);
+        validateGroupAdminAuthorization(groupAdmin, groupId);
 
         List<GroupUser> applicants = groupUserRepository.findByGroupRole(groupId, GroupRole.TEMP);
         List<GroupResponse.ApplicantDTO> applicantDTOS = applicants.stream()
@@ -289,14 +283,14 @@ public class GroupService {
     }
 
     @Transactional
-    public void approveJoin(Long managerId, Long applicantId, Long groupId) {
+    public void approveJoin(Long adminId, Long applicantId, Long groupId) {
         // 존재하지 않는 그룹이면 에러
         Group group = groupRepository.findById(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
 
-        // 권한 체크
-        validateAdminAuthorization(groupId, managerId);
+        User groupAdmin = userRepository.getReferenceById(adminId);
+        validateGroupAdminAuthorization(groupAdmin, groupId);
 
         // 신청한 적이 없거나 이미 가입했는지 체크
         GroupUser groupUser = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId).orElseThrow(
@@ -336,8 +330,8 @@ public class GroupService {
         // 존재하지 않는 그룹이면 에러
         checkGroupExist(groupId);
 
-        // 권한 체크
-        validateAdminAuthorization(groupId, userId);
+        User groupAdmin = userRepository.getReferenceById(userId);
+        validateGroupAdminAuthorization(groupAdmin, groupId);
 
         // 신청한 적이 없거나 이미 가입했는지 체크
         GroupUser groupUser = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId).orElseThrow(
@@ -359,8 +353,8 @@ public class GroupService {
         // 존재하지 않는 그룹이면 에러
         checkGroupExist(groupId);
 
-        // 권한 체크
-        validateAdminAuthorization(groupId, userId);
+        User groupAdmin = userRepository.getReferenceById(userId);
+        validateGroupAdminAuthorization(groupAdmin, groupId);
 
         Group group = groupRepository.getReferenceById(groupId);
         User noticer = userRepository.getReferenceById(userId);
@@ -602,18 +596,6 @@ public class GroupService {
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(groupUser -> groupRoles.contains(groupUser.getGroupRole()))
                 .orElseThrow(() -> new CustomException(ExceptionCode.GROUP_NOT_MEMBER));
-    }
-
-    private void validateAdminAuthorization(Long groupId, Long userId) {
-        // 서비스 운영자는 접근 가능
-        if (checkServiceAdminAuthority(userId)) {
-            return;
-        }
-
-        // ADMIN, CREATOR만 허용
-        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
-                .filter(groupUser -> EnumSet.of(GroupRole.ADMIN, GroupRole.CREATOR).contains(groupUser.getGroupRole()))
-                .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
     }
 
     private void checkGroupCreatorAuthority(Long groupId, Long userId) {
