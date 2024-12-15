@@ -47,6 +47,10 @@ public class GroupUser extends TimeStamp {
         this.groupRole = groupRole;
     }
 
+    public boolean isMember() {
+        return groupRole.equals(GroupRole.USER) || groupRole.equals(GroupRole.ADMIN) || groupRole.equals(GroupRole.CREATOR);
+    }
+
     public boolean isCreator() {
         return groupRole == GroupRole.CREATOR;
     }

@@ -1,5 +1,7 @@
 package com.hong.forapw.repository.group;
 
+import com.hong.forapw.core.errors.CustomException;
+import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.domain.group.Group;
 import com.hong.forapw.domain.District;
 import com.hong.forapw.domain.group.GroupRole;
@@ -15,6 +17,10 @@ import java.util.List;
 
 @Repository
 public interface GroupRepository extends JpaRepository<Group, Long> {
+
+    default Group getByIdOrThrow(Long id) {
+        return findById(id).orElseThrow(() -> new CustomException(ExceptionCode.GROUP_NOT_FOUND));
+    }
 
     @Query("SELECT g FROM Group g WHERE g.province = :province AND g.district = :district " +
             "AND (:userId IS NULL OR g.id NOT IN " +

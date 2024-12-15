@@ -271,7 +271,6 @@ public class GroupService {
 
     @Transactional
     public void approveJoin(Long adminId, Long applicantId, Long groupId) {
-        // 존재하지 않는 그룹이면 에러
         Group group = groupRepository.findById(groupId).orElseThrow(
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
@@ -279,37 +278,12 @@ public class GroupService {
         User groupAdmin = userRepository.getReferenceById(adminId);
         validateGroupAdminAuthorization(groupAdmin, groupId);
 
-        // 신청한 적이 없거나 이미 가입했는지 체크
-        GroupUser groupUser = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId).orElseThrow(
-                () -> new CustomException(ExceptionCode.GROUP_NOT_APPLY)
-        );
+        GroupUser groupUser = findGroupUser(groupId, applicantId);
+        validateNotAlreadyMember(groupUser);
 
-        checkAlreadyJoin(groupUser);
-
-        // '임시' => '유저'로 역할 변경
-        groupUser.updateRole(GroupRole.USER);
-
-        // 그룹 참가자 수 증가
-        group.incrementParticipantNum();
-
-        // 알람 생성
-        String content = "가입이 승인 되었습니다!";
-        String redirectURL = "/volunteer/" + groupId;
-        createAlarm(applicantId, content, redirectURL, AlarmType.JOIN);
-
-        // 신청자는 그룹 채팅방에 참여됨
-        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId).orElseThrow(
-                () -> new CustomException(ExceptionCode.CHAT_ROOM_NOT_FOUND)
-        );
-
-        User applicant = userRepository.getReferenceById(applicantId);
-
-        ChatUser chatUser = ChatUser.builder()
-                .user(applicant)
-                .chatRoom(chatRoom)
-                .build();
-
-        chatUserRepository.save(chatUser);
+        approveMembership(groupUser, group);
+        notifyApplicant(applicantId, groupId);
+        addApplicantToChatRoom(applicantId, groupId);
     }
 
     @Transactional
@@ -325,7 +299,7 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.GROUP_NOT_APPLY)
         );
 
-        checkAlreadyJoin(groupUser);
+        validateNotAlreadyMember(groupUser);
 
         groupUserRepository.delete(groupUser);
 
@@ -599,8 +573,8 @@ public class GroupService {
         return role.equals(UserRole.ADMIN) || role.equals(UserRole.SUPER);
     }
 
-    private void checkAlreadyJoin(GroupUser groupUser) {
-        if (groupUser.getGroupRole().equals(GroupRole.USER) || groupUser.getGroupRole().equals(GroupRole.ADMIN) || groupUser.getGroupRole().equals(GroupRole.CREATOR)) {
+    private void validateNotAlreadyMember(GroupUser groupUser) {
+        if (groupUser.isMember()) {
             throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
         }
     }
@@ -650,6 +624,37 @@ public class GroupService {
 
         brokerService.bindDirectExchangeToQueue(CHAT_EXCHANGE, queueName);
         brokerService.registerChatListener(listenerId, queueName);
+    }
+
+    private GroupUser findGroupUser(Long groupId, Long userId) {
+        return groupUserRepository.findByGroupIdAndUserId(groupId, userId).orElseThrow(
+                () -> new CustomException(ExceptionCode.GROUP_NOT_APPLY)
+        );
+    }
+
+    private void approveMembership(GroupUser groupUser, Group group) {
+        groupUser.updateRole(GroupRole.USER);
+        group.incrementParticipantNum();
+    }
+
+    private void notifyApplicant(Long applicantId, Long groupId) {
+        String content = "가입이 승인 되었습니다!";
+        String redirectURL = "/volunteer/" + groupId;
+        createAlarm(applicantId, content, redirectURL, AlarmType.JOIN);
+    }
+
+    private void addApplicantToChatRoom(Long applicantId, Long groupId) {
+        ChatRoom chatRoom = chatRoomRepository.findByGroupId(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.CHAT_ROOM_NOT_FOUND)
+        );
+
+        User applicant = userRepository.getReferenceById(applicantId);
+        ChatUser chatUser = ChatUser.builder()
+                .user(applicant)
+                .chatRoom(chatRoom)
+                .build();
+
+        chatUserRepository.save(chatUser);
     }
 
     private void createAlarm(Long userId, String content, String redirectURL, AlarmType alarmType) {
