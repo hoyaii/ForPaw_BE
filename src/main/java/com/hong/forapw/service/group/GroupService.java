@@ -127,36 +127,12 @@ public class GroupService {
     }
 
     public GroupResponse.FindAllGroupListDTO findGroupList(Long userId) {
-        Province province = DEFAULT_PROVINCE;
-        District district = DEFAULT_DISTRICT;
+        Province province = determineProvince(userId);
 
-        // 로그인이 되어 있어서 userId를 받는다면 => 가입 시 기재한 주소를 바탕으로 그룹 조회
-        if (userId != null) {
-            Optional<User> userOptional = userRepository.findNonWithdrawnById(userId);
-            if (userOptional.isPresent()) {
-                User user = userOptional.get();
-                province = user.getProvince();
-                district = user.getDistrict();
-            }
-        }
-
-        // 이 API의 페이지네이션은 고정적으로 0페이지/5개만 보내줄 것이다.
-        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, SORT_BY_ID));
-
-        // 좋아요한 그룹 리스트 (로그인 하지 않았으면 빈 리스트)
-        List<Long> likedGroupIdList = userId != null ? favoriteGroupRepository.findGroupIdByUserId(userId) : Collections.emptyList();
-
-        // 추천 그룹 찾기
+        List<Long> likedGroupIdList = findLikedGroupIds(userId);
         List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = findRecommendGroupList(userId, province, likedGroupIdList);
-
-        // 지역 그룹 찾기
-        // List<GroupResponse.LocalGroupDTO> localGroupDTOS = findLocalGroupList(userId, province, district, likedGroupIdList, pageable);
-
-        // 새 그룹 찾기
-        List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroupList(userId, province, pageable);
-
-        // 내 그룹 찾기, 만약 로그인 되어 있지 않다면, 빈 리스트로 처리한다.
-        List<GroupResponse.MyGroupDTO> myGroupDTOS = userId != null ? findMyGroupList(userId, likedGroupIdList, pageable) : Collections.emptyList();
+        List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroupList(userId, province, DEFAULT_PAGE_REQUEST);
+        List<GroupResponse.MyGroupDTO> myGroupDTOS = findMyGroupList(userId, likedGroupIdList);
 
         return new GroupResponse.FindAllGroupListDTO(recommendGroupDTOS, newGroupDTOS, myGroupDTOS);
     }
@@ -184,6 +160,14 @@ public class GroupService {
         return newGroupPage.getContent().stream()
                 .map(GroupMapper::toNewGroupDTO)
                 .collect(Collectors.toList());
+    }
+
+    private List<GroupResponse.MyGroupDTO> findMyGroupList(Long userId, List<Long> likedGroupIds) {
+        if (userId == null) {
+            return Collections.emptyList();
+        }
+
+        return findMyGroupList(userId, likedGroupIds, DEFAULT_PAGE_REQUEST);
     }
 
     public GroupResponse.FindLocalAndNewGroupListDTO findLocalAndNewGroupList(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable) {
@@ -480,6 +464,24 @@ public class GroupService {
         }
 
         groupUserRepository.updateRole(requestDTO.role(), groupId, requestDTO.userId());
+    }
+
+    private Province determineProvince(Long userId) {
+        if (userId == null) {
+            return DEFAULT_PROVINCE;
+        }
+
+        return userRepository.findNonWithdrawnById(userId)
+                .map(User::getProvince)
+                .orElse(DEFAULT_PROVINCE);
+    }
+
+    private List<Long> findLikedGroupIds(Long userId) {
+        if (userId == null) {
+            return Collections.emptyList();
+        }
+
+        return favoriteGroupRepository.findGroupIdByUserId(userId);
     }
 
     public List<GroupResponse.RecommendGroupDTO> findRecommendGroupList(Long userId, Province province, List<Long> likedGroupIds) {
