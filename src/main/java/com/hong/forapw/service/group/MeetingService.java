@@ -76,10 +76,7 @@ public class MeetingService {
 
     @Transactional
     public void updateMeeting(GroupRequest.UpdateMeetingDTO requestDTO, Long groupId, Long meetingId, Long userId) {
-        // 존재하지 않는 모임이면 에러 처리
         validateMeetingExists(meetingId);
-
-        // 권한 체크(메니저급만 수정 가능)
         validateGroupAdminAuthorization(groupId, userId);
 
         Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(
@@ -91,31 +88,15 @@ public class MeetingService {
 
     @Transactional
     public void joinMeeting(Long groupId, Long meetingId, Long userId) {
-        // 존재하지 않는 모임이면 에러 처리
         Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(
                 () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
         );
 
-        // 그룹의 맴버가 아니면 에러 처리
-        validateIsMember(groupId, userId);
+        validateIsGroupMember(groupId, userId);
+        validateNotAlreadyParticipant(meetingId, userId);
 
-        // 이미 참가중인 모임이면 에러 처리
-        if (meetingUserRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
-            throw new CustomException(ExceptionCode.MEETING_ALREADY_JOIN);
-        }
-
-        // 기본 프로필은 나중에 주소를 설정해야 함
         User joiner = userRepository.getReferenceById(userId);
-        MeetingUser meetingUser = MeetingUser.builder()
-                .user(joiner)
-                .build();
-
-        // 양방향 관계 설정 후 meeting 저장
-        meeting.addMeetingUser(meetingUser);
-        meetingUserRepository.save(meetingUser);
-
-        // 미팅 참가자 수 증가
-        meeting.incrementParticipantNum();
+        addParticipantToMeeting(joiner, meeting);
     }
 
     @Transactional
@@ -124,7 +105,7 @@ public class MeetingService {
         validateMeetingExists(meetingId);
 
         // 그룹의 맴버가 아니면 에러 처리
-        validateIsMember(groupId, userId);
+        validateIsGroupMember(groupId, userId);
 
         // 참가중이 맴버가 아니라면 에러 처리
         if (!meetingUserRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
@@ -154,7 +135,7 @@ public class MeetingService {
         validateGroupExists(groupId);
 
         // 맴버인지 체크
-        validateIsMember(groupId, userId);
+        validateIsGroupMember(groupId, userId);
 
         Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(
                 () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
@@ -210,13 +191,29 @@ public class MeetingService {
         }
     }
 
+    private void addParticipantToMeeting(User joiner, Meeting meeting) {
+        MeetingUser meetingUser = MeetingUser.builder()
+                .user(joiner)
+                .build();
+        meeting.addMeetingUser(meetingUser);
+        meetingUserRepository.save(meetingUser);
+
+        meeting.incrementParticipantNum();
+    }
+
+    private void validateNotAlreadyParticipant(Long meetingId, Long userId) {
+        if (meetingUserRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
+            throw new CustomException(ExceptionCode.MEETING_ALREADY_JOIN);
+        }
+    }
+
     private void validateMeetingExists(Long meetingId) {
         if (!meetingRepository.existsById(meetingId)) {
             throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
         }
     }
 
-    private void validateIsMember(Long groupId, Long userId) {
+    private void validateIsGroupMember(Long groupId, Long userId) {
         Set<GroupRole> roles = EnumSet.of(GroupRole.USER, GroupRole.ADMIN, GroupRole.CREATOR);
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
                 .filter(groupUser -> roles.contains(groupUser.getGroupRole()))
