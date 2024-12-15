@@ -133,7 +133,7 @@ public class GroupService {
 
         List<Long> likedGroupIdList = findLikedGroupIds(userId);
         List<GroupResponse.RecommendGroupDTO> recommendGroupDTOS = findRecommendGroups(userId, province, likedGroupIdList);
-        List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroupList(userId, province, DEFAULT_PAGE_REQUEST);
+        List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroups(userId, province, DEFAULT_PAGE_REQUEST);
         List<GroupResponse.MyGroupDTO> myGroupDTOS = findMyGroupList(userId, likedGroupIdList);
 
         return new GroupResponse.FindAllGroupListDTO(recommendGroupDTOS, newGroupDTOS, myGroupDTOS);
@@ -151,7 +151,7 @@ public class GroupService {
                 .toList();
     }
 
-    public List<GroupResponse.LocalGroupDTO> findLocalGroupList(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable) {
+    public List<GroupResponse.LocalGroupDTO> findLocalGroups(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable) {
         Page<Group> localGroupPage = groupRepository.findByProvinceAndDistrictWithoutMyGroup(province, district, userId, GroupRole.TEMP, pageable);
 
         return localGroupPage.getContent().stream()
@@ -159,7 +159,7 @@ public class GroupService {
                 .collect(Collectors.toList());
     }
 
-    public List<GroupResponse.NewGroupDTO> findNewGroupList(Long userId, Province province, Pageable pageable) {
+    public List<GroupResponse.NewGroupDTO> findNewGroups(Long userId, Province province, Pageable pageable) {
         // 1. 로그인된 상태고 province가 요청값으로 들어오지 않으면 프로필에서 설정한 province 사용, 2. 로그인도 되지 않으면 디폴트 값 사용
         province = Optional.ofNullable(province)
                 .or(() -> Optional.ofNullable(userId)
@@ -182,8 +182,8 @@ public class GroupService {
     }
 
     public GroupResponse.FindLocalAndNewGroupListDTO findLocalAndNewGroupList(Long userId, Province province, District district, List<Long> likedGroupIds, Pageable pageable) {
-        List<GroupResponse.LocalGroupDTO> localGroupDTOS = findLocalGroupList(userId, province, district, likedGroupIds, pageable);
-        List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroupList(userId, province, pageable);
+        List<GroupResponse.LocalGroupDTO> localGroupDTOS = findLocalGroups(userId, province, district, likedGroupIds, pageable);
+        List<GroupResponse.NewGroupDTO> newGroupDTOS = findNewGroups(userId, province, pageable);
 
         return new GroupResponse.FindLocalAndNewGroupListDTO(localGroupDTOS, newGroupDTOS);
     }
@@ -232,23 +232,11 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
 
-        // 그룹 수용 인원 초과
-        if (group.getMaxNum().equals(group.getParticipantNum())) {
-            throw new CustomException(ExceptionCode.GROUP_FULL);
-        }
-
-        // 이미 가입했거나 신청한 회원이면 에러 처리
-        checkAlreadyMemberOrApply(groupId, userId);
+        validateGroupCapacity(group);
+        validateUserNotAlreadyMemberOrApplicant(groupId, userId);
 
         User applicant = userRepository.getReferenceById(userId);
-        GroupUser groupUser = GroupUser.builder()
-                .groupRole(GroupRole.TEMP)
-                .user(applicant)
-                .group(group)
-                .greeting(requestDTO.greeting())
-                .build();
-
-        groupUserRepository.save(groupUser);
+        addTemporaryGroupMember(applicant, group, requestDTO.greeting());
     }
 
     @Transactional
@@ -257,21 +245,14 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
 
-        // 가입한 회원이 아니면 에러
-        validateIsMember(groupId, userId);
+        validateIsGroupMember(groupId, userId);
 
-        // 그룹 참가자 수 감소
-        group.decrementParticipantNum();
         groupUserRepository.deleteByGroupIdAndUserId(groupId, userId);
-
-        // 그룹 채팅방에서 탈퇴
         chatUserRepository.deleteByGroupIdAndUserId(groupId, userId);
-
-        // 맴버가 가입한 정기모임에서도 탈퇴
         meetingUserRepository.deleteByGroupIdAndUserId(groupId, userId);
 
-        // 참가자 수 감소
-        meetingRepository.decrementParticipantNum(groupId, userId);
+        group.decrementParticipantNum();
+        meetingRepository.decrementParticipantCountForUserMeetings(groupId, userId);
     }
 
     @Transactional
@@ -294,7 +275,7 @@ public class GroupService {
         meetingUserRepository.deleteByGroupIdAndUserId(groupId, memberId);
 
         // 참가자 수 감소
-        meetingRepository.decrementParticipantNum(groupId, memberId);
+        meetingRepository.decrementParticipantCountForUserMeetings(groupId, memberId);
     }
 
     @Transactional
@@ -527,7 +508,7 @@ public class GroupService {
         checkGroupExist(groupId);
 
         // 맴버인지 체크
-        validateIsMember(groupId, userId);
+        validateIsGroupMember(groupId, userId);
     }
 
     public List<Long> getLikedGroupList(Long userId) {
@@ -609,18 +590,11 @@ public class GroupService {
                 .toList();
     }
 
-    private void validateIsMember(Long groupId, Long userId) {
-        Set<GroupRole> roles = EnumSet.of(GroupRole.USER, GroupRole.ADMIN, GroupRole.CREATOR);
+    private void validateIsGroupMember(Long groupId, Long userId) {
+        Set<GroupRole> groupRoles = EnumSet.of(GroupRole.USER, GroupRole.ADMIN, GroupRole.CREATOR);
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
-                .filter(groupUser -> roles.contains(groupUser.getGroupRole()))
+                .filter(groupUser -> groupRoles.contains(groupUser.getGroupRole()))
                 .orElseThrow(() -> new CustomException(ExceptionCode.GROUP_NOT_MEMBER));
-    }
-
-    private void checkAlreadyMemberOrApply(Long groupId, Long userId) {
-        Optional<GroupUser> groupUserOP = groupUserRepository.findByGroupIdAndUserId(groupId, userId);
-        if (groupUserOP.isPresent()) {
-            throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
-        }
     }
 
     private void validateAdminAuthorization(Long groupId, Long userId) {
@@ -675,6 +649,29 @@ public class GroupService {
                 .filter(groupUser -> !groupUser.getGroupRole().equals(GroupRole.TEMP)) // 가입 승인 상태가 아니면 제외
                 .map(GroupMapper::toMemberDTO)
                 .collect(Collectors.toList());
+    }
+
+    private void validateGroupCapacity(Group group) {
+        if (group.getMaxNum().equals(group.getParticipantNum())) {
+            throw new CustomException(ExceptionCode.GROUP_FULL);
+        }
+    }
+
+    private void validateUserNotAlreadyMemberOrApplicant(Long groupId, Long userId) {
+        Optional<GroupUser> groupUserOP = groupUserRepository.findByGroupIdAndUserId(groupId, userId);
+        if (groupUserOP.isPresent()) {
+            throw new CustomException(ExceptionCode.GROUP_ALREADY_JOIN);
+        }
+    }
+
+    private void addTemporaryGroupMember(User applicant, Group group, String greeting) {
+        GroupUser groupUser = GroupUser.builder()
+                .groupRole(GroupRole.TEMP)
+                .user(applicant)
+                .group(group)
+                .greeting(greeting)
+                .build();
+        groupUserRepository.save(groupUser);
     }
 
     private void configureRabbitMQForChatRoom(ChatRoom chatRoom) {
