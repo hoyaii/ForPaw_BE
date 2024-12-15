@@ -45,43 +45,19 @@ public class MeetingService {
 
     @Transactional
     public GroupResponse.CreateMeetingDTO createMeeting(GroupRequest.CreateMeetingDTO requestDTO, Long groupId, Long userId) {
-        // 존재하지 않는 그룹이면 에러
-        checkGroupExist(groupId);
+        validateGroupExists(groupId);
+        validateMeetingNameNotDuplicate(requestDTO, groupId);
 
-        // 이름 중복 체크
-        if (meetingRepository.existsByNameAndGroupId(requestDTO.name(), groupId)) {
-            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
-        }
-
-        // 권한 체크 (메니저급만 생성 가능)
         User creator = userRepository.findNonWithdrawnById(userId).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
         );
-        validateAdminAuthorization(groupId, creator.getId());
+        validateGroupAdminAuthorization(creator, groupId);
 
         Group group = groupRepository.getReferenceById(groupId);
         Meeting meeting = buildMeeting(requestDTO, group, creator);
+        addMeetingCreatorToParticipants(creator, meeting);
 
-        // 주최자를 맴버로 저장
-        MeetingUser meetingUser = MeetingUser.builder()
-                .user(creator)
-                .build();
-
-        // 양방향 관계 설정 후 meeting 저장 (cascade에 의해 meetingUser도 자동으로 저장됨)
-        meeting.addMeetingUser(meetingUser);
-        meetingRepository.save(meeting);
-
-        // 미팅 참여자 수 증가 (미팅 생성자 참여)
-        meetingRepository.incrementParticipantNum(meeting.getId());
-
-        // 알람 생성
-        List<User> users = groupUserRepository.findUserByGroupIdWithoutMe(groupId, userId);
-
-        for (User user : users) {
-            String content = "새로운 정기 모임: " + requestDTO.name();
-            String redirectURL = "/volunteer/" + groupId;
-            createAlarm(user.getId(), content, redirectURL, AlarmType.NEW_MEETING);
-        }
+        notifyGroupMembersAboutNewMeeting(groupId, userId, requestDTO.name());
 
         return new GroupResponse.CreateMeetingDTO(meeting.getId());
     }
@@ -101,10 +77,10 @@ public class MeetingService {
     @Transactional
     public void updateMeeting(GroupRequest.UpdateMeetingDTO requestDTO, Long groupId, Long meetingId, Long userId) {
         // 존재하지 않는 모임이면 에러 처리
-        checkMeetingExist(meetingId);
+        validateMeetingExists(meetingId);
 
         // 권한 체크(메니저급만 수정 가능)
-        validateAdminAuthorization(groupId, userId);
+        validateGroupAdminAuthorization(groupId, userId);
 
         Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(
                 () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
@@ -139,13 +115,13 @@ public class MeetingService {
         meetingUserRepository.save(meetingUser);
 
         // 미팅 참가자 수 증가
-        meetingRepository.incrementParticipantNum(meetingId);
+        meeting.incrementParticipantNum();
     }
 
     @Transactional
     public void withdrawMeeting(Long groupId, Long meetingId, Long userId) {
         // 존재하지 않는 모임이면 에러 처리
-        checkMeetingExist(meetingId);
+        validateMeetingExists(meetingId);
 
         // 그룹의 맴버가 아니면 에러 처리
         validateIsMember(groupId, userId);
@@ -164,10 +140,10 @@ public class MeetingService {
     @Transactional
     public void deleteMeeting(Long groupId, Long meetingId, Long userId) {
         // 존재하지 않는 모임이면 에러 처리
-        checkMeetingExist(meetingId);
+        validateMeetingExists(meetingId);
 
         // 권한 체크 (메니저급만 삭제 가능)
-        validateAdminAuthorization(groupId, userId);
+        validateGroupAdminAuthorization(groupId, userId);
 
         meetingUserRepository.deleteAllByMeetingId(meetingId);
         meetingRepository.deleteById(meetingId);
@@ -175,7 +151,7 @@ public class MeetingService {
 
     public GroupResponse.FindMeetingByIdDTO findMeetingById(Long meetingId, Long groupId, Long userId) {
         // 그룹 존재 여부 체크
-        checkGroupExist(groupId);
+        validateGroupExists(groupId);
 
         // 맴버인지 체크
         validateIsMember(groupId, userId);
@@ -199,7 +175,7 @@ public class MeetingService {
         );
 
         // 관리자만 멤버들을 볼 수 있음
-        validateAdminAuthorization(groupId, userId);
+        validateGroupAdminAuthorization(groupId, userId);
 
         List<GroupResponse.MemberDetailDTO> memberDetailDTOS = groupUserRepository.findByGroupIdWithGroup(groupId).stream()
                 .filter(groupUser -> !groupUser.getGroupRole().equals(GroupRole.TEMP))
@@ -209,7 +185,32 @@ public class MeetingService {
         return new GroupResponse.FindGroupMemberListDTO(group.getParticipantNum(), group.getMaxNum(), memberDetailDTOS);
     }
 
-    private void checkMeetingExist(Long meetingId) {
+    private void addMeetingCreatorToParticipants(User creator, Meeting meeting) {
+        MeetingUser meetingUser = MeetingUser.builder()
+                .user(creator)
+                .build();
+        meeting.addMeetingUser(meetingUser); // cascade에 의해 meetingUser도 자동으로 저장됨
+        meetingRepository.save(meeting);
+
+        meeting.incrementParticipantNum();
+    }
+
+    private void validateMeetingNameNotDuplicate(GroupRequest.CreateMeetingDTO requestDTO, Long groupId) {
+        if (meetingRepository.existsByNameAndGroupId(requestDTO.name(), groupId)) {
+            throw new CustomException(ExceptionCode.GROUP_NAME_EXIST);
+        }
+    }
+
+    private void notifyGroupMembersAboutNewMeeting(Long groupId, Long creatorId, String meetingName) {
+        List<User> groupMembers = groupUserRepository.findUserByGroupIdWithoutMe(groupId, creatorId);
+        for (User member : groupMembers) {
+            String content = "새로운 정기 모임: " + meetingName;
+            String redirectURL = "/volunteer/" + groupId;
+            createAlarm(member.getId(), content, redirectURL, AlarmType.NEW_MEETING);
+        }
+    }
+
+    private void validateMeetingExists(Long meetingId) {
         if (!meetingRepository.existsById(meetingId)) {
             throw new CustomException(ExceptionCode.MEETING_NOT_FOUND);
         }
@@ -222,7 +223,17 @@ public class MeetingService {
                 .orElseThrow(() -> new CustomException(ExceptionCode.GROUP_NOT_MEMBER));
     }
 
-    private void validateAdminAuthorization(Long groupId, Long userId) {
+    private void validateGroupAdminAuthorization(User user, Long groupId) {
+        if (user.isAdmin()) {
+            return;
+        }
+
+        groupUserRepository.findByGroupIdAndUserId(groupId, user.getId())
+                .filter(groupUser -> EnumSet.of(GroupRole.ADMIN, GroupRole.CREATOR).contains(groupUser.getGroupRole()))
+                .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
+    }
+
+    private void validateGroupAdminAuthorization(Long groupId, Long userId) {
         // 서비스 운영자는 접근 가능
         if (checkServiceAdminAuthority(userId)) {
             return;
@@ -253,7 +264,7 @@ public class MeetingService {
         brokerService.sendAlarmToUser(userId, alarmDTO);
     }
 
-    private void checkGroupExist(Long groupId) {
+    private void validateGroupExists(Long groupId) {
         if (!groupRepository.existsById(groupId)) {
             throw new CustomException(ExceptionCode.GROUP_NOT_FOUND);
         }

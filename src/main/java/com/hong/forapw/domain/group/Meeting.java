@@ -89,10 +89,10 @@ public class Meeting extends TimeStamp {
     }
 
     public void incrementParticipantNum() {
-        this.participantNum = this.participantNum + 1;
+        participantNum++;
     }
 
     public void decrementParticipantNum() {
-        this.participantNum = this.participantNum + 1;
+        participantNum--;
     }
 }
