@@ -95,20 +95,6 @@ public class GroupMapper {
                 isRead);
     }
 
-    public static GroupResponse.MeetingDTO toMeetingDTO(Meeting meeting, List<String> participants) {
-        return new GroupResponse.MeetingDTO(
-                meeting.getId(),
-                meeting.getName(),
-                meeting.getMeetDate(),
-                meeting.getLocation(),
-                meeting.getCost(),
-                meeting.getParticipantNum(),
-                meeting.getMaxNum(),
-                meeting.getProfileURL(),
-                meeting.getDescription(),
-                participants);
-    }
-
     public static GroupResponse.MemberDetailDTO toMemberDetailDTO(GroupUser groupUser) {
         return new GroupResponse.MemberDetailDTO(
                 groupUser.getUserId(),
@@ -129,20 +115,6 @@ public class GroupMapper {
                 groupUser.getUserProvince(),
                 groupUser.getUserDistrict(),
                 groupUser.getCreatedDate());
-    }
-
-    public static Meeting buildMeeting(GroupRequest.CreateMeetingDTO requestDTO, Group group, User creator) {
-        return Meeting.builder()
-                .group(group)
-                .creator(creator)
-                .name(requestDTO.name())
-                .meetDate(requestDTO.meetDate())
-                .location(requestDTO.location())
-                .cost(requestDTO.cost())
-                .maxNum(requestDTO.maxNum())
-                .description(requestDTO.description())
-                .profileURL(requestDTO.profileURL())
-                .build();
     }
 
     public static GroupResponse.RecommendGroupDTO toRecommendGroupDTO(Group group, Long likeNum, boolean isLike) {

@@ -3,9 +3,9 @@ package com.hong.forapw.service.group;
 import com.hong.forapw.controller.dto.AlarmRequest;
 import com.hong.forapw.controller.dto.GroupRequest;
 import com.hong.forapw.controller.dto.GroupResponse;
+import com.hong.forapw.controller.dto.query.MeetingUserProfileDTO;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
-import com.hong.forapw.core.utils.mapper.GroupMapper;
 import com.hong.forapw.domain.alarm.AlarmType;
 import com.hong.forapw.domain.group.Group;
 import com.hong.forapw.domain.group.GroupRole;
@@ -19,18 +19,17 @@ import com.hong.forapw.repository.group.MeetingRepository;
 import com.hong.forapw.repository.group.MeetingUserRepository;
 import com.hong.forapw.service.BrokerService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
-import static com.hong.forapw.core.utils.mapper.GroupMapper.buildMeeting;
-import static com.hong.forapw.core.utils.mapper.MeetingMapper.toParticipantDTOs;
-import static com.hong.forapw.core.utils.mapper.MeetingMapper.toFindMeetingByIdDTO;
+import static com.hong.forapw.core.utils.mapper.MeetingMapper.*;
 
 @Service
 @RequiredArgsConstructor
@@ -126,6 +125,15 @@ public class MeetingService {
         meetingRepository.deleteById(meetingId);
     }
 
+    public List<GroupResponse.MeetingDTO> findMeetings(Long groupId, Pageable pageable) {
+        Page<Meeting> meetingPage = meetingRepository.findByGroupId(groupId, pageable);
+        Map<Long, List<String>> meetingUserProfiles = getMeetingUserProfilesByGroupId(groupId);
+
+        return meetingPage.getContent().stream()
+                .map(meeting -> toMeetingDTO(meeting, meetingUserProfiles.getOrDefault(meeting.getId(), Collections.emptyList())))
+                .toList();
+    }
+
     public GroupResponse.FindMeetingByIdDTO findMeetingById(Long meetingId, Long groupId, Long userId) {
         validateGroupExists(groupId);
         validateIsGroupMember(groupId, userId);
@@ -138,25 +146,6 @@ public class MeetingService {
         List<GroupResponse.ParticipantDTO> participantDTOS = toParticipantDTOs(participants);
 
         return toFindMeetingByIdDTO(meeting, participantDTOS);
-    }
-
-    @Transactional
-    public GroupResponse.FindGroupMemberListDTO findGroupMemberList(Long userId, Long groupId) {
-        // 그룹 존재 여부 체크
-        Group group = groupRepository.findById(groupId).orElseThrow(
-                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
-        );
-
-        // 관리자만 멤버들을 볼 수 있음
-        User groupAdmin = userRepository.getReferenceById(userId);
-        validateGroupAdminAuthorization(groupAdmin, groupId);
-
-        List<GroupResponse.MemberDetailDTO> memberDetailDTOS = groupUserRepository.findByGroupIdWithGroup(groupId).stream()
-                .filter(groupUser -> !groupUser.getGroupRole().equals(GroupRole.TEMP))
-                .map(GroupMapper::toMemberDetailDTO)
-                .toList();
-
-        return new GroupResponse.FindGroupMemberListDTO(group.getParticipantNum(), group.getMaxNum(), memberDetailDTOS);
     }
 
     private void addMeetingCreatorToParticipants(User creator, Meeting meeting) {
@@ -180,7 +169,7 @@ public class MeetingService {
         for (User member : groupMembers) {
             String content = "새로운 정기 모임: " + meetingName;
             String redirectURL = "/volunteer/" + groupId;
-            createAlarm(member.getId(), content, redirectURL, AlarmType.NEW_MEETING);
+            createNewMeetingAlarm(member.getId(), content, redirectURL);
         }
     }
 
@@ -224,6 +213,15 @@ public class MeetingService {
         );
     }
 
+    private Map<Long, List<String>> getMeetingUserProfilesByGroupId(Long groupId) {
+        // <Long meetingId, List<String> userProfiles>
+        return meetingUserRepository.findMeetingUsersByGroupId(groupId).stream()
+                .collect(Collectors.groupingBy(
+                        MeetingUserProfileDTO::meetingId,
+                        Collectors.mapping(MeetingUserProfileDTO::profileURL, Collectors.toList())
+                ));
+    }
+
     private void validateIsGroupMember(Long groupId, Long userId) {
         Set<GroupRole> roles = EnumSet.of(GroupRole.USER, GroupRole.ADMIN, GroupRole.CREATOR);
         groupUserRepository.findByGroupIdAndUserId(groupId, userId)
@@ -241,13 +239,13 @@ public class MeetingService {
                 .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
     }
 
-    private void createAlarm(Long userId, String content, String redirectURL, AlarmType alarmType) {
+    private void createNewMeetingAlarm(Long userId, String content, String redirectURL) {
         AlarmRequest.AlarmDTO alarmDTO = new AlarmRequest.AlarmDTO(
                 userId,
                 content,
                 redirectURL,
                 LocalDateTime.now(),
-                alarmType);
+                AlarmType.NEW_MEETING);
 
         brokerService.sendAlarmToUser(userId, alarmDTO);
     }

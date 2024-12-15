@@ -4,14 +4,20 @@ import com.hong.forapw.controller.dto.GroupRequest;
 import com.hong.forapw.controller.dto.GroupResponse;
 import com.hong.forapw.core.security.CustomUserDetails;
 import com.hong.forapw.core.utils.ApiUtils;
+import com.hong.forapw.service.group.GroupService;
 import com.hong.forapw.service.group.MeetingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -19,6 +25,8 @@ import org.springframework.web.bind.annotation.*;
 public class MeetingController {
 
     private final MeetingService meetingService;
+    private final GroupService groupService;
+    private static final String SORT_BY_ID = "id";
 
     @PostMapping("/groups/{groupId}/meetings")
     public ResponseEntity<?> createMeeting(@RequestBody @Valid GroupRequest.CreateMeetingDTO requestDTO, @PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails) {
@@ -56,9 +64,12 @@ public class MeetingController {
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
-    @GetMapping("/groups/{groupId}/members")
-    public ResponseEntity<?> findGroupMemberList(@PathVariable Long groupId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-        GroupResponse.FindGroupMemberListDTO responseDTO = meetingService.findGroupMemberList(userDetails.getUser().getId(), groupId);
+    @GetMapping("/groups/{groupId}/meetings")
+    public ResponseEntity<?> findMeetingList(@PathVariable Long groupId,
+                                             @PageableDefault(size = 5, sort = SORT_BY_ID, direction = Sort.Direction.DESC) Pageable pageable, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        groupService.checkGroupAndIsMember(groupId, userDetails.getUser().getId());
+        List<GroupResponse.MeetingDTO> meetingDTOS = meetingService.findMeetings(groupId, pageable);
+        GroupResponse.FindMeetingListDTO responseDTO = new GroupResponse.FindMeetingListDTO(meetingDTOS);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 }

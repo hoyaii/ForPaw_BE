@@ -3,7 +3,6 @@ package com.hong.forapw.service.group;
 import com.hong.forapw.controller.dto.AlarmRequest;
 import com.hong.forapw.controller.dto.GroupRequest;
 import com.hong.forapw.controller.dto.GroupResponse;
-import com.hong.forapw.controller.dto.query.MeetingUserProfileDTO;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.core.utils.mapper.GroupMapper;
@@ -27,7 +26,6 @@ import com.hong.forapw.service.RedisService;
 import com.hong.forapw.service.like.LikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,6 +60,7 @@ public class GroupService {
     private final RedisService redisService;
     private final BrokerService brokerService;
     private final LikeService likeService;
+    private final MeetingService meetingService;
 
     private static final Province DEFAULT_PROVINCE = Province.DAEGU;
     private static final District DEFAULT_DISTRICT = District.SUSEONG;
@@ -112,6 +111,25 @@ public class GroupService {
         updateChatRoomName(groupId, requestDTO.name());
 
         updateGroupInfo(group, requestDTO);
+    }
+
+    @Transactional
+    public GroupResponse.FindGroupMemberListDTO findGroupMemberList(Long userId, Long groupId) {
+        // 그룹 존재 여부 체크
+        Group group = groupRepository.findById(groupId).orElseThrow(
+                () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
+        );
+
+        // 관리자만 멤버들을 볼 수 있음
+        User groupAdmin = userRepository.getReferenceById(userId);
+        validateGroupAdminAuthorization(groupAdmin, groupId);
+
+        List<GroupResponse.MemberDetailDTO> memberDetailDTOS = groupUserRepository.findByGroupIdWithGroup(groupId).stream()
+                .filter(groupUser -> !groupUser.getGroupRole().equals(GroupRole.TEMP))
+                .map(GroupMapper::toMemberDetailDTO)
+                .toList();
+
+        return new GroupResponse.FindGroupMemberListDTO(group.getParticipantNum(), group.getMaxNum(), memberDetailDTOS);
     }
 
     public GroupResponse.FindAllGroupListDTO findGroupList(Long userId) {
@@ -197,7 +215,7 @@ public class GroupService {
                 () -> new CustomException(ExceptionCode.GROUP_NOT_FOUND)
         );
 
-        List<GroupResponse.MeetingDTO> meetingDTOS = findMeetingList(groupId, DEFAULT_PAGE_REQUEST);
+        List<GroupResponse.MeetingDTO> meetingDTOS = meetingService.findMeetings(groupId, DEFAULT_PAGE_REQUEST);
         List<GroupResponse.NoticeDTO> noticeDTOS = findNoticeList(userId, groupId, DEFAULT_PAGE_REQUEST);
         List<GroupResponse.MemberDTO> memberDTOS = findMemberList(groupId);
 
@@ -215,24 +233,6 @@ public class GroupService {
                 .map(notice -> {
                     boolean isRead = postIds.contains(notice.getId().toString());
                     return toNoticeDTO(notice, isRead);
-                })
-                .toList();
-    }
-
-    public List<GroupResponse.MeetingDTO> findMeetingList(Long groupId, Pageable pageable) {
-        Page<Meeting> meetingPage = meetingRepository.findByGroupId(groupId, pageable);
-
-        // <Long meetingId, List<String> userProfiles> 형태의 맵 구성
-        Map<Long, List<String>> meetingUserMap = new HashMap<>();
-        List<MeetingUserProfileDTO> queryDTOS = meetingUserRepository.findMeetingUsersByGroupId(groupId);
-        for (MeetingUserProfileDTO queryDTO : queryDTOS) {
-            meetingUserMap.computeIfAbsent(queryDTO.meetingId(), k -> new ArrayList<>()).add(queryDTO.profileURL());
-        }
-
-        return meetingPage.getContent().stream()
-                .map(meeting -> {
-                    List<String> participants = meetingUserMap.get(meeting.getId());
-                    return toMeetingDTO(meeting, participants);
                 })
                 .toList();
     }
@@ -697,5 +697,15 @@ public class GroupService {
                     return toRecommendGroupDTO(group, likeNum, isLike);
                 })
                 .collect(Collectors.toList());
+    }
+
+    private void validateGroupAdminAuthorization(User user, Long groupId) {
+        if (user.isAdmin()) {
+            return;
+        }
+
+        groupUserRepository.findByGroupIdAndUserId(groupId, user.getId())
+                .filter(groupUser -> EnumSet.of(GroupRole.ADMIN, GroupRole.CREATOR).contains(groupUser.getGroupRole()))
+                .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
     }
 }
