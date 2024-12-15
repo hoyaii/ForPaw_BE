@@ -12,7 +12,6 @@ import com.hong.forapw.domain.group.GroupRole;
 import com.hong.forapw.domain.group.Meeting;
 import com.hong.forapw.domain.group.MeetingUser;
 import com.hong.forapw.domain.user.User;
-import com.hong.forapw.domain.user.UserRole;
 import com.hong.forapw.repository.UserRepository;
 import com.hong.forapw.repository.group.GroupRepository;
 import com.hong.forapw.repository.group.GroupUserRepository;
@@ -30,6 +29,8 @@ import java.util.List;
 import java.util.Set;
 
 import static com.hong.forapw.core.utils.mapper.GroupMapper.buildMeeting;
+import static com.hong.forapw.core.utils.mapper.MeetingMapper.toParticipantDTOs;
+import static com.hong.forapw.core.utils.mapper.MeetingMapper.toFindMeetingByIdDTO;
 
 @Service
 @RequiredArgsConstructor
@@ -77,7 +78,9 @@ public class MeetingService {
     @Transactional
     public void updateMeeting(GroupRequest.UpdateMeetingDTO requestDTO, Long groupId, Long meetingId, Long userId) {
         validateMeetingExists(meetingId);
-        validateGroupAdminAuthorization(groupId, userId);
+
+        User groupAdmin = userRepository.getReferenceById(groupId);
+        validateGroupAdminAuthorization(groupAdmin, groupId);
 
         Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(
                 () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
@@ -114,32 +117,27 @@ public class MeetingService {
 
     @Transactional
     public void deleteMeeting(Long groupId, Long meetingId, Long userId) {
-        // 존재하지 않는 모임이면 에러 처리
         validateMeetingExists(meetingId);
 
-        // 권한 체크 (메니저급만 삭제 가능)
-        validateGroupAdminAuthorization(groupId, userId);
+        User groupAdmin = userRepository.getReferenceById(userId);
+        validateGroupAdminAuthorization(groupAdmin, groupId);
 
         meetingUserRepository.deleteAllByMeetingId(meetingId);
         meetingRepository.deleteById(meetingId);
     }
 
     public GroupResponse.FindMeetingByIdDTO findMeetingById(Long meetingId, Long groupId, Long userId) {
-        // 그룹 존재 여부 체크
         validateGroupExists(groupId);
-
-        // 맴버인지 체크
         validateIsGroupMember(groupId, userId);
 
         Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(
                 () -> new CustomException(ExceptionCode.MEETING_NOT_FOUND)
         );
 
-        List<GroupResponse.ParticipantDTO> participantDTOS = meetingUserRepository.findUserByMeetingId(meeting.getId()).stream()
-                .map(user -> new GroupResponse.ParticipantDTO(user.getProfileURL(), user.getNickname()))
-                .toList();
+        List<User> participants = meetingUserRepository.findUserByMeetingId(meeting.getId());
+        List<GroupResponse.ParticipantDTO> participantDTOS = toParticipantDTOs(participants);
 
-        return new GroupResponse.FindMeetingByIdDTO(meeting.getId(), meeting.getName(), meeting.getMeetDate(), meeting.getLocation(), meeting.getCost(), meeting.getParticipantNum(), meeting.getMaxNum(), meeting.getCreator().getNickname(), meeting.getProfileURL(), meeting.getDescription(), participantDTOS);
+        return toFindMeetingByIdDTO(meeting, participantDTOS);
     }
 
     @Transactional
@@ -150,7 +148,8 @@ public class MeetingService {
         );
 
         // 관리자만 멤버들을 볼 수 있음
-        validateGroupAdminAuthorization(groupId, userId);
+        User groupAdmin = userRepository.getReferenceById(userId);
+        validateGroupAdminAuthorization(groupAdmin, groupId);
 
         List<GroupResponse.MemberDetailDTO> memberDetailDTOS = groupUserRepository.findByGroupIdWithGroup(groupId).stream()
                 .filter(groupUser -> !groupUser.getGroupRole().equals(GroupRole.TEMP))
@@ -240,26 +239,6 @@ public class MeetingService {
         groupUserRepository.findByGroupIdAndUserId(groupId, user.getId())
                 .filter(groupUser -> EnumSet.of(GroupRole.ADMIN, GroupRole.CREATOR).contains(groupUser.getGroupRole()))
                 .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
-    }
-
-    private void validateGroupAdminAuthorization(Long groupId, Long userId) {
-        // 서비스 운영자는 접근 가능
-        if (checkServiceAdminAuthority(userId)) {
-            return;
-        }
-
-        // ADMIN, CREATOR만 허용
-        groupUserRepository.findByGroupIdAndUserId(groupId, userId)
-                .filter(groupUser -> EnumSet.of(GroupRole.ADMIN, GroupRole.CREATOR).contains(groupUser.getGroupRole()))
-                .orElseThrow(() -> new CustomException(ExceptionCode.USER_FORBIDDEN));
-    }
-
-    private boolean checkServiceAdminAuthority(Long userId) {
-        UserRole role = userRepository.findRoleById(userId).orElseThrow(
-                () -> new CustomException(ExceptionCode.USER_NOT_FOUND)
-        );
-
-        return role.equals(UserRole.ADMIN) || role.equals(UserRole.SUPER);
     }
 
     private void createAlarm(Long userId, String content, String redirectURL, AlarmType alarmType) {

@@ -95,4 +95,8 @@ public class Meeting extends TimeStamp {
     public void decrementParticipantCount() {
         participantNum--;
     }
+
+    public String getCreatorNickName() {
+        return creator.getNickname();
+    }
 }
