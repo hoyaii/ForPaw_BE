@@ -288,25 +288,17 @@ public class GroupService {
 
     @Transactional
     public void rejectJoin(Long userId, Long applicantId, Long groupId) {
-        // 존재하지 않는 그룹이면 에러
         validateGroupExists(groupId);
 
         User groupAdmin = userRepository.getReferenceById(userId);
         validateGroupAdminAuthorization(groupAdmin, groupId);
 
-        // 신청한 적이 없거나 이미 가입했는지 체크
-        GroupUser groupUser = groupUserRepository.findByGroupIdAndUserId(groupId, applicantId).orElseThrow(
-                () -> new CustomException(ExceptionCode.GROUP_NOT_APPLY)
-        );
-
+        GroupUser groupUser = findPendingGroupUser(groupId, applicantId);
         validateNotAlreadyMember(groupUser);
 
         groupUserRepository.delete(groupUser);
 
-        // 알람 생성
-        String content = "가입이 거절 되었습니다.";
-        String redirectURL = "/volunteer/" + groupId;
-        createAlarm(applicantId, content, redirectURL, AlarmType.JOIN);
+        sendJoinRejectionAlarm(applicantId, groupId);
     }
 
     @Transactional
@@ -655,6 +647,18 @@ public class GroupService {
                 .build();
 
         chatUserRepository.save(chatUser);
+    }
+
+    private GroupUser findPendingGroupUser(Long groupId, Long applicantId) {
+        return groupUserRepository.findByGroupIdAndUserId(groupId, applicantId)
+                .orElseThrow(() -> new CustomException(ExceptionCode.GROUP_NOT_APPLY));
+    }
+
+
+    private void sendJoinRejectionAlarm(Long applicantId, Long groupId) {
+        String content = "가입이 거절 되었습니다.";
+        String redirectURL = "/volunteer/" + groupId;
+        createAlarm(applicantId, content, redirectURL, AlarmType.JOIN);
     }
 
     private void createAlarm(Long userId, String content, String redirectURL, AlarmType alarmType) {
