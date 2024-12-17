@@ -3,6 +3,7 @@ package com.hong.forapw.service.group;
 import com.hong.forapw.controller.dto.AlarmRequest;
 import com.hong.forapw.controller.dto.GroupRequest;
 import com.hong.forapw.controller.dto.GroupResponse;
+import com.hong.forapw.controller.dto.PostRequest;
 import com.hong.forapw.core.errors.CustomException;
 import com.hong.forapw.core.errors.ExceptionCode;
 import com.hong.forapw.core.utils.mapper.GroupMapper;
@@ -303,7 +304,6 @@ public class GroupService {
 
     @Transactional
     public GroupResponse.CreateNoticeDTO createNotice(GroupRequest.CreateNoticeDTO requestDTO, Long userId, Long groupId) {
-        // 존재하지 않는 그룹이면 에러
         validateGroupExists(groupId);
 
         User groupAdmin = userRepository.getReferenceById(userId);
@@ -311,27 +311,11 @@ public class GroupService {
 
         Group group = groupRepository.getReferenceById(groupId);
         User noticer = userRepository.getReferenceById(userId);
-        List<PostImage> postImages = requestDTO.images().stream()
-                .map(postImageDTO -> PostImage.builder()
-                        .imageURL(postImageDTO.imageURL())
-                        .build())
-                .toList();
-
         Post notice = buildNotice(requestDTO, noticer, group);
-
-        // 연관관계 설정
-        postImages.forEach(notice::addImage);
+        addImagesToNotice(requestDTO.images(), notice);
 
         postRepository.save(notice);
-
-        // 알람 생성
-        List<User> users = groupUserRepository.findUserByGroupIdWithoutMe(groupId, userId);
-
-        for (User user : users) {
-            String content = "공지: " + requestDTO.title();
-            String redirectURL = "/volunteer/" + groupId + "/notices/" + notice.getId();
-            createAlarm(user.getId(), content, redirectURL, AlarmType.NOTICE);
-        }
+        sendNoticeAlarms(groupId, userId, requestDTO.title(), notice.getId());
 
         return new GroupResponse.CreateNoticeDTO(notice.getId());
     }
@@ -659,6 +643,23 @@ public class GroupService {
         String content = "가입이 거절 되었습니다.";
         String redirectURL = "/volunteer/" + groupId;
         createAlarm(applicantId, content, redirectURL, AlarmType.JOIN);
+    }
+
+    private void addImagesToNotice(List<PostRequest.PostImageDTO> images, Post notice) {
+        images.stream()
+                .map(imageDTO -> PostImage.builder()
+                        .imageURL(imageDTO.imageURL())
+                        .build())
+                .forEach(notice::addImage);
+    }
+
+    private void sendNoticeAlarms(Long groupId, Long senderId, String title, Long noticeId) {
+        List<User> groupMembers = groupUserRepository.findUserByGroupIdWithoutMe(groupId, senderId);
+
+        String content = "공지: " + title;
+        String redirectURL = "/volunteer/" + groupId + "/notices/" + noticeId;
+
+        groupMembers.forEach(member -> createAlarm(member.getId(), content, redirectURL, AlarmType.NOTICE));
     }
 
     private void createAlarm(Long userId, String content, String redirectURL, AlarmType alarmType) {
