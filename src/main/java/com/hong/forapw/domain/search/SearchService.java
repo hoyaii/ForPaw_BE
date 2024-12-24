@@ -1,6 +1,6 @@
 package com.hong.forapw.domain.search;
 
-import com.hong.forapw.domain.search.model.GroupMeetingCountDTO;
+import com.hong.forapw.domain.meeting.model.GroupMeetingCountDTO;
 import com.hong.forapw.integration.redis.RedisService;
 import com.hong.forapw.domain.group.entity.Group;
 import com.hong.forapw.domain.post.constant.PostType;

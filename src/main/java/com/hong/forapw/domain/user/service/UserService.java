@@ -5,7 +5,7 @@ import com.hong.forapw.integration.oauth.model.KakaoOauthDTO;
 import com.hong.forapw.integration.oauth.OAuthService;
 import com.hong.forapw.domain.user.model.UserRequest;
 import com.hong.forapw.domain.user.model.UserResponse;
-import com.hong.forapw.domain.user.model.PostTypeCountDTO;
+import com.hong.forapw.domain.post.model.PostTypeCountDTO;
 import com.hong.forapw.common.exceptions.CustomException;
 import com.hong.forapw.common.exceptions.ExceptionCode;
 import com.hong.forapw.admin.entity.LoginAttempt;
@@ -75,7 +75,7 @@ public class UserService {
     private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final FavoriteGroupRepository favoriteGroupRepository;
     private final OAuthService oAuthService;
-    private final RabbitMqUtils brokerService;
+    private final RabbitMqUtils rabbitMqUtils;
     private final EmailService emailService;
     private final UserCacheService userCacheService;
     private final JwtUtils jwtUtils;
@@ -483,8 +483,8 @@ public class UserService {
         String queueName = USER_QUEUE_PREFIX + user.getId();
         String listenerId = USER_QUEUE_PREFIX + user.getId();
 
-        brokerService.bindDirectExchangeToQueue(ALARM_EXCHANGE, queueName);
-        brokerService.registerAlarmListener(listenerId, queueName);
+        rabbitMqUtils.bindDirectExchangeToQueue(ALARM_EXCHANGE, queueName);
+        rabbitMqUtils.registerAlarmListener(listenerId, queueName);
     }
 
     private void checkIsGroupCreator(User user) {

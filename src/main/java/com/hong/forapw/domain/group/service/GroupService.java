@@ -10,7 +10,6 @@ import com.hong.forapw.domain.group.repository.FavoriteGroupRepository;
 import com.hong.forapw.domain.group.repository.GroupRepository;
 import com.hong.forapw.domain.group.repository.GroupUserRepository;
 import com.hong.forapw.domain.post.repository.*;
-import com.hong.forapw.group.repository.*;
 import com.hong.forapw.domain.meeting.model.MeetingResponse;
 import com.hong.forapw.domain.meeting.repository.MeetingRepository;
 import com.hong.forapw.domain.meeting.MeetingService;

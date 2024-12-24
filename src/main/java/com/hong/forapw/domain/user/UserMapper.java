@@ -54,6 +54,6 @@ public class UserMapper {
                 user.getProfileURL(),
                 user.isSocialJoined(),
                 user.isShelterOwns(),
-                user.isMarketingAgreed());
+                user.getIsMarketingAgreed());
     }
 }

@@ -1,7 +1,8 @@
 .DS_Store
 **/application.properties
-**/application-local.properties
-**/application-deploy.properties
+**/application-prod.properties
+**/application-dev.properties
+logs/
 
 HELP.md
 .gradle

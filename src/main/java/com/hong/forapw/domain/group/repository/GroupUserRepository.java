@@ -20,7 +20,8 @@ import java.util.Optional;
 @Repository
 public interface GroupUserRepository extends JpaRepository<GroupUser, Long> {
 
-    Optional<GroupUser> findByGroupIdAndUserId(Long groupId, Long userId);
+    @Query("SELECT gu FROM GroupUser gu WHERE gu.group.id = :groupId AND gu.user.id = :userId")
+    Optional<GroupUser> findByGroupIdAndUserId(@Param("groupId") Long groupId, @Param("userId") Long userId);
 
     List<GroupUser> findAllByUser(User user);
 

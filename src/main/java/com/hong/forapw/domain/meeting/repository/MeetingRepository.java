@@ -1,6 +1,6 @@
 package com.hong.forapw.domain.meeting.repository;
 
-import com.hong.forapw.domain.search.model.GroupMeetingCountDTO;
+import com.hong.forapw.domain.meeting.model.GroupMeetingCountDTO;
 import com.hong.forapw.domain.meeting.entity.Meeting;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,7 +21,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     @Query("SELECT m FROM Meeting m WHERE m.meetDate < :date")
     List<Meeting> findByMeetDateBefore(@Param("date") LocalDateTime date);
 
-    @Query("SELECT new com.hong.forapw.controller.dto.query.GroupMeetingCountDTO(g.id, COUNT(m)) " +
+    @Query("SELECT new com.hong.forapw.domain.meeting.model.GroupMeetingCountDTO(g.id, COUNT(m)) " +
             "FROM Meeting m " +
             "JOIN m.group g " +
             "WHERE g.id IN :groupIds " +

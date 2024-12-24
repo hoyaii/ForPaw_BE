@@ -15,7 +15,6 @@ import com.hong.forapw.admin.constant.ContentType;
 import com.hong.forapw.admin.entity.Report;
 import com.hong.forapw.admin.constant.ReportStatus;
 import com.hong.forapw.domain.post.repository.*;
-import com.hong.forapw.post.repository.*;
 import com.hong.forapw.domain.user.entity.User;
 import com.hong.forapw.admin.repository.ReportRepository;
 import com.hong.forapw.domain.user.repository.UserRepository;

@@ -14,9 +14,12 @@ import java.util.Optional;
 @Repository
 public interface ChatUserRepository extends JpaRepository<ChatUser, Long> {
 
-    Optional<ChatUser> findByUserIdAndChatRoomId(Long userId, Long chatRoomId);
+    @Query("SELECT cu FROM ChatUser cu WHERE cu.user.id = :userId AND cu.chatRoom.id = :chatRoomId")
+    Optional<ChatUser> findByUserIdAndChatRoomId(@Param("userId") Long userId, @Param("chatRoomId") Long chatRoomId);
 
-    boolean existsByUserIdAndChatRoomId(Long userId, Long chatRoomId);
+    @Query("SELECT CASE WHEN COUNT(cu) > 0 THEN TRUE ELSE FALSE END " +
+            "FROM ChatUser cu WHERE cu.user.id = :userId AND cu.chatRoom.id = :chatRoomId")
+    boolean existsByUserIdAndChatRoomId(@Param("userId") Long userId, @Param("chatRoomId") Long chatRoomId);
 
     @EntityGraph(attributePaths = {"chatRoom"})
     @Query("SELECT cu FROM ChatUser cu " +

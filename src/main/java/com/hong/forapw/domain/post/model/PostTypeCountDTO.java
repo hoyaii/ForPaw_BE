@@ -1,4 +1,4 @@
-package com.hong.forapw.domain.user.model;
+package com.hong.forapw.domain.post.model;
 
 import com.hong.forapw.domain.post.constant.PostType;
 

@@ -67,14 +67,6 @@ public class AlarmService {
         brokerService.sendAlarmToUser(userId, alarmDTO);
     }
 
-    public void sendAlarmViaSSE(Alarm alarm) {
-        String receiverId = alarm.getReceiverId().toString();
-        String eventId = createTimestampedId(receiverId);
-
-        Map<String, SseEmitter> emitters = emitterRepository.findEmittersByMemberIdPrefix(receiverId);
-        emitters.forEach((key, emitter) -> emitAlarmToEmitter(emitter, key, alarm, eventId));
-    }
-
     public AlarmResponse.FindAlarmListDTO findAlarms(Long userId) {
         List<Alarm> alarms = alarmRepository.findByReceiverId(userId);
         if (alarms.isEmpty()) {
@@ -113,11 +105,6 @@ public class AlarmService {
         if (!alarm.getReceiverId().equals(userId)) {
             throw new CustomException(ExceptionCode.USER_FORBIDDEN);
         }
-    }
-
-    private void emitAlarmToEmitter(SseEmitter emitter, String emitterId, Alarm alarm, String eventId) {
-        AlarmResponse.AlarmDTO alarmDTO = toAlarmDTO(alarm, false);
-        emitAlarmEvent(emitter, eventId, emitterId, alarmDTO);
     }
 
     private void emitAlarmEvent(SseEmitter emitter, String eventId, String emitterId, Object data) {

@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 
 import static com.hong.forapw.common.utils.DateTimeUtils.YEAR_HOUR_DAY_FORMAT;
 import static com.hong.forapw.common.utils.PaginationUtils.isLastPage;
+import static com.hong.forapw.common.utils.UriUtils.buildShelterOpenApiURI;
 import static com.hong.forapw.domain.shelter.ShelterMapper.toAnimalDTO;
 import static com.hong.forapw.domain.shelter.ShelterMapper.toFindShelterInfoDTO;
 

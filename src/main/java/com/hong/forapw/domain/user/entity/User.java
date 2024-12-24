@@ -6,6 +6,7 @@ import com.hong.forapw.common.entity.BaseEntity;
 import com.hong.forapw.domain.user.constant.AuthProvider;
 import com.hong.forapw.domain.user.constant.UserRole;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -62,8 +63,8 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private AuthProvider authProvider;
 
-    @Column
-    private boolean isMarketingAgreed;
+    @Column(nullable = false)
+    private Boolean isMarketingAgreed;
 
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
