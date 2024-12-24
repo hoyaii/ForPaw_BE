@@ -1,11 +1,6 @@
 package com.hong.forapw;
 
-import com.hong.forapw.domain.District;
-import com.hong.forapw.domain.Province;
-import com.hong.forapw.domain.user.UserRole;
-import com.hong.forapw.domain.user.User;
-import com.hong.forapw.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.hong.forapw.domain.user.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -22,9 +17,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @EnableAsync
 public class ForPawApplication {
 
-	@Autowired
-	private PasswordEncoder passwordEncoder;
-
 	public static void main(String[] args) {
 		SpringApplication.run(ForPawApplication.class, args);
 	}
@@ -37,19 +29,5 @@ public class ForPawApplication {
 			//
 			//));
 		};
-	}
-
-	private User newUser(String email, String name, String nickName, String password, UserRole userRole, String profileURL, Province province, District district, String subDistrict) {
-		return User.builder()
-				.email(email)
-				.name(name)
-				.nickName(nickName)
-				.password(passwordEncoder.encode(password))
-				.role(userRole)
-				.profileURL(profileURL)
-				.province(province)
-				.district(district)
-				.subDistrict(subDistrict)
-				.build();
 	}
 }

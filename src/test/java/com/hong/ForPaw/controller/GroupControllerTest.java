@@ -1,9 +1,10 @@
 package com.hong.ForPaw.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hong.forapw.controller.dto.GroupRequest;
-import com.hong.forapw.controller.dto.PostRequest;
-import com.hong.forapw.domain.group.GroupRole;
+import com.hong.forapw.domain.group.model.GroupRequest;
+import com.hong.forapw.domain.meeting.model.MeetingRequest;
+import com.hong.forapw.domain.post.model.PostRequest;
+import com.hong.forapw.domain.group.constant.GroupRole;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -937,7 +938,7 @@ class GroupControllerTest {
     public void 정기모임_생성_성공() throws Exception {
         // given
         Long groupId = 1L;
-        GroupRequest.CreateMeetingDTO requestDTO = new GroupRequest.CreateMeetingDTO("7차 동물 사랑 봉사", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
+        MeetingRequest.CreateMeetingDTO requestDTO = new MeetingRequest.CreateMeetingDTO("7차 동물 사랑 봉사", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -958,7 +959,7 @@ class GroupControllerTest {
     public void 정기모임_생성_실패_권한_없음() throws Exception {
         // given
         Long groupId = 12L;
-        GroupRequest.CreateMeetingDTO requestDTO = new GroupRequest.CreateMeetingDTO("7차 동물 사랑 봉사", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
+        MeetingRequest.CreateMeetingDTO requestDTO = new MeetingRequest.CreateMeetingDTO("7차 동물 사랑 봉사", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -979,7 +980,7 @@ class GroupControllerTest {
     public void 정기모임_생성_실패_존재하지_않는_그룹() throws Exception {
         // given
         Long groupId = 100L;
-        GroupRequest.CreateMeetingDTO requestDTO = new GroupRequest.CreateMeetingDTO("7차 동물 사랑 봉사", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
+        MeetingRequest.CreateMeetingDTO requestDTO = new MeetingRequest.CreateMeetingDTO("7차 동물 사랑 봉사", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -1001,7 +1002,7 @@ class GroupControllerTest {
         // given
         Long groupId = 12L;
         Long meetingId = 1L;
-        GroupRequest.UpdateMeetingDTO requestDTO = new GroupRequest.UpdateMeetingDTO("7차 동물 사랑 봉사(수정)", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
+        MeetingRequest.UpdateMeetingDTO requestDTO = new MeetingRequest.UpdateMeetingDTO("7차 동물 사랑 봉사(수정)", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -1023,7 +1024,7 @@ class GroupControllerTest {
         // given
         Long groupId = 12L;
         Long meetingId = 1L;
-        GroupRequest.UpdateMeetingDTO requestDTO = new GroupRequest.UpdateMeetingDTO("7차 동물 사랑 봉사(수정)", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
+        MeetingRequest.UpdateMeetingDTO requestDTO = new MeetingRequest.UpdateMeetingDTO("7차 동물 사랑 봉사(수정)", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
@@ -1045,7 +1046,7 @@ class GroupControllerTest {
         // given
         Long groupId = 12L;
         Long meetingId = 10L;
-        GroupRequest.UpdateMeetingDTO requestDTO = new GroupRequest.UpdateMeetingDTO("7차 동물 사랑 봉사(수정)", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
+        MeetingRequest.UpdateMeetingDTO requestDTO = new MeetingRequest.UpdateMeetingDTO("7차 동물 사랑 봉사(수정)", LocalDateTime.of(2024, Month.MARCH, 5, 10, 30), "범어역 1번 출구", 150000L, 15, "6차 모임입니다!", "https://s3.xxxx.xx.com");
         String requestBody = om.writeValueAsString(requestDTO);
 
         // when
