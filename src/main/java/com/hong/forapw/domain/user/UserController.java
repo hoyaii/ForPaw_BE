@@ -1,7 +1,10 @@
 package com.hong.forapw.domain.user;
 
+import com.hong.forapw.domain.user.model.LoginResult;
+import com.hong.forapw.domain.user.model.TokenResponse;
 import com.hong.forapw.domain.user.model.UserRequest;
 import com.hong.forapw.domain.user.model.UserResponse;
+import com.hong.forapw.integration.oauth.OAuthService;
 import com.hong.forapw.security.CustomUserDetails;
 import com.hong.forapw.common.utils.JwtUtils;
 import com.hong.forapw.common.utils.ApiUtils;
@@ -18,12 +21,16 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+import static com.hong.forapw.common.GlobalConstants.ACCESS_TOKEN_KEY;
+import static com.hong.forapw.common.GlobalConstants.REFRESH_TOKEN_KEY;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
 public class UserController {
 
     private final UserService userService;
+    private final OAuthService oAuthService;
     private final JwtUtils jwtUtils;
 
     private static final String AUTH_KAKAO = "KAKAO";
@@ -31,27 +38,25 @@ public class UserController {
     private static final String CODE_TYPE_JOIN = "join";
     private static final String CODE_TYPE_WITHDRAW = "withdraw";
     private static final String CODE_TYPE_RECOVERY = "recovery";
-    private static final String REFRESH_TOKEN = "refreshToken";
-    private static final String ACCESS_TOKEN = "accessToken";
 
     @PostMapping("/auth/login")
     public ResponseEntity<?> login(@RequestBody @Valid UserRequest.LoginDTO requestDTO, HttpServletRequest request) {
-        Map<String, String> tokens = userService.login(requestDTO, request);
+        LoginResult loginResult = userService.login(requestDTO, request);
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, jwtUtils.refreshTokenCookie(tokens.get(REFRESH_TOKEN)))
-                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(tokens.get(ACCESS_TOKEN))));
+                .header(HttpHeaders.SET_COOKIE, jwtUtils.refreshTokenCookie(loginResult.refreshToken()))
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.LoginDTO(loginResult.accessToken())));
     }
 
     @GetMapping("/auth/login/kakao")
-    public void kakaoLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) {
-        Map<String, String> tokenOrEmail = userService.kakaoLogin(code, request);
-        userService.processOAuthRedirect(tokenOrEmail, AUTH_KAKAO, response);
+    public void loginWithKakao(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) {
+        LoginResult loginResult = oAuthService.loginWithKakao(code, request);
+        oAuthService.redirectAfterOAuthLogin(loginResult, AUTH_KAKAO, response);
     }
 
     @GetMapping("/auth/login/google")
-    public void googleLogin(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) {
-        Map<String, String> tokenOrEmail = userService.googleLogin(code, request);
-        userService.processOAuthRedirect(tokenOrEmail, AUTH_GOOGLE, response);
+    public void loginWithGoogle(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) {
+        LoginResult loginResult = oAuthService.loginWithGoogle(code, request);
+        oAuthService.redirectAfterOAuthLogin(loginResult, AUTH_GOOGLE, response);
     }
 
     @PostMapping("/accounts")
@@ -69,7 +74,7 @@ public class UserController {
     @PostMapping("/accounts/check/email")
     public ResponseEntity<?> checkEmailAndSendCode(@RequestBody @Valid UserRequest.EmailDTO requestDTO) {
         UserResponse.CheckAccountExistDTO responseDTO = userService.checkAccountExist(requestDTO.email());
-        if(responseDTO.isValid()) userService.sendCodeByEmail(requestDTO.email(), CODE_TYPE_JOIN);
+        if (responseDTO.isValid()) userService.sendCodeByEmail(requestDTO.email(), CODE_TYPE_JOIN);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -94,14 +99,14 @@ public class UserController {
     @PostMapping("/accounts/withdraw/code")
     public ResponseEntity<?> sendCodeForWithdraw(@RequestBody @Valid UserRequest.EmailDTO requestDTO) {
         UserResponse.CheckAccountExistDTO responseDTO = userService.checkAccountExist(requestDTO.email());
-        if(responseDTO.isValid()) userService.sendCodeByEmail(requestDTO.email(), CODE_TYPE_WITHDRAW);
+        if (responseDTO.isValid()) userService.sendCodeByEmail(requestDTO.email(), CODE_TYPE_WITHDRAW);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
     @PostMapping("/accounts/recovery/code")
     public ResponseEntity<?> sendCodeForRecovery(@RequestBody @Valid UserRequest.EmailDTO requestDTO) {
         UserResponse.CheckLocalAccountExistDTO responseDTO = userService.checkLocalAccountExist(requestDTO);
-        if(responseDTO.isValid()) userService.sendCodeByEmail(requestDTO.email(), CODE_TYPE_RECOVERY);
+        if (responseDTO.isValid()) userService.sendCodeByEmail(requestDTO.email(), CODE_TYPE_RECOVERY);
         return ResponseEntity.ok().body(ApiUtils.success(HttpStatus.OK, responseDTO));
     }
 
@@ -137,10 +142,10 @@ public class UserController {
 
     @PatchMapping("/auth/access")
     public ResponseEntity<?> updateAccessToken(@CookieValue String refreshToken) {
-        Map<String, String> tokens = userService.updateAccessToken(refreshToken);
+        TokenResponse tokenResponse = userService.updateAccessToken(refreshToken);
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, jwtUtils.refreshTokenCookie(tokens.get(REFRESH_TOKEN)))
-                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(tokens.get(ACCESS_TOKEN))));
+                .header(HttpHeaders.SET_COOKIE, jwtUtils.refreshTokenCookie(tokenResponse.refreshToken()))
+                .body(ApiUtils.success(HttpStatus.OK, new UserResponse.AccessTokenDTO(tokenResponse.accessToken())));
     }
 
     @DeleteMapping("/accounts/withdraw")

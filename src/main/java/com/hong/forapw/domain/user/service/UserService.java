@@ -1,10 +1,6 @@
 package com.hong.forapw.domain.user.service;
 
-import com.hong.forapw.integration.oauth.model.GoogleOauthDTO;
-import com.hong.forapw.integration.oauth.model.KakaoOauthDTO;
-import com.hong.forapw.integration.oauth.OAuthService;
-import com.hong.forapw.domain.user.model.UserRequest;
-import com.hong.forapw.domain.user.model.UserResponse;
+import com.hong.forapw.domain.user.model.*;
 import com.hong.forapw.domain.post.model.PostTypeCountDTO;
 import com.hong.forapw.common.exceptions.CustomException;
 import com.hong.forapw.common.exceptions.ExceptionCode;
@@ -28,26 +24,24 @@ import com.hong.forapw.domain.post.repository.PostLikeRepository;
 import com.hong.forapw.domain.post.repository.PostRepository;
 import com.hong.forapw.domain.user.repository.UserRepository;
 import com.hong.forapw.domain.user.repository.UserStatusRepository;
+import com.hong.forapw.integration.email.model.BlankTemplate;
+import com.hong.forapw.integration.email.model.EmailVerificationTemplate;
+import com.hong.forapw.integration.email.model.TemplateModel;
 import com.hong.forapw.integration.rabbitmq.RabbitMqUtils;
 import com.hong.forapw.integration.email.EmailService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.hong.forapw.common.utils.JwtUtils;
 
-import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.hong.forapw.common.utils.UriUtils.createRedirectUri;
 import static com.hong.forapw.domain.user.UserMapper.*;
 import static com.hong.forapw.integration.email.EmailService.generateVerificationCode;
 import static com.hong.forapw.integration.email.EmailTemplate.ACCOUNT_SUSPENSION;
@@ -74,26 +68,13 @@ public class UserService {
     private final VisitRepository visitRepository;
     private final FavoriteAnimalRepository favoriteAnimalRepository;
     private final FavoriteGroupRepository favoriteGroupRepository;
-    private final OAuthService oAuthService;
     private final RabbitMqUtils rabbitMqUtils;
     private final EmailService emailService;
     private final UserCacheService userCacheService;
     private final JwtUtils jwtUtils;
 
-    @Value("${social.join.redirect.uri}")
-    private String redirectJoinUri;
-
-    @Value("${social.home.redirect.uri}")
-    private String redirectHomeUri;
-
-    @Value("${social.login.redirect.uri}")
-    private String redirectLoginUri;
-
     private static final String MAIL_TEMPLATE_FOR_CODE = "verification_code_email.html";
     private static final String MAIL_TEMPLATE_FOR_LOCK_ACCOUNT = "lock_account.html";
-    private static final String REFRESH_TOKEN_KEY_PREFIX = "refreshToken";
-    private static final String ACCESS_TOKEN_KEY_PREFIX = "accessToken";
-    private static final String EMAIL = "email";
     private static final String ALL_CHARS = "!@#$%^&*0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     private static final String USER_QUEUE_PREFIX = "user.";
     private static final String ALARM_EXCHANGE = "alarm.exchange";
@@ -102,14 +83,11 @@ public class UserService {
     private static final String[] IP_HEADER_CANDIDATES = {"X-Forwarded-For", "Proxy-Client-IP", "WL-Proxy-Client-IP", "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR"};
     private static final String CODE_TYPE_RECOVERY = "recovery";
     private static final String MODEL_KEY_CODE = "code";
-    private static final String QUERY_PARAM_EMAIL = "email";
-    private static final String QUERY_PARAM_AUTH_PROVIDER = "authProvider";
-    private static final String QUERY_PARAM_ACCESS_TOKEN = "accessToken";
     private static final long CURRENT_FAILURE_LIMIT = 3L;
     private static final long DAILY_FAILURE_LIMIT = 3L;
 
     @Transactional
-    public Map<String, String> login(UserRequest.LoginDTO requestDTO, HttpServletRequest request) {
+    public LoginResult login(UserRequest.LoginDTO requestDTO, HttpServletRequest request) {
         User user = userRepository.findByEmailWithRemoved(requestDTO.email()).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_ACCOUNT_WRONG)
         );
@@ -125,24 +103,6 @@ public class UserService {
 
         recordLoginAttempt(user, request);
         return createToken(user);
-    }
-
-    @Transactional
-    public Map<String, String> kakaoLogin(String code, HttpServletRequest request) {
-        KakaoOauthDTO.TokenDTO token = oAuthService.getKakaoToken(code);
-        KakaoOauthDTO.UserInfoDTO userInfo = oAuthService.getKakaoUserInfo(token.access_token());
-        String email = userInfo.kakao_account().email();
-
-        return processSocialLogin(email, request);
-    }
-
-    @Transactional
-    public Map<String, String> googleLogin(String code, HttpServletRequest request) {
-        GoogleOauthDTO.TokenDTO token = oAuthService.getGoogleToken(code);
-        GoogleOauthDTO.UserInfoDTO userInfoDTO = oAuthService.getGoogleUserInfo(token.access_token());
-        String email = userInfoDTO.email();
-
-        return processSocialLogin(email, request);
     }
 
     @Transactional
@@ -177,7 +137,7 @@ public class UserService {
         String verificationCode = generateVerificationCode();
         userCacheService.storeVerificationCode(email, codeType, verificationCode);
 
-        Map<String, Object> templateModel = createTemplateModel(verificationCode);
+        EmailVerificationTemplate templateModel = new EmailVerificationTemplate(verificationCode);
         emailService.sendMail(email, VERIFICATION_CODE.getSubject(), MAIL_TEMPLATE_FOR_CODE, templateModel);
     }
 
@@ -260,7 +220,7 @@ public class UserService {
         user.updateProfile(requestDTO.nickName(), requestDTO.province(), requestDTO.district(), requestDTO.subDistrict(), requestDTO.profileURL());
     }
 
-    public Map<String, String> updateAccessToken(String refreshToken) {
+    public TokenResponse updateAccessToken(String refreshToken) {
         jwtUtils.validateTokenFormat(refreshToken);
 
         Long userId = jwtUtils.extractUserId(refreshToken);
@@ -317,14 +277,20 @@ public class UserService {
         return new UserResponse.FindCommunityRecord(user.getNickname(), user.getEmail(), adoptionNum + fosteringNum, commentNum, questionNum, answerNum);
     }
 
-    public void processOAuthRedirect(Map<String, String> tokenOrEmail, String authProvider, HttpServletResponse response) {
-        try {
-            String redirectUri = determineRedirectUri(tokenOrEmail, authProvider, response);
-            response.sendRedirect(redirectUri);
-        } catch (IOException e) {
-            log.error("소셜 로그인 증 리다이렉트 에러 발생", e);
-            throw new CustomException(ExceptionCode.REDIRECT_FAILED);
+    public LoginResult processSocialLogin(String email, HttpServletRequest request) {
+        Optional<User> userOP = userRepository.findByEmailWithRemoved(email);
+        if (userOP.isEmpty()) {
+            return new LoginResult(email, null, null, false);
         }
+
+        User user = userOP.get();
+        validateUserNotExited(user);
+        validateUserActive(user);
+        checkNotLocalJoined(user);
+
+        recordLoginAttempt(user, request);
+
+        return createToken(user);
     }
 
     private void validateLoginAttempts(User user) {
@@ -346,7 +312,7 @@ public class UserService {
             long dailyFailures = userCacheService.incrementDailyLoginFailures(user);
 
             if (dailyFailures == 3L) {
-                emailService.sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), MAIL_TEMPLATE_FOR_LOCK_ACCOUNT, new HashMap<>());
+                emailService.sendMail(user.getEmail(), ACCOUNT_SUSPENSION.getSubject(), MAIL_TEMPLATE_FOR_LOCK_ACCOUNT, new BlankTemplate());
             }
             throw new CustomException(ExceptionCode.LOGIN_ATTEMPT_EXCEEDED);
         }
@@ -356,33 +322,6 @@ public class UserService {
         Long currentLoginFailures = userCacheService.getCurrentLoginFailures(user.getId());
         String message = String.format("로그인에 실패했습니다. 이메일 또는 비밀번호를 확인해 주세요. (%d회 실패)", currentLoginFailures);
         throw new CustomException(ExceptionCode.USER_ACCOUNT_WRONG, message);
-    }
-
-    private String determineRedirectUri(Map<String, String> tokenOrEmail, String authProvider, HttpServletResponse response) throws IOException {
-        if (isNotJoined(tokenOrEmail)) {
-            return createRedirectUri(redirectJoinUri, Map.of(
-                    QUERY_PARAM_EMAIL, tokenOrEmail.get(EMAIL),
-                    QUERY_PARAM_AUTH_PROVIDER, authProvider
-            ));
-        } else if (isJoined(tokenOrEmail)) {
-            String refreshToken = tokenOrEmail.get(REFRESH_TOKEN_KEY_PREFIX);
-            String accessToken = tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX);
-            response.addHeader(HttpHeaders.SET_COOKIE, jwtUtils.refreshTokenCookie(refreshToken));
-            return createRedirectUri(redirectHomeUri, Map.of(
-                    QUERY_PARAM_ACCESS_TOKEN, accessToken,
-                    QUERY_PARAM_AUTH_PROVIDER, authProvider
-            ));
-        } else {
-            return createRedirectUri(redirectLoginUri, Map.of(QUERY_PARAM_AUTH_PROVIDER, authProvider));
-        }
-    }
-
-    private boolean isNotJoined(Map<String, String> tokenOrEmail) {
-        return tokenOrEmail.get(EMAIL) != null;
-    }
-
-    private boolean isJoined(Map<String, String> tokenOrEmail) {
-        return tokenOrEmail.get(ACCESS_TOKEN_KEY_PREFIX) != null;
     }
 
     private String generatePassword() {
@@ -414,12 +353,6 @@ public class UserService {
                 .collect(Collectors.joining());
     }
 
-    private Map<String, Object> createTemplateModel(String verificationCode) {
-        Map<String, Object> templateModel = new HashMap<>();
-        templateModel.put(MODEL_KEY_CODE, verificationCode);
-        return templateModel;
-    }
-
     private void updateNewPassword(String email, String newPassword) {
         User user = userRepository.findByEmail(email).orElseThrow(
                 () -> new CustomException(ExceptionCode.USER_EMAIL_NOT_FOUND)
@@ -428,49 +361,22 @@ public class UserService {
         user.updatePassword(passwordEncoder.encode(newPassword));
     }
 
-
-    private Map<String, String> createToken(User user) {
+    private LoginResult createToken(User user) {
         String accessToken = jwtUtils.createAccessToken(user);
         String refreshToken = jwtUtils.createRefreshToken(user);
 
-        Map<String, String> userTokens = new HashMap<>();
-        userTokens.put(ACCESS_TOKEN_KEY_PREFIX, accessToken);
-        userTokens.put(REFRESH_TOKEN_KEY_PREFIX, refreshToken);
+        LoginResult loginResult = new LoginResult(null, accessToken, refreshToken, true);
+        userCacheService.storeUserTokens(user.getId(), loginResult);
 
-        userCacheService.storeUserTokens(user.getId(), userTokens);
-        return userTokens;
+        return loginResult;
     }
 
-    private Map<String, String> createAccessToken(User user) {
+    private TokenResponse createAccessToken(User user) {
         String refreshToken = userCacheService.getValidRefreshToken(user.getId());
         String accessToken = jwtUtils.createAccessToken(user);
         userCacheService.storeAccessToken(user.getId(), accessToken);
 
-        Map<String, String> tokens = new HashMap<>();
-        tokens.put(ACCESS_TOKEN_KEY_PREFIX, accessToken);
-        tokens.put(REFRESH_TOKEN_KEY_PREFIX, refreshToken);
-
-        return tokens;
-    }
-
-    private Map<String, String> processSocialLogin(String email, HttpServletRequest request) {
-        Optional<User> userOP = userRepository.findByEmailWithRemoved(email);
-        if (userOP.isEmpty()) {
-            return createEmailMap(email);
-        }
-
-        User user = userOP.get();
-        validateUserNotExited(user);
-        validateUserActive(user);
-        checkNotLocalJoined(user);
-
-        recordLoginAttempt(user, request);
-
-        return createToken(user);
-    }
-
-    private Map<String, String> createEmailMap(String email) {
-        return Map.of("email", email);
+        return new TokenResponse(accessToken, refreshToken);
     }
 
     private void checkNotLocalJoined(User user) {

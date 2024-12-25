@@ -3,6 +3,7 @@ package com.hong.forapw.domain.user.service;
 import com.hong.forapw.common.exceptions.CustomException;
 import com.hong.forapw.common.exceptions.ExceptionCode;
 import com.hong.forapw.domain.user.entity.User;
+import com.hong.forapw.domain.user.model.LoginResult;
 import com.hong.forapw.integration.redis.RedisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,9 +45,9 @@ public class UserCacheService {
         redisService.storeValue(CODE_TO_EMAIL_KEY_PREFIX, verificationCode, email, LOGIN_FAIL_CURRENT_EXPIRATION_MS);
     }
 
-    public void storeUserTokens(Long userId, Map<String, String> tokens) {
-        redisService.storeValue(ACCESS_TOKEN_KEY_PREFIX, userId.toString(), tokens.get(ACCESS_TOKEN_KEY_PREFIX), accessExpMilli);
-        redisService.storeValue(REFRESH_TOKEN_KEY_PREFIX, userId.toString(), tokens.get(REFRESH_TOKEN_KEY_PREFIX), refreshExpMilli);
+    public void storeUserTokens(Long userId, LoginResult loginResult) {
+        redisService.storeValue(ACCESS_TOKEN_KEY_PREFIX, userId.toString(), loginResult.accessToken(), accessExpMilli);
+        redisService.storeValue(REFRESH_TOKEN_KEY_PREFIX, userId.toString(), loginResult.refreshToken(), refreshExpMilli);
     }
 
     public long incrementDailyLoginFailures(User user) {

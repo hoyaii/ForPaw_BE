@@ -19,14 +19,6 @@ public class UriUtils {
     private UriUtils() {
     }
 
-    public static String createRedirectUri(String baseUri, Map<String, String> queryParams) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUri);
-        queryParams.forEach((key, value) ->
-                builder.queryParam(key, URLEncoder.encode(value, StandardCharsets.UTF_8))
-        );
-        return builder.build().toUriString();
-    }
-
     public static String convertHttpUrlToHttps(String url) {
         if (StringUtils.isBlank(url)) {
             throw new CustomException(ExceptionCode.INVALID_URI_FORMAT);

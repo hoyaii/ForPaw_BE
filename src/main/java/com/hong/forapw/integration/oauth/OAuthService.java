@@ -1,101 +1,112 @@
 package com.hong.forapw.integration.oauth;
 
-import com.hong.forapw.integration.oauth.model.GoogleOauthDTO;
-import com.hong.forapw.integration.oauth.model.KakaoOauthDTO;
+import com.hong.forapw.common.exceptions.CustomException;
+import com.hong.forapw.common.exceptions.ExceptionCode;
+import com.hong.forapw.common.utils.JwtUtils;
+import com.hong.forapw.domain.user.model.LoginResult;
+import com.hong.forapw.domain.user.service.UserService;
+import com.hong.forapw.integration.oauth.google.GoogleOAuthService;
+import com.hong.forapw.integration.oauth.google.GoogleOAuthToken;
+import com.hong.forapw.integration.oauth.google.GoogleUser;
+import com.hong.forapw.integration.oauth.kakao.KakaoOAuthService;
+import com.hong.forapw.integration.oauth.kakao.KakaoOAuthToken;
+import com.hong.forapw.integration.oauth.kakao.KakaoUser;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URLDecoder;
+import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
+import static com.hong.forapw.common.GlobalConstants.ACCESS_TOKEN_KEY;
+import static com.hong.forapw.common.GlobalConstants.REFRESH_TOKEN_KEY;
+import static com.hong.forapw.domain.user.model.LoginResult.isJoined;
+import static com.hong.forapw.domain.user.model.LoginResult.isNotJoined;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OAuthService {
 
-    private final WebClient webClient;
+    private final GoogleOAuthService googleOAuthService;
+    private final KakaoOAuthService kakaoOAuthService;
+    private final UserService userService;
+    private final JwtUtils jwtUtils;
 
-    @Value("${kakao.key}")
-    private String kakaoApiKey;
+    @Value("${social.join.redirect.uri}")
+    private String redirectJoinUri;
 
-    @Value("${kakao.oauth.token.uri}")
-    private String kakaoTokenUri;
+    @Value("${social.home.redirect.uri}")
+    private String redirectHomeUri;
 
-    @Value("${kakao.oauth.userInfo.uri}")
-    private String kakaoUserInfoUri;
+    @Value("${social.login.redirect.uri}")
+    private String redirectLoginUri;
 
-    @Value("${google.client.id}")
-    private String googleClientId;
+    private static final String QUERY_PARAM_EMAIL = "email";
+    private static final String QUERY_PARAM_AUTH_PROVIDER = "authProvider";
+    private static final String QUERY_PARAM_ACCESS_TOKEN = "accessToken";
 
-    @Value("${google.oauth.token.uri}")
-    private String googleTokenUri;
+    @Transactional
+    public LoginResult loginWithKakao(String code, HttpServletRequest request) {
+        KakaoOAuthToken token = kakaoOAuthService.getToken(code);
+        KakaoUser kakaoUser = kakaoOAuthService.getUserInfo(token.access_token());
+        String email = kakaoUser.kakao_account().email();
 
-    @Value("${google.client.password}")
-    private String googleClientSecret;
-
-    @Value("${google.oauth.redirect.uri}")
-    private String googleRedirectUri;
-
-    @Value("${google.oauth.userInfo.uri}")
-    private String googleUserInfoUri;
-
-    private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String BEARER_PREFIX = "Bearer ";
-    private static final String AUTH_CODE_GRANT_TYPE = "authorization_code";
-
-    public KakaoOauthDTO.TokenDTO getKakaoToken(String code) {
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("grant_type", AUTH_CODE_GRANT_TYPE);
-        formData.add("client_id", kakaoApiKey);
-        formData.add("code", code);
-
-        return webClient.post()
-                .uri(kakaoTokenUri)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData(formData))
-                .retrieve()
-                .bodyToMono(KakaoOauthDTO.TokenDTO.class)
-                .block();
+        return userService.processSocialLogin(email, request);
     }
 
-    public KakaoOauthDTO.UserInfoDTO getKakaoUserInfo(String accessToken) {
-        return webClient.get()
-                .uri(kakaoUserInfoUri)
-                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + accessToken)
-                .retrieve()
-                .bodyToMono(KakaoOauthDTO.UserInfoDTO.class)
-                .block();
+    @Transactional
+    public LoginResult loginWithGoogle(String code, HttpServletRequest request) {
+        GoogleOAuthToken token = googleOAuthService.getToken(code);
+        GoogleUser googleUser = googleOAuthService.getUserInfo(token.access_token());
+        String email = googleUser.email();
+
+        return userService.processSocialLogin(email, request);
     }
 
-    public GoogleOauthDTO.TokenDTO getGoogleToken(String code) {
-        String decode = URLDecoder.decode(code, StandardCharsets.UTF_8);
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("code", decode);
-        formData.add("client_id", googleClientId);
-        formData.add("client_secret", googleClientSecret);
-        formData.add("redirect_uri", googleRedirectUri);
-        formData.add("grant_type", AUTH_CODE_GRANT_TYPE);
-
-        return webClient.post()
-                .uri(googleTokenUri)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData(formData))
-                .retrieve()
-                .bodyToMono(GoogleOauthDTO.TokenDTO.class)
-                .block();
+    public void redirectAfterOAuthLogin(LoginResult loginResult, String authProvider, HttpServletResponse response) {
+        try {
+            String redirectUri = buildRedirectUri(loginResult, authProvider, response);
+            response.sendRedirect(redirectUri);
+        } catch (IOException e) {
+            log.error("소셜 로그인 증 리다이렉트 에러 발생", e);
+            throw new CustomException(ExceptionCode.REDIRECT_FAILED);
+        }
     }
 
-    public GoogleOauthDTO.UserInfoDTO getGoogleUserInfo(String accessToken) {
-        return webClient.get()
-                .uri(googleUserInfoUri)
-                .header(AUTHORIZATION_HEADER, BEARER_PREFIX + accessToken)
-                .retrieve()
-                .bodyToMono(GoogleOauthDTO.UserInfoDTO.class)
-                .block();
+    private String buildRedirectUri(LoginResult loginResult, String authProvider, HttpServletResponse response) {
+        if (isNotJoined(loginResult)) {
+            return createRedirectUri(redirectJoinUri, Map.of(
+                    QUERY_PARAM_EMAIL, loginResult.email(),
+                    QUERY_PARAM_AUTH_PROVIDER, authProvider
+            ));
+        } else if (isJoined(loginResult)) {
+            String refreshToken = loginResult.refreshToken();
+            String accessToken = loginResult.accessToken();
+            response.addHeader(HttpHeaders.SET_COOKIE, jwtUtils.refreshTokenCookie(refreshToken));
+
+            return createRedirectUri(redirectHomeUri, Map.of(
+                    QUERY_PARAM_ACCESS_TOKEN, accessToken,
+                    QUERY_PARAM_AUTH_PROVIDER, authProvider
+            ));
+        } else {
+            return createRedirectUri(redirectLoginUri, Map.of(QUERY_PARAM_AUTH_PROVIDER, authProvider));
+        }
+    }
+
+    private String createRedirectUri(String baseUri, Map<String, String> queryParams) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUri);
+        queryParams.forEach((key, value) ->
+                builder.queryParam(key, URLEncoder.encode(value, StandardCharsets.UTF_8))
+        );
+        return builder.build().toUriString();
     }
 }

@@ -1,5 +1,8 @@
 package com.hong.forapw.integration.email;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hong.forapw.integration.email.model.TemplateModel;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -32,11 +35,11 @@ public class EmailService {
     private static final String CHAR_SET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     @Async
-    public void sendMail(String toEmail, String subject, String templateName, Map<String, Object> templateModel) {
+    public void sendMail(String toEmail, String subject, String templateName, TemplateModel templateModel) {
         try {
             MimeMessage message = createMimeMessage(toEmail, subject, templateName, templateModel);
             mailSender.send(message);
-        } catch (MessagingException e){
+        } catch (MessagingException e) {
             log.error("{}로의 메일 전송에 실패했습니다", toEmail);
         }
     }
@@ -50,7 +53,7 @@ public class EmailService {
                 .collect(Collectors.joining());
     }
 
-    private MimeMessage createMimeMessage(String toEmail, String subject, String templateName, Map<String, Object> templateModel) throws MessagingException {
+    private MimeMessage createMimeMessage(String toEmail, String subject, String templateName, TemplateModel templateModel) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
 
         MimeMessageHelper helper = new MimeMessageHelper(message, true, UTF_EIGHT_ENCODING);
@@ -62,9 +65,16 @@ public class EmailService {
         return message;
     }
 
-    private String createHtmlText(String templateName, Map<String, Object> templateModel) {
+    private Map<String, Object> convertTemplateModelToMap(TemplateModel templateModel) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.convertValue(templateModel, new TypeReference<>() {});
+    }
+
+    private String createHtmlText(String templateName, TemplateModel templateModel) {
+        Map<String, Object> modelMap = convertTemplateModelToMap(templateModel);
+
         Context context = new Context();
-        templateModel.forEach(context::setVariable);
+        modelMap.forEach(context::setVariable);
         return templateEngine.process(templateName, context);
     }
 }
